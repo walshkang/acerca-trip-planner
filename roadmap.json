@@ -1,0 +1,143 @@
+{
+    "project_name": "AI_Travel_Itinerary_Manager",
+    "version": "2.1.0-constitution-hardened",
+    "last_updated": "2026-01-25",
+    "development_principles": [
+      "LLMs label and translate intent; deterministic systems retrieve and compute.",
+      "Only approved pins are truth (Map is the interface).",
+      "Enrich Once, Read Forever (Frozen by default, versioned if refreshed).",
+      "Strict Taxonomy: AI outputs must match UI Icon sets exactly.",
+      "User edits never overwrite frozen AI enrichment."
+    ],
+    "roadmap": {
+      "phase_1": {
+        "name": "The Smart Repository (Cupcake)",
+        "goal": "A deterministic, map-based database of approved places. Eliminates messy lists and taxonomy drift.",
+        "estimated_timeline": "MVP (Weeks 1-4)",
+        "epics": [
+          {
+            "id": "P1-E1",
+            "title": "Strict Schema, Versioning & Deduplication",
+            "description": "Enforce data integrity and enrichment immutability before the first pin is dropped.",
+            "tech_stack": ["Supabase", "PostgreSQL", "PostGIS"],
+            "tasks": [
+              {
+                "id": "1.1",
+                "task": "Create strict Enums and versioned enrichment schema.",
+                "details": "Category Enum: ['Food', 'Coffee', 'Sights', 'Shop', 'Activity']. Energy Enum: ['Low', 'Medium', 'High']. Add fields: enrichment_version, enriched_at, enrichment_source_hash."
+              },
+              {
+                "id": "1.2",
+                "task": "Implement Deduplication Guard.",
+                "details": "Constraint: UNIQUE(user_id, google_place_id). Re-adding a place opens edit view; enrichment is not re-run."
+              },
+              {
+                "id": "1.3",
+                "task": "Persist Deterministic Source Data.",
+                "details": "Store raw opening_hours JSON from Google Places and source metadata for future deterministic filtering."
+              }
+            ]
+          },
+          {
+            "id": "P1-E2",
+            "title": "The Librarian Agent (Deterministic Ingestion)",
+            "description": "Multi-source enrichment that is frozen, auditable, and schema-aligned.",
+            "tech_stack": ["Edge Functions", "Google Places API", "Wikipedia API", "Wikidata API"],
+            "tasks": [
+              {
+                "id": "2.1",
+                "task": "Resolve Place Deterministically.",
+                "details": "Resolve via Google Places. Fetch nearby Wikipedia pages via GeoSearch. Select best match by distance + name similarity."
+              },
+              {
+                "id": "2.2",
+                "task": "Fetch Structured Context.",
+                "details": "Pull summary, thumbnail, and structured facts via Wikidata when available. Store raw extracts."
+              },
+              {
+                "id": "2.3",
+                "task": "Schema-Constrained AI Normalization.",
+                "details": "LLM normalizes fetched data into enums and tags only. Prompt includes full enum list. Output must validate or be rejected."
+              },
+              {
+                "id": "2.4",
+                "task": "Freeze Enrichment.",
+                "details": "Write enrichment once, mark as frozen. No AI calls during browsing, filtering, or planning."
+              }
+            ]
+          },
+          {
+            "id": "P1-E3",
+            "title": "Aligned Visual Interface",
+            "description": "UI that mirrors database truth exactly.",
+            "tech_stack": ["Mapbox GL JS", "React"],
+            "tasks": [
+              {
+                "id": "3.1",
+                "task": "Create Canonical Icon Mapping.",
+                "details": "Map strict DB categories to SVG assets. Any unmapped enum is a build-time error."
+              },
+              {
+                "id": "3.2",
+                "task": "Build Place Detail View.",
+                "details": "Display frozen AI tags and factual summaries. Allow user-added notes and user tags stored separately."
+              }
+            ]
+          }
+        ]
+      },
+      "phase_2": {
+        "name": "The Interactive Planner (Birthday Cake)",
+        "goal": "Stateful itinerary planning using deterministic logic only.",
+        "epics": [
+          {
+            "id": "P2-E1",
+            "title": "Stateful Planning (Kanban)",
+            "features": [
+              "Trip State Machine: Backlog -> Scheduled -> Done.",
+              "Drag-and-Drop between day buckets updates scheduling fields only.",
+              "Scheduling actions never trigger enrichment or AI calls.",
+              "Visual distinction for scheduled vs unscheduled pins."
+            ]
+          },
+          {
+            "id": "P2-E2",
+            "title": "Deterministic Filtering & Intent Translation",
+            "features": [
+              "Intent Extraction Agent outputs filter JSON only (never SQL).",
+              "Example: 'Quiet places' -> { \"energy\": \"Low\" }.",
+              "Filtering executed entirely via DB queries.",
+              "Open Now filtering uses server time vs stored opening_hours JSON."
+            ]
+          }
+        ]
+      },
+      "phase_3": {
+        "name": "The Intelligent Concierge (Wedding Cake)",
+        "goal": "Optimization and discovery without compromising trust.",
+        "epics": [
+          {
+            "id": "P3-E1",
+            "title": "Deterministic Routing",
+            "features": [
+              "Route Optimization via OSRM or Google Routes API.",
+              "Travel-time badges rendered between scheduled items.",
+              "LLMs are not involved in routing or timing."
+            ]
+          },
+          {
+            "id": "P3-E2",
+            "title": "Gated Discovery (Staging Area)",
+            "features": [
+              "Discovery uses deterministic search + filters first.",
+              "Optional AI summarization of discovered items (no sourcing).",
+              "Results appear as Ghost Pins (non-truth state).",
+              "User approval triggers full enrichment and moves item to Backlog.",
+              "Rejected items are discarded and never stored."
+            ]
+          }
+        ]
+      }
+    }
+  }
+  
