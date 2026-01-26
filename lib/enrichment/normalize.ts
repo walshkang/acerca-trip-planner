@@ -24,10 +24,11 @@ export async function normalizeEnrichment(
   if (existing) {
     // Return existing enrichment
     return {
+      id: existing.id,
       normalizedData: existing.normalized_data,
       sourceHash: existing.source_hash,
       model: existing.model,
-      temperature: existing.temperature,
+      temperature: Number(existing.temperature),
       promptVersion: existing.prompt_version,
     }
   }
@@ -65,6 +66,7 @@ export async function normalizeEnrichment(
   }
   
   return {
+    id: enrichment.id,
     normalizedData: enrichment.normalized_data,
     sourceHash: enrichment.source_hash,
     model: enrichment.model,

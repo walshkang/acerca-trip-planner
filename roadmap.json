@@ -9,6 +9,44 @@
       "Strict Taxonomy: AI outputs must match UI Icon sets exactly.",
       "User edits never overwrite frozen AI enrichment."
     ],
+    "pr_history": [
+      {
+        "id": "816f4b8",
+        "date": "2026-01-26",
+        "title": "Add JSON validation script and refresh roadmap progress",
+        "summary": "Added a JSON validation script in package.json and updated roadmap progress notes."
+      },
+      {
+        "id": "a692544",
+        "date": "2026-01-26",
+        "title": "Update roadmap status and progress",
+        "summary": "Refined roadmap statuses, progress summaries, and last_updated date."
+      },
+      {
+        "id": "b8dde4d",
+        "date": "2026-01-26",
+        "title": "Refactor promotion logic and canonicalization",
+        "summary": "Moved promotion to a Postgres RPC and improved canonicalization for consistent JSON handling."
+      },
+      {
+        "id": "9de8adc",
+        "date": "2026-01-25",
+        "title": "Initiated project",
+        "summary": "Project scaffold and initial structure."
+      },
+      {
+        "id": "4f42699",
+        "date": "2026-01-25",
+        "title": "Initiated README",
+        "summary": "Added initial README content."
+      },
+      {
+        "id": "ef8b1ce",
+        "date": "2026-01-25",
+        "title": "Initial commit",
+        "summary": "Created repository with baseline files."
+      }
+    ],
     "roadmap": {
       "phase_1": {
         "name": "The Smart Repository (Cupcake)",

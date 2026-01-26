@@ -11,6 +11,7 @@ export interface EnrichmentInput {
 }
 
 export interface EnrichmentOutput {
+  id: string;
   normalizedData: {
     category: string;      // CategoryEnum
     energy?: string;        // EnergyEnum

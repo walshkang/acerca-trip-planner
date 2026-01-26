@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { normalizeEnrichment } from '@/lib/enrichment/normalize'
 import { createClient } from '@/lib/supabase/server'
-import { adminSupabase } from '@/lib/supabase/admin'
 
 export async function POST(request: NextRequest) {
   try {
@@ -37,28 +36,17 @@ export async function POST(request: NextRequest) {
       schemaVersion: schema_version,
     })
     
-    // Get enrichment ID from database
-    const { data: enrichmentRecord } = await adminSupabase
-      .from('enrichments')
-      .select('id')
-      .eq('source_hash', enrichment.sourceHash)
-      .eq('schema_version', schema_version)
-      .single()
-    
-    if (!enrichmentRecord) {
-      return NextResponse.json({ error: 'Failed to find enrichment record' }, { status: 500 })
-    }
-    
     // Update candidate with enrichment_id
     await supabase
       .from('place_candidates')
       .update({
-        enrichment_id: enrichmentRecord.id,
+        enrichment_id: enrichment.id,
         status: 'enriched',
       })
       .eq('id', candidate_id)
     
-    return NextResponse.json({ enrichment })
+    const { id, ...enrichmentResponse } = enrichment
+    return NextResponse.json({ enrichment: enrichmentResponse })
   } catch (error: any) {
     return NextResponse.json(
       { error: error.message || 'Internal server error' },
