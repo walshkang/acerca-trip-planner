@@ -1,5 +1,9 @@
 import { adminSupabase } from '@/lib/supabase/admin'
-import { EnrichmentInput, EnrichmentOutput, computeSourceHash } from './contract'
+import {
+  EnrichmentInput,
+  EnrichmentOutput,
+  computeSourceHash,
+} from '@/lib/enrichment/contract'
 
 /**
  * Deterministic normalization (idempotent)

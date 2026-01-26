@@ -11,6 +11,12 @@
     ],
     "pr_history": [
       {
+        "id": "uncommitted",
+        "date": "2026-01-26",
+        "title": "Move normalization server-only and fix ESLint config",
+        "summary": "Relocated enrichment normalization to lib/server, clarified admin Supabase usage as server-only, and wired ESLint parser/plugin to resolve TypeScript rules."
+      },
+      {
         "id": "816f4b8",
         "date": "2026-01-26",
         "title": "Add JSON validation script and refresh roadmap progress",

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { normalizeEnrichment } from '@/lib/enrichment/normalize'
+import { normalizeEnrichment } from '@/lib/server/enrichment/normalize'
 import { createClient } from '@/lib/supabase/server'
 
 export async function POST(request: NextRequest) {

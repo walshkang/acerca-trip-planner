@@ -82,7 +82,7 @@
    - OpenAI/Gemini API key
 
 ⚠️ **Implementation TODOs** (Future Work)
-- Implement actual LLM enrichment normalization (see `lib/enrichment/normalize.ts`)
+- Implement actual LLM enrichment normalization (see `lib/server/enrichment/normalize.ts`)
 - Implement Google Places API integration (see `lib/places/google-places.ts`)
 - Implement Wikipedia/Wikidata fetching (see `lib/enrichment/sources.ts`)
 - Fix geohash7 computation in promotion logic (currently placeholder)
@@ -107,7 +107,7 @@
 - `lib/supabase/server.ts` - Server Supabase client (Auth helpers)
 - `lib/supabase/admin.ts` - Admin Supabase client (service role)
 - `lib/enrichment/contract.ts` - Enrichment contract
-- `lib/enrichment/normalize.ts` - Enrichment normalization
+- `lib/server/enrichment/normalize.ts` - Enrichment normalization
 - `lib/staging/promotion.ts` - Promotion logic
 - `lib/icons/mapping.ts` - Icon mapping
 - `lib/types/enums.ts` - Type definitions

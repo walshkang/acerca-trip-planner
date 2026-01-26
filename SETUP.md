@@ -101,7 +101,7 @@ npm run test:ui
 
 ## Next Steps
 
-1. Implement LLM enrichment normalization (see `lib/enrichment/normalize.ts`)
+1. Implement LLM enrichment normalization (see `lib/server/enrichment/normalize.ts`)
 2. Implement Google Places API integration (see `lib/places/google-places.ts`)
 3. Implement Wikipedia/Wikidata fetching (see `lib/enrichment/sources.ts`)
 4. Add place detail view component
