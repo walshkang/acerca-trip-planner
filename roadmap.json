@@ -1,7 +1,7 @@
 {
     "project_name": "AI_Travel_Itinerary_Manager",
     "version": "2.1.0-constitution-hardened",
-    "last_updated": "2026-01-25",
+    "last_updated": "2026-01-26",
     "development_principles": [
       "LLMs label and translate intent; deterministic systems retrieve and compute.",
       "Only approved pins are truth (Map is the interface).",
@@ -14,6 +14,8 @@
         "name": "The Smart Repository (Cupcake)",
         "goal": "A deterministic, map-based database of approved places. Eliminates messy lists and taxonomy drift.",
         "estimated_timeline": "MVP (Weeks 1-4)",
+        "status": "in_progress",
+        "progress_summary": "Foundation complete: database schema, enrichment contract, icon system, basic map integration. Pending: LLM enrichment integration, place detail view."
         "epics": [
           {
             "id": "P1-E1",
@@ -24,17 +26,22 @@
               {
                 "id": "1.1",
                 "task": "Create strict Enums and versioned enrichment schema.",
-                "details": "Category Enum: ['Food', 'Coffee', 'Sights', 'Shop', 'Activity']. Energy Enum: ['Low', 'Medium', 'High']. Add fields: enrichment_version, enriched_at, enrichment_source_hash."
+                "details": "Category Enum: ['Food', 'Coffee', 'Sights', 'Shop', 'Activity']. Energy Enum: ['Low', 'Medium', 'High']. Add fields: enrichment_version, enriched_at, enrichment_source_hash.",
+                "status": "completed"
               },
               {
                 "id": "1.2",
                 "task": "Implement Deduplication Guard.",
-                "details": "Constraint: UNIQUE(user_id, google_place_id). Re-adding a place opens edit view; enrichment is not re-run."
+                "details": "Constraint: UNIQUE(user_id, google_place_id). Re-adding a place opens edit view; enrichment is not re-run.",
+                "status": "completed",
+                "notes": "Implemented dual deduplication: UNIQUE(user_id, source, source_id) + UNIQUE(user_id, dedupe_key). Transactional promotion RPC (promote_place_candidate) handles conflicts race-safely with ON CONFLICT. geohash7 and dedupe_key computed in DB to match table columns exactly."
               },
               {
                 "id": "1.3",
                 "task": "Persist Deterministic Source Data.",
-                "details": "Store raw opening_hours JSON from Google Places and source metadata for future deterministic filtering."
+                "details": "Store raw opening_hours JSON from Google Places and source metadata for future deterministic filtering.",
+                "status": "completed",
+                "notes": "place_candidates.raw_payload stores complete Google Places API response. places.opening_hours stores extracted opening_hours JSON."
               }
             ]
           },
@@ -47,22 +54,30 @@
               {
                 "id": "2.1",
                 "task": "Resolve Place Deterministically.",
-                "details": "Resolve via Google Places. Fetch nearby Wikipedia pages via GeoSearch. Select best match by distance + name similarity."
+                "details": "Resolve via Google Places. Fetch nearby Wikipedia pages via GeoSearch. Select best match by distance + name similarity.",
+                "status": "in_progress",
+                "notes": "Placeholder functions created in lib/enrichment/sources.ts. Google Places API integration pending."
               },
               {
                 "id": "2.2",
                 "task": "Fetch Structured Context.",
-                "details": "Pull summary, thumbnail, and structured facts via Wikidata when available. Store raw extracts."
+                "details": "Pull summary, thumbnail, and structured facts via Wikidata when available. Store raw extracts.",
+                "status": "in_progress",
+                "notes": "Placeholder functions created. Wikipedia/Wikidata API integration pending."
               },
               {
                 "id": "2.3",
                 "task": "Schema-Constrained AI Normalization.",
-                "details": "LLM normalizes fetched data into enums and tags only. Prompt includes full enum list. Output must validate or be rejected."
+                "details": "LLM normalizes fetched data into enums and tags only. Prompt includes full enum list. Output must validate or be rejected.",
+                "status": "in_progress",
+                "notes": "Enrichment contract defined with deterministic canonicalization (recursive key sorting, type handling). normalize() function has placeholder - LLM integration pending."
               },
               {
                 "id": "2.4",
                 "task": "Freeze Enrichment.",
-                "details": "Write enrichment once, mark as frozen. No AI calls during browsing, filtering, or planning."
+                "details": "Write enrichment once, mark as frozen. No AI calls during browsing, filtering, or planning.",
+                "status": "completed",
+                "notes": "enrichments table with UNIQUE(source_hash, schema_version) enforces idempotency. place_candidates.enrichment_id links to frozen enrichments. Promotion RPC never triggers re-enrichment. Fixed: canonicalizeSnapshot() now properly recursive (preserves all nested keys). Fixed: Promotion moved to Postgres RPC for true transactional safety."
               }
             ]
           },
@@ -75,12 +90,15 @@
               {
                 "id": "3.1",
                 "task": "Create Canonical Icon Mapping.",
-                "details": "Map strict DB categories to SVG assets. Any unmapped enum is a build-time error."
+                "details": "Map strict DB categories to SVG assets. Any unmapped enum is a build-time error.",
+                "status": "completed",
+                "notes": "Icon mapping with build-time exhaustiveness check. SVG icons created for all categories. Test scaffolding validates enum coverage."
               },
               {
                 "id": "3.2",
                 "task": "Build Place Detail View.",
-                "details": "Display frozen AI tags and factual summaries. Allow user-added notes and user tags stored separately."
+                "details": "Display frozen AI tags and factual summaries. Allow user-added notes and user tags stored separately.",
+                "status": "pending"
               }
             ]
           }
