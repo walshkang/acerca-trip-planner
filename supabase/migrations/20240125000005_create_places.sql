@@ -25,16 +25,16 @@ CREATE TABLE places (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- Constraints
-ALTER TABLE places ADD CONSTRAINT places_user_id_source_source_id_unique 
-  UNIQUE (user_id, source, source_id) 
-  WHERE source_id IS NOT NULL;
-
 ALTER TABLE places ADD CONSTRAINT places_user_id_dedupe_key_unique 
   UNIQUE (user_id, dedupe_key);
 
-ALTER TABLE places ADD CONSTRAINT places_user_id_google_place_id_unique 
-  UNIQUE (user_id, google_place_id) 
+-- Partial unique indexes for nullable columns
+CREATE UNIQUE INDEX places_user_id_source_source_id_unique
+  ON places(user_id, source, source_id)
+  WHERE source_id IS NOT NULL;
+
+CREATE UNIQUE INDEX places_user_id_google_place_id_unique
+  ON places(user_id, google_place_id)
   WHERE google_place_id IS NOT NULL;
 
 -- Indexes
