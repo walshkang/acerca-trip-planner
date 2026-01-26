@@ -13,6 +13,8 @@ DECLARE
   v_dedupe_key text;
   v_name_normalized text;
   v_address_normalized text;
+  v_category category_enum;
+  v_category_text text;
 BEGIN
   -- Load candidate with auth.uid() check (raises exception if not found or unauthorized)
   SELECT *
@@ -81,6 +83,27 @@ BEGIN
     'hex'
   );
 
+  -- Derive category from enrichment, enforcing presence/validity
+  IF c.enrichment_id IS NULL THEN
+    RAISE EXCEPTION 'Candidate must be enriched before promotion';
+  END IF;
+
+  SELECT normalized_data->>'category'
+  INTO v_category_text
+  FROM public.enrichments
+  WHERE id = c.enrichment_id;
+
+  IF NOT FOUND OR v_category_text IS NULL THEN
+    RAISE EXCEPTION 'Candidate must be enriched before promotion';
+  END IF;
+
+  BEGIN
+    v_category := v_category_text::category_enum;
+  EXCEPTION
+    WHEN invalid_text_representation THEN
+      RAISE EXCEPTION 'Candidate must be enriched before promotion';
+  END;
+
   -- Insert with conflict handling (single branch based on source_id presence)
   IF c.source_id IS NOT NULL THEN
     -- Primary: conflict on (user_id, source, source_id)
@@ -94,7 +117,7 @@ BEGIN
       c.user_id,
       c.name,
       c.address,
-      'Food'::category_enum, -- TODO: derive from enrichment.normalized_data.category
+      v_category,
       NULL,
       c.location,
       c.source,
@@ -129,7 +152,7 @@ BEGIN
       c.user_id,
       c.name,
       c.address,
-      'Food'::category_enum, -- TODO: derive from enrichment.normalized_data.category
+      v_category,
       NULL,
       c.location,
       c.source,
