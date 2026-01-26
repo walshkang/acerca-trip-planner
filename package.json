@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "test": "vitest",
-    "test:ui": "vitest --ui"
+    "test:ui": "vitest --ui",
+    "validate:json": "node -e \"JSON.parse(require('fs').readFileSync('roadmap.json','utf8')); console.log('✓ roadmap.json is valid JSON')\""
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

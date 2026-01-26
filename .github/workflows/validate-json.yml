@@ -1,0 +1,23 @@
+name: Validate JSON
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+
+jobs:
+  validate-json:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Validate roadmap.json
+        run: |
+          node -e "JSON.parse(require('fs').readFileSync('roadmap.json','utf8')); console.log('✓ roadmap.json is valid JSON')"

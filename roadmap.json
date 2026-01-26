@@ -15,7 +15,7 @@
         "goal": "A deterministic, map-based database of approved places. Eliminates messy lists and taxonomy drift.",
         "estimated_timeline": "MVP (Weeks 1-4)",
         "status": "in_progress",
-        "progress_summary": "Foundation complete: database schema, enrichment contract, icon system, basic map integration. Pending: LLM enrichment integration, place detail view."
+        "progress_summary": "Foundation complete: database schema, enrichment contract, icon system, basic map integration. Pending: LLM enrichment integration, place detail view.",
         "epics": [
           {
             "id": "P1-E1",
