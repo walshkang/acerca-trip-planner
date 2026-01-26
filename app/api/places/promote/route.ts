@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { promotePlaceCandidate } from '@/lib/staging/promotion'
 import { createClient } from '@/lib/supabase/server'
 
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient()
     
-    // Verify authentication
+    // Verify authentication using session-respecting server client
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -18,20 +17,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'candidate_id is required' }, { status: 400 })
     }
     
-    // Verify candidate belongs to user
-    const { data: candidate } = await supabase
-      .from('place_candidates')
-      .select('user_id')
-      .eq('id', candidate_id)
-      .eq('user_id', user.id)
-      .single()
+    // Call RPC function (RPC handles candidate ownership check internally)
+    const { data: placeId, error } = await supabase.rpc('promote_place_candidate', {
+      p_candidate_id: candidate_id,
+    })
     
-    if (!candidate) {
-      return NextResponse.json({ error: 'Candidate not found' }, { status: 404 })
+    if (error) {
+      return NextResponse.json(
+        { error: error.message || 'Failed to promote candidate' },
+        { status: 500 }
+      )
     }
-    
-    // Promote candidate
-    const placeId = await promotePlaceCandidate(candidate_id)
     
     return NextResponse.json({ place_id: placeId })
   } catch (error: any) {
