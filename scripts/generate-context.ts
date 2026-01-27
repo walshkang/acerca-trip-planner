@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { execSync } from 'child_process';
 
 type TaskStatus = 'completed' | 'in_progress' | string;
 
@@ -63,6 +64,57 @@ const CONTEXT_PATH = path.join(ROOT_DIR, 'CONTEXT.md');
 function readRoadmap(): RoadmapData {
   const raw = fs.readFileSync(ROADMAP_PATH, 'utf8');
   return JSON.parse(raw) as RoadmapData;
+}
+
+function isCommitId(value: string): boolean {
+  return /^[0-9a-f]{7,40}$/i.test(value);
+}
+
+function hasUncommittedChanges(): boolean {
+  try {
+    const output = execSync('git status --porcelain', {
+      cwd: ROOT_DIR,
+      encoding: 'utf8',
+    });
+    return output.trim().length > 0;
+  } catch {
+    return true;
+  }
+}
+
+function readGitHistory(limit = 5): PRHistoryEntry[] {
+  try {
+    const raw = execSync(
+      `git log -n ${limit} --date=short --pretty=format:%H%x1f%ad%x1f%s%x1f%b%x1e`,
+      { cwd: ROOT_DIR, encoding: 'utf8' },
+    ).trim();
+
+    if (!raw) return [];
+
+    return raw
+      .split('\x1e')
+      .map((record) => record.trim())
+      .filter(Boolean)
+      .map((record) => {
+        const [hash, date, subject, body] = record.split('\x1f');
+        const shortHash = hash.slice(0, 7);
+        const normalizedBody = (body ?? '')
+          .split('\n')
+          .map((line) => line.trim())
+          .filter(Boolean)
+          .join(' ');
+        const summary = normalizedBody || `Auto-generated from git log (${shortHash}).`;
+
+        return {
+          id: shortHash,
+          date,
+          title: subject?.trim() || `Commit ${shortHash}`,
+          summary,
+        };
+      });
+  } catch {
+    return [];
+  }
 }
 
 function escapeRegExp(value: string): string {
@@ -236,35 +288,60 @@ function buildConstitutionSection(roadmap: RoadmapData): string {
 }
 
 function buildImplementationMemorySection(roadmap: RoadmapData): string {
-  const history = roadmap.pr_history ?? [];
+  const roadmapHistory = roadmap.pr_history ?? [];
+  const includeUncommitted = hasUncommittedChanges();
+  const gitHistory = readGitHistory(6);
 
-  const uncommitted = history.find((entry) => entry.id === 'uncommitted');
-  const committed = history.filter((entry) => entry.id !== 'uncommitted');
+  const uncommitted = includeUncommitted
+    ? roadmapHistory.find((entry) => entry.id === 'uncommitted')
+    : undefined;
+  const committedRoadmap = roadmapHistory.filter((entry) => entry.id !== 'uncommitted');
 
-  // Take most recent committed entries by preserving array order (assumed chronological)
-  const lastCommitted = committed.slice(-3);
-
-  let selected: PRHistoryEntry[] = [];
-
-  if (uncommitted) {
-    // Place uncommitted first, then the two most recent committed entries
-    const remainingCommitted = lastCommitted.slice(-2);
-    selected = [uncommitted, ...remainingCommitted];
-  } else {
-    selected = lastCommitted;
+  const curatedById = new Map<string, PRHistoryEntry>();
+  for (const entry of committedRoadmap) {
+    if (!isCommitId(entry.id)) continue;
+    curatedById.set(entry.id.toLowerCase(), entry);
+    if (entry.id.length > 7) {
+      curatedById.set(entry.id.slice(0, 7).toLowerCase(), entry);
+    }
   }
 
-  // For committed entries, show newest first based on date/order
-  const committedOnly = selected.filter((e) => e.id !== 'uncommitted');
-  const uncommittedOnly = selected.find((e) => e.id === 'uncommitted');
+  const recentCommitted: PRHistoryEntry[] = [];
+  const usedIds = new Set<string>();
 
-  const sortedCommitted = [...committedOnly].sort((a, b) => b.date.localeCompare(a.date));
+  if (gitHistory.length > 0) {
+    for (const gitEntry of gitHistory) {
+      if (recentCommitted.length >= 3) break;
+      const key = gitEntry.id.toLowerCase();
+      const curated = curatedById.get(key);
+      const chosen = curated ?? gitEntry;
+      const chosenKey = chosen.id.toLowerCase();
+      if (usedIds.has(chosenKey)) continue;
+      recentCommitted.push(chosen);
+      usedIds.add(chosenKey);
+    }
+  }
+
+  if (recentCommitted.length < 3) {
+    const fallback = [...committedRoadmap].sort((a, b) => b.date.localeCompare(a.date));
+    for (const entry of fallback) {
+      if (recentCommitted.length >= 3) break;
+      const key = entry.id.toLowerCase();
+      if (usedIds.has(key)) continue;
+      recentCommitted.push(entry);
+      usedIds.add(key);
+    }
+  }
+
+  const selected = uncommitted
+    ? [uncommitted, ...recentCommitted.slice(0, 2)]
+    : recentCommitted;
 
   const finalOrdered: PRHistoryEntry[] = [];
-  if (uncommittedOnly) {
-    finalOrdered.push(uncommittedOnly);
+  if (uncommitted) {
+    finalOrdered.push(uncommitted);
   }
-  finalOrdered.push(...sortedCommitted);
+  finalOrdered.push(...selected.filter((entry) => entry.id !== 'uncommitted'));
 
   const lines: string[] = ['## 📝 Implementation Memory'];
 

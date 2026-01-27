@@ -31,11 +31,9 @@ gantt
 - User edits never overwrite frozen AI enrichment.
 
 ## 📝 Implementation Memory
-- 2026-01-27 – Roadmap update – Phase 2 refinements
-    Added cheap timezone strategy (offline IANA lookup + trip fallback), compound filter support, and scheduling integrity notes (single source of truth, conflict reconciliation, audit fields).
 - 2026-01-27 – 🚧 CURRENT SESSION – Implement places_view + viewport persistence
     Added places_view migration with computed lat/lng, updated MapContainer to read from the view, regenerated types, and implemented fitBounds/load persistence + approval flyTo behavior.
-- 2026-01-25 – Initiated README
-    Added initial README content.
-- 2026-01-25 – Initial commit
-    Created repository with baseline files.
+- 2026-01-27 – chore: refine phase 2 planning + timezone strategy
+    Auto-generated from git log (c0e7c86).
+- 2026-01-27 – clean up extensions and supabase docs
+    Auto-generated from git log (f5bef29).
