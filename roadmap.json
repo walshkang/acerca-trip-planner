@@ -24,9 +24,9 @@
     },
     {
       "id": "uncommitted",
-      "date": "2026-01-26",
-      "title": "Move normalization server-only and fix ESLint config",
-      "summary": "Relocated enrichment normalization to lib/server, clarified admin Supabase usage as server-only, and wired ESLint parser/plugin to resolve TypeScript rules."
+      "date": "2026-01-27",
+      "title": "Add Phase 0-4 execution plan to roadmap",
+      "summary": "Captured the Phase 0-4 plan (places_view, map viewport logic, search/preview split, preview UX, lists persistence) in the roadmap and synced related docs."
     },
     {
       "id": "816f4b8",
@@ -71,7 +71,7 @@
       "goal": "A deterministic, map-based database of approved places. Eliminates messy lists and taxonomy drift.",
       "estimated_timeline": "MVP (Weeks 1-4)",
       "status": "in_progress",
-      "progress_summary": "Map-first MVP loop working end-to-end: auth-gated UI, Omnibox ingestion (URL/place_id/name → place_candidates), immediate Enriched Preview on a Ghost Pin, and one-click Approve to promote into canonical places. Enrichment is frozen at ingestion; promotion is a state transition only. Remaining: generate full Supabase types from a live DB connection (db:types script is wired; Docker/DB required). Phase 2 cannot start until generated types are wired into the app.",
+      "progress_summary": "Map-first MVP loop working end-to-end: auth-gated UI, Omnibox ingestion (URL/place_id/name → place_candidates), immediate Enriched Preview on a Ghost Pin, and one-click Approve to promote into canonical places. Enrichment is frozen at ingestion; promotion is a state transition only. Remaining: generate full Supabase types from a live DB connection (db:types script is wired; Docker/DB required), then execute the Phase 0-4 hardening plan (places_view + map serialization, viewport persistence, lightweight search list -> preview ingest, preview-only Inspector, and list persistence). Phase 2 cannot start until generated types are wired into the app and the Phase 0-4 plan is complete.",
       "epics": [
         {
           "id": "P1-E1",
@@ -102,7 +102,7 @@
             {
               "id": "1.4",
               "task": "Generate Supabase DB Types.",
-              "details": "Generate TypeScript types from the live Postgres schema to avoid hand-maintained table/enum drift.",
+              "details": "Generate TypeScript types from the live Postgres schema (including views like places_view) to avoid hand-maintained table/enum drift.",
               "status": "in_progress",
               "notes": "Added a minimal fallback Database type and wired enums to derive from it. Added `npm run db:types` to generate from SUPABASE_DB_URL (or `supabase gen types --local` when a local Supabase stack is running)."
             }
@@ -199,6 +199,98 @@
               "details": "Preview card for Ghost Pins showing frozen enrichment. 'Approve Pin' triggers promotion RPC.",
               "status": "completed",
               "notes": "Promotion is a state transition only; no enrichment or AI calls are triggered."
+            }
+          ]
+        },
+        {
+          "id": "P1-E5",
+          "title": "Map View + Discovery Refinements (Phase 0-4 Plan)",
+          "description": "Harden map data integrity, viewport behavior, search/preview flow, and list persistence before planner work begins.",
+          "tech_stack": ["Supabase", "PostGIS", "Mapbox GL JS", "React", "Next.js"],
+          "tasks": [
+            {
+              "id": "5.1",
+              "task": "Add places_view to fix location serialization at the source.",
+              "details": "Create a migration for public.places_view selecting id, user_id, name, category, created_at, and computed lat/lng via ST_Y/ST_X. Set security_invoker=true so RLS applies.",
+              "status": "pending"
+            },
+            {
+              "id": "5.2",
+              "task": "Update MapContainer to read from places_view.",
+              "details": "Query places_view and map lat/lng directly (remove JSON parsing of geometry).",
+              "status": "pending"
+            },
+            {
+              "id": "5.3",
+              "task": "Regenerate Supabase types with places_view included.",
+              "details": "Run db:types generation so the view appears in types (see Task 1.4).",
+              "status": "pending"
+            },
+            {
+              "id": "5.4",
+              "task": "Fit bounds on load when places exist.",
+              "details": "If places.length > 0, compute bounds to include all pins and fit map view on load.",
+              "status": "pending"
+            },
+            {
+              "id": "5.5",
+              "task": "Persist and restore viewport when there are zero places.",
+              "details": "Use last saved view from localStorage; otherwise fall back to a neutral global default.",
+              "status": "pending"
+            },
+            {
+              "id": "5.6",
+              "task": "Fly to approved places or refit bounds after approval.",
+              "details": "After approval, flyTo the new place or refit bounds depending on context.",
+              "status": "pending"
+            },
+            {
+              "id": "5.7",
+              "task": "Add /api/places/search for lightweight results.",
+              "details": "Return top-X candidates with minimal fields for quick listing.",
+              "status": "pending"
+            },
+            {
+              "id": "5.8",
+              "task": "Expand discovery store for search + preview.",
+              "details": "Add results[], selectedResultId, previewCandidate, and previewEnrichment to the store.",
+              "status": "pending"
+            },
+            {
+              "id": "5.9",
+              "task": "Wire Omnibox results to preview ingest.",
+              "details": "Render results list in the Omnibox; selecting a result triggers /api/places/ingest for preview.",
+              "status": "pending"
+            },
+            {
+              "id": "5.10",
+              "task": "Gate InspectorCard on preview state.",
+              "details": "Only render the InspectorCard when a preview candidate/enrichment exists.",
+              "status": "pending"
+            },
+            {
+              "id": "5.11",
+              "task": "Rename Add to Plan to Approve Pin until lists exist.",
+              "details": "Update UI copy so approval remains explicit prior to list support.",
+              "status": "pending"
+            },
+            {
+              "id": "5.12",
+              "task": "Add lists + list_items schema and RLS.",
+              "details": "Create list tables, relationships, and RLS policies for multi-tenant list persistence.",
+              "status": "pending"
+            },
+            {
+              "id": "5.13",
+              "task": "Add list UI for create/delete/assign.",
+              "details": "Build list management UI and allow assigning places to lists.",
+              "status": "pending"
+            },
+            {
+              "id": "5.14",
+              "task": "Assign lists on approval and show membership.",
+              "details": "Update approval flow to assign to a list and show list membership in the place detail view.",
+              "status": "pending"
             }
           ]
         }

@@ -81,14 +81,26 @@
    - Google Places API key
    - OpenAI/Gemini API key
 
-⚠️ **Implementation TODOs** (Future Work)
-- Implement actual LLM enrichment normalization (see `lib/server/enrichment/normalize.ts`)
-- Implement Google Places API integration (see `lib/places/google-places.ts`)
-- Implement Wikipedia/Wikidata fetching (see `lib/enrichment/sources.ts`)
-- Fix geohash7 computation in promotion logic (currently placeholder)
-- Add place detail view component
-- Add place list component
-- Implement Phase 2 features (itinerary planning, drag-and-drop)
+⚠️ **Implementation TODOs (Phase 0-4 Execution Plan)**
+- Phase 0 - Fix location serialization at the source (View)
+  - Add a migration to create public.places_view (id, user_id, name, category, created_at, lat via ST_Y, lng via ST_X, security_invoker=true).
+  - Update MapContainer.tsx to query places_view and map lat/lng directly.
+  - Regenerate Supabase types so places_view shows up in the types.
+- Phase 1 - Viewport logic
+  - On load, if places.length > 0, fitBounds to all pins.
+  - If zero places, use last saved view (localStorage); otherwise fall back to a neutral global view.
+  - After approval, flyTo the new place (or refit bounds).
+- Phase 2 - Search architecture (cheap list -> heavy preview)
+  - Add /api/places/search for top-X lightweight results.
+  - Update discovery store: results[], selectedResultId, previewCandidate + previewEnrichment.
+  - Omnibox renders results list; selecting a result triggers /api/places/ingest for preview.
+- Phase 3 - Preview + approval UX
+  - InspectorCard renders only when preview exists.
+  - Rename "Add to Plan" -> "Approve Pin" until lists exist.
+- Phase 4 - Lists/Plan persistence
+  - Add lists + list_items schema + RLS.
+  - Add list UI (create/delete/assign).
+  - Update approval flow to assign to a list and show list membership in details.
 
 ## Key Files Created
 

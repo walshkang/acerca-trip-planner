@@ -105,6 +105,14 @@ A visual, structured database of saved places.
   * Interactive map
   * Place detail cards with factual context (Wikipedia summaries, photos)
 
+**Current Execution Plan (Phase 0-4)**
+
+* Phase 0 - Fix location serialization at the source (places_view + types)
+* Phase 1 - Viewport logic (fitBounds + last view fallback)
+* Phase 2 - Search architecture (cheap list -> heavy preview)
+* Phase 3 - Preview + approval UX (preview-only Inspector, "Approve Pin")
+* Phase 4 - Lists/plan persistence (lists schema + list UI)
+
 ---
 
 ### Phase 2: The Interactive Planner 🎂

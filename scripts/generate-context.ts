@@ -176,7 +176,9 @@ function buildGanttSection(roadmap: RoadmapData): string {
   lines.push('```mermaid');
   lines.push('gantt');
   lines.push('  dateFormat YYYY-MM-DD');
-  lines.push(`  title ${roadmap.project_name ?? 'Project Roadmap'}`);
+  const projectTitle = roadmap.project_name ?? 'Project Roadmap';
+  const quotedTitle = projectTitle.includes(' ') ? `"${projectTitle}"` : projectTitle;
+  lines.push(`  title ${quotedTitle}`);
 
   let lastEpicTaskId: string | null = null;
   const dummyStartDate = '2026-01-01';
@@ -189,6 +191,9 @@ function buildGanttSection(roadmap: RoadmapData): string {
       const epicStatus = computeEpicStatus(epic);
       const taskId = normalizeEpicIdToTaskId(epic.id);
       const label = `${epic.id} ${epic.title}`;
+      
+      // Quote label if it contains special characters (parentheses, commas, etc.)
+      const quotedLabel = /[(),]/.test(label) ? `"${label}"` : label;
 
       const statusKeyword: string | null =
         epicStatus === 'pending' ? null : epicStatus === 'done' ? 'done' : 'active';
@@ -202,7 +207,7 @@ function buildGanttSection(roadmap: RoadmapData): string {
       }
 
       const statusPart = statusKeyword ? `:${statusKeyword}` : '';
-      lines.push(`  ${taskId}${statusPart} ${label}, ${timeRef}, 7d`);
+      lines.push(`  ${taskId}${statusPart} ${quotedLabel}, ${timeRef}, 7d`);
 
       lastEpicTaskId = taskId;
     }
@@ -273,12 +278,20 @@ function buildImplementationMemorySection(roadmap: RoadmapData): string {
 }
 
 function upsertSection(content: string, header: string, section: string): string {
+  // Escape special regex characters but preserve emojis and unicode
   const escapedHeader = escapeRegExp(header);
-  const pattern = new RegExp(`(## ${escapedHeader})([\\s\\S]*?)(?=\\n## |$)`, 'm');
+  // Match from the header to the next ## header or end of file
+  // [\s\S] matches any character including newlines
+  // Lookahead (?=\n## |$) stops at next section header or end of string
+  const headerPattern = `## ${escapedHeader}`;
+  const pattern = new RegExp(`${headerPattern}[\\s\\S]*?(?=\\n## |$)`, 'm');
 
-  if (pattern.test(content)) {
-    // Replace the entire matched block (starting from the header) with the new section
-    return content.replace(pattern, section);
+  const match = content.match(pattern);
+  if (match) {
+    // Replace the matched section with the new one
+    // Ensure section ends properly
+    const normalizedSection = section.endsWith('\n') ? section : section + '\n';
+    return content.replace(pattern, normalizedSection);
   }
 
   // If no existing section, insert before any "## User Notes" section if present
