@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import Map, { Marker } from 'react-map-gl'
+import Map, { Marker } from 'react-map-gl/mapbox'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase/client'
