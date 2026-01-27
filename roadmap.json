@@ -1,232 +1,260 @@
 {
-    "project_name": "AI_Travel_Itinerary_Manager",
-    "version": "2.1.0-constitution-hardened",
-    "last_updated": "2026-01-27",
-    "development_principles": [
-      "LLMs label and translate intent; deterministic systems retrieve and compute.",
-      "Only approved pins are truth (Map is the interface).",
-      "Enrich Once, Read Forever (Frozen by default, versioned if refreshed).",
-      "Strict Taxonomy: AI outputs must match UI Icon sets exactly.",
-      "User edits never overwrite frozen AI enrichment."
-    ],
-    "pr_history": [
-      {
-        "id": "e4c4f71",
-        "date": "2026-01-27",
-        "title": "Discovery omnibox UX loop + curated Wikipedia/Wikidata enrichment",
-        "summary": "Implemented the map-first UX loop (Search → Preview → Commit): added a floating Omnibox, Ghost Pin state, and an Inspector preview card that shows frozen enrichment before commit. Added deterministic curated Wikipedia/Wikidata extraction (summary, thumbnail, stable fact pairs) stored on enrichments.curated_data, updated ingest to return preview enrichment immediately, and added minimal Supabase types + a db:types generation helper."
-      },
-      {
-        "id": "e1d391c",
-        "date": "2026-01-27",
-        "title": "End-to-end auth + ingestion + detail view (plus promotion/map fixes)",
-        "summary": "Added Supabase magic-link auth + gating, implemented deterministic ingestion (Google Places + optional Wikipedia/Wikidata) into place_candidates, added strict normalization (LLM temp=0 optional with deterministic fallback), built place detail view with user notes/tags, and fixed promotion RPC + map pin parsing for end-to-end flow."
-      },
-      {
-        "id": "uncommitted",
-        "date": "2026-01-26",
-        "title": "Move normalization server-only and fix ESLint config",
-        "summary": "Relocated enrichment normalization to lib/server, clarified admin Supabase usage as server-only, and wired ESLint parser/plugin to resolve TypeScript rules."
-      },
-      {
-        "id": "816f4b8",
-        "date": "2026-01-26",
-        "title": "Add JSON validation script and refresh roadmap progress",
-        "summary": "Added a JSON validation script in package.json and updated roadmap progress notes."
-      },
-      {
-        "id": "a692544",
-        "date": "2026-01-26",
-        "title": "Update roadmap status and progress",
-        "summary": "Refined roadmap statuses, progress summaries, and last_updated date."
-      },
-      {
-        "id": "b8dde4d",
-        "date": "2026-01-26",
-        "title": "Refactor promotion logic and canonicalization",
-        "summary": "Moved promotion to a Postgres RPC and improved canonicalization for consistent JSON handling."
-      },
-      {
-        "id": "9de8adc",
-        "date": "2026-01-25",
-        "title": "Initiated project",
-        "summary": "Project scaffold and initial structure."
-      },
-      {
-        "id": "4f42699",
-        "date": "2026-01-25",
-        "title": "Initiated README",
-        "summary": "Added initial README content."
-      },
-      {
-        "id": "ef8b1ce",
-        "date": "2026-01-25",
-        "title": "Initial commit",
-        "summary": "Created repository with baseline files."
-      }
-    ],
-    "roadmap": {
-      "phase_1": {
-        "name": "The Smart Repository (Cupcake)",
-        "goal": "A deterministic, map-based database of approved places. Eliminates messy lists and taxonomy drift.",
-        "estimated_timeline": "MVP (Weeks 1-4)",
-        "status": "in_progress",
-        "progress_summary": "Map-first MVP loop working end-to-end: auth-gated UI, Omnibox search (URL/place_id/name → place_candidates), immediate Enriched Preview (frozen tags + curated Wikipedia summary/thumbnail/facts) on a Ghost Pin, and one-click Commit via promotion to canonical places. Remaining: generate full Supabase types from a live DB connection (db:types script is wired; Docker/DB required).",
-        "epics": [
-          {
-            "id": "P1-E1",
-            "title": "Strict Schema, Versioning & Deduplication",
-            "description": "Enforce data integrity and enrichment immutability before the first pin is dropped.",
-            "tech_stack": ["Supabase", "PostgreSQL", "PostGIS"],
-            "tasks": [
-              {
-                "id": "1.1",
-                "task": "Create strict Enums and versioned enrichment schema.",
-                "details": "Category Enum: ['Food', 'Coffee', 'Sights', 'Shop', 'Activity']. Energy Enum: ['Low', 'Medium', 'High']. Add fields: enrichment_version, enriched_at, enrichment_source_hash.",
-                "status": "completed"
-              },
-              {
-                "id": "1.2",
-                "task": "Implement Deduplication Guard.",
-                "details": "Constraint: UNIQUE(user_id, google_place_id). Re-adding a place opens edit view; enrichment is not re-run.",
-                "status": "completed",
-                "notes": "Implemented dual deduplication: UNIQUE(user_id, source, source_id) + UNIQUE(user_id, dedupe_key). Transactional promotion RPC (promote_place_candidate) handles conflicts race-safely with ON CONFLICT. geohash7 and dedupe_key computed in DB to match table columns exactly."
-              },
-              {
-                "id": "1.3",
-                "task": "Persist Deterministic Source Data.",
-                "details": "Store raw opening_hours JSON from Google Places and source metadata for future deterministic filtering.",
-                "status": "completed",
-                "notes": "place_candidates.raw_payload stores complete Google Places API response. places.opening_hours stores extracted opening_hours JSON."
-              },
-              {
-                "id": "1.4",
-                "task": "Generate Supabase DB Types.",
-                "details": "Generate TypeScript types from the live Postgres schema to avoid hand-maintained table/enum drift.",
-                "status": "in_progress",
-                "notes": "Added a minimal fallback Database type and wired enums to derive from it. Added `npm run db:types` to generate from SUPABASE_DB_URL (or `supabase gen types --local` when a local Supabase stack is running)."
-              }
-            ]
-          },
-          {
-            "id": "P1-E2",
-            "title": "The Librarian Agent (Deterministic Ingestion)",
-            "description": "Multi-source enrichment that is frozen, auditable, and schema-aligned.",
-            "tech_stack": ["Edge Functions", "Google Places API", "Wikipedia API", "Wikidata API"],
-            "tasks": [
-              {
-                "id": "2.1",
-                "task": "Resolve Place Deterministically.",
-                "details": "Resolve via Google Places. Fetch nearby Wikipedia pages via GeoSearch. Select best match by distance + name similarity.",
-                "status": "completed",
-                "notes": "Implemented Google Places Details + FindPlaceFromText, Wikipedia GeoSearch, and deterministic match selection. Added /api/places/ingest endpoint to create place_candidates from Google Maps URL, place_id, or name."
-              },
-              {
-                "id": "2.2",
-                "task": "Fetch Structured Context.",
-                "details": "Pull summary, thumbnail, and structured facts via Wikidata when available. Store raw extracts.",
-                "status": "completed",
-                "notes": "Implemented deterministic curated extraction for UI: Wikipedia summary + thumbnail (w/api.php extracts|pageimages), Wikipedia title selection via GeoSearch, Wikidata QID resolution (pageprops.wikibase_item), and a minimal stable fact-pair mapping (Founded P571, Architect P84, Elevation P2044, Website P856). Stored frozen curated output on enrichments.curated_data and returned it immediately from /api/places/ingest for preview."
-              },
-              {
-                "id": "2.3",
-                "task": "Schema-Constrained AI Normalization.",
-                "details": "LLM normalizes fetched data into enums and tags only. Prompt includes full enum list. Output must validate or be rejected.",
-                "status": "completed",
-                "notes": "Normalization implemented with strict runtime validation + temperature=0 when OPENAI_API_KEY is configured, and a deterministic fallback mapping when not. Invalid outputs are rejected; model + prompt_version are stored for auditability."
-              },
-              {
-                "id": "2.4",
-                "task": "Freeze Enrichment.",
-                "details": "Write enrichment once, mark as frozen. No AI calls during browsing, filtering, or planning.",
-                "status": "completed",
-                "notes": "enrichments table with UNIQUE(source_hash, schema_version) enforces idempotency. place_candidates.enrichment_id links to frozen enrichments. Promotion RPC never triggers re-enrichment. Fixed: canonicalizeSnapshot() now properly recursive (preserves all nested keys). Fixed: Promotion moved to Postgres RPC for true transactional safety."
-              }
-            ]
-          },
-          {
-            "id": "P1-E3",
-            "title": "Aligned Visual Interface",
-            "description": "UI that mirrors database truth exactly.",
-            "tech_stack": ["Mapbox GL JS", "React"],
-            "tasks": [
-              {
-                "id": "3.1",
-                "task": "Create Canonical Icon Mapping.",
-                "details": "Map strict DB categories to SVG assets. Any unmapped enum is a build-time error.",
-                "status": "completed",
-                "notes": "Icon mapping with build-time exhaustiveness check. SVG icons created for all categories. Test scaffolding validates enum coverage."
-              },
-              {
-                "id": "3.2",
-                "task": "Build Place Detail View.",
-                "details": "Display frozen AI tags and factual summaries. Allow user-added notes and user tags stored separately.",
-                "status": "completed",
-                "notes": "Added /places/[id] route showing frozen enrichment + editable user_notes/user_tags (stored on places). Wired marker click → detail view, and added PATCH API for user meta updates."
-              },
-              {
-                "id": "3.3",
-                "task": "UX Loop: Search → Preview → Commit.",
-                "details": "Single Omnibox on the map. Ghost Pin + Inspector preview shows frozen enrichment immediately. Commit promotes candidate into canonical places.",
-                "status": "completed",
-                "notes": "Added map Omnibox + Ghost state store + Inspector preview card. /api/places/ingest now returns candidate + location + frozen enrichment for immediate preview. 'Add to Plan' calls /api/places/promote and refreshes canonical pins."
-              }
-            ]
-          }
-        ]
-      },
-      "phase_2": {
-        "name": "The Interactive Planner (Birthday Cake)",
-        "goal": "Stateful itinerary planning using deterministic logic only.",
-        "epics": [
-          {
-            "id": "P2-E1",
-            "title": "Stateful Planning (Kanban)",
-            "features": [
-              "Trip State Machine: Backlog -> Scheduled -> Done.",
-              "Drag-and-Drop between day buckets updates scheduling fields only.",
-              "Scheduling actions never trigger enrichment or AI calls.",
-              "Visual distinction for scheduled vs unscheduled pins."
-            ]
-          },
-          {
-            "id": "P2-E2",
-            "title": "Deterministic Filtering & Intent Translation",
-            "features": [
-              "Intent Extraction Agent outputs filter JSON only (never SQL).",
-              "Example: 'Quiet places' -> { \"energy\": \"Low\" }.",
-              "Filtering executed entirely via DB queries.",
-              "Open Now filtering uses server time vs stored opening_hours JSON."
-            ]
-          }
-        ]
-      },
-      "phase_3": {
-        "name": "The Intelligent Concierge (Wedding Cake)",
-        "goal": "Optimization and discovery without compromising trust.",
-        "epics": [
-          {
-            "id": "P3-E1",
-            "title": "Deterministic Routing",
-            "features": [
-              "Route Optimization via OSRM or Google Routes API.",
-              "Travel-time badges rendered between scheduled items.",
-              "LLMs are not involved in routing or timing."
-            ]
-          },
-          {
-            "id": "P3-E2",
-            "title": "Gated Discovery (Staging Area)",
-            "features": [
-              "Discovery uses deterministic search + filters first.",
-              "Optional AI summarization of discovered items (no sourcing).",
-              "Results appear as Ghost Pins (non-truth state).",
-              "User approval triggers full enrichment and moves item to Backlog.",
-              "Rejected items are discarded and never stored."
-            ]
-          }
-        ]
-      }
+  "project_name": "AI_Travel_Itinerary_Manager",
+  "version": "2.1.0-constitution-hardened",
+  "last_updated": "2026-01-27",
+  "development_principles": [
+    "LLMs label and translate intent; deterministic systems retrieve and compute.",
+    "Only approved pins are truth (Map is the interface).",
+    "Enrich Once, Read Forever (Frozen by default, versioned if refreshed).",
+    "Strict Taxonomy: AI outputs must match UI Icon sets exactly.",
+    "User edits never overwrite frozen AI enrichment."
+  ],
+  "pr_history": [
+    {
+      "id": "e4c4f71",
+      "date": "2026-01-27",
+      "title": "Discovery omnibox UX loop + curated Wikipedia/Wikidata enrichment",
+      "summary": "Implemented the map-first UX loop (Search → Preview → Approve): added a floating Omnibox, Ghost Pin state, and an Inspector preview card that shows frozen enrichment before approval. Added deterministic curated Wikipedia/Wikidata extraction (summary, thumbnail, stable fact pairs) stored on enrichments.curated_data, updated ingest to return preview enrichment immediately, and added minimal Supabase types + a db:types generation helper."
+    },
+    {
+      "id": "e1d391c",
+      "date": "2026-01-27",
+      "title": "End-to-end auth + ingestion + detail view (plus promotion/map fixes)",
+      "summary": "Added Supabase magic-link auth + gating, implemented deterministic ingestion (Google Places + optional Wikipedia/Wikidata) into place_candidates, added strict normalization (LLM temp=0 optional with deterministic fallback), built place detail view with user notes/tags, and fixed promotion RPC + map pin parsing for end-to-end flow."
+    },
+    {
+      "id": "uncommitted",
+      "date": "2026-01-26",
+      "title": "Move normalization server-only and fix ESLint config",
+      "summary": "Relocated enrichment normalization to lib/server, clarified admin Supabase usage as server-only, and wired ESLint parser/plugin to resolve TypeScript rules."
+    },
+    {
+      "id": "816f4b8",
+      "date": "2026-01-26",
+      "title": "Add JSON validation script and refresh roadmap progress",
+      "summary": "Added a JSON validation script in package.json and updated roadmap progress notes."
+    },
+    {
+      "id": "a692544",
+      "date": "2026-01-26",
+      "title": "Update roadmap status and progress",
+      "summary": "Refined roadmap statuses, progress summaries, and last_updated date."
+    },
+    {
+      "id": "b8dde4d",
+      "date": "2026-01-26",
+      "title": "Refactor promotion logic and canonicalization",
+      "summary": "Moved promotion to a Postgres RPC and improved canonicalization for consistent JSON handling."
+    },
+    {
+      "id": "9de8adc",
+      "date": "2026-01-25",
+      "title": "Initiated project",
+      "summary": "Project scaffold and initial structure."
+    },
+    {
+      "id": "4f42699",
+      "date": "2026-01-25",
+      "title": "Initiated README",
+      "summary": "Added initial README content."
+    },
+    {
+      "id": "ef8b1ce",
+      "date": "2026-01-25",
+      "title": "Initial commit",
+      "summary": "Created repository with baseline files."
+    }
+  ],
+  "roadmap": {
+    "phase_1": {
+      "name": "The Smart Repository (Cupcake)",
+      "goal": "A deterministic, map-based database of approved places. Eliminates messy lists and taxonomy drift.",
+      "estimated_timeline": "MVP (Weeks 1-4)",
+      "status": "in_progress",
+      "progress_summary": "Map-first MVP loop working end-to-end: auth-gated UI, Omnibox ingestion (URL/place_id/name → place_candidates), immediate Enriched Preview on a Ghost Pin, and one-click Approve to promote into canonical places. Enrichment is frozen at ingestion; promotion is a state transition only. Remaining: generate full Supabase types from a live DB connection (db:types script is wired; Docker/DB required).",
+      "epics": [
+        {
+          "id": "P1-E1",
+          "title": "Strict Schema, Versioning & Deduplication",
+          "description": "Enforce data integrity and enrichment immutability before the first pin is dropped.",
+          "tech_stack": ["Supabase", "PostgreSQL", "PostGIS"],
+          "tasks": [
+            {
+              "id": "1.1",
+              "task": "Create strict Enums and versioned enrichment schema.",
+              "details": "Category Enum: ['Food', 'Coffee', 'Sights', 'Shop', 'Activity']. Energy Enum: ['Low', 'Medium', 'High']. Add fields: enrichment_version, enriched_at, enrichment_source_hash.",
+              "status": "completed"
+            },
+            {
+              "id": "1.2",
+              "task": "Implement Deduplication Guard.",
+              "details": "Constraint: UNIQUE(user_id, google_place_id). Re-adding a place opens edit view; enrichment is not re-run.",
+              "status": "completed",
+              "notes": "Implemented dual deduplication: UNIQUE(user_id, source, source_id) + UNIQUE(user_id, dedupe_key). Transactional promotion RPC (promote_place_candidate) handles conflicts race-safely with ON CONFLICT. geohash7 and dedupe_key computed in DB to match table columns exactly."
+            },
+            {
+              "id": "1.3",
+              "task": "Persist Deterministic Source Data.",
+              "details": "Store raw opening_hours JSON from Google Places and source metadata for future deterministic filtering.",
+              "status": "completed",
+              "notes": "place_candidates.raw_payload stores complete Google Places API response. places.opening_hours stores extracted opening_hours JSON."
+            },
+            {
+              "id": "1.4",
+              "task": "Generate Supabase DB Types.",
+              "details": "Generate TypeScript types from the live Postgres schema to avoid hand-maintained table/enum drift.",
+              "status": "in_progress",
+              "notes": "Added a minimal fallback Database type and wired enums to derive from it. Added `npm run db:types` to generate from SUPABASE_DB_URL (or `supabase gen types --local` when a local Supabase stack is running)."
+            }
+          ]
+        },
+        {
+          "id": "P1-E2",
+          "title": "The Librarian Agent (Deterministic Ingestion)",
+          "description": "Multi-source enrichment that is frozen, auditable, and schema-aligned.",
+          "tech_stack": ["Edge Functions", "Google Places API", "Wikipedia API", "Wikidata API"],
+          "tasks": [
+            {
+              "id": "2.1",
+              "task": "Resolve Place Deterministically.",
+              "details": "Resolve via Google Places. Fetch nearby Wikipedia pages via GeoSearch. Select best match by distance + name similarity.",
+              "status": "completed",
+              "notes": "Implemented Google Places Details + FindPlaceFromText, Wikipedia GeoSearch, and deterministic match selection. Added /api/places/ingest endpoint to create place_candidates from Google Maps URL, place_id, or name."
+            },
+            {
+              "id": "2.2",
+              "task": "Fetch Structured Context.",
+              "details": "Pull summary, thumbnail, and structured facts via Wikidata when available. Store raw extracts.",
+              "status": "completed",
+              "notes": "Implemented deterministic curated extraction for UI: Wikipedia summary + thumbnail (w/api.php extracts|pageimages), Wikipedia title selection via GeoSearch, Wikidata QID resolution (pageprops.wikibase_item), and a minimal stable fact-pair mapping (Founded P571, Architect P84, Elevation P2044, Website P856). Stored frozen curated output on enrichments.curated_data and returned it immediately from /api/places/ingest for preview."
+            },
+            {
+              "id": "2.3",
+              "task": "Schema-Constrained AI Normalization.",
+              "details": "LLM normalizes fetched data into enums and tags only. Prompt includes full enum list. Output must validate or be rejected.",
+              "status": "completed",
+              "notes": "Normalization implemented with strict runtime validation + temperature=0 when OPENAI_API_KEY is configured, and a deterministic fallback mapping when not. Invalid outputs are rejected; model + prompt_version are stored for auditability."
+            },
+            {
+              "id": "2.4",
+              "task": "Freeze Enrichment.",
+              "details": "Write enrichment once, mark as frozen. No AI calls during browsing, filtering, or planning.",
+              "status": "completed",
+              "notes": "enrichments table with UNIQUE(source_hash, schema_version) enforces idempotency. place_candidates.enrichment_id links to frozen enrichments. Promotion RPC never triggers re-enrichment. Fixed: canonicalizeSnapshot() now properly recursive (preserves all nested keys). Fixed: Promotion moved to Postgres RPC for true transactional safety."
+            }
+          ]
+        },
+        {
+          "id": "P1-E3",
+          "title": "Aligned Visual Interface",
+          "description": "UI that mirrors database truth exactly.",
+          "tech_stack": ["Mapbox GL JS", "React"],
+          "tasks": [
+            {
+              "id": "3.1",
+              "task": "Create Canonical Icon Mapping.",
+              "details": "Map strict DB categories to SVG assets. Any unmapped enum is a build-time error.",
+              "status": "completed",
+              "notes": "Icon mapping with build-time exhaustiveness check. SVG icons created for all categories. Test scaffolding validates enum coverage."
+            },
+            {
+              "id": "3.2",
+              "task": "Build Place Detail View.",
+              "details": "Display frozen AI tags and factual summaries. Allow user-added notes and user tags stored separately.",
+              "status": "completed",
+              "notes": "Added /places/[id] route showing frozen enrichment + editable user_notes/user_tags (stored on places). Wired marker click → detail view, and added PATCH API for user meta updates."
+            }
+          ]
+        },
+        {
+          "id": "P1-E4",
+          "title": "The Airlock (Visual Ingestion)",
+          "description": "A visual staging layer for items you already found. Enrichment happens at ingestion and is frozen on Ghosts; approval only promotes to canonical truth.",
+          "tech_stack": ["Zustand", "Mapbox GL JS", "React"],
+          "tasks": [
+            {
+              "id": "4.1",
+              "task": "Discovery State Store",
+              "details": "Zustand store for managing `ghosts` (candidates) and `selectedGhostId`.",
+              "status": "completed",
+              "notes": "Ghosts are staged candidates with frozen enrichment from ingestion; selection drives Inspector preview."
+            },
+            {
+              "id": "4.2",
+              "task": "The Omnibox",
+              "details": "Floating input accepting URL/text. Calls /ingest. Updates store (does not auto-promote).",
+              "status": "completed",
+              "notes": "Ingest returns candidate + frozen enrichment for immediate preview."
+            },
+            {
+              "id": "4.3",
+              "task": "Ghost Pin Rendering",
+              "details": "Map layer for 'ghosts' (grey/hollow pins). Z-index > Map, < Real Pins.",
+              "status": "completed",
+              "notes": "Ghost pins are intentionally visually distinct from canonical pins."
+            },
+            {
+              "id": "4.4",
+              "task": "Inspector Card & Approve",
+              "details": "Preview card for Ghost Pins showing frozen enrichment. 'Approve Pin' triggers promotion RPC.",
+              "status": "completed",
+              "notes": "Promotion is a state transition only; no enrichment or AI calls are triggered."
+            }
+          ]
+        }
+      ]
+    },
+    "phase_2": {
+      "name": "The Interactive Planner (Birthday Cake)",
+      "goal": "Stateful itinerary planning using deterministic logic only.",
+      "epics": [
+        {
+          "id": "P2-E1",
+          "title": "Stateful Planning (Kanban)",
+          "features": [
+            "Trip State Machine: Backlog -> Scheduled -> Done.",
+            "Drag-and-Drop between day buckets updates scheduling fields only.",
+            "Scheduling actions never trigger enrichment or AI calls.",
+            "Visual distinction for scheduled vs unscheduled pins."
+          ]
+        },
+        {
+          "id": "P2-E2",
+          "title": "Deterministic Filtering & Intent Translation",
+          "features": [
+            "Intent Extraction Agent outputs filter JSON only (never SQL).",
+            "Example: 'Quiet places' -> { \"energy\": \"Low\" }.",
+            "Filtering executed entirely via DB queries.",
+            "Open Now filtering uses server time vs stored opening_hours JSON."
+          ]
+        }
+      ]
+    },
+    "phase_3": {
+      "name": "The Intelligent Concierge (Wedding Cake)",
+      "goal": "Optimization and discovery without compromising trust.",
+      "epics": [
+        {
+          "id": "P3-E1",
+          "title": "Deterministic Routing",
+          "features": [
+            "Route Optimization via OSRM or Google Routes API.",
+            "Travel-time badges rendered between scheduled items.",
+            "LLMs are not involved in routing or timing."
+          ]
+        },
+        {
+          "id": "P3-E2",
+          "title": "AI Discovery (Suggestion Layer)",
+          "features": [
+            "Discovery uses deterministic search + filters first.",
+            "Optional AI summarization of discovered items (no sourcing).",
+            "Results are ingested through the Airlock pipeline and appear as Ghost Pins.",
+            "Approval promotes to canonical truth; no re-enrichment on approval.",
+            "Rejected items are discarded and never stored."
+          ]
+        }
+      ]
     }
   }
-  
+}
