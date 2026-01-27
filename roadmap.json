@@ -71,7 +71,7 @@
       "goal": "A deterministic, map-based database of approved places. Eliminates messy lists and taxonomy drift.",
       "estimated_timeline": "MVP (Weeks 1-4)",
       "status": "in_progress",
-      "progress_summary": "Map-first MVP loop working end-to-end: auth-gated UI, Omnibox ingestion (URL/place_id/name → place_candidates), immediate Enriched Preview on a Ghost Pin, and one-click Approve to promote into canonical places. Enrichment is frozen at ingestion; promotion is a state transition only. Remaining: generate full Supabase types from a live DB connection (db:types script is wired; Docker/DB required).",
+      "progress_summary": "Map-first MVP loop working end-to-end: auth-gated UI, Omnibox ingestion (URL/place_id/name → place_candidates), immediate Enriched Preview on a Ghost Pin, and one-click Approve to promote into canonical places. Enrichment is frozen at ingestion; promotion is a state transition only. Remaining: generate full Supabase types from a live DB connection (db:types script is wired; Docker/DB required). Phase 2 cannot start until generated types are wired into the app.",
       "epics": [
         {
           "id": "P1-E1",
@@ -82,7 +82,7 @@
             {
               "id": "1.1",
               "task": "Create strict Enums and versioned enrichment schema.",
-              "details": "Category Enum: ['Food', 'Coffee', 'Sights', 'Shop', 'Activity']. Energy Enum: ['Low', 'Medium', 'High']. Add fields: enrichment_version, enriched_at, enrichment_source_hash.",
+              "details": "Category Enum: ['Food', 'Coffee', 'Sights', 'Shop', 'Activity']. Energy Enum: ['Low', 'Medium', 'High']. Add fields: enrichment_version, enriched_at, enrichment_source_hash. Add curated_data JSONB for deterministic, non-LLM enrichment fields.",
               "status": "completed"
             },
             {
@@ -182,7 +182,7 @@
             {
               "id": "4.2",
               "task": "The Omnibox",
-              "details": "Floating input accepting URL/text. Calls /ingest. Updates store (does not auto-promote).",
+              "details": "Floating input accepting URL/text. Calls /ingest. Updates store (does not auto-promote). Exact-match should open canonical place detail instead of dropping a hidden ghost under a real pin.",
               "status": "completed",
               "notes": "Ingest returns candidate + frozen enrichment for immediate preview."
             },
