@@ -198,3 +198,12 @@ By grounding everything in a local dataset and using AI only where its output ca
 * fast
 * cost-efficient
 * and genuinely useful
+
+---
+
+## 🧪 Local Learning Hook (Do Not Commit)
+
+This repo may generate **learning plans/reports** as part of a local hook to improve personal coding understanding.
+
+- These files are **local-only** and **do not need to be committed**.
+- The hook is purely for personal learning and can be safely ignored for core development.
