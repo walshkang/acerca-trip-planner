@@ -1,12 +1,16 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import Map, { Marker } from 'react-map-gl/mapbox'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase/client'
 import { getCategoryIcon } from '@/lib/icons/mapping'
 import type { CategoryEnum } from '@/lib/types/enums'
+import Omnibox from '@/components/discovery/Omnibox'
+import GhostMarker from '@/components/discovery/GhostMarker'
+import InspectorCard from '@/components/discovery/InspectorCard'
+import { useDiscoveryStore } from '@/lib/state/useDiscoveryStore'
 
 interface Place {
   id: string
@@ -66,6 +70,8 @@ export default function MapContainer() {
   const [isAuthed, setIsAuthed] = useState(false)
   const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN
   const router = useRouter()
+  const ghostLocation = useDiscoveryStore((s) => s.ghostLocation)
+  const clearDiscovery = useDiscoveryStore((s) => s.clear)
 
   useEffect(() => {
     if (!mapboxToken) {
@@ -82,47 +88,58 @@ export default function MapContainer() {
       return user
     }
 
+    checkAuth().catch(() => null)
+  }, [mapboxToken])
+
+  const fetchPlaces = useCallback(async () => {
     // Fetch places from Supabase
     // Note: Only reads from places table (canonical layer), never place_candidates
-    async function fetchPlaces() {
-      try {
-        const user = await checkAuth()
-        if (!user) return
+    try {
+      setLoading(true)
 
-        const { data, error } = await supabase
-          .from('places')
-          .select('id, name, category, location')
-          .order('created_at', { ascending: false })
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      setIsAuthed(Boolean(user))
+      setAuthChecked(true)
+      if (!user) return
 
-        if (error) {
-          console.error('Error fetching places:', error)
-          return
-        }
+      const { data, error } = await supabase
+        .from('places')
+        .select('id, name, category, location')
+        .order('created_at', { ascending: false })
 
-        // Transform geography points to lat/lng
-        const transformedPlaces = ((data || []) as PlacesRow[])
-          .map((place) => {
-            const ll = extractLngLat(place.location)
-            if (!ll) return null
-            return {
-              id: place.id,
-              name: place.name,
-              category: place.category,
-              location: { lat: ll.lat, lng: ll.lng },
-            }
-          })
-          .filter(Boolean) as Place[]
-
-        setPlaces(transformedPlaces)
-      } catch (error) {
-        console.error('Error:', error)
-      } finally {
-        setLoading(false)
+      if (error) {
+        console.error('Error fetching places:', error)
+        return
       }
-    }
 
+      // Transform geography points to lat/lng
+      const transformedPlaces = ((data || []) as PlacesRow[])
+        .map((place) => {
+          const ll = extractLngLat(place.location)
+          if (!ll) return null
+          return {
+            id: place.id,
+            name: place.name,
+            category: place.category,
+            location: { lat: ll.lat, lng: ll.lng },
+          }
+        })
+        .filter(Boolean) as Place[]
+
+      setPlaces(transformedPlaces)
+    } catch (error) {
+      console.error('Error:', error)
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!mapboxToken) return
     fetchPlaces()
-  }, [mapboxToken])
+  }, [mapboxToken, fetchPlaces])
 
   if (!mapboxToken) {
     return (
@@ -157,7 +174,20 @@ export default function MapContainer() {
   }
 
   return (
-    <div className="w-full h-screen">
+    <div className="w-full h-screen relative">
+      <div className="absolute left-4 top-4 z-10 pointer-events-none">
+        <Omnibox />
+      </div>
+
+      <div className="absolute right-4 top-4 z-10 pointer-events-none">
+        <InspectorCard
+          onCommitted={(placeId) => {
+            fetchPlaces()
+            router.push(`/places/${placeId}`)
+          }}
+        />
+      </div>
+
       <Map
         mapboxAccessToken={mapboxToken}
         initialViewState={{
@@ -167,7 +197,15 @@ export default function MapContainer() {
         }}
         style={{ width: '100%', height: '100%' }}
         mapStyle="mapbox://styles/mapbox/streets-v12"
+        onClick={() => clearDiscovery()}
       >
+        {ghostLocation ? (
+          <GhostMarker
+            lng={ghostLocation.lng}
+            lat={ghostLocation.lat}
+          />
+        ) : null}
+
         {places.map((place) => (
           <Marker
             key={place.id}

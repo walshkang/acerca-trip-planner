@@ -6,7 +6,15 @@ import {
   fetchWikidataData,
   selectBestWikipediaMatch,
   findGooglePlaceIdFromText,
+  fetchWikipediaSummary,
+  fetchWikidataLabels,
 } from '@/lib/enrichment/sources'
+import { normalizeEnrichment } from '@/lib/server/enrichment/normalize'
+import { extractPrimaryWikidataFactPairs } from '@/lib/enrichment/curation'
+import {
+  WIKI_CURATED_VERSION,
+  assertValidWikiCuratedData,
+} from '@/lib/enrichment/wikiCurated'
 
 function parsePlaceIdFromGoogleMapsUrl(raw: string): string | null {
   try {
@@ -46,10 +54,14 @@ export async function POST(request: NextRequest) {
       input?: string
       place_id?: string
       include_wikipedia?: boolean
+      schema_version?: number
     }
 
     const input = body.input?.trim()
     const includeWikipedia = body.include_wikipedia !== false
+    const schemaVersion = Number.isFinite(body.schema_version)
+      ? Number(body.schema_version)
+      : 2
 
     let placeId = body.place_id?.trim() ?? null
     if (!placeId && input) {
@@ -119,7 +131,7 @@ export async function POST(request: NextRequest) {
         location: toGeographyPointWkt(lat, lng),
         status: 'new',
       })
-      .select('id, status, name, address, source, source_id, created_at')
+      .select('id, status, name, address, source, source_id, created_at, enrichment_id')
       .single()
 
     if (error || !candidate) {
@@ -129,9 +141,71 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Immediately enrich for preview (Search -> Preview -> Commit UX loop).
+    const wikipediaTitle =
+      typeof (wikipedia as any)?.bestMatch?.title === 'string'
+        ? (wikipedia as any).bestMatch.title
+        : null
+
+    const wikiSummary = wikipediaTitle
+      ? await fetchWikipediaSummary(wikipediaTitle)
+      : {
+          wikipediaTitle: null,
+          pageid: null,
+          summary: null,
+          thumbnail_url: null,
+          raw: null,
+        }
+
+    const prelim = extractPrimaryWikidataFactPairs({
+      entity: (wikidata as any)?.entity ?? null,
+      labelsByQid: {},
+    })
+    const labels =
+      prelim.referencedQids.length ? await fetchWikidataLabels(prelim.referencedQids) : {}
+    const facts = extractPrimaryWikidataFactPairs({
+      entity: (wikidata as any)?.entity ?? null,
+      labelsByQid: labels,
+    }).pairs
+
+    const wikipediaCurated = {
+      version: WIKI_CURATED_VERSION,
+      wikipedia_title: wikipediaTitle,
+      wikidata_qid: typeof (wikidata as any)?.qid === 'string' ? (wikidata as any).qid : null,
+      summary: wikiSummary.summary ?? null,
+      thumbnail_url: wikiSummary.thumbnail_url ?? null,
+      primary_fact_pairs: facts,
+    }
+    assertValidWikiCuratedData(wikipediaCurated)
+
+    const enrichment = await normalizeEnrichment({
+      rawSourceSnapshot: {
+        googlePlaces,
+        ...(wikipedia ? { wikipedia } : {}),
+        ...(wikidata ? { wikidata } : {}),
+        ...(wikiSummary?.raw ? { wikipediaSummary: wikiSummary } : {}),
+        wikipediaCurated,
+      },
+      schemaVersion,
+    })
+
+    await supabase
+      .from('place_candidates')
+      .update({ enrichment_id: enrichment.id, status: 'enriched' })
+      .eq('id', candidate.id)
+
     return NextResponse.json({
       candidate,
       google_place_id: googlePlaces.place_id,
+      location: { lat, lng },
+      enrichment: {
+        curatedData: enrichment.curatedData,
+        normalizedData: enrichment.normalizedData,
+        sourceHash: enrichment.sourceHash,
+        model: enrichment.model,
+        temperature: enrichment.temperature,
+        promptVersion: enrichment.promptVersion,
+      },
     })
   } catch (error: unknown) {
     return NextResponse.json(

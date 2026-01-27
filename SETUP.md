@@ -103,7 +103,21 @@ npm run test:ui
 
 1. Implement LLM enrichment normalization (see `lib/server/enrichment/normalize.ts`)
 2. Implement Google Places API integration (see `lib/places/google-places.ts`)
-3. Implement Wikipedia/Wikidata fetching (see `lib/enrichment/sources.ts`)
+3. Implement Wikipedia/Wikidata fetching + curation (see `lib/enrichment/sources.ts` and `lib/enrichment/curation.ts`)
 4. Add place detail view component
 5. Add place list component
 6. Implement drag-and-drop itinerary planning (Phase 2)
+
+## Wikipedia/Wikidata curated fields
+
+Enrichment stores a UI-safe curated object in `enrichments.curated_data` (and includes it in the `source_hash` snapshot for freezing/versioning).
+
+Shape (frozen):
+- `summary` / `thumbnail_url`: from Wikipedia `w/api.php` `extracts|pageimages` (`fetchWikipediaSummary`)
+- `wikipedia_title`: best match selected from GeoSearch (`selectBestWikipediaMatch`)
+- `wikidata_qid`: from Wikipedia pageprops `wikibase_item`
+- `primary_fact_pairs`: extracted from Wikidata EntityData with stable mapping (`extractPrimaryWikidataFactPairs`)
+  - `Founded`: `P571` (inception) → year
+  - `Architect`: `P84` → label (fallback to QID)
+  - `Elevation`: `P2044` → number + unit (meters when unit `Q11573`)
+  - `Website`: `P856` (official website)

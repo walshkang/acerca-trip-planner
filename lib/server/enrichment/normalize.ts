@@ -183,6 +183,7 @@ export async function normalizeEnrichment(
     // Return existing enrichment
     return {
       id: existing.id,
+      curatedData: existing.curated_data ?? null,
       normalizedData: existing.normalized_data,
       sourceHash: existing.source_hash,
       model: existing.model,
@@ -208,6 +209,8 @@ export async function normalizeEnrichment(
       schema_version: input.schemaVersion,
       normalized_data: normalizedData,
       raw_sources: input.rawSourceSnapshot,
+      curated_data:
+        (input.rawSourceSnapshot as any)?.wikipediaCurated ?? null,
       model,
       temperature: 0,
       prompt_version: promptVersion,
@@ -221,6 +224,7 @@ export async function normalizeEnrichment(
   
   return {
     id: enrichment.id,
+    curatedData: enrichment.curated_data ?? null,
     normalizedData: enrichment.normalized_data,
     sourceHash: enrichment.source_hash,
     model: enrichment.model,

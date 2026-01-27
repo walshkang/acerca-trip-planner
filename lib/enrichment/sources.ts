@@ -55,6 +55,18 @@ export interface WikidataEntityDataResponse {
   [key: string]: any
 }
 
+interface WikipediaSummaryResponseV2 {
+  batchcomplete?: boolean | string
+  query?: {
+    pages?: Array<{
+      pageid: number
+      title: string
+      extract?: string
+      thumbnail?: { source?: string; width?: number; height?: number }
+    }>
+  }
+}
+
 function normalizeTokens(s: string): string[] {
   return s
     .toLowerCase()
@@ -441,4 +453,92 @@ export async function fetchWikidataData(wikipediaTitle: string): Promise<{
     entity,
     raw: { wikipediaPageProps, wikidataEntity },
   }
+}
+
+/**
+ * Fetch a short, UI-safe Wikipedia summary + thumbnail for a title.
+ * Uses `w/api.php` to avoid REST variations and keep parameters explicit.
+ */
+export async function fetchWikipediaSummary(
+  wikipediaTitle: string,
+  opts?: { maxChars?: number; thumbSize?: number }
+): Promise<{
+  wikipediaTitle: string
+  pageid: number | null
+  summary: string | null
+  thumbnail_url: string | null
+  raw: WikipediaSummaryResponseV2 | null
+}> {
+  const maxChars = opts?.maxChars ?? 900
+  const thumbSize = opts?.thumbSize ?? 400
+
+  const u = new URL('https://en.wikipedia.org/w/api.php')
+  u.searchParams.set('action', 'query')
+  u.searchParams.set('prop', 'extracts|pageimages')
+  u.searchParams.set('exintro', '1')
+  u.searchParams.set('explaintext', '1')
+  u.searchParams.set('exchars', String(maxChars))
+  u.searchParams.set('piprop', 'thumbnail')
+  u.searchParams.set('pithumbsize', String(thumbSize))
+  u.searchParams.set('titles', wikipediaTitle)
+  u.searchParams.set('format', 'json')
+  u.searchParams.set('formatversion', '2')
+
+  const { data: raw } = await fetchJson<WikipediaSummaryResponseV2>(u.toString(), {
+    headers: { 'user-agent': WIKIPEDIA_USER_AGENT },
+  })
+
+  const page = raw.query?.pages?.[0] ?? null
+  const summary =
+    typeof page?.extract === 'string' && page.extract.trim()
+      ? page.extract.trim()
+      : null
+  const thumbnail_url =
+    typeof page?.thumbnail?.source === 'string' && page.thumbnail.source.trim()
+      ? page.thumbnail.source.trim()
+      : null
+
+  return {
+    wikipediaTitle,
+    pageid: typeof page?.pageid === 'number' ? page.pageid : null,
+    summary,
+    thumbnail_url,
+    raw,
+  }
+}
+
+/**
+ * Deterministically fetch English labels for a list of Wikidata QIDs.
+ */
+export async function fetchWikidataLabels(qids: string[]): Promise<Record<string, string>> {
+  const ids = Array.from(
+    new Set(
+      qids
+        .filter((q) => typeof q === 'string')
+        .map((q) => q.trim())
+        .filter((q) => /^Q[1-9]\d*$/.test(q))
+    )
+  ).sort()
+
+  if (!ids.length) return {}
+
+  const u = new URL('https://www.wikidata.org/w/api.php')
+  u.searchParams.set('action', 'wbgetentities')
+  u.searchParams.set('props', 'labels')
+  u.searchParams.set('languages', 'en')
+  u.searchParams.set('ids', ids.join('|'))
+  u.searchParams.set('format', 'json')
+  u.searchParams.set('formatversion', '2')
+
+  const { data } = await fetchJson<{ entities?: Record<string, any> }>(u.toString(), {
+    headers: { 'user-agent': WIKIPEDIA_USER_AGENT },
+  })
+
+  const out: Record<string, string> = {}
+  const entities = data?.entities ?? {}
+  for (const qid of Object.keys(entities)) {
+    const label = entities?.[qid]?.labels?.en?.value
+    if (typeof label === 'string' && label.trim()) out[qid] = label.trim()
+  }
+  return out
 }

@@ -6,12 +6,14 @@ export interface EnrichmentInput {
     googlePlaces: any;      // Raw Google Places API response
     wikipedia?: any;        // Wikipedia GeoSearch result
     wikidata?: any;         // Wikidata structured data
+    wikipediaCurated?: any; // UI-safe curated extraction (frozen)
   };
   schemaVersion: number;    // Enrichment schema version
 }
 
 export interface EnrichmentOutput {
   id: string;
+  curatedData: unknown | null; // UI-safe curated extraction (server-frozen)
   normalizedData: {
     category: string;      // CategoryEnum
     energy?: string;        // EnergyEnum

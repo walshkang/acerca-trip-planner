@@ -9,6 +9,7 @@
     "lint": "next lint",
     "test": "vitest",
     "test:ui": "vitest --ui",
+    "db:types": "bash scripts/gen-db-types.sh",
     "validate:json": "node -e \"JSON.parse(require('fs').readFileSync('roadmap.json','utf8')); console.log('✓ roadmap.json is valid JSON')\""
   },
   "dependencies": {

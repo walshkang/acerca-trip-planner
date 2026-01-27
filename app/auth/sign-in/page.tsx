@@ -1,10 +1,10 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { Suspense, useMemo, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase/client'
 
-export default function SignInPage() {
+function SignInInner() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const next = useMemo(() => searchParams.get('next') ?? '/', [searchParams])
@@ -104,3 +104,16 @@ export default function SignInPage() {
   )
 }
 
+export default function SignInPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="min-h-screen flex items-center justify-center p-6">
+          <p className="text-sm text-gray-600">Loading…</p>
+        </main>
+      }
+    >
+      <SignInInner />
+    </Suspense>
+  )
+}
