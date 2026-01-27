@@ -10,17 +10,17 @@ gantt
   dateFormat YYYY-MM-DD
   title AI_Travel_Itinerary_Manager
   section The_Smart_Repository_(Cupcake)
-  p1e1:active "P1-E1 Strict Schema, Versioning & Deduplication", 2026-01-01, 7d
-  p1e2:done "P1-E2 The Librarian Agent (Deterministic Ingestion)", after p1e1, 7d
-  p1e3:done P1-E3 Aligned Visual Interface, after p1e2, 7d
-  p1e4:done "P1-E4 The Airlock (Visual Ingestion)", after p1e3, 7d
-  p1e5 "P1-E5 Map View + Discovery Refinements (Phase 0-4 Plan)", after p1e4, 7d
+  "P1-E1 Strict Schema, Versioning & Deduplication" :active, p1e1, 2026-01-01, 7d
+  "P1-E2 The Librarian Agent (Deterministic Ingestion)" :done, p1e2, after p1e1, 7d
+  "P1-E3 Aligned Visual Interface" :done, p1e3, after p1e2, 7d
+  "P1-E4 The Airlock (Visual Ingestion)" :done, p1e4, after p1e3, 7d
+  "P1-E5 Map View + Discovery Refinements (Phase 0-4 Plan)" :p1e5, after p1e4, 7d
   section The_Interactive_Planner_(Birthday_Cake)
-  p2e1 "P2-E1 Stateful Planning (Kanban)", after p1e5, 7d
-  p2e2 P2-E2 Deterministic Filtering & Intent Translation, after p2e1, 7d
+  "P2-E1 Stateful Planning (Kanban)" :p2e1, after p1e5, 7d
+  "P2-E2 Deterministic Filtering & Intent Translation" :p2e2, after p2e1, 7d
   section The_Intelligent_Concierge_(Wedding_Cake)
-  p3e1 P3-E1 Deterministic Routing, after p2e2, 7d
-  p3e2 "P3-E2 AI Discovery (Suggestion Layer)", after p3e1, 7d
+  "P3-E1 Deterministic Routing" :p3e1, after p2e2, 7d
+  "P3-E2 AI Discovery (Suggestion Layer)" :p3e2, after p3e1, 7d
 ```
 
 ## 📜 The Constitution

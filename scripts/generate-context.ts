@@ -157,6 +157,11 @@ function normalizeEpicIdToTaskId(epicId: string): string {
   return epicId.toLowerCase().replace(/[^a-z0-9]+/g, '');
 }
 
+function quoteMermaidLabel(label: string): string {
+  const escaped = label.replace(/"/g, '\\"');
+  return `"${escaped}"`;
+}
+
 function buildGanttSection(roadmap: RoadmapData): string {
   const phases: RoadmapPhase[] = [];
 
@@ -190,13 +195,11 @@ function buildGanttSection(roadmap: RoadmapData): string {
     for (const epic of phase.epics) {
       const epicStatus = computeEpicStatus(epic);
       const taskId = normalizeEpicIdToTaskId(epic.id);
-      const label = `${epic.id} ${epic.title}`;
-      
-      // Quote label if it contains special characters (parentheses, commas, etc.)
-      const quotedLabel = /[(),]/.test(label) ? `"${label}"` : label;
+      const label = quoteMermaidLabel(`${epic.id} ${epic.title}`);
+      const statusTokens: string[] = [];
 
-      const statusKeyword: string | null =
-        epicStatus === 'pending' ? null : epicStatus === 'done' ? 'done' : 'active';
+      if (epicStatus === 'done') statusTokens.push('done');
+      if (epicStatus === 'active') statusTokens.push('active');
 
       let timeRef: string;
       if (!lastEpicTaskId) {
@@ -206,8 +209,8 @@ function buildGanttSection(roadmap: RoadmapData): string {
         timeRef = `after ${lastEpicTaskId}`;
       }
 
-      const statusPart = statusKeyword ? `:${statusKeyword}` : '';
-      lines.push(`  ${taskId}${statusPart} ${quotedLabel}, ${timeRef}, 7d`);
+      const taskTokens = [...statusTokens, taskId, timeRef, '7d'];
+      lines.push(`  ${label} :${taskTokens.join(', ')}`);
 
       lastEpicTaskId = taskId;
     }
@@ -284,7 +287,7 @@ function upsertSection(content: string, header: string, section: string): string
   // [\s\S] matches any character including newlines
   // Lookahead (?=\n## |$) stops at next section header or end of string
   const headerPattern = `## ${escapedHeader}`;
-  const pattern = new RegExp(`${headerPattern}[\\s\\S]*?(?=\\n## |$)`, 'm');
+  const pattern = new RegExp(`${headerPattern}[\\s\\S]*?(?=\\n## |$)`);
 
   const match = content.match(pattern);
   if (match) {
@@ -346,4 +349,3 @@ try {
   console.error('Failed to generate CONTEXT.md from roadmap.json:', error);
   process.exitCode = 1;
 }
-
