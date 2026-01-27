@@ -1,7 +1,7 @@
 {
     "project_name": "AI_Travel_Itinerary_Manager",
     "version": "2.1.0-constitution-hardened",
-    "last_updated": "2026-01-26",
+    "last_updated": "2026-01-27",
     "development_principles": [
       "LLMs label and translate intent; deterministic systems retrieve and compute.",
       "Only approved pins are truth (Map is the interface).",
@@ -10,6 +10,12 @@
       "User edits never overwrite frozen AI enrichment."
     ],
     "pr_history": [
+      {
+        "id": "e1d391c",
+        "date": "2026-01-27",
+        "title": "End-to-end auth + ingestion + detail view (plus promotion/map fixes)",
+        "summary": "Added Supabase magic-link auth + gating, implemented deterministic ingestion (Google Places + optional Wikipedia/Wikidata) into place_candidates, added strict normalization (LLM temp=0 optional with deterministic fallback), built place detail view with user notes/tags, and fixed promotion RPC + map pin parsing for end-to-end flow."
+      },
       {
         "id": "uncommitted",
         "date": "2026-01-26",
@@ -59,7 +65,7 @@
         "goal": "A deterministic, map-based database of approved places. Eliminates messy lists and taxonomy drift.",
         "estimated_timeline": "MVP (Weeks 1-4)",
         "status": "in_progress",
-        "progress_summary": "Foundation complete: database schema, enrichment contract, icon system, basic map integration. Pending: LLM enrichment integration, place detail view.",
+        "progress_summary": "End-to-end MVP loop working: auth-gated UI, deterministic ingestion (URL/place_id/name → place_candidates), enrichment normalization (LLM temp=0 optional with deterministic fallback), promotion to canonical places, and place detail view with user notes/tags. Remaining: richer Wikipedia/Wikidata extraction, ingestion UI (no-console flow), and type generation for DB enums/tables.",
         "epics": [
           {
             "id": "P1-E1",
@@ -99,22 +105,22 @@
                 "id": "2.1",
                 "task": "Resolve Place Deterministically.",
                 "details": "Resolve via Google Places. Fetch nearby Wikipedia pages via GeoSearch. Select best match by distance + name similarity.",
-                "status": "in_progress",
-                "notes": "Placeholder functions created in lib/enrichment/sources.ts. Google Places API integration pending."
+                "status": "completed",
+                "notes": "Implemented Google Places Details + FindPlaceFromText, Wikipedia GeoSearch, and deterministic match selection. Added /api/places/ingest endpoint to create place_candidates from Google Maps URL, place_id, or name."
               },
               {
                 "id": "2.2",
                 "task": "Fetch Structured Context.",
                 "details": "Pull summary, thumbnail, and structured facts via Wikidata when available. Store raw extracts.",
                 "status": "in_progress",
-                "notes": "Placeholder functions created. Wikipedia/Wikidata API integration pending."
+                "notes": "Implemented Wikidata resolution (Wikipedia title → QID → EntityData JSON) and stores raw results alongside Wikipedia GeoSearch candidates in place_candidates.raw_payload. Still pending: curated summary/thumbnail extraction and stable, minimal structured fields for UI."
               },
               {
                 "id": "2.3",
                 "task": "Schema-Constrained AI Normalization.",
                 "details": "LLM normalizes fetched data into enums and tags only. Prompt includes full enum list. Output must validate or be rejected.",
-                "status": "in_progress",
-                "notes": "Enrichment contract defined with deterministic canonicalization (recursive key sorting, type handling). normalize() function has placeholder - LLM integration pending."
+                "status": "completed",
+                "notes": "Normalization implemented with strict runtime validation + temperature=0 when OPENAI_API_KEY is configured, and a deterministic fallback mapping when not. Invalid outputs are rejected; model + prompt_version are stored for auditability."
               },
               {
                 "id": "2.4",
@@ -142,7 +148,8 @@
                 "id": "3.2",
                 "task": "Build Place Detail View.",
                 "details": "Display frozen AI tags and factual summaries. Allow user-added notes and user tags stored separately.",
-                "status": "pending"
+                "status": "completed",
+                "notes": "Added /places/[id] route showing frozen enrichment + editable user_notes/user_tags (stored on places). Wired marker click → detail view, and added PATCH API for user meta updates."
               }
             ]
           }
