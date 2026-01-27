@@ -1,6 +1,6 @@
 {
   "project_name": "AI_Travel_Itinerary_Manager",
-  "version": "2.1.0-constitution-hardened",
+  "version": "2.2.0-phase2-defined",
   "last_updated": "2026-01-27",
   "development_principles": [
     "LLMs label and translate intent; deterministic systems retrieve and compute.",
@@ -305,8 +305,11 @@
           "title": "Stateful Planning (Kanban)",
           "features": [
             "Trip State Machine: Backlog -> Scheduled -> Done.",
+            "Backlog vs Scheduled is derived from scheduled_date (NULL = Backlog) and used as the single source of truth across Map + Kanban.",
             "Drag-and-Drop between day buckets updates scheduling fields only.",
             "Scheduling actions never trigger enrichment or AI calls.",
+            "Optimistic scheduling reconciles conflicts on refresh; server remains source of truth.",
+            "Lightweight scheduling audit fields (last_scheduled_at, last_scheduled_by/source).",
             "Visual distinction for scheduled vs unscheduled pins."
           ]
         },
@@ -317,7 +320,9 @@
             "Intent Extraction Agent outputs filter JSON only (never SQL).",
             "Example: 'Quiet places' -> { \"energy\": \"Low\" }.",
             "Filtering executed entirely via DB queries.",
-            "Open Now filtering uses server time vs stored opening_hours JSON."
+            "Filter JSON supports compound AND/OR rules from day one.",
+            "Open Now filtering uses server time converted to place timezone.",
+            "Cheap timezone strategy: derive IANA timezone from lat/lng offline at ingest; fallback to trip timezone or stored utc_offset_minutes."
           ]
         }
       ]

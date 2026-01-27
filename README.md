@@ -124,15 +124,15 @@ Turn saved places into an actual plan.
 * **Kanban-Style Itinerary**
 
   * Drag places from a *Backlog* into day buckets (Friday, Saturday, etc.)
-  * Changes persist directly to the database
-* **Contextual Filtering**
+  * Backlog vs Scheduled is derived from `scheduled_date` (NULL = Backlog) and shared across Map + Kanban
+  * Optimistic updates reconcile with server truth; lightweight scheduling audit timestamps
+* **Deterministic Filtering**
 
   * Filter by category, vibe, or energy level
-  * Example: *“Coffee shops tagged as work-friendly within a 10-minute walk”*
-* **Deterministic Distance Calculations**
-
-  * Powered by geospatial queries and mapping APIs
-  * No AI involvement in math or routing
+  * Compound AND/OR filters via filter JSON (no SQL from AI)
+* **Cheap, Deterministic Time Handling**
+  * “Open now” uses server time converted to place timezone
+  * Timezone derived offline from lat/lng at ingestion; fallback to trip timezone
 
 ---
 
@@ -148,7 +148,7 @@ Make plans efficient and exportable.
 * **Live Context Awareness**
 
   * Weather alerts for outdoor plans
-  * “Open now” filtering using real opening-hours data
+  * Travel-time badges between scheduled items
 * **Export**
 
   * Google Maps
