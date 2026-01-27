@@ -31,8 +31,8 @@ gantt
 - User edits never overwrite frozen AI enrichment.
 
 ## 📝 Implementation Memory
-- 2026-01-27 – 🚧 CURRENT SESSION – Add Phase 0-4 execution plan to roadmap
-    Captured the Phase 0-4 plan (places_view, map viewport logic, search/preview split, preview UX, lists persistence) in the roadmap and synced related docs.
+- 2026-01-27 – 🚧 CURRENT SESSION – Implement places_view + viewport persistence
+    Added places_view migration with computed lat/lng, updated MapContainer to read from the view, regenerated types, and implemented fitBounds/load persistence + approval flyTo behavior.
 - 2026-01-25 – Initiated README
     Added initial README content.
 - 2026-01-25 – Initial commit

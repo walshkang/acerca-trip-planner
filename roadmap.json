@@ -25,8 +25,8 @@
     {
       "id": "uncommitted",
       "date": "2026-01-27",
-      "title": "Add Phase 0-4 execution plan to roadmap",
-      "summary": "Captured the Phase 0-4 plan (places_view, map viewport logic, search/preview split, preview UX, lists persistence) in the roadmap and synced related docs."
+      "title": "Implement places_view + viewport persistence",
+      "summary": "Added places_view migration with computed lat/lng, updated MapContainer to read from the view, regenerated types, and implemented fitBounds/load persistence + approval flyTo behavior."
     },
     {
       "id": "816f4b8",
@@ -71,7 +71,7 @@
       "goal": "A deterministic, map-based database of approved places. Eliminates messy lists and taxonomy drift.",
       "estimated_timeline": "MVP (Weeks 1-4)",
       "status": "in_progress",
-      "progress_summary": "Map-first MVP loop working end-to-end: auth-gated UI, Omnibox ingestion (URL/place_id/name → place_candidates), immediate Enriched Preview on a Ghost Pin, and one-click Approve to promote into canonical places. Enrichment is frozen at ingestion; promotion is a state transition only. Remaining: generate full Supabase types from a live DB connection (db:types script is wired; Docker/DB required), then execute the Phase 0-4 hardening plan (places_view + map serialization, viewport persistence, lightweight search list -> preview ingest, preview-only Inspector, and list persistence). Phase 2 cannot start until generated types are wired into the app and the Phase 0-4 plan is complete.",
+      "progress_summary": "Map-first MVP loop working end-to-end: auth-gated UI, Omnibox ingestion (URL/place_id/name → place_candidates), immediate Enriched Preview on a Ghost Pin, and one-click Approve to promote into canonical places. Enrichment is frozen at ingestion; promotion is a state transition only. Completed: places_view + map serialization and viewport persistence with fitBounds, last-view fallback, and approval flyTo. Remaining: lightweight search list -> preview ingest, preview-only Inspector, and list persistence. Phase 2 cannot start until generated types are wired into the app and the Phase 0-4 plan is complete.",
       "epics": [
         {
           "id": "P1-E1",
@@ -230,19 +230,19 @@
               "id": "5.4",
               "task": "Fit bounds on load when places exist.",
               "details": "If places.length > 0, compute bounds to include all pins and fit map view on load.",
-              "status": "pending"
+              "status": "completed"
             },
             {
               "id": "5.5",
               "task": "Persist and restore viewport when there are zero places.",
               "details": "Use last saved view from localStorage; otherwise fall back to a neutral global default.",
-              "status": "pending"
+              "status": "completed"
             },
             {
               "id": "5.6",
               "task": "Fly to approved places or refit bounds after approval.",
               "details": "After approval, flyTo the new place or refit bounds depending on context.",
-              "status": "pending"
+              "status": "completed"
             },
             {
               "id": "5.7",

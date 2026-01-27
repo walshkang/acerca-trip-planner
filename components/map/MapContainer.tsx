@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Map, { Marker } from 'react-map-gl/mapbox'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import { useRouter } from 'next/navigation'
@@ -11,56 +11,23 @@ import Omnibox from '@/components/discovery/Omnibox'
 import GhostMarker from '@/components/discovery/GhostMarker'
 import InspectorCard from '@/components/discovery/InspectorCard'
 import { useDiscoveryStore } from '@/lib/state/useDiscoveryStore'
+import type { MapRef, ViewState } from 'react-map-gl'
+import { LngLatBounds } from 'mapbox-gl'
 
 interface Place {
   id: string
   name: string
   category: CategoryEnum
-  location: {
-    lat: number
-    lng: number
-  }
+  lat: number
+  lng: number
 }
 
 type PlacesRow = {
   id: string
   name: string
   category: CategoryEnum
-  location: unknown
-}
-
-function extractLngLat(location: unknown): { lng: number; lat: number } | null {
-  if (!location) return null
-
-  if (typeof location === 'string') {
-    // Common PostGIS textual formats:
-    // - "POINT(lng lat)"
-    // - "SRID=4326;POINT(lng lat)"
-    const m = location.match(
-      /POINT\s*\(\s*([+-]?\d+(?:\.\d+)?)\s+([+-]?\d+(?:\.\d+)?)\s*\)/i
-    )
-    if (m) {
-      const lng = Number(m[1])
-      const lat = Number(m[2])
-      if (Number.isFinite(lng) && Number.isFinite(lat)) return { lng, lat }
-    }
-    return null
-  }
-
-  if (typeof location === 'object') {
-    // GeoJSON-like: { type: "Point", coordinates: [lng, lat] }
-    const coords = (location as any).coordinates
-    if (
-      Array.isArray(coords) &&
-      coords.length >= 2 &&
-      Number.isFinite(coords[0]) &&
-      Number.isFinite(coords[1])
-    ) {
-      return { lng: Number(coords[0]), lat: Number(coords[1]) }
-    }
-  }
-
-  return null
+  lat: number | null
+  lng: number | null
 }
 
 export default function MapContainer() {
@@ -68,10 +35,24 @@ export default function MapContainer() {
   const [loading, setLoading] = useState(true)
   const [authChecked, setAuthChecked] = useState(false)
   const [isAuthed, setIsAuthed] = useState(false)
+  const [pendingFocusPlaceId, setPendingFocusPlaceId] = useState<string | null>(
+    null
+  )
   const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN
   const router = useRouter()
   const ghostLocation = useDiscoveryStore((s) => s.ghostLocation)
   const clearDiscovery = useDiscoveryStore((s) => s.clear)
+  const mapRef = useRef<MapRef | null>(null)
+
+  const defaultViewState = useMemo<ViewState>(
+    () => ({
+      longitude: 0,
+      latitude: 20,
+      zoom: 1.5,
+    }),
+    []
+  )
+  const viewStorageKey = 'acerca:lastMapView'
 
   useEffect(() => {
     if (!mapboxToken) {
@@ -92,8 +73,8 @@ export default function MapContainer() {
   }, [mapboxToken])
 
   const fetchPlaces = useCallback(async () => {
-    // Fetch places from Supabase
-    // Note: Only reads from places table (canonical layer), never place_candidates
+    // Fetch places from Supabase view
+    // Note: Only reads from places_view (canonical layer), never place_candidates
     try {
       setLoading(true)
 
@@ -105,8 +86,8 @@ export default function MapContainer() {
       if (!user) return
 
       const { data, error } = await supabase
-        .from('places')
-        .select('id, name, category, location')
+        .from('places_view')
+        .select('id, name, category, lat, lng')
         .order('created_at', { ascending: false })
 
       if (error) {
@@ -114,19 +95,15 @@ export default function MapContainer() {
         return
       }
 
-      // Transform geography points to lat/lng
       const transformedPlaces = ((data || []) as PlacesRow[])
-        .map((place) => {
-          const ll = extractLngLat(place.location)
-          if (!ll) return null
-          return {
-            id: place.id,
-            name: place.name,
-            category: place.category,
-            location: { lat: ll.lat, lng: ll.lng },
-          }
-        })
-        .filter(Boolean) as Place[]
+        .filter((place) => place.lat != null && place.lng != null)
+        .map((place) => ({
+          id: place.id,
+          name: place.name,
+          category: place.category,
+          lat: place.lat as number,
+          lng: place.lng as number,
+        }))
 
       setPlaces(transformedPlaces)
     } catch (error) {
@@ -140,6 +117,67 @@ export default function MapContainer() {
     if (!mapboxToken) return
     fetchPlaces()
   }, [mapboxToken, fetchPlaces])
+
+  useEffect(() => {
+    if (loading) return
+    const map = mapRef.current
+    if (!map) return
+
+    if (places.length > 0) {
+      const bounds = new LngLatBounds()
+      for (const place of places) {
+        bounds.extend([place.lng, place.lat])
+      }
+      if (!bounds.isEmpty()) {
+        map.fitBounds(bounds, { padding: 80, maxZoom: 14 })
+      }
+      return
+    }
+
+    if (typeof window === 'undefined') return
+    const raw = window.localStorage.getItem(viewStorageKey)
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw) as Partial<ViewState>
+        if (
+          typeof parsed.longitude === 'number' &&
+          typeof parsed.latitude === 'number' &&
+          typeof parsed.zoom === 'number'
+        ) {
+          map.flyTo({
+            center: [parsed.longitude, parsed.latitude],
+            zoom: parsed.zoom,
+            bearing: parsed.bearing ?? 0,
+            pitch: parsed.pitch ?? 0,
+          })
+          return
+        }
+      } catch {
+        // ignore invalid saved state
+      }
+    }
+
+    map.flyTo({
+      center: [defaultViewState.longitude, defaultViewState.latitude],
+      zoom: defaultViewState.zoom,
+    })
+  }, [defaultViewState, loading, places])
+
+  useEffect(() => {
+    if (!pendingFocusPlaceId) return
+    if (loading) return
+    const map = mapRef.current
+    if (!map) return
+
+    const focused = places.find((place) => place.id === pendingFocusPlaceId)
+    if (!focused) return
+
+    map.flyTo({
+      center: [focused.lng, focused.lat],
+      zoom: Math.max(map.getZoom(), 13),
+    })
+    setPendingFocusPlaceId(null)
+  }, [loading, pendingFocusPlaceId, places])
 
   if (!mapboxToken) {
     return (
@@ -182,6 +220,7 @@ export default function MapContainer() {
       <div className="absolute right-4 top-4 z-10 pointer-events-none">
         <InspectorCard
           onCommitted={(placeId) => {
+            setPendingFocusPlaceId(placeId)
             fetchPlaces()
             router.push(`/places/${placeId}`)
           }}
@@ -190,14 +229,19 @@ export default function MapContainer() {
 
       <Map
         mapboxAccessToken={mapboxToken}
-        initialViewState={{
-          longitude: -122.4194,
-          latitude: 37.7749,
-          zoom: 12,
-        }}
+        initialViewState={defaultViewState}
         style={{ width: '100%', height: '100%' }}
         mapStyle="mapbox://styles/mapbox/streets-v12"
         onClick={() => clearDiscovery()}
+        onMoveEnd={(evt) => {
+          if (typeof window === 'undefined') return
+          const { longitude, latitude, zoom, bearing, pitch } = evt.viewState
+          window.localStorage.setItem(
+            viewStorageKey,
+            JSON.stringify({ longitude, latitude, zoom, bearing, pitch })
+          )
+        }}
+        ref={mapRef}
       >
         {ghostLocation ? (
           <GhostMarker
@@ -209,8 +253,8 @@ export default function MapContainer() {
         {places.map((place) => (
           <Marker
             key={place.id}
-            longitude={place.location.lng}
-            latitude={place.location.lat}
+            longitude={place.lng}
+            latitude={place.lat}
           >
             <button
               type="button"
