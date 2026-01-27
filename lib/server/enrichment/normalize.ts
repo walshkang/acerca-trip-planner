@@ -4,10 +4,14 @@ import {
   EnrichmentOutput,
   computeSourceHash,
 } from '@/lib/enrichment/contract'
+import {
+  CATEGORY_ENUM_VALUES,
+  ENERGY_ENUM_VALUES,
+} from '@/lib/types/enums'
 import type { CategoryEnum, EnergyEnum } from '@/lib/types/enums'
 
-const CATEGORY_ENUM: CategoryEnum[] = ['Food', 'Coffee', 'Sights', 'Shop', 'Activity']
-const ENERGY_ENUM: EnergyEnum[] = ['Low', 'Medium', 'High']
+const CATEGORY_ENUM = [...CATEGORY_ENUM_VALUES]
+const ENERGY_ENUM = [...ENERGY_ENUM_VALUES]
 
 type NormalizedData = EnrichmentOutput['normalizedData']
 
