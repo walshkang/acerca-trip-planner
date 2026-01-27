@@ -11,6 +11,12 @@
     ],
     "pr_history": [
       {
+        "id": "e4c4f71",
+        "date": "2026-01-27",
+        "title": "Discovery omnibox UX loop + curated Wikipedia/Wikidata enrichment",
+        "summary": "Implemented the map-first UX loop (Search → Preview → Commit): added a floating Omnibox, Ghost Pin state, and an Inspector preview card that shows frozen enrichment before commit. Added deterministic curated Wikipedia/Wikidata extraction (summary, thumbnail, stable fact pairs) stored on enrichments.curated_data, updated ingest to return preview enrichment immediately, and added minimal Supabase types + a db:types generation helper."
+      },
+      {
         "id": "e1d391c",
         "date": "2026-01-27",
         "title": "End-to-end auth + ingestion + detail view (plus promotion/map fixes)",
@@ -65,7 +71,7 @@
         "goal": "A deterministic, map-based database of approved places. Eliminates messy lists and taxonomy drift.",
         "estimated_timeline": "MVP (Weeks 1-4)",
         "status": "in_progress",
-        "progress_summary": "End-to-end MVP loop working: auth-gated UI, deterministic ingestion (URL/place_id/name → place_candidates), enrichment normalization (LLM temp=0 optional with deterministic fallback), promotion to canonical places, and place detail view with user notes/tags. Remaining: richer Wikipedia/Wikidata extraction, ingestion UI (no-console flow), and type generation for DB enums/tables.",
+        "progress_summary": "Map-first MVP loop working end-to-end: auth-gated UI, Omnibox search (URL/place_id/name → place_candidates), immediate Enriched Preview (frozen tags + curated Wikipedia summary/thumbnail/facts) on a Ghost Pin, and one-click Commit via promotion to canonical places. Remaining: generate full Supabase types from a live DB connection (db:types script is wired; Docker/DB required).",
         "epics": [
           {
             "id": "P1-E1",
@@ -92,6 +98,13 @@
                 "details": "Store raw opening_hours JSON from Google Places and source metadata for future deterministic filtering.",
                 "status": "completed",
                 "notes": "place_candidates.raw_payload stores complete Google Places API response. places.opening_hours stores extracted opening_hours JSON."
+              },
+              {
+                "id": "1.4",
+                "task": "Generate Supabase DB Types.",
+                "details": "Generate TypeScript types from the live Postgres schema to avoid hand-maintained table/enum drift.",
+                "status": "in_progress",
+                "notes": "Added a minimal fallback Database type and wired enums to derive from it. Added `npm run db:types` to generate from SUPABASE_DB_URL (or `supabase gen types --local` when a local Supabase stack is running)."
               }
             ]
           },
@@ -112,8 +125,8 @@
                 "id": "2.2",
                 "task": "Fetch Structured Context.",
                 "details": "Pull summary, thumbnail, and structured facts via Wikidata when available. Store raw extracts.",
-                "status": "in_progress",
-                "notes": "Implemented Wikidata resolution (Wikipedia title → QID → EntityData JSON) and stores raw results alongside Wikipedia GeoSearch candidates in place_candidates.raw_payload. Still pending: curated summary/thumbnail extraction and stable, minimal structured fields for UI."
+                "status": "completed",
+                "notes": "Implemented deterministic curated extraction for UI: Wikipedia summary + thumbnail (w/api.php extracts|pageimages), Wikipedia title selection via GeoSearch, Wikidata QID resolution (pageprops.wikibase_item), and a minimal stable fact-pair mapping (Founded P571, Architect P84, Elevation P2044, Website P856). Stored frozen curated output on enrichments.curated_data and returned it immediately from /api/places/ingest for preview."
               },
               {
                 "id": "2.3",
@@ -150,6 +163,13 @@
                 "details": "Display frozen AI tags and factual summaries. Allow user-added notes and user tags stored separately.",
                 "status": "completed",
                 "notes": "Added /places/[id] route showing frozen enrichment + editable user_notes/user_tags (stored on places). Wired marker click → detail view, and added PATCH API for user meta updates."
+              },
+              {
+                "id": "3.3",
+                "task": "UX Loop: Search → Preview → Commit.",
+                "details": "Single Omnibox on the map. Ghost Pin + Inspector preview shows frozen enrichment immediately. Commit promotes candidate into canonical places.",
+                "status": "completed",
+                "notes": "Added map Omnibox + Ghost state store + Inspector preview card. /api/places/ingest now returns candidate + location + frozen enrichment for immediate preview. 'Add to Plan' calls /api/places/promote and refreshes canonical pins."
               }
             ]
           }
