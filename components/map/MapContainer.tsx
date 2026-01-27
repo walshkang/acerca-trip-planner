@@ -22,7 +22,41 @@ type PlacesRow = {
   id: string
   name: string
   category: CategoryEnum
-  location: { coordinates?: [number, number] } | null
+  location: unknown
+}
+
+function extractLngLat(location: unknown): { lng: number; lat: number } | null {
+  if (!location) return null
+
+  if (typeof location === 'string') {
+    // Common PostGIS textual formats:
+    // - "POINT(lng lat)"
+    // - "SRID=4326;POINT(lng lat)"
+    const m = location.match(
+      /POINT\s*\(\s*([+-]?\d+(?:\.\d+)?)\s+([+-]?\d+(?:\.\d+)?)\s*\)/i
+    )
+    if (m) {
+      const lng = Number(m[1])
+      const lat = Number(m[2])
+      if (Number.isFinite(lng) && Number.isFinite(lat)) return { lng, lat }
+    }
+    return null
+  }
+
+  if (typeof location === 'object') {
+    // GeoJSON-like: { type: "Point", coordinates: [lng, lat] }
+    const coords = (location as any).coordinates
+    if (
+      Array.isArray(coords) &&
+      coords.length >= 2 &&
+      Number.isFinite(coords[0]) &&
+      Number.isFinite(coords[1])
+    ) {
+      return { lng: Number(coords[0]), lat: Number(coords[1]) }
+    }
+  }
+
+  return null
 }
 
 export default function MapContainer() {
@@ -66,15 +100,18 @@ export default function MapContainer() {
         }
 
         // Transform geography points to lat/lng
-        const transformedPlaces = ((data || []) as PlacesRow[]).map((place) => ({
-          id: place.id,
-          name: place.name,
-          category: place.category,
-          location: {
-            lat: place.location?.coordinates?.[1] || 0,
-            lng: place.location?.coordinates?.[0] || 0,
-          },
-        }))
+        const transformedPlaces = ((data || []) as PlacesRow[])
+          .map((place) => {
+            const ll = extractLngLat(place.location)
+            if (!ll) return null
+            return {
+              id: place.id,
+              name: place.name,
+              category: place.category,
+              location: { lat: ll.lat, lng: ll.lng },
+            }
+          })
+          .filter(Boolean) as Place[]
 
         setPlaces(transformedPlaces)
       } catch (error) {
