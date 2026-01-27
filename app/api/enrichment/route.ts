@@ -32,7 +32,21 @@ export async function POST(request: NextRequest) {
     
     // Normalize enrichment
     const enrichment = await normalizeEnrichment({
-      rawSourceSnapshot: candidate.raw_payload,
+      rawSourceSnapshot: (() => {
+        const rawUnknown = (candidate as { raw_payload?: unknown }).raw_payload
+        const raw =
+          typeof rawUnknown === 'object' &&
+          rawUnknown !== null &&
+          !Array.isArray(rawUnknown)
+            ? (rawUnknown as Record<string, unknown>)
+            : {}
+        const { wikipedia, wikidata, ...googlePlaces } = raw
+        return {
+          googlePlaces,
+          ...(wikipedia ? { wikipedia } : {}),
+          ...(wikidata ? { wikidata } : {}),
+        }
+      })(),
       schemaVersion: schema_version,
     })
     
@@ -45,11 +59,18 @@ export async function POST(request: NextRequest) {
       })
       .eq('id', candidate_id)
     
-    const { id, ...enrichmentResponse } = enrichment
-    return NextResponse.json({ enrichment: enrichmentResponse })
-  } catch (error: any) {
+    return NextResponse.json({
+      enrichment: {
+        normalizedData: enrichment.normalizedData,
+        sourceHash: enrichment.sourceHash,
+        model: enrichment.model,
+        temperature: enrichment.temperature,
+        promptVersion: enrichment.promptVersion,
+      },
+    })
+  } catch (error: unknown) {
     return NextResponse.json(
-      { error: error.message || 'Internal server error' },
+      { error: error instanceof Error ? error.message : 'Internal server error' },
       { status: 500 }
     )
   }

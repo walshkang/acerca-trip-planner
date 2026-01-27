@@ -287,6 +287,59 @@ export async function fetchGooglePlace(placeId: string): Promise<GooglePlacesRes
 }
 
 /**
+ * Resolve a Google Place ID deterministically from a free-text query.
+ * Uses Find Place From Text and selects the first candidate returned.
+ */
+export async function findGooglePlaceIdFromText(input: string): Promise<{
+  placeId: string
+  candidates: Array<{ place_id: string; name?: string }>
+}> {
+  const apiKey = process.env.GOOGLE_PLACES_API_KEY
+  if (!apiKey) {
+    throw new SourceFetchError(
+      'missing_env',
+      'GOOGLE_PLACES_API_KEY is not set',
+      { status: null }
+    )
+  }
+
+  const fields = ['place_id', 'name'].join(',')
+
+  const u = new URL(
+    'https://maps.googleapis.com/maps/api/place/findplacefromtext/json'
+  )
+  u.searchParams.set('input', input)
+  u.searchParams.set('inputtype', 'textquery')
+  u.searchParams.set('fields', fields)
+  u.searchParams.set('key', apiKey)
+
+  const { data } = await fetchJson<{
+    status: string
+    candidates?: Array<{ place_id: string; name?: string }>
+    error_message?: string
+  }>(u.toString())
+
+  if (data.status !== 'OK' || !data.candidates?.length) {
+    throw new SourceFetchError(
+      'http_error',
+      `Google FindPlace error status=${data.status}${data.error_message ? ` message=${data.error_message}` : ''}`,
+      { status: 200 }
+    )
+  }
+
+  const first = data.candidates[0]
+  if (!first?.place_id) {
+    throw new SourceFetchError(
+      'unexpected_shape',
+      'Google FindPlace response missing place_id',
+      { status: 200 }
+    )
+  }
+
+  return { placeId: first.place_id, candidates: data.candidates }
+}
+
+/**
  * Fetch nearby Wikipedia pages via GeoSearch.
  * https://www.mediawiki.org/wiki/Extension:GeoData
  */

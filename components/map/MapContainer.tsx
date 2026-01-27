@@ -1,8 +1,9 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import Map, { Marker } from 'react-map-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
+import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase/client'
 import { getCategoryIcon } from '@/lib/icons/mapping'
 import type { CategoryEnum } from '@/lib/types/enums'
@@ -17,10 +18,20 @@ interface Place {
   }
 }
 
+type PlacesRow = {
+  id: string
+  name: string
+  category: CategoryEnum
+  location: { coordinates?: [number, number] } | null
+}
+
 export default function MapContainer() {
   const [places, setPlaces] = useState<Place[]>([])
   const [loading, setLoading] = useState(true)
+  const [authChecked, setAuthChecked] = useState(false)
+  const [isAuthed, setIsAuthed] = useState(false)
   const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN
+  const router = useRouter()
 
   useEffect(() => {
     if (!mapboxToken) {
@@ -28,10 +39,22 @@ export default function MapContainer() {
       return
     }
 
+    async function checkAuth() {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      setIsAuthed(Boolean(user))
+      setAuthChecked(true)
+      return user
+    }
+
     // Fetch places from Supabase
     // Note: Only reads from places table (canonical layer), never place_candidates
     async function fetchPlaces() {
       try {
+        const user = await checkAuth()
+        if (!user) return
+
         const { data, error } = await supabase
           .from('places')
           .select('id, name, category, location')
@@ -43,7 +66,7 @@ export default function MapContainer() {
         }
 
         // Transform geography points to lat/lng
-        const transformedPlaces = (data || []).map((place: any) => ({
+        const transformedPlaces = ((data || []) as PlacesRow[]).map((place) => ({
           id: place.id,
           name: place.name,
           category: place.category,
@@ -80,6 +103,22 @@ export default function MapContainer() {
     )
   }
 
+  if (authChecked && !isAuthed) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <p className="text-sm text-gray-700">You’re signed out.</p>
+          <a
+            className="mt-2 inline-block text-sm underline"
+            href="/auth/sign-in?next=/"
+          >
+            Sign in
+          </a>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="w-full h-screen">
       <Map
@@ -98,13 +137,18 @@ export default function MapContainer() {
             longitude={place.location.lng}
             latitude={place.location.lat}
           >
-            <div className="cursor-pointer">
+            <button
+              type="button"
+              className="cursor-pointer"
+              onClick={() => router.push(`/places/${place.id}`)}
+              aria-label={`Open ${place.name}`}
+            >
               <img
                 src={getCategoryIcon(place.category)}
                 alt={place.category}
                 className="w-6 h-6"
               />
-            </div>
+            </button>
           </Marker>
         ))}
       </Map>
