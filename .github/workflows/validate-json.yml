@@ -17,7 +17,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-      
-      - name: Validate roadmap.json
-        run: |
-          node -e "JSON.parse(require('fs').readFileSync('roadmap.json','utf8')); console.log('✓ roadmap.json is valid JSON')"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run checks
+        run: npm run check

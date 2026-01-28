@@ -10,6 +10,8 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "db:types": "bash scripts/gen-db-types.sh",
+    "check:rationale": "tsx scripts/check-rationale.ts",
+    "check": "npm run validate:json && npm run check:rationale",
     "validate:json": "node -e \"JSON.parse(require('fs').readFileSync('roadmap.json','utf8')); console.log('✓ roadmap.json is valid JSON')\"",
     "context:refresh": "tsx scripts/generate-context.ts"
   },
