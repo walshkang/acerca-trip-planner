@@ -668,10 +668,12 @@ export type Database = {
       }
       postgis_version: { Args: never; Returns: string }
       postgis_wagyu_version: { Args: never; Returns: string }
-      promote_place_candidate: {
-        Args: { p_candidate_id: string }
-        Returns: string
-      }
+      promote_place_candidate:
+        | { Args: { p_candidate_id: string }; Returns: string }
+        | {
+            Args: { p_candidate_id: string; p_list_id?: string }
+            Returns: string
+          }
       st_3dclosestpoint: {
         Args: { geom1: unknown; geom2: unknown }
         Returns: unknown
