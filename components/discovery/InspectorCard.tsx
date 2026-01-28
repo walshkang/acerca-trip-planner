@@ -31,8 +31,8 @@ function safeNormalized(v: unknown): NormalizedData | null {
 }
 
 export default function InspectorCard(props: { onCommitted?: (placeId: string) => void }) {
-  const candidate = useDiscoveryStore((s) => s.candidate)
-  const enrichment = useDiscoveryStore((s) => s.enrichment)
+  const candidate = useDiscoveryStore((s) => s.previewCandidate)
+  const enrichment = useDiscoveryStore((s) => s.previewEnrichment)
   const clear = useDiscoveryStore((s) => s.clear)
 
   const [isCommitting, setIsCommitting] = useState(false)
@@ -162,7 +162,7 @@ export default function InspectorCard(props: { onCommitted?: (placeId: string) =
           disabled={isCommitting}
           className="w-full rounded-md bg-black px-3 py-2 text-sm text-white disabled:opacity-50"
         >
-          {isCommitting ? 'Adding…' : 'Add to Plan'}
+          {isCommitting ? 'Approving…' : 'Approve Pin'}
         </button>
       </div>
     </div>
