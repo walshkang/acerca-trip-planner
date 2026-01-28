@@ -4,6 +4,13 @@ set -euo pipefail
 root_dir="$(git rev-parse --show-toplevel)"
 cd "$root_dir"
 
+# Skip report generation if the commit only touched docs/reports.
+if git diff-tree --no-commit-id --name-only -r HEAD | grep -q -v '^docs/reports/'; then
+  :
+else
+  exit 0
+fi
+
 report_dir="docs/reports"
 mkdir -p "$report_dir"
 
