@@ -53,6 +53,79 @@ export type Database = {
         }
         Relationships: []
       }
+      list_items: {
+        Row: {
+          created_at: string
+          id: string
+          list_id: string
+          place_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          list_id: string
+          place_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          list_id?: string
+          place_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "list_items_list_id_fkey"
+            columns: ["list_id"]
+            isOneToOne: false
+            referencedRelation: "lists"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "list_items_place_id_fkey"
+            columns: ["place_id"]
+            isOneToOne: false
+            referencedRelation: "places"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "list_items_place_id_fkey"
+            columns: ["place_id"]
+            isOneToOne: false
+            referencedRelation: "places_view"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lists: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_default: boolean
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_default?: boolean
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_default?: boolean
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       place_candidates: {
         Row: {
           address: string | null
