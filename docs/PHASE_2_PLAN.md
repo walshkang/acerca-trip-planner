@@ -25,7 +25,7 @@ This document decomposes Phase 2 into small, testable slices so implementation s
   - `scheduled_date DATE` (NULL = Backlog)
   - `scheduled_start_time TIME` (optional)
   - `scheduled_end_time TIME` (optional)
-  - `scheduled_order INTEGER` (ordering within a day)
+  - `scheduled_order DOUBLE PRECISION` (fractional ordering within a day)
   - `completed_at TIMESTAMPTZ` (NULL = not Done)
   - `last_scheduled_at TIMESTAMPTZ`
   - `last_scheduled_by UUID` (auth.users)
@@ -34,12 +34,17 @@ This document decomposes Phase 2 into small, testable slices so implementation s
   - `(list_id, scheduled_date, scheduled_order)`
   - `(list_id, completed_at)`
 - RLS: inherited via list ownership, same as current list_items policy.
+Notes:
+- Use fractional ordering to avoid reindexing large ranges on drag-and-drop.
+- Renormalize when gaps become too small.
+- If list-based scheduling is trip-oriented, add optional `lists.start_date`, `lists.end_date`, and `lists.timezone` to define day buckets.
 
 #### API / RPC
 - `GET /api/lists/[id]/items`
   - Returns list items with place summary + scheduling fields.
 - `PATCH /api/lists/[id]/items/[itemId]`
   - Updates scheduling fields only (date/time/order/completed_at).
+  - Accepts composite updates (date + order) to avoid flicker/race conditions.
   - Validates: item belongs to list; no enrichment fields touched.
 - Optional RPC: `schedule_list_item` for transactional updates (server-side).
 
@@ -49,6 +54,8 @@ This document decomposes Phase 2 into small, testable slices so implementation s
   - Right: Kanban day buckets (Backlog / Scheduled by date / Done).
 - Drag-and-drop between buckets updates scheduling fields only.
 - Map pins show scheduled vs unscheduled styling when a list is active.
+Notes:
+- If `lists.start_date` and `lists.end_date` exist, render those day columns using `lists.timezone`.
 
 #### Acceptance Criteria
 - Moving an item between buckets only changes scheduling fields.
@@ -82,6 +89,9 @@ This document decomposes Phase 2 into small, testable slices so implementation s
 - Use `places.opening_hours` + place timezone.
 - Add `places.timezone TEXT` (IANA) or `places.utc_offset_minutes INTEGER`.
 - Resolve timezone at ingest via deterministic lookup; do not call LLM.
+Note:
+- For Phase 2, implement Open Now as a client-side filter using server time + stored timezone.
+  If server-side filtering is needed later, precompute normalized opening intervals at ingest.
 
 #### Acceptance Criteria
 - Filter JSON is the only LLM output; invalid schemas are rejected.
@@ -93,6 +103,8 @@ This document decomposes Phase 2 into small, testable slices so implementation s
 #### Data Model (proposed)
 - `list_items.tags TEXT[]` (list-scoped tags per place)
 - GIN index on `list_items.tags` for filtering.
+Notes:
+- Normalize tags (trim + lowercase) on write to avoid duplicates like "Coffee" vs "coffee".
 
 #### API
 - `PATCH /api/lists/[id]/items/[itemId]/tags`
@@ -126,4 +138,3 @@ This document decomposes Phase 2 into small, testable slices so implementation s
   - Create list → add places → schedule → refresh.
   - Add tags → filter by tags → verify results.
   - Toggle open-now filter with stored timezone.
-
