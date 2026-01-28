@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useDiscoveryStore } from '@/lib/state/useDiscoveryStore'
 import { assertValidWikiCuratedData, type WikiCuratedData } from '@/lib/enrichment/wikiCurated'
 
@@ -9,6 +9,14 @@ type NormalizedData = {
   energy?: string | null
   tags: string[]
   vibe?: string | null
+}
+
+type ListSummary = {
+  id: string
+  name: string
+  description: string | null
+  is_default: boolean
+  created_at: string
 }
 
 function safeWikiCurated(v: unknown): WikiCuratedData | null {
@@ -37,6 +45,76 @@ export default function InspectorCard(props: { onCommitted?: (placeId: string) =
 
   const [isCommitting, setIsCommitting] = useState(false)
   const [commitError, setCommitError] = useState<string | null>(null)
+  const [lists, setLists] = useState<ListSummary[]>([])
+  const [listsLoading, setListsLoading] = useState(false)
+  const [listsError, setListsError] = useState<string | null>(null)
+  const [selectedListId, setSelectedListId] = useState<string | null>(null)
+  const [newListName, setNewListName] = useState('')
+  const [creatingList, setCreatingList] = useState(false)
+
+  useEffect(() => {
+    if (!candidate) return
+    let cancelled = false
+    async function loadLists() {
+      setListsLoading(true)
+      setListsError(null)
+      try {
+        const res = await fetch('/api/lists')
+        const json = await res.json().catch(() => ({}))
+        if (!res.ok) {
+          if (!cancelled) setListsError(json?.error || `HTTP ${res.status}`)
+          return
+        }
+        const next = (json?.lists ?? []) as ListSummary[]
+        if (cancelled) return
+        setLists(next)
+        const defaultList = next.find((l) => l.is_default)
+        setSelectedListId((prev) => {
+          if (prev && next.some((l) => l.id === prev)) return prev
+          return defaultList?.id ?? next[0]?.id ?? null
+        })
+      } catch (e: unknown) {
+        if (!cancelled) {
+          setListsError(e instanceof Error ? e.message : 'Request failed')
+        }
+      } finally {
+        if (!cancelled) setListsLoading(false)
+      }
+    }
+    loadLists()
+    return () => {
+      cancelled = true
+    }
+  }, [candidate?.id])
+
+  async function createList() {
+    const name = newListName.trim()
+    if (!name) return
+    setCreatingList(true)
+    setListsError(null)
+    try {
+      const res = await fetch('/api/lists', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ name }),
+      })
+      const json = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        setListsError(json?.error || `HTTP ${res.status}`)
+        return
+      }
+      const list = json?.list as ListSummary | undefined
+      if (list) {
+        setLists((prev) => [...prev, list])
+        setSelectedListId(list.id)
+        setNewListName('')
+      }
+    } catch (e: unknown) {
+      setListsError(e instanceof Error ? e.message : 'Request failed')
+    } finally {
+      setCreatingList(false)
+    }
+  }
 
   if (!candidate) return null
 
@@ -155,6 +233,54 @@ export default function InspectorCard(props: { onCommitted?: (placeId: string) =
         ) : null}
 
         {commitError ? <p className="text-xs text-red-600">{commitError}</p> : null}
+
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-medium text-gray-600">List</p>
+            <a className="text-xs underline text-gray-500" href="/lists">
+              Manage lists
+            </a>
+          </div>
+          <select
+            className="w-full rounded-md border border-gray-200 bg-white px-2 py-2 text-xs"
+            value={selectedListId ?? ''}
+            onChange={(e) => setSelectedListId(e.target.value)}
+            disabled={listsLoading || !lists.length}
+          >
+            {listsLoading ? (
+              <option value="">Loading…</option>
+            ) : null}
+            {!listsLoading && !lists.length ? (
+              <option value="">No lists</option>
+            ) : null}
+            {lists.map((list) => (
+              <option key={list.id} value={list.id}>
+                {list.name}
+                {list.is_default ? ' (Default)' : ''}
+              </option>
+            ))}
+          </select>
+
+          <div className="flex items-center gap-2">
+            <input
+              className="flex-1 rounded-md border border-gray-200 px-2 py-1 text-xs"
+              value={newListName}
+              onChange={(e) => setNewListName(e.target.value)}
+              placeholder="New list name"
+            />
+            <button
+              type="button"
+              onClick={createList}
+              disabled={creatingList || !newListName.trim()}
+              className="rounded-md border border-gray-200 px-2 py-1 text-xs disabled:opacity-50"
+            >
+              {creatingList ? 'Adding…' : 'Add'}
+            </button>
+          </div>
+          {listsError ? (
+            <p className="text-xs text-red-600">{listsError}</p>
+          ) : null}
+        </div>
 
         <button
           type="button"
