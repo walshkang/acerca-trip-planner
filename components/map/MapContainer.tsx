@@ -213,8 +213,16 @@ export default function MapContainer() {
 
   return (
     <div className="w-full h-screen relative">
-      <div className="absolute left-4 top-4 z-10 pointer-events-none">
+      <div className="absolute left-4 top-4 z-10 pointer-events-none space-y-2">
         <Omnibox />
+        <div className="pointer-events-auto">
+          <a
+            className="inline-flex items-center rounded-full border border-gray-200 bg-white/95 px-3 py-1 text-xs text-gray-700 shadow-sm"
+            href="/lists"
+          >
+            Lists
+          </a>
+        </div>
       </div>
 
       <div className="absolute right-4 top-4 z-10 pointer-events-none">
