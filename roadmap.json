@@ -11,6 +11,18 @@
   ],
   "pr_history": [
     {
+      "id": "1b437c3",
+      "date": "2026-01-27",
+      "title": "Add lists link to map",
+      "summary": "Added a lightweight Lists link under the Omnibox so list management is discoverable without adding global navigation."
+    },
+    {
+      "id": "31f433d",
+      "date": "2026-01-27",
+      "title": "Regenerate Supabase types",
+      "summary": "Regenerated Supabase types after the promote_place_candidate RPC signature added optional list assignment."
+    },
+    {
       "id": "e4c4f71",
       "date": "2026-01-27",
       "title": "Discovery omnibox UX loop + curated Wikipedia/Wikidata enrichment",
@@ -23,7 +35,7 @@
       "summary": "Added Supabase magic-link auth + gating, implemented deterministic ingestion (Google Places + optional Wikipedia/Wikidata) into place_candidates, added strict normalization (LLM temp=0 optional with deterministic fallback), built place detail view with user notes/tags, and fixed promotion RPC + map pin parsing for end-to-end flow."
     },
     {
-      "id": "uncommitted",
+      "id": "04aca2e",
       "date": "2026-01-27",
       "title": "Implement places_view + viewport persistence",
       "summary": "Added places_view migration with computed lat/lng, updated MapContainer to read from the view, regenerated types, and implemented fitBounds/load persistence + approval flyTo behavior."

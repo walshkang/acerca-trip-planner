@@ -7,8 +7,8 @@
 
 ## 🧠 Active Context
 - Current Phase: The Smart Repository (Cupcake)
-- Active Epic: Strict Schema, Versioning & Deduplication
-- Immediate Blocker: Task 1.4 – Generate Supabase DB Types.
+- Active Epic: P1-E5 Map View + Discovery Refinements (Phase 0-4 Plan)
+- Immediate Blocker: None. Task 1.4 is complete; types were regenerated after the list-assignment RPC update.
 
 ## 🗺️ Roadmap Visualization
 
@@ -38,7 +38,11 @@ gantt
 - User edits never overwrite frozen AI enrichment.
 
 ## 📝 Implementation Memory
-- 2026-01-27 – 🚧 CURRENT SESSION – Implement places_view + viewport persistence
+- 2026-01-27 – feat: add lists link to map
+    Added a lightweight "Lists" link under the Omnibox for discoverable list management.
+- 2026-01-27 – chore: regenerate supabase types
+    Regenerated types after the promote_place_candidate RPC added optional list assignment.
+- 2026-01-27 – feat: add places_view and map viewport persistence
     Added places_view migration with computed lat/lng, updated MapContainer to read from the view, regenerated types, and implemented fitBounds/load persistence + approval flyTo behavior.
 - 2026-01-27 – chore: refine phase 2 planning + timezone strategy
     Auto-generated from git log (c0e7c86).
