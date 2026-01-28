@@ -43,6 +43,15 @@ LLMs are used only to **label and normalize information**, never to calculate or
 
 ---
 
+## 🧰 How We Build
+
+- `AGENTS.md` is the single source of truth for invariants + DoD (humans and agents).
+- `docs/VIBE_PLAYBOOK.md` is the execution checklist for every task.
+- `CONTEXT.md` has the current phase, blockers, and pointers.
+- Use the PR template and run `npm run check` when possible.
+
+---
+
 ## 📚 The Librarian Model (How Enrichment Works)
 
 Place enrichment happens **only at ingestion time**, via a deterministic pipeline:

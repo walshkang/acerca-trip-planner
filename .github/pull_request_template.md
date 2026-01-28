@@ -1,5 +1,7 @@
 ## Goal
 
+Reference: `AGENTS.md` and `docs/VIBE_PLAYBOOK.md`.
+
 ## Non-goals
 
 ## Decisions / Tradeoffs

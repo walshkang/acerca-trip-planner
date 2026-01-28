@@ -1,5 +1,10 @@
 # Setup Instructions
 
+## Read First
+- `AGENTS.md` for invariants + Definition of Done.
+- `docs/VIBE_PLAYBOOK.md` for the workflow checklist.
+- `CONTEXT.md` for current phase and blockers.
+
 ## Prerequisites
 
 1. Node.js 18+ installed
@@ -44,10 +49,12 @@
 
 6. **Generate TypeScript types:**
    ```bash
-   supabase gen types typescript --local > lib/supabase/types.ts
+   npm run db:types
    ```
-   Or for remote:
+   Or manually (local or remote):
    ```bash
+   supabase gen types typescript --local > lib/supabase/types.ts
+   # or
    supabase gen types typescript --project-id <project-id> > lib/supabase/types.ts
    ```
 
@@ -78,6 +85,11 @@ npm test
 Run tests with UI:
 ```bash
 npm run test:ui
+```
+
+Run repo checks:
+```bash
+npm run check
 ```
 
 ## Project Structure

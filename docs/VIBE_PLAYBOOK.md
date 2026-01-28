@@ -25,3 +25,8 @@ A short, repeatable checklist for building in this repo.
 - Client-side usage of service role keys.
 - UI icon taxonomy mismatches with AI outputs.
 - Regen/formatting mixed into behavior diffs.
+
+## For Humans
+- Use the PR template and record decisions/tradeoffs.
+- Run `npm run check` before pushing when possible.
+- Keep learning reports filled (no TODO placeholders).

@@ -3,6 +3,7 @@
 - Invariants: DB is source of truth; only approved pins are truth; enrich once, read forever; strict taxonomy; user edits never overwrite frozen AI enrichment.
 - DoD: tests updated/added; verification steps; migrations + `npm run db:types` if schema changed; no TODO placeholders in Decisions / Rationale or Next Steps.
 - Pointers: `roadmap.json` for phases, `supabase/migrations` for schema, `docs/reports` for learning reports.
+- Starting a new task/chat? Use `prompts/agent_task.md`.
 
 ## 🧠 Active Context
 - Current Phase: The Smart Repository (Cupcake)

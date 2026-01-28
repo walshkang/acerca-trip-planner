@@ -6,6 +6,12 @@ This file is the single source of truth for how we build here. It applies to hum
 - CONTEXT.md (active phase, immediate blockers)
 - docs/VIBE_PLAYBOOK.md (checklists and patterns)
 
+## Human Instructions
+- Use the PR template and document goal, non-goals, tradeoffs, and verification.
+- Run `npm run check` before pushing when possible.
+- If you create/update learning reports, fill Decisions / Rationale and Next Steps (no TODO placeholders).
+- Update this file when you change invariants or workflow.
+
 ## Invariants (do not violate)
 - DB is source of truth; map pins are truth.
 - LLMs label/translate intent; deterministic systems retrieve/compute.

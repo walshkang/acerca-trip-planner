@@ -1,7 +1,7 @@
 You are working in this repo.
 
 Before coding:
-1) Read CONTEXT.md and AGENTS.md.
+1) Read CONTEXT.md, AGENTS.md, and docs/VIBE_PLAYBOOK.md.
 2) Restate the goal + non-goals.
 3) List invariants that must not change.
 4) Propose the smallest reproducible change + a verification plan.

@@ -1,5 +1,7 @@
 # Implementation Summary
 
+Note: This is a historical snapshot. Current rules and workflow live in `AGENTS.md` and `docs/VIBE_PLAYBOOK.md`, and active priorities live in `CONTEXT.md`.
+
 ## Completed Tasks
 
 ✅ **Next.js Project Initialization**
