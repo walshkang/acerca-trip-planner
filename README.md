@@ -201,9 +201,9 @@ By grounding everything in a local dataset and using AI only where its output ca
 
 ---
 
-## 🧪 Local Learning Hook (Do Not Commit)
+## 🧪 Learning Reports
 
-This repo may generate **learning plans/reports** as part of a local hook to improve personal coding understanding.
+This repo generates **learning plans/reports** to capture decisions and follow-ups for the team.
 
-- These files are **local-only** and **do not need to be committed**.
-- The hook is purely for personal learning and can be safely ignored for core development.
+- Reports live in `docs/reports` and are committed for visibility.
+- Keep Decisions / Rationale and Next Steps filled (no TODO placeholders).

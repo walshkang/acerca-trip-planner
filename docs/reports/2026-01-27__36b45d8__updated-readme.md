@@ -1,22 +1,22 @@
-# Learning Report: learning scripts added to the project
+# Learning Report: updated readme
 
-- Date: 2026-01-26
-- Commit: a40f7d278ff4dec257338a9d53869227786a78de
+- Date: 2026-01-27
+- Commit: 36b45d8eda8ed26e90445947d2bfea6907905ad5
 - Author: Walsh Kang
 
 ## Summary
 - Auto-generated report for learning and review.
-- Commit message: "learning scripts added to the project"
+- Commit message: "updated readme"
 
 ## What Changed
 ```
-A	scripts/generate-learning-report.sh
+M	README.md
 ```
 
 ## File Stats
 ```
- scripts/generate-learning-report.sh | 83 +++++++++++++++++++++++++++++++++++++
- 1 file changed, 83 insertions(+)
+ README.md | 9 +++++++++
+ 1 file changed, 9 insertions(+)
 ```
 
 ## Decisions / Rationale

@@ -1,22 +1,22 @@
-# Learning Report: learning scripts added to the project
+# Learning Report: fix: use react-map-gl/mapbox entrypoint
 
-- Date: 2026-01-26
-- Commit: a40f7d278ff4dec257338a9d53869227786a78de
+- Date: 2026-01-27
+- Commit: 2c7304457858c3594e45c04d184abfbbd9c67e64
 - Author: Walsh Kang
 
 ## Summary
 - Auto-generated report for learning and review.
-- Commit message: "learning scripts added to the project"
+- Commit message: "fix: use react-map-gl/mapbox entrypoint"
 
 ## What Changed
 ```
-A	scripts/generate-learning-report.sh
+M	components/map/MapContainer.tsx
 ```
 
 ## File Stats
 ```
- scripts/generate-learning-report.sh | 83 +++++++++++++++++++++++++++++++++++++
- 1 file changed, 83 insertions(+)
+ components/map/MapContainer.tsx | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 ```
 
 ## Decisions / Rationale

@@ -1,22 +1,22 @@
-# Learning Report: learning scripts added to the project
+# Learning Report: chore: update roadmap for discovery loop
 
-- Date: 2026-01-26
-- Commit: a40f7d278ff4dec257338a9d53869227786a78de
+- Date: 2026-01-27
+- Commit: e26fbb39973150e219f5bde67f765b8108bdc841
 - Author: Walsh Kang
 
 ## Summary
 - Auto-generated report for learning and review.
-- Commit message: "learning scripts added to the project"
+- Commit message: "chore: update roadmap for discovery loop"
 
 ## What Changed
 ```
-A	scripts/generate-learning-report.sh
+M	roadmap.json
 ```
 
 ## File Stats
 ```
- scripts/generate-learning-report.sh | 83 +++++++++++++++++++++++++++++++++++++
- 1 file changed, 83 insertions(+)
+ roadmap.json | 26 +++++++++++++++++++++++---
+ 1 file changed, 23 insertions(+), 3 deletions(-)
 ```
 
 ## Decisions / Rationale

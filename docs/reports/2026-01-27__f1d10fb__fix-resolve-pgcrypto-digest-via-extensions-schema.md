@@ -1,22 +1,22 @@
-# Learning Report: learning scripts added to the project
+# Learning Report: fix: resolve pgcrypto digest via extensions schema
 
-- Date: 2026-01-26
-- Commit: a40f7d278ff4dec257338a9d53869227786a78de
+- Date: 2026-01-27
+- Commit: f1d10fbd2f671f8049c9c5ba685cffba33a9ef24
 - Author: Walsh Kang
 
 ## Summary
 - Auto-generated report for learning and review.
-- Commit message: "learning scripts added to the project"
+- Commit message: "fix: resolve pgcrypto digest via extensions schema"
 
 ## What Changed
 ```
-A	scripts/generate-learning-report.sh
+A	supabase/migrations/20260127000002_fix_promote_rpc_search_path.sql
 ```
 
 ## File Stats
 ```
- scripts/generate-learning-report.sh | 83 +++++++++++++++++++++++++++++++++++++
- 1 file changed, 83 insertions(+)
+ .../20260127000002_fix_promote_rpc_search_path.sql | 193 +++++++++++++++++++++
+ 1 file changed, 193 insertions(+)
 ```
 
 ## Decisions / Rationale

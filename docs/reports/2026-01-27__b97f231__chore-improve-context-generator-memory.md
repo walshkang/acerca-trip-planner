@@ -1,22 +1,24 @@
-# Learning Report: learning scripts added to the project
+# Learning Report: chore: improve context generator memory
 
-- Date: 2026-01-26
-- Commit: a40f7d278ff4dec257338a9d53869227786a78de
+- Date: 2026-01-27
+- Commit: b97f2310f9f23aa3a5b062c2e429bf6dd2e6fbca
 - Author: Walsh Kang
 
 ## Summary
 - Auto-generated report for learning and review.
-- Commit message: "learning scripts added to the project"
+- Commit message: "chore: improve context generator memory"
 
 ## What Changed
 ```
-A	scripts/generate-learning-report.sh
+M	CONTEXT.md
+M	scripts/generate-context.ts
 ```
 
 ## File Stats
 ```
- scripts/generate-learning-report.sh | 83 +++++++++++++++++++++++++++++++++++++
- 1 file changed, 83 insertions(+)
+ CONTEXT.md                  |  10 ++--
+ scripts/generate-context.ts | 121 ++++++++++++++++++++++++++++++++++++--------
+ 2 files changed, 103 insertions(+), 28 deletions(-)
 ```
 
 ## Decisions / Rationale

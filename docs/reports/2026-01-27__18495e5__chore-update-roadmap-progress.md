@@ -1,22 +1,22 @@
-# Learning Report: learning scripts added to the project
+# Learning Report: chore: update roadmap progress
 
-- Date: 2026-01-26
-- Commit: a40f7d278ff4dec257338a9d53869227786a78de
+- Date: 2026-01-27
+- Commit: 18495e5004750da21e96c234917a69d729f0b442
 - Author: Walsh Kang
 
 ## Summary
 - Auto-generated report for learning and review.
-- Commit message: "learning scripts added to the project"
+- Commit message: "chore: update roadmap progress"
 
 ## What Changed
 ```
-A	scripts/generate-learning-report.sh
+M	roadmap.json
 ```
 
 ## File Stats
 ```
- scripts/generate-learning-report.sh | 83 +++++++++++++++++++++++++++++++++++++
- 1 file changed, 83 insertions(+)
+ roadmap.json | 23 +++++++++++++++--------
+ 1 file changed, 15 insertions(+), 8 deletions(-)
 ```
 
 ## Decisions / Rationale

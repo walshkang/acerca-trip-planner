@@ -1,22 +1,36 @@
-# Learning Report: learning scripts added to the project
+# Learning Report: chore: add agent workflow docs and rationale guard
 
-- Date: 2026-01-26
-- Commit: a40f7d278ff4dec257338a9d53869227786a78de
+- Date: 2026-01-27
+- Commit: 08d5143a17329cf38c4a764094eaa062225e8728
 - Author: Walsh Kang
 
 ## Summary
 - Auto-generated report for learning and review.
-- Commit message: "learning scripts added to the project"
+- Commit message: "chore: add agent workflow docs and rationale guard"
 
 ## What Changed
 ```
-A	scripts/generate-learning-report.sh
+A	.github/pull_request_template.md
+M	.github/workflows/validate-json.yml
+A	AGENTS.md
+M	CONTEXT.md
+A	docs/VIBE_PLAYBOOK.md
+M	package.json
+A	prompts/agent_task.md
+A	scripts/check-rationale.ts
 ```
 
 ## File Stats
 ```
- scripts/generate-learning-report.sh | 83 +++++++++++++++++++++++++++++++++++++
- 1 file changed, 83 insertions(+)
+ .github/pull_request_template.md    | 17 ++++++++
+ .github/workflows/validate-json.yml | 10 +++--
+ AGENTS.md                           | 31 ++++++++++++++
+ CONTEXT.md                          |  6 +++
+ docs/VIBE_PLAYBOOK.md               | 27 +++++++++++++
+ package.json                        |  2 +
+ prompts/agent_task.md               | 16 ++++++++
+ scripts/check-rationale.ts          | 81 +++++++++++++++++++++++++++++++++++++
+ 8 files changed, 186 insertions(+), 4 deletions(-)
 ```
 
 ## Decisions / Rationale

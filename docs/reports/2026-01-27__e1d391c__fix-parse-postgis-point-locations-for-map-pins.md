@@ -1,22 +1,22 @@
-# Learning Report: learning scripts added to the project
+# Learning Report: fix: parse PostGIS POINT locations for map pins
 
-- Date: 2026-01-26
-- Commit: a40f7d278ff4dec257338a9d53869227786a78de
+- Date: 2026-01-27
+- Commit: e1d391c761d09adba7178617731689014cc5613b
 - Author: Walsh Kang
 
 ## Summary
 - Auto-generated report for learning and review.
-- Commit message: "learning scripts added to the project"
+- Commit message: "fix: parse PostGIS POINT locations for map pins"
 
 ## What Changed
 ```
-A	scripts/generate-learning-report.sh
+M	components/map/MapContainer.tsx
 ```
 
 ## File Stats
 ```
- scripts/generate-learning-report.sh | 83 +++++++++++++++++++++++++++++++++++++
- 1 file changed, 83 insertions(+)
+ components/map/MapContainer.tsx | 57 +++++++++++++++++++++++++++++++++--------
+ 1 file changed, 47 insertions(+), 10 deletions(-)
 ```
 
 ## Decisions / Rationale

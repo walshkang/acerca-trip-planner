@@ -1,22 +1,30 @@
-# Learning Report: learning scripts added to the project
+# Learning Report: feat: add places_view and map viewport persistence
 
-- Date: 2026-01-26
-- Commit: a40f7d278ff4dec257338a9d53869227786a78de
+- Date: 2026-01-27
+- Commit: 04aca2efe4ecd6e43d329a0c21897dbb36563b03
 - Author: Walsh Kang
 
 ## Summary
 - Auto-generated report for learning and review.
-- Commit message: "learning scripts added to the project"
+- Commit message: "feat: add places_view and map viewport persistence"
 
 ## What Changed
 ```
-A	scripts/generate-learning-report.sh
+M	CONTEXT.md
+M	components/map/MapContainer.tsx
+M	lib/supabase/types.ts
+M	roadmap.json
+A	supabase/migrations/20260127000006_create_places_view.sql
 ```
 
 ## File Stats
 ```
- scripts/generate-learning-report.sh | 83 +++++++++++++++++++++++++++++++++++++
- 1 file changed, 83 insertions(+)
+ CONTEXT.md                                         |   4 +-
+ components/map/MapContainer.tsx                    | 170 ++++---
+ lib/supabase/types.ts                              | 540 ++-------------------
+ roadmap.json                                       |  12 +-
+ .../20260127000006_create_places_view.sql          |  11 +
+ 5 files changed, 156 insertions(+), 581 deletions(-)
 ```
 
 ## Decisions / Rationale

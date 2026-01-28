@@ -1,22 +1,28 @@
-# Learning Report: learning scripts added to the project
+# Learning Report: clean up extensions and supabase docs
 
-- Date: 2026-01-26
-- Commit: a40f7d278ff4dec257338a9d53869227786a78de
+- Date: 2026-01-27
+- Commit: f5bef29c4a39047e7f49901f7a2ffde8d40651f8
 - Author: Walsh Kang
 
 ## Summary
 - Auto-generated report for learning and review.
-- Commit message: "learning scripts added to the project"
+- Commit message: "clean up extensions and supabase docs"
 
 ## What Changed
 ```
-A	scripts/generate-learning-report.sh
+A	.vscode/extensions.json
+A	.vscode/settings.json
+A	supabase/.gitignore
+M	supabase/config.toml
 ```
 
 ## File Stats
 ```
- scripts/generate-learning-report.sh | 83 +++++++++++++++++++++++++++++++++++++
- 1 file changed, 83 insertions(+)
+ .vscode/extensions.json |   3 +
+ .vscode/settings.json   |  24 ++++
+ supabase/.gitignore     |   8 ++
+ supabase/config.toml    | 325 ++++++++++++++++++++++++++++++++++++++++++++++--
+ 4 files changed, 352 insertions(+), 8 deletions(-)
 ```
 
 ## Decisions / Rationale

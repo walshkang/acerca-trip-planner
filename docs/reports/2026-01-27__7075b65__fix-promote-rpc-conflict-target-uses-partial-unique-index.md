@@ -1,22 +1,22 @@
-# Learning Report: learning scripts added to the project
+# Learning Report: fix: promote RPC conflict target uses partial unique index
 
-- Date: 2026-01-26
-- Commit: a40f7d278ff4dec257338a9d53869227786a78de
+- Date: 2026-01-27
+- Commit: 7075b65cb5e94f924c9448cbe2ee218ba5a2c06b
 - Author: Walsh Kang
 
 ## Summary
 - Auto-generated report for learning and review.
-- Commit message: "learning scripts added to the project"
+- Commit message: "fix: promote RPC conflict target uses partial unique index"
 
 ## What Changed
 ```
-A	scripts/generate-learning-report.sh
+A	supabase/migrations/20260127000003_fix_promote_rpc_conflict_target.sql
 ```
 
 ## File Stats
 ```
- scripts/generate-learning-report.sh | 83 +++++++++++++++++++++++++++++++++++++
- 1 file changed, 83 insertions(+)
+ ...60127000003_fix_promote_rpc_conflict_target.sql | 193 +++++++++++++++++++++
+ 1 file changed, 193 insertions(+)
 ```
 
 ## Decisions / Rationale

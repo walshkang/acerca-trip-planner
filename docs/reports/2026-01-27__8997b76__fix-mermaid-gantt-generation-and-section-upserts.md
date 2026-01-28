@@ -1,22 +1,24 @@
-# Learning Report: learning scripts added to the project
+# Learning Report: Fix mermaid gantt generation and section upserts
 
-- Date: 2026-01-26
-- Commit: a40f7d278ff4dec257338a9d53869227786a78de
+- Date: 2026-01-27
+- Commit: 8997b761e0c570fd24cdbfe6c6e7e9e52870e184
 - Author: Walsh Kang
 
 ## Summary
 - Auto-generated report for learning and review.
-- Commit message: "learning scripts added to the project"
+- Commit message: "Fix mermaid gantt generation and section upserts"
 
 ## What Changed
 ```
-A	scripts/generate-learning-report.sh
+M	CONTEXT.md
+M	scripts/generate-context.ts
 ```
 
 ## File Stats
 ```
- scripts/generate-learning-report.sh | 83 +++++++++++++++++++++++++++++++++++++
- 1 file changed, 83 insertions(+)
+ CONTEXT.md                  | 18 +++++++++---------
+ scripts/generate-context.ts | 22 ++++++++++++----------
+ 2 files changed, 21 insertions(+), 19 deletions(-)
 ```
 
 ## Decisions / Rationale

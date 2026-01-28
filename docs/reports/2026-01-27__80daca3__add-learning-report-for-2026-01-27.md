@@ -20,7 +20,7 @@ A	docs/reports/2026-01-27__82fad59__refactor-learning-report-to-improve-clarity-
 ```
 
 ## Decisions / Rationale
-- TODO: Add why these changes were made and any tradeoffs.
+- Draft pending: capture rationale and tradeoffs in a follow-up pass.
 
 ## Best Practices: Backend Connections
 - Use server-side clients for privileged operations; avoid admin/service keys in client code.
@@ -44,4 +44,4 @@ const { data, error } = await supabase.rpc('promote_place_candidate', {
 - Capture TODOs in commit message or report immediately.
 
 ## Next Steps
-- TODO: List follow-ups or risks.
+- Draft pending: document follow-ups/risks in a follow-up pass.

@@ -1,22 +1,22 @@
-# Learning Report: learning scripts added to the project
+# Learning Report: Add generated learning report
 
-- Date: 2026-01-26
-- Commit: a40f7d278ff4dec257338a9d53869227786a78de
+- Date: 2026-01-27
+- Commit: ff4b81f7aea28fccffb25a439b56c8c9181bed99
 - Author: Walsh Kang
 
 ## Summary
 - Auto-generated report for learning and review.
-- Commit message: "learning scripts added to the project"
+- Commit message: "Add generated learning report"
 
 ## What Changed
 ```
-A	scripts/generate-learning-report.sh
+A	docs/reports/2026-01-27__80daca3__add-learning-report-for-2026-01-27.md
 ```
 
 ## File Stats
 ```
- scripts/generate-learning-report.sh | 83 +++++++++++++++++++++++++++++++++++++
- 1 file changed, 83 insertions(+)
+ ..._80daca3__add-learning-report-for-2026-01-27.md | 47 ++++++++++++++++++++++
+ 1 file changed, 47 insertions(+)
 ```
 
 ## Decisions / Rationale
