@@ -63,6 +63,38 @@
    npm run dev
    ```
 
+## Supabase CLI (no Docker) quickstart
+
+Use this when you want a fresh terminal window ready for DB types + CLI work.
+
+1. Open a new terminal and `cd` into the repo:
+   ```bash
+   cd /Users/walsh.kang/documents/github/acerca-trip-planner
+   ```
+
+2. Export your project ref (use the ref from your Supabase dashboard URL):
+   ```bash
+   export SUPABASE_PROJECT_REF="<project-ref>"
+   ```
+
+3. Login once (opens a browser):
+   ```bash
+   npx supabase login
+   ```
+   Or set a token for non-interactive usage:
+   ```bash
+   export SUPABASE_ACCESS_TOKEN="<token>"
+   ```
+
+4. Generate types via the script:
+   ```bash
+   npm run db:types
+   ```
+
+Notes:
+- `npx supabase` stores a local CLI cache under `supabase/.temp/`.
+- If types already match the current schema, `git status` will show no changes.
+
 ## Database Migrations
 
 Migrations are located in `supabase/migrations/` and should be applied in order:

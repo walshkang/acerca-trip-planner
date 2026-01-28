@@ -111,6 +111,10 @@ Note: This is a historical snapshot. Current rules and workflow live in `AGENTS.
 - Compound filters (AND/OR) are supported in the filter JSON from day one.
 - Open-now uses server time converted to place timezone via offline lat/lng lookup (IANA), with a trip-timezone or utc_offset_minutes fallback.
 
+## Phase 2 Detailed Plan
+
+See `docs/PHASE_2_PLAN.md` for decomposed work items, schema changes, APIs, UI, and acceptance criteria.
+
 ## Key Files Created
 
 ### Database Migrations
