@@ -336,6 +336,16 @@
             "Open Now filtering uses server time converted to place timezone.",
             "Cheap timezone strategy: derive IANA timezone from lat/lng offline at ingest; fallback to trip timezone or stored utc_offset_minutes."
           ]
+        },
+        {
+          "id": "P2-E3",
+          "title": "List Workspace + Tags",
+          "features": [
+            "List detail view: click a list to open a scrollable list of saved places.",
+            "List-scoped tags per place, editable inline in the list view.",
+            "Tag filters scoped to a list; define multi-select semantics (AND/OR) explicitly.",
+            "User tags are stored separately from frozen enrichment (no mutation of AI data)."
+          ]
         }
       ]
     },

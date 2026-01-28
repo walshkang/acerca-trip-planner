@@ -9,6 +9,7 @@
 - Current Phase: The Smart Repository (Cupcake)
 - Active Epic: P1-E5 Map View + Discovery Refinements (Phase 0-4 Plan)
 - Immediate Blocker: None. Task 1.4 is complete; types were regenerated after the list-assignment RPC update.
+- Planned (Phase 2): P2-E3 List Workspace + Tags (list detail view with per-place tags).
 
 ## 🗺️ Roadmap Visualization
 
@@ -25,6 +26,7 @@ gantt
   section The_Interactive_Planner_(Birthday_Cake)
   "P2-E1 Stateful Planning (Kanban)" :p2e1, after p1e5, 7d
   "P2-E2 Deterministic Filtering & Intent Translation" :p2e2, after p2e1, 7d
+  "P2-E3 List Workspace + Tags" :p2e3, after p2e2, 7d
   section The_Intelligent_Concierge_(Wedding_Cake)
   "P3-E1 Deterministic Routing" :p3e1, after p2e2, 7d
   "P3-E2 AI Discovery (Suggestion Layer)" :p3e2, after p3e1, 7d
@@ -38,6 +40,8 @@ gantt
 - User edits never overwrite frozen AI enrichment.
 
 ## 📝 Implementation Memory
+- 2026-01-28 – roadmap: add list detail view + tags to Phase 2
+    Added Phase 2 epic P2-E3 for a list detail view with per-place tags and list-scoped tag filters.
 - 2026-01-27 – feat: add lists link to map
     Added a lightweight "Lists" link under the Omnibox for discoverable list management.
 - 2026-01-27 – chore: regenerate supabase types
