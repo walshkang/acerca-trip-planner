@@ -9,6 +9,12 @@ export type DiscoveryCandidate = {
   created_at: string
 }
 
+export type DiscoverySearchResult = {
+  place_id: string
+  name: string | null
+  address: string | null
+}
+
 export type DiscoveryEnrichment = {
   curatedData: unknown | null
   normalizedData: unknown | null
@@ -24,10 +30,21 @@ type DiscoveryState = {
   query: string
   isSubmitting: boolean
   error: string | null
+  results: DiscoverySearchResult[]
+  selectedResultId: string | null
   candidate: DiscoveryCandidate | null
+  previewCandidate: DiscoveryCandidate | null
   ghostLocation: LatLng | null
   enrichment: DiscoveryEnrichment | null
+  previewEnrichment: DiscoveryEnrichment | null
   setQuery: (v: string) => void
+  setResults: (results: DiscoverySearchResult[]) => void
+  setSelectedResultId: (id: string | null) => void
+  setPreview: (input: {
+    candidate: DiscoveryCandidate | null
+    enrichment: DiscoveryEnrichment | null
+    ghostLocation: LatLng | null
+  }) => void
   clear: () => void
   submit: () => Promise<void>
 }
@@ -36,20 +53,38 @@ export const useDiscoveryStore = create<DiscoveryState>((set, get) => ({
   query: '',
   isSubmitting: false,
   error: null,
+  results: [],
+  selectedResultId: null,
   candidate: null,
+  previewCandidate: null,
   ghostLocation: null,
   enrichment: null,
+  previewEnrichment: null,
 
   setQuery: (v) => set({ query: v }),
+  setResults: (results) => set({ results }),
+  setSelectedResultId: (id) => set({ selectedResultId: id }),
+  setPreview: ({ candidate, enrichment, ghostLocation }) =>
+    set({
+      candidate,
+      enrichment,
+      ghostLocation,
+      previewCandidate: candidate,
+      previewEnrichment: enrichment,
+    }),
 
   clear: () =>
     set({
       query: '',
       isSubmitting: false,
       error: null,
+      results: [],
+      selectedResultId: null,
       candidate: null,
+      previewCandidate: null,
       ghostLocation: null,
       enrichment: null,
+      previewEnrichment: null,
     }),
 
   submit: async () => {
@@ -59,9 +94,13 @@ export const useDiscoveryStore = create<DiscoveryState>((set, get) => ({
     set({
       isSubmitting: true,
       error: null,
+      results: [],
+      selectedResultId: null,
       candidate: null,
+      previewCandidate: null,
       ghostLocation: null,
       enrichment: null,
+      previewEnrichment: null,
     })
 
     try {
@@ -81,10 +120,15 @@ export const useDiscoveryStore = create<DiscoveryState>((set, get) => ({
         return
       }
 
+      const candidate = (json?.candidate ?? null) as DiscoveryCandidate | null
+      const ghostLocation = (json?.location ?? null) as LatLng | null
+      const enrichment = (json?.enrichment ?? null) as DiscoveryEnrichment | null
       set({
-        candidate: (json?.candidate ?? null) as DiscoveryCandidate | null,
-        ghostLocation: (json?.location ?? null) as LatLng | null,
-        enrichment: (json?.enrichment ?? null) as DiscoveryEnrichment | null,
+        candidate,
+        ghostLocation,
+        enrichment,
+        previewCandidate: candidate,
+        previewEnrichment: enrichment,
       })
     } catch (e: unknown) {
       set({ error: e instanceof Error ? e.message : 'Request failed' })
@@ -93,4 +137,3 @@ export const useDiscoveryStore = create<DiscoveryState>((set, get) => ({
     }
   },
 }))
-
