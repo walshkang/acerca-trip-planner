@@ -129,7 +129,10 @@ export default function InspectorCard(props: { onCommitted?: (placeId: string) =
       const res = await fetch('/api/places/promote', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ candidate_id: candidateId }),
+        body: JSON.stringify({
+          candidate_id: candidateId,
+          list_id: selectedListId ?? null,
+        }),
       })
       const json = await res.json().catch(() => ({}))
       if (!res.ok) {

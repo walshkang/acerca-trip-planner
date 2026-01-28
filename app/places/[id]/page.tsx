@@ -57,6 +57,19 @@ export default async function PlaceDetailPage({
     redirect('/')
   }
 
+  const { data: listItems } = await supabase
+    .from('list_items')
+    .select('lists ( id, name, is_default )')
+    .eq('place_id', place.id)
+
+  const lists = ((listItems ?? []) as Array<{
+    lists: { id: string; name: string; is_default: boolean } | null
+  }>)
+    .map((row) => row.lists)
+    .filter((list): list is { id: string; name: string; is_default: boolean } =>
+      Boolean(list)
+    )
+
   const enrichment = place.enrichment_id
     ? await getEnrichmentById(place.enrichment_id)
     : null
@@ -210,6 +223,27 @@ export default async function PlaceDetailPage({
               initialTags={place.user_tags ?? null}
             />
           </div>
+        </section>
+
+        <section className="rounded-lg border border-gray-200 bg-white p-4">
+          <h2 className="text-sm font-semibold text-gray-900">Lists</h2>
+          {lists.length ? (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {lists.map((list) => (
+                <span
+                  key={list.id}
+                  className="rounded-full border border-gray-200 px-3 py-1 text-xs"
+                >
+                  {list.name}
+                  {list.is_default ? ' · Default' : ''}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <p className="mt-2 text-sm text-gray-500">
+              Not assigned to a list yet.
+            </p>
+          )}
         </section>
       </div>
     </main>

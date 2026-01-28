@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
     
-    const { candidate_id } = await request.json()
+    const { candidate_id, list_id } = await request.json()
     
     if (!candidate_id) {
       return NextResponse.json({ error: 'candidate_id is required' }, { status: 400 })
@@ -20,6 +20,7 @@ export async function POST(request: NextRequest) {
     // Call RPC function (RPC handles candidate ownership check internally)
     const { data: placeId, error } = await supabase.rpc('promote_place_candidate', {
       p_candidate_id: candidate_id,
+      p_list_id: list_id ?? null,
     })
     
     if (error) {
