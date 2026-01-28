@@ -21,6 +21,13 @@ export interface GooglePlacesResult {
   [key: string]: any // Preserve raw payload (Google adds fields over time).
 }
 
+export interface GooglePlacesTextCandidate {
+  place_id: string
+  name?: string
+  formatted_address?: string
+  [key: string]: any
+}
+
 export interface WikipediaGeoSearchItem {
   pageid: number
   title: string
@@ -298,13 +305,16 @@ export async function fetchGooglePlace(placeId: string): Promise<GooglePlacesRes
   return data.result
 }
 
-/**
- * Resolve a Google Place ID deterministically from a free-text query.
- * Uses Find Place From Text and selects the first candidate returned.
- */
-export async function findGooglePlaceIdFromText(input: string): Promise<{
-  placeId: string
-  candidates: Array<{ place_id: string; name?: string }>
+type GooglePlacesFindPlaceResponse = {
+  status: string
+  candidates?: GooglePlacesTextCandidate[]
+  error_message?: string
+}
+
+async function fetchFindPlaceCandidates(input: string, fields: string): Promise<{
+  status: string
+  candidates: GooglePlacesTextCandidate[]
+  errorMessage?: string
 }> {
   const apiKey = process.env.GOOGLE_PLACES_API_KEY
   if (!apiKey) {
@@ -315,8 +325,6 @@ export async function findGooglePlaceIdFromText(input: string): Promise<{
     )
   }
 
-  const fields = ['place_id', 'name'].join(',')
-
   const u = new URL(
     'https://maps.googleapis.com/maps/api/place/findplacefromtext/json'
   )
@@ -325,21 +333,38 @@ export async function findGooglePlaceIdFromText(input: string): Promise<{
   u.searchParams.set('fields', fields)
   u.searchParams.set('key', apiKey)
 
-  const { data } = await fetchJson<{
-    status: string
-    candidates?: Array<{ place_id: string; name?: string }>
-    error_message?: string
-  }>(u.toString())
+  const { data } = await fetchJson<GooglePlacesFindPlaceResponse>(u.toString())
 
-  if (data.status !== 'OK' || !data.candidates?.length) {
+  return {
+    status: data.status,
+    candidates: data.candidates ?? [],
+    errorMessage: data.error_message,
+  }
+}
+
+/**
+ * Resolve a Google Place ID deterministically from a free-text query.
+ * Uses Find Place From Text and selects the first candidate returned.
+ */
+export async function findGooglePlaceIdFromText(input: string): Promise<{
+  placeId: string
+  candidates: GooglePlacesTextCandidate[]
+}> {
+  const fields = ['place_id', 'name', 'formatted_address'].join(',')
+  const { status, candidates, errorMessage } = await fetchFindPlaceCandidates(
+    input,
+    fields
+  )
+
+  if (status !== 'OK' || !candidates.length) {
     throw new SourceFetchError(
       'http_error',
-      `Google FindPlace error status=${data.status}${data.error_message ? ` message=${data.error_message}` : ''}`,
+      `Google FindPlace error status=${status}${errorMessage ? ` message=${errorMessage}` : ''}`,
       { status: 200 }
     )
   }
 
-  const first = data.candidates[0]
+  const first = candidates[0]
   if (!first?.place_id) {
     throw new SourceFetchError(
       'unexpected_shape',
@@ -348,7 +373,33 @@ export async function findGooglePlaceIdFromText(input: string): Promise<{
     )
   }
 
-  return { placeId: first.place_id, candidates: data.candidates }
+  return { placeId: first.place_id, candidates }
+}
+
+/**
+ * Return lightweight Find Place candidates for search results.
+ * Returns an empty list for ZERO_RESULTS.
+ */
+export async function searchGooglePlaces(
+  input: string
+): Promise<GooglePlacesTextCandidate[]> {
+  const fields = ['place_id', 'name', 'formatted_address'].join(',')
+  const { status, candidates, errorMessage } = await fetchFindPlaceCandidates(
+    input,
+    fields
+  )
+
+  if (status === 'ZERO_RESULTS') return []
+
+  if (status !== 'OK') {
+    throw new SourceFetchError(
+      'http_error',
+      `Google FindPlace error status=${status}${errorMessage ? ` message=${errorMessage}` : ''}`,
+      { status: 200 }
+    )
+  }
+
+  return candidates.filter((c) => typeof c.place_id === 'string' && c.place_id)
 }
 
 /**
