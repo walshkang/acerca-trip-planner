@@ -71,7 +71,7 @@
       "goal": "A deterministic, map-based database of approved places. Eliminates messy lists and taxonomy drift.",
       "estimated_timeline": "MVP (Weeks 1-4)",
       "status": "in_progress",
-      "progress_summary": "Map-first MVP loop working end-to-end: auth-gated UI, Omnibox ingestion (URL/place_id/name → place_candidates), immediate Enriched Preview on a Ghost Pin, and one-click Approve to promote into canonical places. Enrichment is frozen at ingestion; promotion is a state transition only. Completed: places_view + map serialization and viewport persistence with fitBounds, last-view fallback, approval flyTo, lightweight search results + preview ingest, Inspector gated on preview state, lists schema + types, and list CRUD UI. Remaining: assign lists on approval and show list membership on place detail. Phase 2 cannot start until list persistence UX is complete and the Phase 0-4 plan is closed.",
+      "progress_summary": "Map-first MVP loop working end-to-end: auth-gated UI, Omnibox ingestion (URL/place_id/name → place_candidates), immediate Enriched Preview on a Ghost Pin, and one-click Approve to promote into canonical places. Enrichment is frozen at ingestion; promotion is a state transition only. Completed: places_view + map serialization and viewport persistence with fitBounds, last-view fallback, approval flyTo, lightweight search results + preview ingest, Inspector gated on preview state, lists schema + types, list CRUD UI, and list assignment on approval with membership shown on place detail. Phase 2 cannot start until list persistence UX is complete and the Phase 0-4 plan is closed.",
       "epics": [
         {
           "id": "P1-E1",
@@ -290,7 +290,7 @@
               "id": "5.14",
               "task": "Assign lists on approval and show membership.",
               "details": "Update approval flow to assign to a list and show list membership in the place detail view.",
-              "status": "pending"
+              "status": "completed"
             }
           ]
         }
