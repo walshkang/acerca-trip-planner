@@ -94,6 +94,11 @@ Use this when you want a fresh terminal window ready for DB types + CLI work.
 Notes:
 - `npx supabase` stores a local CLI cache under `supabase/.temp/`.
 - If types already match the current schema, `git status` will show no changes.
+- If `SUPABASE_DB_URL` is set in your shell, unset it to avoid the Docker path:
+  ```bash
+  unset SUPABASE_DB_URL
+  ```
+- The typegen script writes to a temp file and only replaces `lib/supabase/types.ts` if output is non-empty.
 
 ## Database Migrations
 

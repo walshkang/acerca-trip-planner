@@ -2,18 +2,35 @@
 set -euo pipefail
 
 OUT_FILE="lib/supabase/types.ts"
+TMP_FILE="$(mktemp -t supabase-types.XXXXXX)"
+
+cleanup() {
+  rm -f "${TMP_FILE}"
+}
+trap cleanup EXIT
+
+write_types() {
+  local label="$1"
+  shift
+  echo "Generating Supabase types from ${label} -> ${OUT_FILE}"
+  "$@" > "${TMP_FILE}"
+
+  if [[ ! -s "${TMP_FILE}" ]]; then
+    echo "✗ Type generation produced an empty file; leaving ${OUT_FILE} unchanged."
+    exit 1
+  fi
+
+  mv "${TMP_FILE}" "${OUT_FILE}"
+  echo "✓ Wrote ${OUT_FILE}"
+}
 
 if [[ -n "${SUPABASE_DB_URL:-}" ]]; then
-  echo "Generating Supabase types from SUPABASE_DB_URL -> ${OUT_FILE}"
-  supabase gen types typescript --db-url "${SUPABASE_DB_URL}" > "${OUT_FILE}"
-  echo "✓ Wrote ${OUT_FILE}"
+  write_types "SUPABASE_DB_URL" supabase gen types typescript --db-url "${SUPABASE_DB_URL}"
   exit 0
 fi
 
 if [[ -n "${SUPABASE_PROJECT_REF:-}" ]]; then
-  echo "Generating Supabase types from SUPABASE_PROJECT_REF -> ${OUT_FILE}"
-  npx supabase gen types typescript --project-id "${SUPABASE_PROJECT_REF}" --schema public > "${OUT_FILE}"
-  echo "✓ Wrote ${OUT_FILE}"
+  write_types "SUPABASE_PROJECT_REF" npx supabase gen types typescript --project-id "${SUPABASE_PROJECT_REF}" --schema public
   exit 0
 fi
 
