@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { distinctTagsFromItems } from '@/lib/lists/tags'
+import { distinctTagsFromItems, normalizeTagList } from '@/lib/lists/tags'
 
 const LIST_FIELDS =
   'id, name, description, is_default, created_at, start_date, end_date, timezone'
@@ -94,6 +94,7 @@ export async function POST(
 
     const body = (await request.json().catch(() => ({}))) as {
       place_id?: string
+      tags?: unknown
     }
 
     const placeId = typeof body.place_id === 'string' ? body.place_id : null
@@ -119,7 +120,7 @@ export async function POST(
 
     const { data: place, error: placeError } = await supabase
       .from('places')
-      .select('id')
+      .select('id, enrichment_id')
       .eq('id', placeId)
       .eq('user_id', user.id)
       .single()
@@ -133,6 +134,39 @@ export async function POST(
         { status: 404 }
       )
     }
+
+    const hasTagsField = Object.prototype.hasOwnProperty.call(body, 'tags')
+    const normalizedProvided = hasTagsField ? normalizeTagList(body.tags) : []
+    if (hasTagsField && normalizedProvided === null) {
+      return NextResponse.json(
+        { error: 'tags must be a string or string[]' },
+        { status: 400 }
+      )
+    }
+    const providedTags = normalizedProvided ?? []
+
+    let seedTags: string[] = []
+    if (place.enrichment_id) {
+      const { data: enrichment } = await supabase
+        .from('enrichments')
+        .select('normalized_data')
+        .eq('id', place.enrichment_id)
+        .single()
+
+      const raw = enrichment?.normalized_data as
+        | { tags?: unknown }
+        | null
+        | undefined
+      const normalizedFromEnrichment = normalizeTagList(raw?.tags)
+      if (normalizedFromEnrichment?.length) {
+        seedTags = normalizedFromEnrichment
+      }
+    }
+
+    const desiredTags =
+      seedTags.length || providedTags.length
+        ? (normalizeTagList([...seedTags, ...providedTags]) ?? [])
+        : []
 
     const { data: item, error: itemError } = await supabase
       .from('list_items')
@@ -148,6 +182,24 @@ export async function POST(
         { error: itemError?.message || 'Failed to add list item' },
         { status: 500 }
       )
+    }
+
+    const existingTags = Array.isArray(item.tags) ? item.tags : []
+    if (!existingTags.length && desiredTags.length) {
+      const { data: updated, error: updateError } = await supabase
+        .from('list_items')
+        .update({ tags: desiredTags })
+        .eq('id', item.id)
+        .select('id, list_id, place_id, tags')
+        .single()
+
+      if (updateError) {
+        return NextResponse.json(
+          { error: updateError.message },
+          { status: 500 }
+        )
+      }
+      return NextResponse.json({ item: updated ?? item })
     }
 
     return NextResponse.json({ item })

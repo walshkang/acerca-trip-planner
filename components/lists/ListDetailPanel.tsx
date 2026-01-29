@@ -13,6 +13,13 @@ type ApiResponse = {
   distinct_tags?: string[]
 }
 
+type SearchResult = {
+  id: string
+  name: string
+  category: string
+  address: string | null
+}
+
 type Props = {
   listId: string
 }
@@ -22,6 +29,14 @@ export default function ListDetailPanel({ listId }: Props) {
   const [items, setItems] = useState<ListItemRow[]>([])
   const [distinctTags, setDistinctTags] = useState<string[]>([])
   const [activeTagFilters, setActiveTagFilters] = useState<string[]>([])
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([])
+  const [searchLoading, setSearchLoading] = useState(false)
+  const [searchError, setSearchError] = useState<string | null>(null)
+  const [searchTagInputs, setSearchTagInputs] = useState<Record<string, string>>(
+    {}
+  )
+  const [addingPlaceId, setAddingPlaceId] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -70,7 +85,55 @@ export default function ListDetailPanel({ listId }: Props) {
   useEffect(() => {
     setActiveTagFilters([])
     setDistinctTags([])
+    setSearchQuery('')
+    setSearchResults([])
+    setSearchError(null)
+    setSearchTagInputs({})
   }, [listId])
+
+  useEffect(() => {
+    const trimmed = searchQuery.trim()
+    if (trimmed.length < 2) {
+      setSearchResults([])
+      setSearchError(null)
+      setSearchLoading(false)
+      return
+    }
+
+    const controller = new AbortController()
+    const handle = setTimeout(async () => {
+      setSearchLoading(true)
+      setSearchError(null)
+      try {
+        const res = await fetch(
+          `/api/places/local-search?q=${encodeURIComponent(trimmed)}`,
+          { signal: controller.signal }
+        )
+        const json = (await res.json().catch(() => ({}))) as {
+          results?: SearchResult[]
+          error?: string
+        }
+        if (!res.ok) {
+          setSearchError(json?.error || `HTTP ${res.status}`)
+          setSearchResults([])
+          return
+        }
+        setSearchResults((json?.results ?? []) as SearchResult[])
+      } catch (err: unknown) {
+        if ((err as { name?: string })?.name === 'AbortError') return
+        setSearchError(err instanceof Error ? err.message : 'Request failed')
+      } finally {
+        if (!controller.signal.aborted) {
+          setSearchLoading(false)
+        }
+      }
+    }, 300)
+
+    return () => {
+      controller.abort()
+      clearTimeout(handle)
+    }
+  }, [searchQuery])
 
   const filteredItems = useMemo(() => {
     if (!activeTagFilters.length) return items
@@ -85,6 +148,50 @@ export default function ListDetailPanel({ listId }: Props) {
       prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
     )
   }, [])
+
+  const placeIdsInList = useMemo(() => {
+    return new Set(
+      items
+        .map((item) => item.place?.id)
+        .filter((id): id is string => Boolean(id))
+    )
+  }, [items])
+
+  const handleSearchTagChange = useCallback((placeId: string, value: string) => {
+    setSearchTagInputs((prev) => ({ ...prev, [placeId]: value }))
+  }, [])
+
+  const handleAddPlace = useCallback(
+    async (placeId: string) => {
+      if (addingPlaceId) return
+      setAddingPlaceId(placeId)
+      setSearchError(null)
+      try {
+        const tagsInput = searchTagInputs[placeId] ?? ''
+        const payload: { place_id: string; tags?: string } = { place_id: placeId }
+        if (tagsInput.trim().length) {
+          payload.tags = tagsInput
+        }
+        const res = await fetch(`/api/lists/${listId}/items`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(payload),
+        })
+        const json = await res.json().catch(() => ({}))
+        if (!res.ok) {
+          setSearchError(json?.error || `HTTP ${res.status}`)
+          return
+        }
+        setSearchTagInputs((prev) => ({ ...prev, [placeId]: '' }))
+        await fetchItems()
+      } catch (err: unknown) {
+        setSearchError(err instanceof Error ? err.message : 'Request failed')
+      } finally {
+        setAddingPlaceId(null)
+      }
+    },
+    [addingPlaceId, fetchItems, listId, searchTagInputs]
+  )
 
   const handleClearFilters = useCallback(() => {
     setActiveTagFilters([])
@@ -120,21 +227,95 @@ export default function ListDetailPanel({ listId }: Props) {
   )
 
   return (
-    <ListDetailBody
-      list={list}
-      items={filteredItems}
-      loading={loading}
-      error={error}
-      emptyLabel={
-        activeTagFilters.length
-          ? 'No places match these tags.'
-          : 'No places in this list yet.'
-      }
-      availableTags={distinctTags}
-      activeTagFilters={activeTagFilters}
-      onTagFilterToggle={handleTagToggle}
-      onClearTagFilters={handleClearFilters}
-      onTagsUpdate={handleTagsUpdate}
-    />
+    <div className="space-y-6">
+      <section className="rounded-lg border border-gray-200 bg-white p-4 space-y-3">
+        <div>
+          <h3 className="text-sm font-semibold text-gray-900">
+            Add places to this list
+          </h3>
+          <p className="text-xs text-gray-500">
+            Search your saved places and add tags at the same time.
+          </p>
+        </div>
+        <input
+          className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm"
+          placeholder="Search your places"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
+        {searchLoading ? (
+          <p className="text-xs text-gray-500">Searching…</p>
+        ) : null}
+        {searchError ? (
+          <p className="text-xs text-red-600">{searchError}</p>
+        ) : null}
+        {searchResults.length ? (
+          <div className="space-y-2">
+            {searchResults.map((result) => {
+              const inList = placeIdsInList.has(result.id)
+              const tagsInput = searchTagInputs[result.id] ?? ''
+              return (
+                <div
+                  key={result.id}
+                  className="rounded-md border border-gray-100 px-3 py-2 space-y-2"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-gray-900">
+                        {result.name}
+                      </p>
+                      {result.address ? (
+                        <p className="text-xs text-gray-500">
+                          {result.address}
+                        </p>
+                      ) : null}
+                    </div>
+                    <span className="rounded-full border border-gray-200 px-2 py-0.5 text-[10px] text-gray-500">
+                      {result.category}
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <input
+                      className="flex-1 rounded-md border border-gray-200 px-2 py-1 text-xs"
+                      placeholder="Add tags (optional)"
+                      value={tagsInput}
+                      onChange={(e) =>
+                        handleSearchTagChange(result.id, e.target.value)
+                      }
+                      disabled={inList}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleAddPlace(result.id)}
+                      disabled={inList || addingPlaceId === result.id}
+                      className="rounded-md border border-gray-200 px-2 py-1 text-[11px] text-gray-700 disabled:opacity-50"
+                    >
+                      {inList ? 'Added' : addingPlaceId === result.id ? 'Adding…' : 'Add'}
+                    </button>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        ) : null}
+      </section>
+
+      <ListDetailBody
+        list={list}
+        items={filteredItems}
+        loading={loading}
+        error={error}
+        emptyLabel={
+          activeTagFilters.length
+            ? 'No places match these tags.'
+            : 'No places in this list yet.'
+        }
+        availableTags={distinctTags}
+        activeTagFilters={activeTagFilters}
+        onTagFilterToggle={handleTagToggle}
+        onClearTagFilters={handleClearFilters}
+        onTagsUpdate={handleTagsUpdate}
+      />
+    </div>
   )
 }

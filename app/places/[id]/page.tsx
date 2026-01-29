@@ -91,6 +91,7 @@ export default async function PlaceDetailPage({
 
   const summary = wikiCurated?.summary ?? fallbackSummary
   const thumbnailUrl = wikiCurated?.thumbnail_url ?? fallbackThumbnail
+  const showWiki = place.category === 'Sights'
 
   return (
     <main className="min-h-screen p-6">
@@ -124,48 +125,50 @@ export default async function PlaceDetailPage({
           </form>
         </div>
 
-        <section className="rounded-lg border border-gray-200 bg-white p-4">
-          <h2 className="text-sm font-semibold text-gray-900">Wikipedia</h2>
-          {summary || thumbnailUrl || wikiCurated?.primary_fact_pairs?.length ? (
-            <div className="mt-3 space-y-3 text-sm text-gray-700">
-              <div className="flex gap-4">
-                {thumbnailUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={thumbnailUrl}
-                    alt={wikiCurated?.wikipedia_title ?? place.name}
-                    className="h-20 w-20 shrink-0 rounded-md object-cover bg-gray-50"
-                  />
-                ) : null}
-                <div className="space-y-2">
-                  {wikiCurated?.wikipedia_title ? (
-                    <p className="text-xs text-gray-500">
-                      {wikiCurated.wikipedia_title}{' '}
-                      {wikiCurated.wikidata_qid ? `· ${wikiCurated.wikidata_qid}` : ''}
-                    </p>
+        {showWiki ? (
+          <section className="rounded-lg border border-gray-200 bg-white p-4">
+            <h2 className="text-sm font-semibold text-gray-900">Wikipedia</h2>
+            {summary || thumbnailUrl || wikiCurated?.primary_fact_pairs?.length ? (
+              <div className="mt-3 space-y-3 text-sm text-gray-700">
+                <div className="flex gap-4">
+                  {thumbnailUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={thumbnailUrl}
+                      alt={wikiCurated?.wikipedia_title ?? place.name}
+                      className="h-20 w-20 shrink-0 rounded-md object-cover bg-gray-50"
+                    />
                   ) : null}
-                  {summary ? <p className="text-sm leading-6">{summary}</p> : null}
+                  <div className="space-y-2">
+                    {wikiCurated?.wikipedia_title ? (
+                      <p className="text-xs text-gray-500">
+                        {wikiCurated.wikipedia_title}{' '}
+                        {wikiCurated.wikidata_qid ? `· ${wikiCurated.wikidata_qid}` : ''}
+                      </p>
+                    ) : null}
+                    {summary ? <p className="text-sm leading-6">{summary}</p> : null}
+                  </div>
                 </div>
-              </div>
 
-              {Array.isArray(wikiCurated?.primary_fact_pairs) &&
-              wikiCurated.primary_fact_pairs.length ? (
-                <dl className="grid grid-cols-1 gap-x-6 gap-y-2 sm:grid-cols-2">
-                  {wikiCurated.primary_fact_pairs.map((p) => (
-                    <div key={`${p.label}:${p.value}`} className="flex gap-2">
-                      <dt className="text-gray-500">{p.label}:</dt>
-                      <dd className="text-gray-900">{p.value}</dd>
-                    </div>
-                  ))}
-                </dl>
-              ) : null}
-            </div>
-          ) : (
-            <p className="mt-2 text-sm text-gray-500">
-              No curated Wikipedia data yet.
-            </p>
-          )}
-        </section>
+                {Array.isArray(wikiCurated?.primary_fact_pairs) &&
+                wikiCurated.primary_fact_pairs.length ? (
+                  <dl className="grid grid-cols-1 gap-x-6 gap-y-2 sm:grid-cols-2">
+                    {wikiCurated.primary_fact_pairs.map((p) => (
+                      <div key={`${p.label}:${p.value}`} className="flex gap-2">
+                        <dt className="text-gray-500">{p.label}:</dt>
+                        <dd className="text-gray-900">{p.value}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                ) : null}
+              </div>
+            ) : (
+              <p className="mt-2 text-sm text-gray-500">
+                No curated Wikipedia data yet.
+              </p>
+            )}
+          </section>
+        ) : null}
 
         <section className="rounded-lg border border-gray-200 bg-white p-4">
           <h2 className="text-sm font-semibold text-gray-900">

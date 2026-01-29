@@ -37,6 +37,8 @@ export default function ListDrawer({
   const [lists, setLists] = useState<ListSummary[]>([])
   const [listsLoading, setListsLoading] = useState(false)
   const [listsError, setListsError] = useState<string | null>(null)
+  const [newListName, setNewListName] = useState('')
+  const [creatingList, setCreatingList] = useState(false)
   const [activeList, setActiveList] = useState<ListSummary | null>(null)
   const [items, setItems] = useState<ListItemRow[]>([])
   const [distinctTags, setDistinctTags] = useState<string[]>([])
@@ -65,6 +67,37 @@ export default function ListDrawer({
       setListsLoading(false)
     }
   }, [])
+
+  const createList = useCallback(async () => {
+    const name = newListName.trim()
+    if (!name) return
+    setCreatingList(true)
+    setListsError(null)
+    try {
+      const res = await fetch('/api/lists', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ name }),
+      })
+      const json = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        setListsError(json?.error || `HTTP ${res.status}`)
+        return
+      }
+      const list = json?.list as ListSummary | undefined
+      if (list) {
+        setLists((prev) => [...prev, list])
+        setNewListName('')
+        onActiveListChange(list.id)
+      } else {
+        await fetchLists()
+      }
+    } catch (e: unknown) {
+      setListsError(e instanceof Error ? e.message : 'Request failed')
+    } finally {
+      setCreatingList(false)
+    }
+  }, [fetchLists, newListName, onActiveListChange])
 
   const fetchItems = useCallback(
     async (listId: string) => {
@@ -219,6 +252,22 @@ export default function ListDrawer({
       </div>
 
       <div className="border-b border-gray-200 px-4 py-3 space-y-2">
+        <div className="flex items-center gap-2">
+          <input
+            className="flex-1 rounded-md border border-gray-200 px-2 py-1 text-xs"
+            placeholder="New list name"
+            value={newListName}
+            onChange={(e) => setNewListName(e.target.value)}
+          />
+          <button
+            type="button"
+            onClick={createList}
+            disabled={creatingList || !newListName.trim()}
+            className="rounded-md border border-gray-200 px-2 py-1 text-[11px] text-gray-700 disabled:opacity-50"
+          >
+            {creatingList ? 'Creating…' : 'Create'}
+          </button>
+        </div>
         {listsLoading ? (
           <p className="text-xs text-gray-500">Loading lists…</p>
         ) : null}

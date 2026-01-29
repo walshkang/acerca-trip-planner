@@ -51,9 +51,11 @@ export default function InspectorCard(props: { onCommitted?: (placeId: string) =
   const [selectedListId, setSelectedListId] = useState<string | null>(null)
   const [newListName, setNewListName] = useState('')
   const [creatingList, setCreatingList] = useState(false)
+  const [tagInput, setTagInput] = useState('')
 
   useEffect(() => {
     if (!candidate) return
+    setTagInput('')
     let cancelled = false
     async function loadLists() {
       setListsLoading(true)
@@ -121,6 +123,7 @@ export default function InspectorCard(props: { onCommitted?: (placeId: string) =
   const candidateId = candidate.id
   const curated = safeWikiCurated(enrichment?.curatedData ?? null)
   const normalized = safeNormalized(enrichment?.normalizedData ?? null)
+  const showWiki = normalized?.category === 'Sights'
 
   async function commit() {
     setCommitError(null)
@@ -143,6 +146,21 @@ export default function InspectorCard(props: { onCommitted?: (placeId: string) =
       if (!placeId) {
         setCommitError('Promotion succeeded but no place_id returned')
         return
+      }
+      if (selectedListId) {
+        const payload: { place_id: string; tags?: string } = { place_id: placeId }
+        if (tagInput.trim().length) {
+          payload.tags = tagInput
+        }
+        const tagsRes = await fetch(`/api/lists/${selectedListId}/items`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(payload),
+        })
+        if (!tagsRes.ok) {
+          const tagsJson = await tagsRes.json().catch(() => ({}))
+          console.error('Failed to save tags on approval', tagsJson)
+        }
       }
       clear()
       props.onCommitted?.(placeId)
@@ -179,7 +197,7 @@ export default function InspectorCard(props: { onCommitted?: (placeId: string) =
           </button>
         </div>
 
-        {curated?.thumbnail_url || curated?.summary ? (
+        {showWiki && (curated?.thumbnail_url || curated?.summary) ? (
           <div className="flex gap-3">
             {curated?.thumbnail_url ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -279,6 +297,17 @@ export default function InspectorCard(props: { onCommitted?: (placeId: string) =
             >
               {creatingList ? 'Adding…' : 'Add'}
             </button>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600">
+              Add tags (optional)
+            </label>
+            <input
+              className="mt-1 w-full rounded-md border border-gray-200 px-2 py-1 text-xs"
+              value={tagInput}
+              onChange={(e) => setTagInput(e.target.value)}
+              placeholder="date-night, rooftop, kid-friendly"
+            />
           </div>
           {listsError ? (
             <p className="text-xs text-red-600">{listsError}</p>
