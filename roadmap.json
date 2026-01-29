@@ -344,6 +344,7 @@
             "List detail view: click a list to open a scrollable list of saved places.",
             "List-scoped tags per place, editable inline in the list view.",
             "Tag filters scoped to a list; define multi-select semantics (AND/OR) explicitly.",
+            "List membership uses add/remove semantics (multi-list ready), not move semantics.",
             "User tags are stored separately from frozen enrichment (no mutation of AI data)."
           ]
         },
@@ -354,7 +355,9 @@
             "Lists render in a drawer/overlay so the map remains the primary interface.",
             "Selecting a list highlights/filters existing pins without refetching all places.",
             "Search results are location-biased to the current map view (Find Place locationbias).",
-            "Default map view prefers lastActiveListId or lastAddedPlaceId over global fitBounds."
+            "Default map view prefers lastActiveListId or lastAddedPlaceId over global fitBounds.",
+            "Place detail opens in a drawer driven by URL state to preserve deep links.",
+            "Omnibox results stay above drawers via a predictable overlay layer."
           ]
         }
       ]

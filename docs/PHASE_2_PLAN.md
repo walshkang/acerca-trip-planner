@@ -105,23 +105,30 @@ Note:
 - GIN index on `list_items.tags` for filtering.
 Notes:
 - Normalize tags (trim + lowercase) on write to avoid duplicates like "Coffee" vs "coffee".
+- List membership is many-to-many; the UI should use add/remove semantics (not "move").
 
 #### API
 - `PATCH /api/lists/[id]/items/[itemId]/tags`
   - Updates tags array only.
 - `GET /api/lists/[id]/tags`
   - Returns distinct tags for the list (for filter chips).
+- `POST /api/lists/[id]/items`
+  - Adds `{ place_id }` to the list (idempotent; returns existing row on conflict).
+- `DELETE /api/lists/[id]/items?place_id=...`
+  - Removes a place from a list by place_id (idempotent).
 
 #### UI
 - List detail view shows:
   - Scrollable list of places with inline tag editor.
   - Tag filter chips scoped to the list.
   - Multi-select semantics explicitly defined (default: OR).
+- Place drawer shows list membership as checkboxes/chips (add/remove semantics).
 
 #### Acceptance Criteria
 - Tags are list-scoped (same place can have different tags in different lists).
 - Tags never overwrite `places.user_tags` or enrichment data.
 - Tag filter chips update the list view deterministically.
+- List membership writes are idempotent (re-adding/removing does not error).
 
 ## Map-First UX Additions (Phase 2 refinements)
 
@@ -130,11 +137,17 @@ Notes:
 - Reuse a presentational list detail body component across `/lists/[id]` and the drawer.
 - Selecting a list should not re-fetch all places; only fetch list_items to derive place_ids.
 - Highlight/filter pins in memory from existing `places_view` data.
+- Keep Omnibox results above the drawer via a predictable overlay layer.
 
 ### Search Location Bias (no extra calls)
 - Add optional `lat`, `lng`, `radius_m` to `/api/places/search`.
 - For Find Place (legacy), use `locationbias=circle:radius@lat,lng`.
 - Increase result limit up to max 10 without extra API calls; larger result sets require Text Search (future).
+
+### Place Drawer + URL State
+- Marker click should open a place drawer without leaving the map.
+- Drive drawer state from the URL (`/?place=<id>` or shallow `/places/[id]`) to preserve deep links.
+- Closing the drawer clears the URL state; `/places/[id]` remains valid for direct navigation.
 
 ### Default Map View Policy
 - If `lastActiveListId` is set, fit bounds to that list’s places.
@@ -147,9 +160,10 @@ Notes:
 2. Map drawer overlay + active list selection state.
 3. Search location bias using map center + radius.
 4. Default map view policy (active list → last place → saved viewport).
-5. Scheduling UI + API updates (P2-E1).
-6. Tagging UI + API updates (P2-E3).
-7. Filter translation + query pipeline (P2-E2).
+5. Place drawer with URL state + list membership add/remove.
+6. Scheduling UI + API updates (P2-E1).
+7. Tagging UI + API updates (P2-E3).
+8. Filter translation + query pipeline (P2-E2).
 
 ## Testing & Verification
 - Unit tests for filter schema validation and query builder.
@@ -161,3 +175,5 @@ Notes:
   - Toggle open-now filter with stored timezone.
   - Switch active list → map recenters to list cluster.
   - Search while map is in Hong Kong → results bias to that area.
+  - Open place drawer from marker → URL updates and map stays visible.
+  - Add/remove list membership → list item appears/disappears without errors.

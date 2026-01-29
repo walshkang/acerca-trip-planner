@@ -113,6 +113,8 @@ Note: This is a historical snapshot. Current rules and workflow live in `AGENTS.
 - Map-first UX: lists should open in a drawer/overlay; list selection highlights existing pins without refetching all places.
 - Search relevance should bias to the current map view using Find Place locationbias (circle:radius@lat,lng).
 - Default map view should prefer lastActiveListId or lastAddedPlaceId over global fitBounds when clusters are far apart.
+- Place detail should open in a map drawer driven by URL state to preserve deep links.
+- List membership writes should be add/remove (multi-list ready) and idempotent.
 
 ## Phase 2 Detailed Plan
 

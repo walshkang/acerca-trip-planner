@@ -10,8 +10,8 @@
 - Current Phase: The Smart Repository (Cupcake)
 - Active Epic: P1-E5 Map View + Discovery Refinements (Phase 0-4 Plan)
 - Immediate Blocker: None. Task 1.4 is complete; types were regenerated after the list-assignment RPC update.
-- Planned (Phase 2): P2-E3 List Workspace + Tags (list detail view with per-place tags).
-- Planned (Phase 2): P2-E4 Map-First List Context (drawer overlay, search bias, default view).
+- Planned (Phase 2): P2-E3 List Workspace + Tags (per-place tags + multi-list add/remove).
+- Planned (Phase 2): P2-E4 Map-First List Context (drawer overlay, URL-driven place drawer, search bias, default view).
 
 ## 🗺️ Roadmap Visualization
 
@@ -43,6 +43,8 @@ gantt
 - User edits never overwrite frozen AI enrichment.
 
 ## 📝 Implementation Memory
+- 2026-01-29 – plan: map-first drawers + multi-list membership semantics
+    Added add/remove list membership, URL-driven place drawer, and overlay layering to Phase 2 plan.
 - 2026-01-29 – roadmap: add map-first list context to Phase 2
     Added a Phase 2 epic for the list drawer overlay, map-biased search, and default view policy.
 - 2026-01-28 – roadmap: add list detail view + tags to Phase 2
