@@ -123,12 +123,33 @@ Notes:
 - Tags never overwrite `places.user_tags` or enrichment data.
 - Tag filter chips update the list view deterministically.
 
+## Map-First UX Additions (Phase 2 refinements)
+
+### List Drawer Overlay (Map stays primary)
+- Provide a drawer/overlay next to the map (do not navigate away by default).
+- Reuse a presentational list detail body component across `/lists/[id]` and the drawer.
+- Selecting a list should not re-fetch all places; only fetch list_items to derive place_ids.
+- Highlight/filter pins in memory from existing `places_view` data.
+
+### Search Location Bias (no extra calls)
+- Add optional `lat`, `lng`, `radius_m` to `/api/places/search`.
+- For Find Place (legacy), use `locationbias=circle:radius@lat,lng`.
+- Increase result limit up to max 10 without extra API calls; larger result sets require Text Search (future).
+
+### Default Map View Policy
+- If `lastActiveListId` is set, fit bounds to that list’s places.
+- Else if `lastAddedPlaceId` is set, flyTo that place.
+- Else fall back to saved viewport.
+- Avoid global-scale fitBounds; prefer the active list or last place when clusters are far apart.
+
 ## Sequencing (recommended)
-1. Schema updates + migrations + `npm run db:types`.
-2. List detail view skeleton (read-only list items + place summaries).
-3. Scheduling UI + API updates (P2-E1).
-4. Tagging UI + API updates (P2-E3).
-5. Filter translation + query pipeline (P2-E2).
+1. Read-only list detail API + view (done).
+2. Map drawer overlay + active list selection state.
+3. Search location bias using map center + radius.
+4. Default map view policy (active list → last place → saved viewport).
+5. Scheduling UI + API updates (P2-E1).
+6. Tagging UI + API updates (P2-E3).
+7. Filter translation + query pipeline (P2-E2).
 
 ## Testing & Verification
 - Unit tests for filter schema validation and query builder.
@@ -138,3 +159,5 @@ Notes:
   - Create list → add places → schedule → refresh.
   - Add tags → filter by tags → verify results.
   - Toggle open-now filter with stored timezone.
+  - Switch active list → map recenters to list cluster.
+  - Search while map is in Hong Kong → results bias to that area.
