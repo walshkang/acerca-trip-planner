@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
-const LIST_FIELDS = 'id, name, description, is_default, created_at'
+const LIST_FIELDS =
+  'id, name, description, is_default, created_at, start_date, end_date, timezone'
 
 function normalizeName(input: unknown): string | null {
   if (typeof input !== 'string') return null

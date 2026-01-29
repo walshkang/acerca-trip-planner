@@ -25,6 +25,7 @@ export type DiscoveryEnrichment = {
 }
 
 type LatLng = { lat: number; lng: number }
+type SearchBias = { lat: number; lng: number; radiusMeters: number }
 
 type DiscoveryState = {
   query: string
@@ -37,6 +38,7 @@ type DiscoveryState = {
   ghostLocation: LatLng | null
   enrichment: DiscoveryEnrichment | null
   previewEnrichment: DiscoveryEnrichment | null
+  searchBias: SearchBias | null
   setQuery: (v: string) => void
   setResults: (results: DiscoverySearchResult[]) => void
   setSelectedResultId: (id: string | null) => void
@@ -45,6 +47,7 @@ type DiscoveryState = {
     enrichment: DiscoveryEnrichment | null
     ghostLocation: LatLng | null
   }) => void
+  setSearchBias: (bias: SearchBias | null) => void
   clear: () => void
   submit: () => Promise<void>
   previewResult: (result: DiscoverySearchResult) => Promise<void>
@@ -75,6 +78,7 @@ export const useDiscoveryStore = create<DiscoveryState>((set, get) => ({
   ghostLocation: null,
   enrichment: null,
   previewEnrichment: null,
+  searchBias: null,
 
   setQuery: (v) => set({ query: v }),
   setResults: (results) => set({ results }),
@@ -87,6 +91,7 @@ export const useDiscoveryStore = create<DiscoveryState>((set, get) => ({
       previewCandidate: candidate,
       previewEnrichment: enrichment,
     }),
+  setSearchBias: (bias) => set({ searchBias: bias }),
 
   clear: () =>
     set({
@@ -149,9 +154,18 @@ export const useDiscoveryStore = create<DiscoveryState>((set, get) => ({
         return
       }
 
-      const res = await fetch(
-        `/api/places/search?q=${encodeURIComponent(q)}&limit=6`
-      )
+      const params = new URLSearchParams({
+        q,
+        limit: '6',
+      })
+      const bias = get().searchBias
+      if (bias) {
+        params.set('lat', String(bias.lat))
+        params.set('lng', String(bias.lng))
+        params.set('radius_m', String(Math.round(bias.radiusMeters)))
+      }
+
+      const res = await fetch(`/api/places/search?${params.toString()}`)
       const json = await res.json().catch(() => ({}))
       if (!res.ok) {
         set({ error: json?.error || `HTTP ${res.status}` })

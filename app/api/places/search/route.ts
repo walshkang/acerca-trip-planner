@@ -4,12 +4,27 @@ import { searchGooglePlaces } from '@/lib/enrichment/sources'
 
 const DEFAULT_LIMIT = 6
 const MAX_LIMIT = 10
+const DEFAULT_RADIUS_METERS = 20000
+const MAX_RADIUS_METERS = 100000
 
 function parseLimit(value: string | null): number {
   if (!value) return DEFAULT_LIMIT
   const parsed = Number(value)
   if (!Number.isFinite(parsed)) return DEFAULT_LIMIT
   return Math.min(Math.max(Math.round(parsed), 1), MAX_LIMIT)
+}
+
+function parseFloatParam(value: string | null): number | null {
+  if (!value) return null
+  const parsed = Number.parseFloat(value)
+  return Number.isFinite(parsed) ? parsed : null
+}
+
+function parseRadius(value: string | null): number {
+  if (!value) return DEFAULT_RADIUS_METERS
+  const parsed = Number.parseInt(value, 10)
+  if (!Number.isFinite(parsed)) return DEFAULT_RADIUS_METERS
+  return Math.min(Math.max(parsed, 1000), MAX_RADIUS_METERS)
 }
 
 export async function GET(request: NextRequest) {
@@ -34,7 +49,15 @@ export async function GET(request: NextRequest) {
     }
 
     const limit = parseLimit(url.searchParams.get('limit'))
-    const candidates = await searchGooglePlaces(query)
+    const lat = parseFloatParam(url.searchParams.get('lat'))
+    const lng = parseFloatParam(url.searchParams.get('lng'))
+    const radiusMeters = parseRadius(url.searchParams.get('radius_m'))
+    const locationBias =
+      lat != null && lng != null
+        ? { locationBias: { lat, lng, radiusMeters } }
+        : undefined
+
+    const candidates = await searchGooglePlaces(query, locationBias)
 
     const results = candidates.slice(0, limit).map((candidate) => ({
       place_id: candidate.place_id,

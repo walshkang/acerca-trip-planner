@@ -311,7 +311,17 @@ type GooglePlacesFindPlaceResponse = {
   error_message?: string
 }
 
-async function fetchFindPlaceCandidates(input: string, fields: string): Promise<{
+type GooglePlacesLocationBias = {
+  lat: number
+  lng: number
+  radiusMeters: number
+}
+
+async function fetchFindPlaceCandidates(
+  input: string,
+  fields: string,
+  options?: { locationBias?: GooglePlacesLocationBias }
+): Promise<{
   status: string
   candidates: GooglePlacesTextCandidate[]
   errorMessage?: string
@@ -332,6 +342,13 @@ async function fetchFindPlaceCandidates(input: string, fields: string): Promise<
   u.searchParams.set('inputtype', 'textquery')
   u.searchParams.set('fields', fields)
   u.searchParams.set('key', apiKey)
+  if (options?.locationBias) {
+    const { lat, lng, radiusMeters } = options.locationBias
+    u.searchParams.set(
+      'locationbias',
+      `circle:${Math.round(radiusMeters)}@${lat},${lng}`
+    )
+  }
 
   const { data } = await fetchJson<GooglePlacesFindPlaceResponse>(u.toString())
 
@@ -381,12 +398,14 @@ export async function findGooglePlaceIdFromText(input: string): Promise<{
  * Returns an empty list for ZERO_RESULTS.
  */
 export async function searchGooglePlaces(
-  input: string
+  input: string,
+  options?: { locationBias?: GooglePlacesLocationBias }
 ): Promise<GooglePlacesTextCandidate[]> {
   const fields = ['place_id', 'name', 'formatted_address'].join(',')
   const { status, candidates, errorMessage } = await fetchFindPlaceCandidates(
     input,
-    fields
+    fields,
+    options
   )
 
   if (status === 'ZERO_RESULTS') return []

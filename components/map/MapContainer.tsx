@@ -10,6 +10,7 @@ import type { CategoryEnum } from '@/lib/types/enums'
 import Omnibox from '@/components/discovery/Omnibox'
 import GhostMarker from '@/components/discovery/GhostMarker'
 import InspectorCard from '@/components/discovery/InspectorCard'
+import ListDrawer from '@/components/lists/ListDrawer'
 import { useDiscoveryStore } from '@/lib/state/useDiscoveryStore'
 import type { MapRef, ViewState } from 'react-map-gl'
 import { LngLatBounds } from 'mapbox-gl'
@@ -38,10 +39,14 @@ export default function MapContainer() {
   const [pendingFocusPlaceId, setPendingFocusPlaceId] = useState<string | null>(
     null
   )
+  const [drawerOpen, setDrawerOpen] = useState(false)
+  const [activeListId, setActiveListId] = useState<string | null>(null)
+  const [activeListPlaceIds, setActiveListPlaceIds] = useState<string[]>([])
   const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN
   const router = useRouter()
   const ghostLocation = useDiscoveryStore((s) => s.ghostLocation)
   const clearDiscovery = useDiscoveryStore((s) => s.clear)
+  const setSearchBias = useDiscoveryStore((s) => s.setSearchBias)
   const mapRef = useRef<MapRef | null>(null)
 
   const defaultViewState = useMemo<ViewState>(
@@ -53,6 +58,20 @@ export default function MapContainer() {
     []
   )
   const viewStorageKey = 'acerca:lastMapView'
+  const lastActiveListKey = 'acerca:lastActiveListId'
+  const lastAddedPlaceKey = 'acerca:lastAddedPlaceId'
+
+  const activeListPlaceIdSet = useMemo(
+    () => new Set(activeListPlaceIds),
+    [activeListPlaceIds]
+  )
+  const activeListPlaces = useMemo(
+    () =>
+      activeListPlaceIds.length
+        ? places.filter((place) => activeListPlaceIdSet.has(place.id))
+        : [],
+    [activeListPlaceIdSet, activeListPlaceIds, places]
+  )
 
   useEffect(() => {
     if (!mapboxToken) {
@@ -71,6 +90,23 @@ export default function MapContainer() {
 
     checkAuth().catch(() => null)
   }, [mapboxToken])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const stored = window.localStorage.getItem(lastActiveListKey)
+    if (stored) {
+      setActiveListId(stored)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    if (activeListId) {
+      window.localStorage.setItem(lastActiveListKey, activeListId)
+    } else {
+      window.localStorage.removeItem(lastActiveListKey)
+    }
+  }, [activeListId])
 
   const fetchPlaces = useCallback(async () => {
     // Fetch places from Supabase view
@@ -123,15 +159,34 @@ export default function MapContainer() {
     const map = mapRef.current
     if (!map) return
 
-    if (places.length > 0) {
+    const fitPlaces = (selected: Place[]) => {
       const bounds = new LngLatBounds()
-      for (const place of places) {
+      for (const place of selected) {
         bounds.extend([place.lng, place.lat])
       }
       if (!bounds.isEmpty()) {
         map.fitBounds(bounds, { padding: 80, maxZoom: 14 })
+        return true
       }
-      return
+      return false
+    }
+
+    if (activeListPlaces.length) {
+      if (fitPlaces(activeListPlaces)) return
+    }
+
+    if (typeof window !== 'undefined') {
+      const lastAdded = window.localStorage.getItem(lastAddedPlaceKey)
+      if (lastAdded) {
+        const focused = places.find((place) => place.id === lastAdded)
+        if (focused) {
+          map.flyTo({
+            center: [focused.lng, focused.lat],
+            zoom: Math.max(map.getZoom(), 13),
+          })
+          return
+        }
+      }
     }
 
     if (typeof window === 'undefined') return
@@ -157,11 +212,26 @@ export default function MapContainer() {
       }
     }
 
+    if (places.length > 0) {
+      const bounds = new LngLatBounds()
+      for (const place of places) {
+        bounds.extend([place.lng, place.lat])
+      }
+      if (!bounds.isEmpty()) {
+        const lngSpan = Math.abs(bounds.getEast() - bounds.getWest())
+        const latSpan = Math.abs(bounds.getNorth() - bounds.getSouth())
+        if (lngSpan < 90 && latSpan < 45) {
+          map.fitBounds(bounds, { padding: 80, maxZoom: 14 })
+          return
+        }
+      }
+    }
+
     map.flyTo({
       center: [defaultViewState.longitude, defaultViewState.latitude],
       zoom: defaultViewState.zoom,
     })
-  }, [defaultViewState, loading, places])
+  }, [activeListPlaces, defaultViewState, loading, places])
 
   useEffect(() => {
     if (!pendingFocusPlaceId) return
@@ -178,6 +248,20 @@ export default function MapContainer() {
     })
     setPendingFocusPlaceId(null)
   }, [loading, pendingFocusPlaceId, places])
+
+  useEffect(() => {
+    if (loading) return
+    const map = mapRef.current
+    if (!map) return
+    const bounds = map.getBounds()
+    const center = bounds.getCenter()
+    const radiusMeters = center.distanceTo(bounds.getNorthEast())
+    setSearchBias({
+      lat: center.lat,
+      lng: center.lng,
+      radiusMeters,
+    })
+  }, [loading, setSearchBias])
 
   if (!mapboxToken) {
     return (
@@ -216,24 +300,40 @@ export default function MapContainer() {
       <div className="absolute left-4 top-4 z-10 pointer-events-none space-y-2">
         <Omnibox />
         <div className="pointer-events-auto">
-          <a
+          <button
+            type="button"
+            onClick={() => setDrawerOpen((prev) => !prev)}
             className="inline-flex items-center rounded-full border border-gray-200 bg-white/95 px-3 py-1 text-xs text-gray-700 shadow-sm"
-            href="/lists"
           >
-            Lists
-          </a>
+            {drawerOpen ? 'Hide lists' : 'Lists'}
+          </button>
         </div>
       </div>
 
       <div className="absolute right-4 top-4 z-10 pointer-events-none">
         <InspectorCard
           onCommitted={(placeId) => {
+            if (typeof window !== 'undefined') {
+              window.localStorage.setItem(lastAddedPlaceKey, placeId)
+            }
             setPendingFocusPlaceId(placeId)
             fetchPlaces()
             router.push(`/places/${placeId}`)
           }}
         />
       </div>
+
+      <ListDrawer
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        activeListId={activeListId}
+        onActiveListChange={(id) => {
+          setActiveListId(id)
+          if (id) setDrawerOpen(true)
+        }}
+        onPlaceIdsChange={setActiveListPlaceIds}
+        onPlaceSelect={(placeId) => setPendingFocusPlaceId(placeId)}
+      />
 
       <Map
         mapboxAccessToken={mapboxToken}
@@ -248,6 +348,17 @@ export default function MapContainer() {
             viewStorageKey,
             JSON.stringify({ longitude, latitude, zoom, bearing, pitch })
           )
+          const map = mapRef.current
+          if (map) {
+            const bounds = map.getBounds()
+            const center = bounds.getCenter()
+            const radiusMeters = center.distanceTo(bounds.getNorthEast())
+            setSearchBias({
+              lat: center.lat,
+              lng: center.lng,
+              radiusMeters,
+            })
+          }
         }}
         ref={mapRef}
       >
@@ -266,7 +377,12 @@ export default function MapContainer() {
           >
             <button
               type="button"
-              className="cursor-pointer"
+              className={`cursor-pointer transition-opacity ${
+                activeListPlaceIds.length &&
+                !activeListPlaceIdSet.has(place.id)
+                  ? 'opacity-30'
+                  : 'opacity-100'
+              }`}
               onClick={() => router.push(`/places/${place.id}`)}
               aria-label={`Open ${place.name}`}
             >
