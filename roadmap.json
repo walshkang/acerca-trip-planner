@@ -345,7 +345,10 @@
             "List-scoped tags per place, editable inline in the list view.",
             "Tag filters scoped to a list; define multi-select semantics (AND/OR) explicitly.",
             "List membership uses add/remove semantics (multi-list ready), not move semantics.",
-            "User tags are stored separately from frozen enrichment (no mutation of AI data)."
+            "List detail view supports local search of canonical places with add-to-list actions.",
+            "Add-time tags can be provided and are unioned with seeded enrichment tags (stored on list_items.tags).",
+            "User tags are stored separately from frozen enrichment (no mutation of AI data).",
+            "Wikipedia summaries are shown only for Sights in preview + detail views."
           ]
         },
         {
@@ -354,6 +357,7 @@
           "features": [
             "Lists render in a drawer/overlay so the map remains the primary interface.",
             "Selecting a list highlights/filters existing pins without refetching all places.",
+            "Create list inline from the map drawer (reuse /api/lists).",
             "Search results are location-biased to the current map view (Find Place locationbias).",
             "Default map view prefers lastActiveListId or lastAddedPlaceId over global fitBounds.",
             "Place detail opens in a drawer driven by URL state to preserve deep links.",

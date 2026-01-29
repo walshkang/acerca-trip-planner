@@ -106,6 +106,7 @@ Note:
 Notes:
 - Normalize tags (trim + lowercase) on write to avoid duplicates like "Coffee" vs "coffee".
 - List membership is many-to-many; the UI should use add/remove semantics (not "move").
+- Add-time tag seeding: when adding a place to a list, seed `list_items.tags` with normalized enrichment tags and union with any user-provided tags (without mutating enrichment records).
 
 #### API
 - `PATCH /api/lists/[id]/items/[itemId]/tags`
@@ -113,16 +114,23 @@ Notes:
 - `GET /api/lists/[id]/tags`
   - Returns distinct tags for the list (for filter chips).
 - `POST /api/lists/[id]/items`
-  - Adds `{ place_id }` to the list (idempotent; returns existing row on conflict).
+  - Adds `{ place_id, tags? }` to the list (idempotent; returns existing row on conflict).
+  - If tags are omitted or empty, seed from enrichment tags when available.
+  - If tags are provided, union with seeded tags and normalize.
 - `DELETE /api/lists/[id]/items?place_id=...`
   - Removes a place from a list by place_id (idempotent).
+ - `GET /api/places/local-search?q=...`
+  - Searches canonical places for list add flow (name/address, minimal fields only).
 
 #### UI
 - List detail view shows:
   - Scrollable list of places with inline tag editor.
+  - Local search to add existing places to the list (canonical-only).
+  - Add-time tags input for list items added from search results.
   - Tag filter chips scoped to the list.
   - Multi-select semantics explicitly defined (default: OR).
 - Place drawer shows list membership as checkboxes/chips (add/remove semantics).
+ - Wikipedia summaries are shown only for Sights (preview + detail).
 
 #### Acceptance Criteria
 - Tags are list-scoped (same place can have different tags in different lists).
@@ -138,6 +146,7 @@ Notes:
 - Selecting a list should not re-fetch all places; only fetch list_items to derive place_ids.
 - Highlight/filter pins in memory from existing `places_view` data.
 - Keep Omnibox results above the drawer via a predictable overlay layer.
+- Add list creation inline in the map drawer (reuse `/api/lists` POST).
 
 ### Search Location Bias (no extra calls)
 - Add optional `lat`, `lng`, `radius_m` to `/api/places/search`.
@@ -161,9 +170,11 @@ Notes:
 3. Search location bias using map center + radius.
 4. Default map view policy (active list → last place → saved viewport).
 5. Place drawer with URL state + list membership add/remove.
-6. Scheduling UI + API updates (P2-E1).
-7. Tagging UI + API updates (P2-E3).
-8. Filter translation + query pipeline (P2-E2).
+6. List add flow: local search + add with tags, list drawer create list.
+7. Tagging UI + API updates (P2-E3) including add-time tag seeding.
+8. Sights-only wiki summary gating (UI refinement).
+9. Scheduling UI + API updates (P2-E1).
+10. Filter translation + query pipeline (P2-E2).
 
 ## Testing & Verification
 - Unit tests for filter schema validation and query builder.

@@ -9,7 +9,7 @@
 ## 🧠 Active Context
 - Current Phase: The Interactive Planner (Birthday Cake)
 - Active Epic: P2-E3 List Workspace + Tags
-- Immediate Blocker: None. Place detail + map-first membership edits are in place; place drawer now supports list toggles.
+- Immediate Blocker: None. Next slice: list drawer create-list, list view search/add with tags, add-time tag seeding, and Sights-only wiki gating.
 - Planned (Phase 2): P2-E3 List Workspace + Tags (per-place tags + multi-list add/remove).
 - Planned (Phase 2): P2-E4 Map-First List Context (drawer overlay, URL-driven place drawer, search bias, default view).
 
@@ -43,6 +43,8 @@ gantt
 - User edits never overwrite frozen AI enrichment.
 
 ## 📝 Implementation Memory
+- 2026-01-29 – plan: P2-E3 add flow + tag seeding + wiki gating
+    Planned list creation in map drawer, list view local search + add with tags, add-time enrichment tag seeding, and Sights-only wiki summaries.
 - 2026-01-29 – feat: map-first place drawer membership edits
     Added a map drawer for selected places with list membership toggles and a lightweight place summary.
 - 2026-01-29 – feat: place detail list membership editor
