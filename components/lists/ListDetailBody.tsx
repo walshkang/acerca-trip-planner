@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo } from 'react'
+import { type FormEvent, useEffect, useMemo, useState } from 'react'
 
 export type ListSummary = {
   id: string
@@ -42,6 +42,11 @@ type Props = {
   error?: string | null
   onPlaceSelect?: (placeId: string) => void
   emptyLabel?: string
+  availableTags?: string[]
+  activeTagFilters?: string[]
+  onTagFilterToggle?: (tag: string) => void
+  onClearTagFilters?: () => void
+  onTagsUpdate?: (itemId: string, tagsInput: string) => Promise<string[]>
 }
 
 function formatDateRange(list: ListSummary) {
@@ -51,6 +56,73 @@ function formatDateRange(list: ListSummary) {
   return `${start} → ${end}`
 }
 
+type TagEditorProps = {
+  itemId: string
+  tags: string[] | null
+  onTagsUpdate?: (itemId: string, tagsInput: string) => Promise<string[]>
+}
+
+function TagEditor({ itemId, tags, onTagsUpdate }: TagEditorProps) {
+  const [tagsText, setTagsText] = useState((tags ?? []).join(', '))
+  const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>(
+    'idle'
+  )
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    setTagsText((tags ?? []).join(', '))
+  }, [tags])
+
+  if (!onTagsUpdate) return null
+
+  async function handleSave(event: FormEvent) {
+    event.preventDefault()
+    setStatus('saving')
+    setError(null)
+    try {
+      const updated = await onTagsUpdate(itemId, tagsText)
+      setTagsText(updated.join(', '))
+      setStatus('saved')
+    } catch (err: unknown) {
+      setStatus('error')
+      setError(err instanceof Error ? err.message : 'Save failed')
+    }
+  }
+
+  return (
+    <form onSubmit={handleSave} className="mt-2 space-y-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <input
+          className="flex-1 rounded-md border border-gray-200 px-2 py-1 text-xs text-gray-700"
+          placeholder="Add tags (comma-separated)"
+          value={tagsText}
+          onChange={(event) => {
+            setTagsText(event.target.value)
+            if (status !== 'idle') {
+              setStatus('idle')
+              setError(null)
+            }
+          }}
+          disabled={status === 'saving'}
+        />
+        <button
+          type="submit"
+          className="rounded-md border border-gray-200 px-2 py-1 text-[11px] text-gray-600 disabled:opacity-60"
+          disabled={status === 'saving'}
+        >
+          {status === 'saving' ? 'Saving…' : 'Save tags'}
+        </button>
+      </div>
+      {status === 'saved' ? (
+        <p className="text-[11px] text-green-700">Saved.</p>
+      ) : null}
+      {status === 'error' ? (
+        <p className="text-[11px] text-red-600">{error}</p>
+      ) : null}
+    </form>
+  )
+}
+
 export default function ListDetailBody({
   list,
   items,
@@ -58,6 +130,11 @@ export default function ListDetailBody({
   error = null,
   onPlaceSelect,
   emptyLabel = 'No places in this list yet.',
+  availableTags = [],
+  activeTagFilters = [],
+  onTagFilterToggle,
+  onClearTagFilters,
+  onTagsUpdate,
 }: Props) {
   const rangeLabel = useMemo(
     () => (list ? formatDateRange(list) : null),
@@ -103,6 +180,44 @@ export default function ListDetailBody({
         {loading ? <p className="text-xs text-gray-500">Loading…</p> : null}
         {!loading && !items.length ? (
           <p className="text-xs text-gray-500">{emptyLabel}</p>
+        ) : null}
+
+        {availableTags.length ? (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <p className="text-[11px] font-semibold text-gray-600">
+                Filter tags
+              </p>
+              {activeTagFilters.length && onClearTagFilters ? (
+                <button
+                  type="button"
+                  className="text-[11px] text-gray-500 underline"
+                  onClick={() => onClearTagFilters?.()}
+                >
+                  Clear
+                </button>
+              ) : null}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {availableTags.map((tag) => {
+                const active = activeTagFilters.includes(tag)
+                return (
+                  <button
+                    key={tag}
+                    type="button"
+                    onClick={() => onTagFilterToggle?.(tag)}
+                    className={`rounded-full border px-2 py-0.5 text-[11px] ${
+                      active
+                        ? 'border-gray-900 bg-gray-900 text-white'
+                        : 'border-gray-200 text-gray-600'
+                    }`}
+                  >
+                    {tag}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
         ) : null}
 
         <div className="space-y-3">
@@ -152,6 +267,11 @@ export default function ListDetailBody({
                     ))}
                   </div>
                 ) : null}
+                <TagEditor
+                  itemId={item.id}
+                  tags={item.tags ?? []}
+                  onTagsUpdate={onTagsUpdate}
+                />
               </div>
             )
           })}

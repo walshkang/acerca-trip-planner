@@ -7,9 +7,9 @@
 - Starting a new task/chat? Use `prompts/agent_task.md`.
 
 ## 🧠 Active Context
-- Current Phase: The Smart Repository (Cupcake)
-- Active Epic: P1-E5 Map View + Discovery Refinements (Phase 0-4 Plan)
-- Immediate Blocker: None. Task 1.4 is complete; types were regenerated after the list-assignment RPC update.
+- Current Phase: The Interactive Planner (Birthday Cake)
+- Active Epic: P2-E3 List Workspace + Tags
+- Immediate Blocker: None. Place detail + map-first membership edits are in place; place drawer now supports list toggles.
 - Planned (Phase 2): P2-E3 List Workspace + Tags (per-place tags + multi-list add/remove).
 - Planned (Phase 2): P2-E4 Map-First List Context (drawer overlay, URL-driven place drawer, search bias, default view).
 
@@ -43,6 +43,12 @@ gantt
 - User edits never overwrite frozen AI enrichment.
 
 ## 📝 Implementation Memory
+- 2026-01-29 – feat: map-first place drawer membership edits
+    Added a map drawer for selected places with list membership toggles and a lightweight place summary.
+- 2026-01-29 – feat: place detail list membership editor
+    Added list membership toggles for places, using idempotent add/remove list item routes.
+- 2026-01-29 – feat: list workspace tags + filters
+    Added list-scoped tag normalization utilities, tag editing + membership endpoints, and list detail/drawer filters with inline tag editing.
 - 2026-01-29 – plan: map-first drawers + multi-list membership semantics
     Added add/remove list membership, URL-driven place drawer, and overlay layering to Phase 2 plan.
 - 2026-01-29 – roadmap: add map-first list context to Phase 2

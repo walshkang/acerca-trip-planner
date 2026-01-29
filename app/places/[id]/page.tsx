@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import PlaceUserMetaForm from '@/components/places/PlaceUserMetaForm'
+import PlaceListMembershipEditor from '@/components/places/PlaceListMembershipEditor'
 import { getEnrichmentById } from '@/lib/server/places/getPlaceEnrichment'
 import { assertValidWikiCuratedData, type WikiCuratedData } from '@/lib/enrichment/wikiCurated'
 
@@ -69,6 +70,7 @@ export default async function PlaceDetailPage({
     .filter((list): list is { id: string; name: string; is_default: boolean } =>
       Boolean(list)
     )
+  const listIds = lists.map((list) => list.id)
 
   const enrichment = place.enrichment_id
     ? await getEnrichmentById(place.enrichment_id)
@@ -227,23 +229,12 @@ export default async function PlaceDetailPage({
 
         <section className="rounded-lg border border-gray-200 bg-white p-4">
           <h2 className="text-sm font-semibold text-gray-900">Lists</h2>
-          {lists.length ? (
-            <div className="mt-3 flex flex-wrap gap-2">
-              {lists.map((list) => (
-                <span
-                  key={list.id}
-                  className="rounded-full border border-gray-200 px-3 py-1 text-xs"
-                >
-                  {list.name}
-                  {list.is_default ? ' · Default' : ''}
-                </span>
-              ))}
-            </div>
-          ) : (
-            <p className="mt-2 text-sm text-gray-500">
-              Not assigned to a list yet.
-            </p>
-          )}
+          <div className="mt-3">
+            <PlaceListMembershipEditor
+              placeId={place.id}
+              initialSelectedIds={listIds}
+            />
+          </div>
         </section>
       </div>
     </main>

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { distinctTagsFromItems } from '@/lib/lists/tags'
 
 const LIST_FIELDS =
   'id, name, description, is_default, created_at, start_date, end_date, timezone'
@@ -62,7 +63,151 @@ export async function GET(
       return NextResponse.json({ error: itemsError.message }, { status: 500 })
     }
 
-    return NextResponse.json({ list, items: items ?? [] })
+    const resolvedItems = (items ?? []) as Array<{ tags?: string[] | null }>
+    const distinctTags = distinctTagsFromItems(resolvedItems)
+
+    return NextResponse.json({
+      list,
+      items: resolvedItems,
+      distinct_tags: distinctTags,
+    })
+  } catch (error: unknown) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Internal server error' },
+      { status: 500 }
+    )
+  }
+}
+
+export async function POST(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const supabase = await createClient()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const body = (await request.json().catch(() => ({}))) as {
+      place_id?: string
+    }
+
+    const placeId = typeof body.place_id === 'string' ? body.place_id : null
+    if (!placeId) {
+      return NextResponse.json({ error: 'place_id is required' }, { status: 400 })
+    }
+
+    const { data: list, error: listError } = await supabase
+      .from('lists')
+      .select('id')
+      .eq('id', params.id)
+      .single()
+
+    if (listError || !list) {
+      if (listError?.code === 'PGRST116') {
+        return NextResponse.json({ error: 'List not found' }, { status: 404 })
+      }
+      return NextResponse.json(
+        { error: listError?.message || 'List not found' },
+        { status: 404 }
+      )
+    }
+
+    const { data: place, error: placeError } = await supabase
+      .from('places')
+      .select('id')
+      .eq('id', placeId)
+      .eq('user_id', user.id)
+      .single()
+
+    if (placeError || !place) {
+      if (placeError?.code === 'PGRST116') {
+        return NextResponse.json({ error: 'Place not found' }, { status: 404 })
+      }
+      return NextResponse.json(
+        { error: placeError?.message || 'Place not found' },
+        { status: 404 }
+      )
+    }
+
+    const { data: item, error: itemError } = await supabase
+      .from('list_items')
+      .upsert(
+        { list_id: params.id, place_id: placeId },
+        { onConflict: 'list_id,place_id' }
+      )
+      .select('id, list_id, place_id, tags')
+      .single()
+
+    if (itemError || !item) {
+      return NextResponse.json(
+        { error: itemError?.message || 'Failed to add list item' },
+        { status: 500 }
+      )
+    }
+
+    return NextResponse.json({ item })
+  } catch (error: unknown) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Internal server error' },
+      { status: 500 }
+    )
+  }
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const supabase = await createClient()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const { searchParams } = new URL(request.url)
+    const placeId = searchParams.get('place_id')
+    if (!placeId) {
+      return NextResponse.json({ error: 'place_id is required' }, { status: 400 })
+    }
+
+    const { data: list, error: listError } = await supabase
+      .from('lists')
+      .select('id')
+      .eq('id', params.id)
+      .single()
+
+    if (listError || !list) {
+      if (listError?.code === 'PGRST116') {
+        return NextResponse.json({ error: 'List not found' }, { status: 404 })
+      }
+      return NextResponse.json(
+        { error: listError?.message || 'List not found' },
+        { status: 404 }
+      )
+    }
+
+    const { error: deleteError } = await supabase
+      .from('list_items')
+      .delete()
+      .eq('list_id', params.id)
+      .eq('place_id', placeId)
+
+    if (deleteError) {
+      return NextResponse.json(
+        { error: deleteError.message },
+        { status: 500 }
+      )
+    }
+
+    return NextResponse.json({ ok: true })
   } catch (error: unknown) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Internal server error' },

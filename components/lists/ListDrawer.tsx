@@ -5,6 +5,7 @@ import ListDetailBody, {
   ListItemRow,
   ListSummary,
 } from '@/components/lists/ListDetailBody'
+import { distinctTagsFromItems } from '@/lib/lists/tags'
 
 type Props = {
   open: boolean
@@ -22,6 +23,7 @@ type ListsResponse = {
 type ItemsResponse = {
   list: ListSummary
   items: ListItemRow[]
+  distinct_tags?: string[]
 }
 
 export default function ListDrawer({
@@ -37,6 +39,8 @@ export default function ListDrawer({
   const [listsError, setListsError] = useState<string | null>(null)
   const [activeList, setActiveList] = useState<ListSummary | null>(null)
   const [items, setItems] = useState<ListItemRow[]>([])
+  const [distinctTags, setDistinctTags] = useState<string[]>([])
+  const [activeTagFilters, setActiveTagFilters] = useState<string[]>([])
   const [itemsLoading, setItemsLoading] = useState(false)
   const [itemsError, setItemsError] = useState<string | null>(null)
 
@@ -73,8 +77,21 @@ export default function ListDrawer({
           setItemsError(json?.error || `HTTP ${res.status}`)
           return
         }
+        const nextItems = (json?.items ?? []) as ListItemRow[]
         setActiveList((json?.list ?? null) as ListSummary | null)
-        setItems((json?.items ?? []) as ListItemRow[])
+        setItems(nextItems)
+        if (Array.isArray(json?.distinct_tags)) {
+          setDistinctTags(json.distinct_tags)
+          setActiveTagFilters((prev) =>
+            prev.filter((tag) => json.distinct_tags?.includes(tag))
+          )
+        } else {
+          const nextDistinct = distinctTagsFromItems(nextItems)
+          setDistinctTags(nextDistinct)
+          setActiveTagFilters((prev) =>
+            prev.filter((tag) => nextDistinct.includes(tag))
+          )
+        }
       } catch (e: unknown) {
         setItemsError(e instanceof Error ? e.message : 'Request failed')
       } finally {
@@ -93,12 +110,18 @@ export default function ListDrawer({
     if (!activeListId) {
       setActiveList(null)
       setItems([])
+      setDistinctTags([])
+      setActiveTagFilters([])
       onPlaceIdsChange([])
       return
     }
 
     fetchItems(activeListId)
   }, [activeListId, fetchItems, onPlaceIdsChange])
+
+  useEffect(() => {
+    setActiveTagFilters([])
+  }, [activeListId])
 
   useEffect(() => {
     if (!items.length) {
@@ -110,6 +133,63 @@ export default function ListDrawer({
       .filter((id): id is string => Boolean(id))
     onPlaceIdsChange(placeIds)
   }, [items, onPlaceIdsChange])
+
+  const filteredItems = useMemo(() => {
+    if (!activeTagFilters.length) return items
+    return items.filter((item) => {
+      const tags = item.tags ?? []
+      return activeTagFilters.some((tag) => tags.includes(tag))
+    })
+  }, [activeTagFilters, items])
+
+  const handleTagToggle = useCallback((tag: string) => {
+    setActiveTagFilters((prev) =>
+      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+    )
+  }, [])
+
+  const handleClearFilters = useCallback(() => {
+    setActiveTagFilters([])
+  }, [])
+
+  const handleTagsUpdate = useCallback(
+    async (itemId: string, tagsInput: string) => {
+      if (!activeListId) {
+        throw new Error('No active list selected')
+      }
+      const res = await fetch(
+        `/api/lists/${activeListId}/items/${itemId}/tags`,
+        {
+          method: 'PATCH',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ tags: tagsInput }),
+        }
+      )
+      const json = (await res.json().catch(() => ({}))) as {
+        item?: { tags?: string[] }
+        error?: string
+      }
+      if (!res.ok) {
+        throw new Error(json?.error || `HTTP ${res.status}`)
+      }
+      const updatedTags = Array.isArray(json?.item?.tags)
+        ? json.item.tags
+        : []
+      setItems((prev) => {
+        const next = prev.map((item) =>
+          item.id === itemId ? { ...item, tags: updatedTags } : item
+        )
+        const nextDistinct = distinctTagsFromItems(next)
+        setDistinctTags(nextDistinct)
+        setActiveTagFilters((current) =>
+          current.filter((tag) => nextDistinct.includes(tag))
+        )
+        return next
+      })
+      return updatedTags
+    },
+    [activeListId]
+  )
 
   if (!open) return null
 
@@ -180,11 +260,22 @@ export default function ListDrawer({
       <div className="max-h-[50vh] overflow-y-auto px-4 py-3">
         <ListDetailBody
           list={activeList}
-          items={items}
+          items={filteredItems}
           loading={itemsLoading}
           error={itemsError}
-          emptyLabel="Select a list to see its places."
+          emptyLabel={
+            activeList
+              ? activeTagFilters.length
+                ? 'No places match these tags.'
+                : 'No places in this list yet.'
+              : 'Select a list to see its places.'
+          }
           onPlaceSelect={onPlaceSelect}
+          availableTags={distinctTags}
+          activeTagFilters={activeTagFilters}
+          onTagFilterToggle={handleTagToggle}
+          onClearTagFilters={handleClearFilters}
+          onTagsUpdate={handleTagsUpdate}
         />
       </div>
     </aside>

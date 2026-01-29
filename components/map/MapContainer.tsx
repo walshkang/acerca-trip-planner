@@ -11,6 +11,7 @@ import Omnibox from '@/components/discovery/Omnibox'
 import GhostMarker from '@/components/discovery/GhostMarker'
 import InspectorCard from '@/components/discovery/InspectorCard'
 import ListDrawer from '@/components/lists/ListDrawer'
+import PlaceDrawer from '@/components/places/PlaceDrawer'
 import { useDiscoveryStore } from '@/lib/state/useDiscoveryStore'
 import type { MapRef, ViewState } from 'react-map-gl'
 import { LngLatBounds } from 'mapbox-gl'
@@ -42,6 +43,7 @@ export default function MapContainer() {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [activeListId, setActiveListId] = useState<string | null>(null)
   const [activeListPlaceIds, setActiveListPlaceIds] = useState<string[]>([])
+  const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null)
   const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN
   const router = useRouter()
   const ghostLocation = useDiscoveryStore((s) => s.ghostLocation)
@@ -71,6 +73,10 @@ export default function MapContainer() {
         ? places.filter((place) => activeListPlaceIdSet.has(place.id))
         : [],
     [activeListPlaceIdSet, activeListPlaceIds, places]
+  )
+  const selectedPlace = useMemo(
+    () => places.find((place) => place.id === selectedPlaceId) ?? null,
+    [places, selectedPlaceId]
   )
 
   useEffect(() => {
@@ -234,6 +240,13 @@ export default function MapContainer() {
   }, [activeListPlaces, defaultViewState, loading, places])
 
   useEffect(() => {
+    if (!selectedPlaceId) return
+    if (!places.some((place) => place.id === selectedPlaceId)) {
+      setSelectedPlaceId(null)
+    }
+  }, [places, selectedPlaceId])
+
+  useEffect(() => {
     if (!pendingFocusPlaceId) return
     if (loading) return
     const map = mapRef.current
@@ -332,7 +345,16 @@ export default function MapContainer() {
           if (id) setDrawerOpen(true)
         }}
         onPlaceIdsChange={setActiveListPlaceIds}
-        onPlaceSelect={(placeId) => setPendingFocusPlaceId(placeId)}
+        onPlaceSelect={(placeId) => {
+          setPendingFocusPlaceId(placeId)
+          setSelectedPlaceId(placeId)
+        }}
+      />
+
+      <PlaceDrawer
+        open={Boolean(selectedPlace)}
+        place={selectedPlace}
+        onClose={() => setSelectedPlaceId(null)}
       />
 
       <Map
@@ -340,7 +362,10 @@ export default function MapContainer() {
         initialViewState={defaultViewState}
         style={{ width: '100%', height: '100%' }}
         mapStyle="mapbox://styles/mapbox/streets-v12"
-        onClick={() => clearDiscovery()}
+        onClick={() => {
+          clearDiscovery()
+          setSelectedPlaceId(null)
+        }}
         onMoveEnd={(evt) => {
           if (typeof window === 'undefined') return
           const { longitude, latitude, zoom, bearing, pitch } = evt.viewState
@@ -383,7 +408,7 @@ export default function MapContainer() {
                   ? 'opacity-30'
                   : 'opacity-100'
               }`}
-              onClick={() => router.push(`/places/${place.id}`)}
+              onClick={() => setSelectedPlaceId(place.id)}
               aria-label={`Open ${place.name}`}
             >
               <img

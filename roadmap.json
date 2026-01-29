@@ -82,8 +82,8 @@
       "name": "The Smart Repository (Cupcake)",
       "goal": "A deterministic, map-based database of approved places. Eliminates messy lists and taxonomy drift.",
       "estimated_timeline": "MVP (Weeks 1-4)",
-      "status": "in_progress",
-      "progress_summary": "Map-first MVP loop working end-to-end: auth-gated UI, Omnibox ingestion (URL/place_id/name → place_candidates), immediate Enriched Preview on a Ghost Pin, and one-click Approve to promote into canonical places. Enrichment is frozen at ingestion; promotion is a state transition only. Completed: places_view + map serialization and viewport persistence with fitBounds, last-view fallback, approval flyTo, lightweight search results + preview ingest, Inspector gated on preview state, lists schema + types, list CRUD UI, and list assignment on approval with membership shown on place detail. Phase 2 cannot start until list persistence UX is complete and the Phase 0-4 plan is closed.",
+      "status": "completed",
+      "progress_summary": "Phase 1 MVP loop complete: auth-gated map, Omnibox ingestion (URL/place_id/name → place_candidates), Enriched Preview on Ghost Pins, and one-click Approve to canonical places. Enrichment is frozen at ingestion; promotion is a state transition only. Completed: places_view + map serialization and viewport persistence with fitBounds/last-view fallback, approval flyTo, lightweight search results + preview ingest, Inspector gated on preview state, lists schema + types, list CRUD UI, list assignment on approval, list-scoped tags + filters, and list membership editing from place detail + map drawer. Phase 2 is now underway.",
       "epics": [
         {
           "id": "P1-E1",
