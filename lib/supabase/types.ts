@@ -55,22 +55,49 @@ export type Database = {
       }
       list_items: {
         Row: {
+          completed_at: string | null
           created_at: string
           id: string
+          last_scheduled_at: string | null
+          last_scheduled_by: string | null
+          last_scheduled_source: string | null
           list_id: string
           place_id: string
+          scheduled_date: string | null
+          scheduled_end_time: string | null
+          scheduled_order: number
+          scheduled_start_time: string | null
+          tags: string[]
         }
         Insert: {
+          completed_at?: string | null
           created_at?: string
           id?: string
+          last_scheduled_at?: string | null
+          last_scheduled_by?: string | null
+          last_scheduled_source?: string | null
           list_id: string
           place_id: string
+          scheduled_date?: string | null
+          scheduled_end_time?: string | null
+          scheduled_order?: number
+          scheduled_start_time?: string | null
+          tags?: string[]
         }
         Update: {
+          completed_at?: string | null
           created_at?: string
           id?: string
+          last_scheduled_at?: string | null
+          last_scheduled_by?: string | null
+          last_scheduled_source?: string | null
           list_id?: string
           place_id?: string
+          scheduled_date?: string | null
+          scheduled_end_time?: string | null
+          scheduled_order?: number
+          scheduled_start_time?: string | null
+          tags?: string[]
         }
         Relationships: [
           {
@@ -100,27 +127,36 @@ export type Database = {
         Row: {
           created_at: string
           description: string | null
+          end_date: string | null
           id: string
           is_default: boolean
           name: string
+          start_date: string | null
+          timezone: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
           created_at?: string
           description?: string | null
+          end_date?: string | null
           id?: string
           is_default?: boolean
           name: string
+          start_date?: string | null
+          timezone?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
           created_at?: string
           description?: string | null
+          end_date?: string | null
           id?: string
           is_default?: boolean
           name?: string
+          start_date?: string | null
+          timezone?: string | null
           updated_at?: string
           user_id?: string
         }
