@@ -17,7 +17,7 @@ type SearchResult = {
   id: string
   name: string
   category: string
-  address: string | null
+  display_address: string | null
 }
 
 type Props = {
@@ -76,7 +76,7 @@ export default function ListDetailPanel({ listId }: Props) {
     } finally {
       setLoading(false)
     }
-  }, [listId])
+  }, [listId, reconcileTagFilters])
 
   useEffect(() => {
     fetchItems()
@@ -198,11 +198,11 @@ export default function ListDetailPanel({ listId }: Props) {
   }, [])
 
   const handleTagsUpdate = useCallback(
-    async (itemId: string, tagsInput: string) => {
+    async (itemId: string, tags: string[]) => {
       const res = await fetch(`/api/lists/${listId}/items/${itemId}/tags`, {
         method: 'PATCH',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ tags: tagsInput }),
+        body: JSON.stringify({ tags }),
       })
       const json = (await res.json().catch(() => ({}))) as {
         item?: { tags?: string[] }
@@ -264,11 +264,11 @@ export default function ListDetailPanel({ listId }: Props) {
                       <p className="text-sm font-medium text-gray-900">
                         {result.name}
                       </p>
-                      {result.address ? (
-                        <p className="text-xs text-gray-500">
-                          {result.address}
-                        </p>
-                      ) : null}
+                    {result.display_address ? (
+                      <p className="text-xs text-gray-500">
+                        {result.display_address}
+                      </p>
+                    ) : null}
                     </div>
                     <span className="rounded-full border border-gray-200 px-2 py-0.5 text-[10px] text-gray-500">
                       {result.category}

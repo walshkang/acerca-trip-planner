@@ -1,5 +1,7 @@
 'use client'
 
+import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useDiscoveryStore } from '@/lib/state/useDiscoveryStore'
 
 export default function Omnibox() {
@@ -14,9 +16,40 @@ export default function Omnibox() {
   const setResults = useDiscoveryStore((s) => s.setResults)
   const setSelectedResultId = useDiscoveryStore((s) => s.setSelectedResultId)
   const previewResult = useDiscoveryStore((s) => s.previewResult)
+  const anchorRef = useRef<HTMLDivElement | null>(null)
+  const [dropdownStyle, setDropdownStyle] = useState<{
+    top: number
+    left: number
+    width: number
+  } | null>(null)
+
+  useEffect(() => {
+    if (!results.length) {
+      setDropdownStyle(null)
+      return
+    }
+
+    const updatePosition = () => {
+      const rect = anchorRef.current?.getBoundingClientRect()
+      if (!rect) return
+      setDropdownStyle({
+        top: rect.bottom + 8,
+        left: rect.left,
+        width: rect.width,
+      })
+    }
+
+    updatePosition()
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [results.length])
 
   return (
-    <div className="pointer-events-auto">
+    <div className="pointer-events-auto" ref={anchorRef}>
       <div className="flex items-center gap-2 rounded-full border border-gray-200 bg-white/95 px-3 py-2 shadow-sm">
         <input
           className="w-[min(520px,70vw)] bg-transparent text-sm outline-none"
@@ -56,32 +89,44 @@ export default function Omnibox() {
           {isSubmitting ? 'Searching…' : 'Search'}
         </button>
       </div>
-      {results.length ? (
-        <div className="mt-2 overflow-hidden rounded-xl border border-gray-200 bg-white/95 shadow-sm">
-          {results.map((result) => {
-            const isSelected = selectedResultId === result.place_id
-            return (
-              <button
-                key={result.place_id}
-                type="button"
-                onClick={() => previewResult(result)}
-                className={`flex w-full flex-col gap-1 px-4 py-2 text-left text-xs text-gray-800 hover:bg-gray-100 ${
-                  isSelected ? 'bg-gray-100' : ''
-                }`}
-              >
-                <span className="font-medium">
-                  {result.name ?? 'Untitled place'}
-                </span>
-                {result.address ? (
-                  <span className="text-[11px] text-gray-500">
-                    {result.address}
-                  </span>
-                ) : null}
-              </button>
-            )
-          })}
-        </div>
-      ) : null}
+      {results.length && dropdownStyle
+        ? createPortal(
+            <div
+              className="overflow-hidden rounded-xl border border-gray-200 bg-white/95 shadow-sm"
+              style={{
+                position: 'fixed',
+                top: dropdownStyle.top,
+                left: dropdownStyle.left,
+                width: dropdownStyle.width,
+                zIndex: 60,
+              }}
+            >
+              {results.map((result) => {
+                const isSelected = selectedResultId === result.place_id
+                return (
+                  <button
+                    key={result.place_id}
+                    type="button"
+                    onClick={() => previewResult(result)}
+                    className={`flex w-full flex-col gap-1 px-4 py-2 text-left text-xs text-gray-800 hover:bg-gray-100 ${
+                      isSelected ? 'bg-gray-100' : ''
+                    }`}
+                  >
+                    <span className="font-medium">
+                      {result.name ?? 'Untitled place'}
+                    </span>
+                    {result.address ? (
+                      <span className="text-[11px] text-gray-500">
+                        {result.address}
+                      </span>
+                    ) : null}
+                  </button>
+                )
+              })}
+            </div>,
+            document.body
+          )
+        : null}
       {error ? (
         <div className="mt-2 rounded-md border border-red-200 bg-white/95 px-3 py-2 text-xs text-red-700 shadow-sm">
           {error}

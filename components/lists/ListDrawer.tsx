@@ -186,7 +186,7 @@ export default function ListDrawer({
   }, [])
 
   const handleTagsUpdate = useCallback(
-    async (itemId: string, tagsInput: string) => {
+    async (itemId: string, tags: string[]) => {
       if (!activeListId) {
         throw new Error('No active list selected')
       }
@@ -195,7 +195,7 @@ export default function ListDrawer({
         {
           method: 'PATCH',
           headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ tags: tagsInput }),
+          body: JSON.stringify({ tags }),
         }
       )
       const json = (await res.json().catch(() => ({}))) as {

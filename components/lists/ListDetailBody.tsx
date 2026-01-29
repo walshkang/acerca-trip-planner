@@ -1,6 +1,7 @@
 'use client'
 
 import { type FormEvent, useEffect, useMemo, useState } from 'react'
+import { normalizeTagList } from '@/lib/lists/tags'
 
 export type ListSummary = {
   id: string
@@ -46,7 +47,7 @@ type Props = {
   activeTagFilters?: string[]
   onTagFilterToggle?: (tag: string) => void
   onClearTagFilters?: () => void
-  onTagsUpdate?: (itemId: string, tagsInput: string) => Promise<string[]>
+  onTagsUpdate?: (itemId: string, tags: string[]) => Promise<string[]>
 }
 
 function formatDateRange(list: ListSummary) {
@@ -59,29 +60,31 @@ function formatDateRange(list: ListSummary) {
 type TagEditorProps = {
   itemId: string
   tags: string[] | null
-  onTagsUpdate?: (itemId: string, tagsInput: string) => Promise<string[]>
+  onTagsUpdate?: (itemId: string, tags: string[]) => Promise<string[]>
 }
 
 function TagEditor({ itemId, tags, onTagsUpdate }: TagEditorProps) {
-  const [tagsText, setTagsText] = useState((tags ?? []).join(', '))
+  const [tagInput, setTagInput] = useState('')
+  const [chipTags, setChipTags] = useState(tags ?? [])
   const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>(
     'idle'
   )
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    setTagsText((tags ?? []).join(', '))
+    setChipTags(tags ?? [])
+    setTagInput('')
   }, [tags])
 
   if (!onTagsUpdate) return null
 
-  async function handleSave(event: FormEvent) {
-    event.preventDefault()
+  async function commitTags(nextTags: string[]) {
     setStatus('saving')
     setError(null)
     try {
-      const updated = await onTagsUpdate(itemId, tagsText)
-      setTagsText(updated.join(', '))
+      const updated = await onTagsUpdate(itemId, nextTags)
+      setChipTags(updated)
+      setTagInput('')
       setStatus('saved')
     } catch (err: unknown) {
       setStatus('error')
@@ -89,15 +92,66 @@ function TagEditor({ itemId, tags, onTagsUpdate }: TagEditorProps) {
     }
   }
 
+  function normalizeMergedTags(tagsToMerge: string[]) {
+    return normalizeTagList(tagsToMerge) ?? []
+  }
+
+  async function handleAdd(event?: FormEvent) {
+    event?.preventDefault()
+    const nextAdd = normalizeTagList(tagInput)
+    if (!nextAdd || !nextAdd.length) return
+    const merged = normalizeMergedTags([...chipTags, ...nextAdd])
+    await commitTags(merged)
+  }
+
+  async function handleRemove(tag: string) {
+    const next = chipTags.filter((t) => t !== tag)
+    await commitTags(next)
+  }
+
+  async function handleClear() {
+    await commitTags([])
+  }
+
   return (
-    <form onSubmit={handleSave} className="mt-2 space-y-2">
+    <form onSubmit={handleAdd} className="mt-2 space-y-2">
+      {chipTags.length ? (
+        <div className="flex flex-wrap items-center gap-2">
+          {chipTags.map((tag) => (
+            <span
+              key={`${itemId}-${tag}`}
+              className="inline-flex items-center gap-1 rounded-full border border-gray-200 px-2 py-0.5 text-[10px] text-gray-600"
+            >
+              {tag}
+              <button
+                type="button"
+                onClick={() => handleRemove(tag)}
+                className="text-[10px] text-gray-400 hover:text-gray-600"
+                aria-label={`Remove ${tag}`}
+              >
+                ×
+              </button>
+            </span>
+          ))}
+          <button
+            type="button"
+            onClick={handleClear}
+            className="text-[10px] text-gray-500 underline"
+          >
+            × Clear
+          </button>
+        </div>
+      ) : (
+        <p className="text-[11px] text-gray-500">No tags yet.</p>
+      )}
+
       <div className="flex flex-wrap items-center gap-2">
         <input
           className="flex-1 rounded-md border border-gray-200 px-2 py-1 text-xs text-gray-700"
           placeholder="Add tags (comma-separated)"
-          value={tagsText}
+          value={tagInput}
           onChange={(event) => {
-            setTagsText(event.target.value)
+            setTagInput(event.target.value)
             if (status !== 'idle') {
               setStatus('idle')
               setError(null)
@@ -110,7 +164,7 @@ function TagEditor({ itemId, tags, onTagsUpdate }: TagEditorProps) {
           className="rounded-md border border-gray-200 px-2 py-1 text-[11px] text-gray-600 disabled:opacity-60"
           disabled={status === 'saving'}
         >
-          {status === 'saving' ? 'Saving…' : 'Save tags'}
+          {status === 'saving' ? 'Saving…' : 'Add'}
         </button>
       </div>
       {status === 'saved' ? (
@@ -254,18 +308,6 @@ export default function ListDetailBody({
                 </div>
                 {place.address ? (
                   <p className="mt-1 text-xs text-gray-500">{place.address}</p>
-                ) : null}
-                {item.tags && item.tags.length ? (
-                  <div className="mt-2 flex flex-wrap gap-1">
-                    {item.tags.map((tag) => (
-                      <span
-                        key={`${item.id}-${tag}`}
-                        className="rounded-full border border-gray-200 px-2 py-0.5 text-[10px] text-gray-500"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
                 ) : null}
                 <TagEditor
                   itemId={item.id}

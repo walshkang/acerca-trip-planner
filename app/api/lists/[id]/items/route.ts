@@ -168,41 +168,53 @@ export async function POST(
         ? (normalizeTagList([...seedTags, ...providedTags]) ?? [])
         : []
 
+    const insertPayload: {
+      list_id: string
+      place_id: string
+      tags?: string[]
+    } = {
+      list_id: params.id,
+      place_id: placeId,
+    }
+    if (desiredTags.length) {
+      insertPayload.tags = desiredTags
+    }
+
     const { data: item, error: itemError } = await supabase
       .from('list_items')
-      .upsert(
-        { list_id: params.id, place_id: placeId },
-        { onConflict: 'list_id,place_id' }
-      )
+      .upsert(insertPayload, {
+        onConflict: 'list_id,place_id',
+        ignoreDuplicates: true,
+      })
       .select('id, list_id, place_id, tags')
-      .single()
+      .maybeSingle()
 
-    if (itemError || !item) {
+    if (itemError) {
       return NextResponse.json(
         { error: itemError?.message || 'Failed to add list item' },
         { status: 500 }
       )
     }
 
-    const existingTags = Array.isArray(item.tags) ? item.tags : []
-    if (!existingTags.length && desiredTags.length) {
-      const { data: updated, error: updateError } = await supabase
-        .from('list_items')
-        .update({ tags: desiredTags })
-        .eq('id', item.id)
-        .select('id, list_id, place_id, tags')
-        .single()
-
-      if (updateError) {
-        return NextResponse.json(
-          { error: updateError.message },
-          { status: 500 }
-        )
-      }
-      return NextResponse.json({ item: updated ?? item })
+    if (item) {
+      return NextResponse.json({ item })
     }
 
-    return NextResponse.json({ item })
+    const { data: existing, error: existingError } = await supabase
+      .from('list_items')
+      .select('id, list_id, place_id, tags')
+      .eq('list_id', params.id)
+      .eq('place_id', placeId)
+      .single()
+
+    if (existingError || !existing) {
+      return NextResponse.json(
+        { error: existingError?.message || 'Failed to load list item' },
+        { status: 500 }
+      )
+    }
+
+    return NextResponse.json({ item: existing })
   } catch (error: unknown) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Internal server error' },

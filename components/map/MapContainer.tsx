@@ -177,8 +177,12 @@ export default function MapContainer() {
       return false
     }
 
-    if (activeListPlaces.length) {
-      if (fitPlaces(activeListPlaces)) return
+    if (activeListId) {
+      if (activeListPlaces.length) {
+        if (fitPlaces(activeListPlaces)) return
+      }
+      // Keep the map static when switching to an empty list.
+      return
     }
 
     if (typeof window !== 'undefined') {
@@ -237,7 +241,7 @@ export default function MapContainer() {
       center: [defaultViewState.longitude, defaultViewState.latitude],
       zoom: defaultViewState.zoom,
     })
-  }, [activeListPlaces, defaultViewState, loading, places])
+  }, [activeListId, activeListPlaces, defaultViewState, loading, places])
 
   useEffect(() => {
     if (!selectedPlaceId) return
@@ -310,7 +314,7 @@ export default function MapContainer() {
 
   return (
     <div className="w-full h-screen relative">
-      <div className="absolute left-4 top-4 z-10 pointer-events-none space-y-2">
+      <div className="absolute left-4 top-4 z-30 pointer-events-none space-y-2">
         <Omnibox />
         <div className="pointer-events-auto">
           <button
@@ -323,7 +327,19 @@ export default function MapContainer() {
         </div>
       </div>
 
-      <div className="absolute right-4 top-4 z-10 pointer-events-none">
+      <div className="absolute right-4 top-4 z-10 pointer-events-none space-y-2">
+        <form
+          action="/auth/sign-out"
+          method="post"
+          className="pointer-events-auto"
+        >
+          <button
+            className="rounded-full border border-gray-200 bg-white/95 px-3 py-1 text-xs text-gray-700 shadow-sm"
+            type="submit"
+          >
+            Sign out
+          </button>
+        </form>
         <InspectorCard
           onCommitted={(placeId) => {
             if (typeof window !== 'undefined') {
@@ -342,6 +358,7 @@ export default function MapContainer() {
         activeListId={activeListId}
         onActiveListChange={(id) => {
           setActiveListId(id)
+          setActiveListPlaceIds([])
           if (id) setDrawerOpen(true)
         }}
         onPlaceIdsChange={setActiveListPlaceIds}
