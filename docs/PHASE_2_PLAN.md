@@ -119,14 +119,16 @@ Notes:
   - If tags are provided, union with seeded tags and normalize.
 - `DELETE /api/lists/[id]/items?place_id=...`
   - Removes a place from a list by place_id (idempotent).
- - `GET /api/places/local-search?q=...`
-  - Searches canonical places for list add flow (name/address, minimal fields only).
+- `GET /api/places/local-search?q=...`
+  - Searches canonical places for list add flow (name + category; display_address nullable).
+  - Returns deterministic ordering: exact → prefix → contains.
 
 #### UI
 - List detail view shows:
   - Scrollable list of places with inline tag editor.
   - Local search to add existing places to the list (canonical-only).
   - Add-time tags input for list items added from search results.
+  - Tag chips are a single set; per-chip remove + clear-all; empty chip set clears tags.
   - Tag filter chips scoped to the list.
   - Multi-select semantics explicitly defined (default: OR).
 - Place drawer shows list membership as checkboxes/chips (add/remove semantics).
@@ -147,6 +149,7 @@ Notes:
 - Highlight/filter pins in memory from existing `places_view` data.
 - Keep Omnibox results above the drawer via a predictable overlay layer.
 - Add list creation inline in the map drawer (reuse `/api/lists` POST).
+ - Omnibox results should render in a portal to avoid clipping by drawer overflow.
 
 ### Search Location Bias (no extra calls)
 - Add optional `lat`, `lng`, `radius_m` to `/api/places/search`.

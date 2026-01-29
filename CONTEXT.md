@@ -9,7 +9,7 @@
 ## 🧠 Active Context
 - Current Phase: The Interactive Planner (Birthday Cake)
 - Active Epic: P2-E3 List Workspace + Tags
-- Immediate Blocker: None. List drawer create-list, list view search/add with tags, add-time tag seeding, and Sights-only wiki gating are implemented.
+- Immediate Blocker: None. Next slice: fix local search, unify tag chips with clear-all + sync, stabilize map camera, and fix Omnibox layering.
 - Planned (Phase 2): P2-E3 List Workspace + Tags (per-place tags + multi-list add/remove).
 - Planned (Phase 2): P2-E4 Map-First List Context (drawer overlay, URL-driven place drawer, search bias, default view).
 
@@ -43,6 +43,8 @@ gantt
 - User edits never overwrite frozen AI enrichment.
 
 ## 📝 Implementation Memory
+- 2026-01-29 – plan: P2-E3 tag chip UX + local search fix + map overlays
+    Planned local-search contract + tag chip UX with clear-all, map camera guardrails, and Omnibox portal layering.
 - 2026-01-29 – feat: list add flows + wiki gating
     Added map drawer list creation, list view local search + add with tags, add-time tag seeding on list membership, and Sights-only wiki summaries.
 - 2026-01-29 – plan: P2-E3 add flow + tag seeding + wiki gating
