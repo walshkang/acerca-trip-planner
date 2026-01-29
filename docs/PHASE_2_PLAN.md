@@ -122,6 +122,7 @@ Notes:
 - `GET /api/places/local-search?q=...`
   - Searches canonical places for list add flow (name + category; display_address nullable).
   - Returns deterministic ordering: exact → prefix → contains.
+  - Keyword search only (no URL parsing); short queries return empty results.
 
 #### UI
 - List detail view shows:
@@ -131,14 +132,15 @@ Notes:
   - Tag chips are a single set; per-chip remove + clear-all; empty chip set clears tags.
   - Tag filter chips scoped to the list.
   - Multi-select semantics explicitly defined (default: OR).
+  - Search results dropdown renders in a portal to avoid clipping/overlap with drawers.
 - Place drawer shows list membership as checkboxes/chips (add/remove semantics).
- - Wikipedia summaries are shown only for Sights (preview + detail).
 
 #### Acceptance Criteria
 - Tags are list-scoped (same place can have different tags in different lists).
 - Tags never overwrite `places.user_tags` or enrichment data.
 - Tag filter chips update the list view deterministically.
 - List membership writes are idempotent (re-adding/removing does not error).
+- Clearing all tags persists the empty tag set.
 
 ## Map-First UX Additions (Phase 2 refinements)
 
@@ -149,7 +151,9 @@ Notes:
 - Highlight/filter pins in memory from existing `places_view` data.
 - Keep Omnibox results above the drawer via a predictable overlay layer.
 - Add list creation inline in the map drawer (reuse `/api/lists` POST).
- - Omnibox results should render in a portal to avoid clipping by drawer overflow.
+- Omnibox results should render in a portal to avoid clipping by drawer overflow.
+- Creating or switching to an empty list must not change the map camera.
+- Add a sign-out affordance within the map shell (non-blocking placement).
 
 ### Search Location Bias (no extra calls)
 - Add optional `lat`, `lng`, `radius_m` to `/api/places/search`.
@@ -175,7 +179,7 @@ Notes:
 5. Place drawer with URL state + list membership add/remove.
 6. List add flow: local search + add with tags, list drawer create list.
 7. Tagging UI + API updates (P2-E3) including add-time tag seeding.
-8. Sights-only wiki summary gating (UI refinement).
+8. Map camera stability + overlay layering + sign-out placement.
 9. Scheduling UI + API updates (P2-E1).
 10. Filter translation + query pipeline (P2-E2).
 

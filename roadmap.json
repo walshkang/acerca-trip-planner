@@ -348,9 +348,10 @@
             "List detail view supports local search of canonical places with add-to-list actions.",
             "Add-time tags can be provided and are unioned with seeded enrichment tags (stored on list_items.tags).",
             "User tags are stored separately from frozen enrichment (no mutation of AI data).",
-            "Tag chips use a single editable set with per-chip remove + clear-all semantics.",
+            "Tag chips use a single editable set with per-chip remove + clear-all semantics; clearing persists an empty tag set.",
             "Local search uses a deterministic contract with nullable display_address.",
-            "Wikipedia summaries are shown only for Sights in preview + detail views."
+            "Local search accepts keyword input only and returns empty results for short queries.",
+            "List search results render in a portal to avoid drawer clipping."
           ]
         },
         {
@@ -363,7 +364,9 @@
             "Search results are location-biased to the current map view (Find Place locationbias).",
             "Default map view prefers lastActiveListId or lastAddedPlaceId over global fitBounds.",
             "Place detail opens in a drawer driven by URL state to preserve deep links.",
-            "Omnibox results stay above drawers via a predictable overlay layer (portal if needed)."
+            "Omnibox results stay above drawers via a predictable overlay layer (portal if needed).",
+            "Creating or switching to an empty list must not change the map camera.",
+            "Map shell includes a non-blocking sign-out affordance."
           ]
         }
       ]
