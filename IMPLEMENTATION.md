@@ -110,6 +110,9 @@ Note: This is a historical snapshot. Current rules and workflow live in `AGENTS.
 - Optimistic scheduling reconciles against server truth and captures a lightweight audit (last_scheduled_at, last_scheduled_by/source).
 - Compound filters (AND/OR) are supported in the filter JSON from day one.
 - Open-now uses server time converted to place timezone via offline lat/lng lookup (IANA), with a trip-timezone or utc_offset_minutes fallback.
+- Map-first UX: lists should open in a drawer/overlay; list selection highlights existing pins without refetching all places.
+- Search relevance should bias to the current map view using Find Place locationbias (circle:radius@lat,lng).
+- Default map view should prefer lastActiveListId or lastAddedPlaceId over global fitBounds when clusters are far apart.
 
 ## Phase 2 Detailed Plan
 

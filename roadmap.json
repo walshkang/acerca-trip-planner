@@ -1,7 +1,7 @@
 {
   "project_name": "AI_Travel_Itinerary_Manager",
   "version": "2.2.0-phase2-defined",
-  "last_updated": "2026-01-28",
+  "last_updated": "2026-01-29",
   "development_principles": [
     "LLMs label and translate intent; deterministic systems retrieve and compute.",
     "Only approved pins are truth (Map is the interface).",
@@ -345,6 +345,16 @@
             "List-scoped tags per place, editable inline in the list view.",
             "Tag filters scoped to a list; define multi-select semantics (AND/OR) explicitly.",
             "User tags are stored separately from frozen enrichment (no mutation of AI data)."
+          ]
+        },
+        {
+          "id": "P2-E4",
+          "title": "Map-First List Context",
+          "features": [
+            "Lists render in a drawer/overlay so the map remains the primary interface.",
+            "Selecting a list highlights/filters existing pins without refetching all places.",
+            "Search results are location-biased to the current map view (Find Place locationbias).",
+            "Default map view prefers lastActiveListId or lastAddedPlaceId over global fitBounds."
           ]
         }
       ]

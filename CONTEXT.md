@@ -11,6 +11,7 @@
 - Active Epic: P1-E5 Map View + Discovery Refinements (Phase 0-4 Plan)
 - Immediate Blocker: None. Task 1.4 is complete; types were regenerated after the list-assignment RPC update.
 - Planned (Phase 2): P2-E3 List Workspace + Tags (list detail view with per-place tags).
+- Planned (Phase 2): P2-E4 Map-First List Context (drawer overlay, search bias, default view).
 
 ## 🗺️ Roadmap Visualization
 
@@ -28,6 +29,7 @@ gantt
   "P2-E1 Stateful Planning (Kanban)" :p2e1, after p1e5, 7d
   "P2-E2 Deterministic Filtering & Intent Translation" :p2e2, after p2e1, 7d
   "P2-E3 List Workspace + Tags" :p2e3, after p2e2, 7d
+  "P2-E4 Map-First List Context" :p2e4, after p2e3, 7d
   section The_Intelligent_Concierge_(Wedding_Cake)
   "P3-E1 Deterministic Routing" :p3e1, after p2e2, 7d
   "P3-E2 AI Discovery (Suggestion Layer)" :p3e2, after p3e1, 7d
@@ -41,6 +43,8 @@ gantt
 - User edits never overwrite frozen AI enrichment.
 
 ## 📝 Implementation Memory
+- 2026-01-29 – roadmap: add map-first list context to Phase 2
+    Added a Phase 2 epic for the list drawer overlay, map-biased search, and default view policy.
 - 2026-01-28 – roadmap: add list detail view + tags to Phase 2
     Added Phase 2 epic P2-E3 for a list detail view with per-place tags and list-scoped tag filters.
 - 2026-01-27 – feat: add lists link to map
