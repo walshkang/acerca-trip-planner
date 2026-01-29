@@ -125,9 +125,12 @@ export default function ListsPanel() {
             >
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-gray-900">
+                  <a
+                    className="text-sm font-medium text-gray-900 underline-offset-2 hover:underline"
+                    href={`/lists/${list.id}`}
+                  >
                     {list.name}
-                  </span>
+                  </a>
                   {list.is_default ? (
                     <span className="rounded-full border border-gray-200 px-2 py-0.5 text-[10px] text-gray-500">
                       Default
