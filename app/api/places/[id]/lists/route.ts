@@ -16,7 +16,7 @@ export async function GET(
 
     const { data: place, error: placeError } = await supabase
       .from('places')
-      .select('id')
+      .select('id, user_tags')
       .eq('id', params.id)
       .eq('user_id', user.id)
       .single()
@@ -33,7 +33,7 @@ export async function GET(
 
     const { data: items, error } = await supabase
       .from('list_items')
-      .select('list_id')
+      .select('list_id, tags')
       .eq('place_id', params.id)
 
     if (error) {
@@ -41,8 +41,16 @@ export async function GET(
     }
 
     const listIds = (items ?? []).map((item) => item.list_id)
+    const listItems = (items ?? []).map((item) => ({
+      list_id: item.list_id,
+      tags: Array.isArray(item.tags) ? item.tags : [],
+    }))
 
-    return NextResponse.json({ list_ids: listIds })
+    return NextResponse.json({
+      list_ids: listIds,
+      list_items: listItems,
+      user_tags: Array.isArray(place.user_tags) ? place.user_tags : [],
+    })
   } catch (error: unknown) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Internal server error' },

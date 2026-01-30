@@ -43,6 +43,8 @@ gantt
 - User edits never overwrite frozen AI enrichment.
 
 ## 📝 Implementation Memory
+- 2026-01-30 – fix: place drawer tags + list search parity
+    Added tag visibility in the map place drawer, switched list detail search to Google Places ingest + promote flow, and raised the inspector layer above the list-driven place drawer.
 - 2026-01-29 – fix: list navigation + map click + place tag chips
     Linked list titles to list pages, fixed map pin click propagation, expanded local search matching, and updated place user tags to chip-style editing with header display.
 - 2026-01-29 – fix: list search + tag chip UX + map shell polish

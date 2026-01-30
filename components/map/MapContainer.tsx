@@ -327,7 +327,7 @@ export default function MapContainer() {
         <Omnibox />
       </div>
 
-      <div className="absolute right-4 top-4 z-10 pointer-events-none space-y-2">
+      <div className="absolute right-4 top-4 z-[80] pointer-events-none space-y-2">
         <form
           action="/auth/sign-out"
           method="post"
@@ -371,6 +371,7 @@ export default function MapContainer() {
       <PlaceDrawer
         open={Boolean(selectedPlace)}
         place={selectedPlace}
+        activeListId={activeListId}
         onClose={() => setSelectedPlaceId(null)}
       />
 
