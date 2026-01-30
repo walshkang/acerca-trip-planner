@@ -33,7 +33,7 @@ export async function GET(
 
     const { data: items, error } = await supabase
       .from('list_items')
-      .select('list_id, tags')
+      .select('id, list_id, tags')
       .eq('place_id', params.id)
 
     if (error) {
@@ -42,6 +42,7 @@ export async function GET(
 
     const listIds = (items ?? []).map((item) => item.list_id)
     const listItems = (items ?? []).map((item) => ({
+      id: item.id,
       list_id: item.list_id,
       tags: Array.isArray(item.tags) ? item.tags : [],
     }))

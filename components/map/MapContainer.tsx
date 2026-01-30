@@ -44,12 +44,14 @@ export default function MapContainer() {
   const [activeListId, setActiveListId] = useState<string | null>(null)
   const [activeListPlaceIds, setActiveListPlaceIds] = useState<string[]>([])
   const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null)
+  const [inspectorHeight, setInspectorHeight] = useState(0)
   const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN
   const router = useRouter()
   const ghostLocation = useDiscoveryStore((s) => s.ghostLocation)
   const clearDiscovery = useDiscoveryStore((s) => s.clear)
   const setSearchBias = useDiscoveryStore((s) => s.setSearchBias)
   const mapRef = useRef<MapRef | null>(null)
+  const inspectorRef = useRef<HTMLDivElement | null>(null)
 
   const defaultViewState = useMemo<ViewState>(
     () => ({
@@ -280,6 +282,24 @@ export default function MapContainer() {
     })
   }, [loading, setSearchBias])
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const node = inspectorRef.current
+    if (!node) return
+    const update = () => {
+      const rect = node.getBoundingClientRect()
+      setInspectorHeight(rect.height || 0)
+    }
+    update()
+    if (typeof ResizeObserver === 'undefined') {
+      window.addEventListener('resize', update)
+      return () => window.removeEventListener('resize', update)
+    }
+    const observer = new ResizeObserver(update)
+    observer.observe(node)
+    return () => observer.disconnect()
+  }, [])
+
   if (!mapboxToken) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -327,7 +347,10 @@ export default function MapContainer() {
         <Omnibox />
       </div>
 
-      <div className="absolute right-4 top-4 z-[80] pointer-events-none space-y-2">
+      <div
+        ref={inspectorRef}
+        className="absolute right-4 top-4 z-[80] pointer-events-none space-y-2"
+      >
         <form
           action="/auth/sign-out"
           method="post"
@@ -340,16 +363,18 @@ export default function MapContainer() {
             Sign out
           </button>
         </form>
-        <InspectorCard
-          onCommitted={(placeId) => {
-            if (typeof window !== 'undefined') {
-              window.localStorage.setItem(lastAddedPlaceKey, placeId)
-            }
-            setPendingFocusPlaceId(placeId)
-            fetchPlaces()
-            router.push(`/places/${placeId}`)
-          }}
-        />
+        <div className="pointer-events-auto">
+          <InspectorCard
+            onCommitted={(placeId) => {
+              if (typeof window !== 'undefined') {
+                window.localStorage.setItem(lastAddedPlaceKey, placeId)
+              }
+              setPendingFocusPlaceId(placeId)
+              fetchPlaces()
+              router.push(`/places/${placeId}`)
+            }}
+          />
+        </div>
       </div>
 
       <ListDrawer
@@ -372,6 +397,7 @@ export default function MapContainer() {
         open={Boolean(selectedPlace)}
         place={selectedPlace}
         activeListId={activeListId}
+        topOffset={inspectorHeight}
         onClose={() => setSelectedPlaceId(null)}
       />
 

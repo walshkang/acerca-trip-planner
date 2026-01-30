@@ -15,11 +15,13 @@ type ListsResponse = {
 type Props = {
   placeId: string
   initialSelectedIds: string[]
+  onMembershipChange?: () => void
 }
 
 export default function PlaceListMembershipEditor({
   placeId,
   initialSelectedIds,
+  onMembershipChange,
 }: Props) {
   const [lists, setLists] = useState<ListSummary[]>([])
   const [selectedIds, setSelectedIds] = useState<string[]>(initialSelectedIds)
@@ -78,6 +80,7 @@ export default function PlaceListMembershipEditor({
             return
           }
           setSelectedIds((prev) => prev.filter((id) => id !== listId))
+          onMembershipChange?.()
         } else {
           const res = await fetch(`/api/lists/${listId}/items`, {
             method: 'POST',
@@ -90,6 +93,7 @@ export default function PlaceListMembershipEditor({
             return
           }
           setSelectedIds((prev) => (prev.includes(listId) ? prev : [...prev, listId]))
+          onMembershipChange?.()
         }
       } catch (err: unknown) {
         setError(err instanceof Error ? err.message : 'Request failed')
