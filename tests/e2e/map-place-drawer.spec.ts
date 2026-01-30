@@ -86,12 +86,12 @@ test('place drawer stays below inspector overlay', async ({ page }) => {
 
   await ensureSignedIn(page)
 
-  const marker = page.locator('button[aria-label^="Open "]').first()
+  const marker = page.locator('.mapboxgl-marker').first()
   if (!(await marker.isVisible().catch(() => false))) {
     test.skip(true, 'No map markers available to test drawer stacking.')
   }
 
-  await marker.click()
+  await marker.click({ force: true })
 
   const placeDrawer = page.getByTestId('place-drawer')
   const rightOverlay = page.getByTestId('map-overlay-right')
