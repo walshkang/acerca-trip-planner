@@ -162,6 +162,7 @@ export default function PlaceDrawer({
     <aside
       className="absolute right-4 z-20 w-[min(360px,90vw)] max-h-[80vh] overflow-hidden rounded-xl border border-gray-200 bg-white/95 shadow-lg"
       style={{ top: `${computedTop}px` }}
+      data-testid="place-drawer"
     >
       <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
         <div>

@@ -9,6 +9,9 @@
     "lint": "next lint",
     "test": "vitest",
     "test:ui": "vitest --ui",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:debug": "playwright test --debug",
     "db:types": "bash scripts/gen-db-types.sh",
     "check:rationale": "tsx scripts/check-rationale.ts",
     "check": "npm run validate:json && npm run check:rationale",
@@ -29,6 +32,7 @@
     "zustand": "^5.0.10"
   },
   "devDependencies": {
+    "@playwright/test": "^1.41.2",
     "@types/node": "^20.14.12",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",

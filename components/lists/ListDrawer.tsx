@@ -227,7 +227,10 @@ export default function ListDrawer({
   if (!open) return null
 
   return (
-    <aside className="absolute left-4 top-20 z-20 w-[min(360px,90vw)] max-h-[80vh] overflow-hidden rounded-xl border border-gray-200 bg-white/95 shadow-lg">
+    <aside
+      className="absolute left-4 top-20 z-20 w-[min(360px,90vw)] max-h-[80vh] overflow-hidden rounded-xl border border-gray-200 bg-white/95 shadow-lg"
+      data-testid="list-drawer"
+    >
       <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
         <div>
           <h2 className="text-sm font-semibold text-gray-900">Lists</h2>

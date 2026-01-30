@@ -43,6 +43,8 @@ gantt
 - User edits never overwrite frozen AI enrichment.
 
 ## 📝 Implementation Memory
+- 2026-01-30 – test: add Playwright e2e smoke coverage
+    Added Playwright config + smoke specs for map place drawer behavior, plus docs and ignore rules.
 - 2026-01-30 – fix: place drawer tag editing + overlay stacking
     Added editable list tags inside the map place drawer, refreshed drawer state on membership changes, and pushed the drawer below the inspector while keeping it visible.
 - 2026-01-30 – fix: place drawer tags + list search parity

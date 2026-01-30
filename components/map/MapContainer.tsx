@@ -334,7 +334,10 @@ export default function MapContainer() {
 
   return (
     <div className="w-full h-screen relative">
-      <div className="absolute left-4 top-4 z-[70] pointer-events-none space-y-2">
+      <div
+        className="absolute left-4 top-4 z-[70] pointer-events-none space-y-2"
+        data-testid="map-overlay-left"
+      >
         <div className="pointer-events-auto">
           <button
             type="button"
@@ -350,6 +353,7 @@ export default function MapContainer() {
       <div
         ref={inspectorRef}
         className="absolute right-4 top-4 z-[80] pointer-events-none space-y-2"
+        data-testid="map-overlay-right"
       >
         <form
           action="/auth/sign-out"
