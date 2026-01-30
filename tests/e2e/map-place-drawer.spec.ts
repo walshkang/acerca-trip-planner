@@ -20,50 +20,50 @@ async function ensureSignedIn(page: Page) {
   }
 }
 
+async function seedListWithPlace(page: Page) {
+  const seedToken = process.env.PLAYWRIGHT_SEED_TOKEN
+  if (!seedToken) {
+    throw new Error('PLAYWRIGHT_SEED_TOKEN is not set for Playwright seeding.')
+  }
+
+  const res = await page.request.post('/api/test/seed', {
+    headers: { 'x-seed-token': seedToken },
+  })
+  if (!res.ok()) {
+    const body = await res.text().catch(() => '')
+    throw new Error(`Seed failed (${res.status()}): ${body}`)
+  }
+  const json = (await res.json()) as {
+    list?: { id: string; name: string }
+    place_id?: string
+    place_name?: string
+  }
+  if (!json.list?.id || !json.place_id || !json.place_name) {
+    throw new Error('Seed response missing list/place data')
+  }
+  return json
+}
+
 test('place drawer opens and tags are editable for active list', async ({ page }) => {
   await page.goto('/')
 
   await ensureSignedIn(page)
+  const seed = await seedListWithPlace(page)
 
   await page.getByRole('button', { name: 'Lists' }).click()
   const listDrawer = page.getByTestId('list-drawer')
   await expect(listDrawer).toBeVisible()
 
-  const listChipSection = listDrawer.getByRole('link', { name: 'Manage lists' }).locator('..')
-  const listButtons = listChipSection
-    .locator('button')
-    .filter({ hasNotText: 'Clear' })
-    .filter({ hasNotText: 'Close' })
-    .filter({ hasNotText: 'Create' })
-
-  const listButtonCount = await listButtons.count()
-  if (!listButtonCount) {
-    test.skip(true, 'No lists available to test place drawer tags.')
-  }
-
-  const listName = (await listButtons.first().textContent())?.trim() ?? ''
-  await listButtons.first().click()
-
-  const listItemsEmpty = await listDrawer
-    .getByText('No places in this list yet.')
-    .isVisible()
-    .catch(() => false)
-  if (listItemsEmpty) {
-    test.skip(true, 'Selected list has no places to open in the drawer.')
-  }
+  await listDrawer.getByRole('button', { name: seed.list.name }).click()
 
   const placesSection = listDrawer.getByRole('heading', { name: 'Places' }).locator('..')
-  const firstPlaceButton = placesSection
-    .locator('button')
-    .filter({ hasText: /.+/ })
-    .first()
-  await firstPlaceButton.click()
+  await placesSection.getByText(seed.place_name).click()
 
   const placeDrawer = page.getByTestId('place-drawer')
   await expect(placeDrawer).toBeVisible()
 
   const membershipButton = placeDrawer.getByRole('button', {
-    name: new RegExp(listName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')),
+    name: new RegExp(seed.list.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')),
   })
   const isSelected = await membershipButton
     .getAttribute('aria-pressed')
@@ -85,13 +85,14 @@ test('place drawer stays below inspector overlay', async ({ page }) => {
   await page.goto('/')
 
   await ensureSignedIn(page)
+  const seed = await seedListWithPlace(page)
 
-  const marker = page.locator('.mapboxgl-marker').first()
-  if (!(await marker.isVisible().catch(() => false))) {
-    test.skip(true, 'No map markers available to test drawer stacking.')
-  }
-
-  await marker.click({ force: true })
+  await page.getByRole('button', { name: 'Lists' }).click()
+  const listDrawer = page.getByTestId('list-drawer')
+  await expect(listDrawer).toBeVisible()
+  await listDrawer.getByRole('button', { name: seed.list.name }).click()
+  const placesSection = listDrawer.getByRole('heading', { name: 'Places' }).locator('..')
+  await placesSection.getByText(seed.place_name).click()
 
   const placeDrawer = page.getByTestId('place-drawer')
   const rightOverlay = page.getByTestId('map-overlay-right')
@@ -102,9 +103,8 @@ test('place drawer stays below inspector overlay', async ({ page }) => {
   const placeBox = await placeDrawer.boundingBox()
   const overlayBox = await rightOverlay.boundingBox()
 
-  if (!placeBox || !overlayBox) {
-    test.skip(true, 'Unable to compute overlay positions.')
-  }
+  expect(placeBox && overlayBox).toBeTruthy()
+  if (!placeBox || !overlayBox) return
 
   expect(placeBox.y).toBeGreaterThanOrEqual(overlayBox.y + overlayBox.height - 1)
 })

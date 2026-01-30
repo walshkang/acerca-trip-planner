@@ -43,6 +43,8 @@ gantt
 - User edits never overwrite frozen AI enrichment.
 
 ## 📝 Implementation Memory
+- 2026-01-30 – test: add deterministic seed API for Playwright
+    Added a guarded /api/test/seed endpoint and seed helper to create lists + places for E2E tests, removing conditional skips.
 - 2026-01-30 – test: add Playwright e2e smoke coverage
     Added Playwright config + smoke specs for map place drawer behavior, plus docs and ignore rules.
 - 2026-01-30 – fix: place drawer tag editing + overlay stacking

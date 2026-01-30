@@ -19,6 +19,15 @@ npx playwright codegen http://localhost:3000 --save-storage=playwright/.auth/use
 
 Tip: If you want to re-auth, delete that file and run the command again.
 
+## 2.5) Configure the seed token (required for E2E seeding)
+Playwright seeds data via `/api/test/seed`. Set a token in your dev env:
+
+```
+export PLAYWRIGHT_SEED_TOKEN=local-playwright
+```
+
+Also ensure your server has `SUPABASE_SERVICE_ROLE_KEY` set (used for seeding).
+
 ## 3) Run tests
 ```sh
 npm run test:e2e
