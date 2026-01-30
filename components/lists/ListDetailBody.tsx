@@ -208,7 +208,14 @@ export default function ListDetailBody({
       {list ? (
         <div className="rounded-lg border border-gray-200 bg-white p-4">
           <div className="flex flex-wrap items-center gap-2">
-            <h2 className="text-lg font-semibold text-gray-900">{list.name}</h2>
+            <h2 className="text-lg font-semibold text-gray-900">
+              <a
+                className="hover:underline"
+                href={`/lists/${list.id}`}
+              >
+                {list.name}
+              </a>
+            </h2>
             {list.is_default ? (
               <span className="rounded-full border border-gray-200 px-2 py-0.5 text-[10px] text-gray-500">
                 Default
@@ -311,7 +318,10 @@ export default function ListDetailBody({
                 ) : null}
                 <TagEditor
                   itemId={item.id}
-                  tags={item.tags ?? []}
+                  tags={
+                    item.tags ??
+                    (item.place?.user_tags ?? [])
+                  }
                   onTagsUpdate={onTagsUpdate}
                 />
               </div>

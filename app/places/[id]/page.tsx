@@ -113,6 +113,18 @@ export default async function PlaceDetailPage({
                 </span>
               ) : null}
             </div>
+            {place.user_tags?.length ? (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {place.user_tags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="rounded-full border border-gray-200 px-3 py-1 text-xs text-gray-700"
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            ) : null}
           </div>
 
           <form action="/auth/sign-out" method="post">

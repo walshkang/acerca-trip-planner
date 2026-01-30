@@ -43,6 +43,8 @@ gantt
 - User edits never overwrite frozen AI enrichment.
 
 ## 📝 Implementation Memory
+- 2026-01-29 – fix: list navigation + map click + place tag chips
+    Linked list titles to list pages, fixed map pin click propagation, expanded local search matching, and updated place user tags to chip-style editing with header display.
 - 2026-01-29 – fix: list search + tag chip UX + map shell polish
     Switched list local-search to keywords with deterministic ordering + category match, moved Omnibox results into a portal to avoid drawer clipping, added chip-based tag editing with clear-all persistence, stabilized map camera on empty list selection, and added sign-out in the map shell.
 - 2026-01-29 – plan: P2-E3 tag chip UX + local search fix + map overlays

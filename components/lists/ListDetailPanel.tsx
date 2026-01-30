@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import ListDetailBody, {
   ListItemRow,
   ListSummary,
@@ -25,6 +26,7 @@ type Props = {
 }
 
 export default function ListDetailPanel({ listId }: Props) {
+  const router = useRouter()
   const [list, setList] = useState<ListSummary | null>(null)
   const [items, setItems] = useState<ListItemRow[]>([])
   const [distinctTags, setDistinctTags] = useState<string[]>([])
@@ -197,6 +199,13 @@ export default function ListDetailPanel({ listId }: Props) {
     setActiveTagFilters([])
   }, [])
 
+  const handlePlaceSelect = useCallback(
+    (placeId: string) => {
+      router.push(`/places/${placeId}`)
+    },
+    [router]
+  )
+
   const handleTagsUpdate = useCallback(
     async (itemId: string, tags: string[]) => {
       const res = await fetch(`/api/lists/${listId}/items/${itemId}/tags`, {
@@ -248,6 +257,12 @@ export default function ListDetailPanel({ listId }: Props) {
         ) : null}
         {searchError ? (
           <p className="text-xs text-red-600">{searchError}</p>
+        ) : null}
+        {!searchLoading &&
+        !searchError &&
+        searchQuery.trim().length >= 2 &&
+        !searchResults.length ? (
+          <p className="text-xs text-gray-500">No matches yet.</p>
         ) : null}
         {searchResults.length ? (
           <div className="space-y-2">
@@ -310,6 +325,7 @@ export default function ListDetailPanel({ listId }: Props) {
             ? 'No places match these tags.'
             : 'No places in this list yet.'
         }
+        onPlaceSelect={handlePlaceSelect}
         availableTags={distinctTags}
         activeTagFilters={activeTagFilters}
         onTagFilterToggle={handleTagToggle}

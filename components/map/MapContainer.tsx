@@ -314,8 +314,7 @@ export default function MapContainer() {
 
   return (
     <div className="w-full h-screen relative">
-      <div className="absolute left-4 top-4 z-30 pointer-events-none space-y-2">
-        <Omnibox />
+      <div className="absolute left-4 top-4 z-[70] pointer-events-none space-y-2">
         <div className="pointer-events-auto">
           <button
             type="button"
@@ -325,6 +324,7 @@ export default function MapContainer() {
             {drawerOpen ? 'Hide lists' : 'Lists'}
           </button>
         </div>
+        <Omnibox />
       </div>
 
       <div className="absolute right-4 top-4 z-10 pointer-events-none space-y-2">
@@ -425,7 +425,18 @@ export default function MapContainer() {
                   ? 'opacity-30'
                   : 'opacity-100'
               }`}
-              onClick={() => setSelectedPlaceId(place.id)}
+              onClick={(event) => {
+                event.preventDefault()
+                event.stopPropagation()
+                const native = event.nativeEvent as MouseEvent
+                if (native?.stopImmediatePropagation) {
+                  native.stopImmediatePropagation()
+                }
+                if (native?.stopPropagation) {
+                  native.stopPropagation()
+                }
+                setSelectedPlaceId(place.id)
+              }}
               aria-label={`Open ${place.name}`}
             >
               <img
