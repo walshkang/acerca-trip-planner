@@ -1,12 +1,29 @@
-import { test, expect } from '@playwright/test'
+import { test, expect, type Page } from '@playwright/test'
+
+async function ensureSignedIn(page: Page) {
+  const loadingText = page.getByText('Loading map...')
+  await loadingText.waitFor({ state: 'detached' }).catch(() => null)
+
+  const signOut = page.getByRole('button', { name: 'Sign out' })
+  try {
+    await signOut.waitFor({ state: 'visible', timeout: 15000 })
+    return
+  } catch {
+    const signIn = page.getByRole('link', { name: 'Sign in' })
+    const isSignedOut = await signIn.isVisible().catch(() => false)
+    if (isSignedOut) {
+      throw new Error(
+        'Not signed in. Create playwright/.auth/user.json via: npx playwright codegen http://localhost:3000 --save-storage=playwright/.auth/user.json'
+      )
+    }
+    throw new Error('Sign out button not visible. Map may still be loading.')
+  }
+}
 
 test('place drawer opens and tags are editable for active list', async ({ page }) => {
   await page.goto('/')
 
-  const signOut = page.getByRole('button', { name: 'Sign out' })
-  if (!(await signOut.isVisible().catch(() => false))) {
-    test.skip(true, 'Auth required. Run Playwright auth setup first.')
-  }
+  await ensureSignedIn(page)
 
   await page.getByRole('button', { name: 'Lists' }).click()
   const listDrawer = page.getByTestId('list-drawer')
@@ -67,10 +84,7 @@ test('place drawer opens and tags are editable for active list', async ({ page }
 test('place drawer stays below inspector overlay', async ({ page }) => {
   await page.goto('/')
 
-  const signOut = page.getByRole('button', { name: 'Sign out' })
-  if (!(await signOut.isVisible().catch(() => false))) {
-    test.skip(true, 'Auth required. Run Playwright auth setup first.')
-  }
+  await ensureSignedIn(page)
 
   const marker = page.locator('button[aria-label^="Open "]').first()
   if (!(await marker.isVisible().catch(() => false))) {
