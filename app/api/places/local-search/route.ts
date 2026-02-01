@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { CATEGORY_ENUM_VALUES } from '@/lib/types/enums'
+import {
+  normalizeLocalSearchQuery,
+  rankLocalSearchMatch,
+  resolveCategoryMatch,
+} from '@/lib/places/local-search'
 
 const DEFAULT_LIMIT = 10
 const MAX_LIMIT = 20
@@ -10,49 +14,6 @@ function parseLimit(value: string | null): number {
   const parsed = Number(value)
   if (!Number.isFinite(parsed)) return DEFAULT_LIMIT
   return Math.min(Math.max(Math.round(parsed), 1), MAX_LIMIT)
-}
-
-function resolveCategoryMatch(query: string): string | null {
-  const normalized = query.toLowerCase()
-  for (const value of CATEGORY_ENUM_VALUES) {
-    const lower = value.toLowerCase()
-    if (normalized === lower || normalized === `${lower}s`) {
-      return value
-    }
-  }
-  return null
-}
-
-function normalizeQuery(input: string): string | null {
-  let tag = input.trim().toLowerCase()
-  if (!tag) return null
-  tag = tag.replace(/[\s_]+/g, '-')
-  tag = tag.replace(/[^a-z0-9-]/g, '')
-  tag = tag.replace(/-+/g, '-')
-  tag = tag.replace(/^-+/, '').replace(/-+$/, '')
-  return tag.length ? tag : null
-}
-
-function rankMatch(
-  name: string,
-  address: string | null,
-  category: string,
-  query: string,
-  categoryMatch: string | null,
-  normalizedQuery: string | null,
-  nameNormalized: string | null,
-  addressNormalized: string | null
-): number {
-  const n = name.toLowerCase()
-  const q = query.toLowerCase()
-  if (n === q) return 0
-  if (n.startsWith(q)) return 1
-  if (n.includes(q)) return 2
-  if (normalizedQuery && nameNormalized?.includes(normalizedQuery)) return 3
-  if (categoryMatch && category === categoryMatch) return 4
-  if (address && address.toLowerCase().includes(q)) return 5
-  if (normalizedQuery && addressNormalized?.includes(normalizedQuery)) return 6
-  return 7
 }
 
 export async function GET(request: NextRequest) {
@@ -75,7 +36,7 @@ export async function GET(request: NextRequest) {
     const limit = parseLimit(url.searchParams.get('limit'))
     const pattern = `%${query}%`
     const categoryMatch = resolveCategoryMatch(query)
-    const normalizedQuery = normalizeQuery(query)
+    const normalizedQuery = normalizeLocalSearchQuery(query)
     const normalizedPattern = normalizedQuery ? `%${normalizedQuery}%` : null
     const filters = [`name.ilike.${pattern}`, `address.ilike.${pattern}`]
     if (normalizedPattern) {
@@ -111,7 +72,7 @@ export async function GET(request: NextRequest) {
         name: row.name,
         category: row.category,
         display_address: row.address ?? null,
-        _score: rankMatch(
+        _score: rankLocalSearchMatch(
           row.name,
           row.address,
           row.category,

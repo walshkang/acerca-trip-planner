@@ -15,9 +15,10 @@ type ApiResponse = {
 }
 
 type SearchResult = {
-  place_id: string
+  id: string
   name: string | null
-  address: string | null
+  category: string
+  display_address: string | null
 }
 
 type Props = {
@@ -109,7 +110,7 @@ export default function ListDetailPanel({ listId }: Props) {
       setSearchError(null)
       try {
         const res = await fetch(
-          `/api/places/search?q=${encodeURIComponent(trimmed)}`,
+          `/api/places/local-search?q=${encodeURIComponent(trimmed)}`,
           { signal: controller.signal }
         )
         const json = (await res.json().catch(() => ({}))) as {
@@ -146,6 +147,14 @@ export default function ListDetailPanel({ listId }: Props) {
     })
   }, [activeTagFilters, items])
 
+  const existingPlaceIds = useMemo(() => {
+    return new Set(
+      items
+        .map((item) => item.place?.id)
+        .filter((id): id is string => Boolean(id))
+    )
+  }, [items])
+
   const handleTagToggle = useCallback((tag: string) => {
     setActiveTagFilters((prev) =>
       prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
@@ -163,38 +172,8 @@ export default function ListDetailPanel({ listId }: Props) {
       setSearchError(null)
       try {
         const tagsInput = searchTagInputs[placeId] ?? ''
-        const ingestRes = await fetch('/api/places/ingest', {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ place_id: placeId }),
-        })
-        const ingestJson = await ingestRes.json().catch(() => ({}))
-        if (!ingestRes.ok) {
-          setSearchError(ingestJson?.error || `HTTP ${ingestRes.status}`)
-          return
-        }
-        const candidateId = ingestJson?.candidate?.id
-        if (!candidateId) {
-          setSearchError('No candidate returned from ingest')
-          return
-        }
-        const promoteRes = await fetch('/api/places/promote', {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ candidate_id: candidateId, list_id: null }),
-        })
-        const promoteJson = await promoteRes.json().catch(() => ({}))
-        if (!promoteRes.ok) {
-          setSearchError(promoteJson?.error || `HTTP ${promoteRes.status}`)
-          return
-        }
-        const promotedPlaceId = promoteJson?.place_id
-        if (!promotedPlaceId) {
-          setSearchError('Promotion succeeded but no place_id returned')
-          return
-        }
         const payload: { place_id: string; tags?: string } = {
-          place_id: promotedPlaceId,
+          place_id: placeId,
         }
         if (tagsInput.trim().length) {
           payload.tags = tagsInput
@@ -269,12 +248,12 @@ export default function ListDetailPanel({ listId }: Props) {
             Add places to this list
           </h3>
           <p className="text-xs text-gray-500">
-            Search Google Places and add tags at the same time.
+            Search approved places and add tags at the same time.
           </p>
         </div>
         <input
           className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm"
-          placeholder="Search Google Places"
+          placeholder="Search approved places"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
         />
@@ -293,11 +272,13 @@ export default function ListDetailPanel({ listId }: Props) {
         {searchResults.length ? (
           <div className="space-y-2">
             {searchResults.map((result) => {
-              const inList = addedResultIds.has(result.place_id)
-              const tagsInput = searchTagInputs[result.place_id] ?? ''
+              const inList =
+                addedResultIds.has(result.id) ||
+                existingPlaceIds.has(result.id)
+              const tagsInput = searchTagInputs[result.id] ?? ''
               return (
                 <div
-                  key={result.place_id}
+                  key={result.id}
                   className="rounded-md border border-gray-100 px-3 py-2 space-y-2"
                 >
                   <div className="flex flex-wrap items-center justify-between gap-2">
@@ -305,14 +286,14 @@ export default function ListDetailPanel({ listId }: Props) {
                       <p className="text-sm font-medium text-gray-900">
                         {result.name ?? 'Untitled place'}
                       </p>
-                      {result.address ? (
+                      {result.display_address ? (
                         <p className="text-xs text-gray-500">
-                          {result.address}
+                          {result.display_address}
                         </p>
                       ) : null}
                     </div>
                     <span className="rounded-full border border-gray-200 px-2 py-0.5 text-[10px] text-gray-500">
-                      Google
+                      Approved
                     </span>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
@@ -321,19 +302,19 @@ export default function ListDetailPanel({ listId }: Props) {
                       placeholder="Add tags (optional)"
                       value={tagsInput}
                       onChange={(e) =>
-                        handleSearchTagChange(result.place_id, e.target.value)
+                        handleSearchTagChange(result.id, e.target.value)
                       }
                       disabled={inList}
                     />
                     <button
                       type="button"
-                      onClick={() => handleAddPlace(result.place_id)}
-                      disabled={inList || addingPlaceId === result.place_id}
+                      onClick={() => handleAddPlace(result.id)}
+                      disabled={inList || addingPlaceId === result.id}
                       className="rounded-md border border-gray-200 px-2 py-1 text-[11px] text-gray-700 disabled:opacity-50"
                     >
                       {inList
                         ? 'Added'
-                        : addingPlaceId === result.place_id
+                        : addingPlaceId === result.id
                           ? 'Adding…'
                           : 'Add'}
                     </button>
