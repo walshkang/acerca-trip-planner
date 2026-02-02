@@ -14,6 +14,11 @@ type Props = {
   onActiveListChange: (id: string | null) => void
   onPlaceIdsChange: (placeIds: string[]) => void
   onPlaceSelect: (placeId: string) => void
+  onActiveListItemsChange?: (
+    items: Array<{ id: string; list_id: string; place_id: string; tags: string[] }>
+  ) => void
+  tagsRefreshKey?: number
+  onTagsUpdated?: () => void
 }
 
 type ListsResponse = {
@@ -33,6 +38,9 @@ export default function ListDrawer({
   onActiveListChange,
   onPlaceIdsChange,
   onPlaceSelect,
+  onActiveListItemsChange,
+  tagsRefreshKey,
+  onTagsUpdated,
 }: Props) {
   const [lists, setLists] = useState<ListSummary[]>([])
   const [listsLoading, setListsLoading] = useState(false)
@@ -150,7 +158,7 @@ export default function ListDrawer({
     }
 
     fetchItems(activeListId)
-  }, [activeListId, fetchItems, onPlaceIdsChange])
+  }, [activeListId, fetchItems, onPlaceIdsChange, tagsRefreshKey])
 
   useEffect(() => {
     setActiveTagFilters([])
@@ -166,6 +174,24 @@ export default function ListDrawer({
       .filter((id): id is string => Boolean(id))
     onPlaceIdsChange(placeIds)
   }, [items, onPlaceIdsChange])
+
+  useEffect(() => {
+    if (!activeListId) {
+      onActiveListItemsChange?.([])
+      return
+    }
+    const mapped = items
+      .map((item) => ({
+        id: item.id,
+        list_id: activeListId,
+        place_id: item.place?.id,
+        tags: item.tags ?? [],
+      }))
+      .filter((item): item is { id: string; list_id: string; place_id: string; tags: string[] } =>
+        Boolean(item.place_id)
+      )
+    onActiveListItemsChange?.(mapped)
+  }, [activeListId, items, onActiveListItemsChange])
 
   const filteredItems = useMemo(() => {
     if (!activeTagFilters.length) return items
@@ -219,9 +245,10 @@ export default function ListDrawer({
         )
         return next
       })
+      onTagsUpdated?.()
       return updatedTags
     },
-    [activeListId]
+    [activeListId, onTagsUpdated]
   )
 
   if (!open) return null

@@ -1,4 +1,5 @@
-import { test, expect, type Page } from '@playwright/test'
+import { randomUUID } from 'crypto'
+import { test, expect, type Locator, type Page } from '@playwright/test'
 
 async function ensureSignedIn(page: Page) {
   const loadingText = page.getByText('Loading map...')
@@ -44,7 +45,28 @@ async function seedListWithPlace(page: Page) {
   return json
 }
 
-test('place drawer opens and tags are editable for active list', async ({ page }) => {
+async function waitForPlaceDrawerReady(
+  placeDrawer: Locator,
+  placeName: string
+) {
+  await expect(placeDrawer).toBeVisible()
+  await expect(
+    placeDrawer.getByRole('heading', { name: placeName })
+  ).toBeVisible()
+}
+
+async function waitForMembershipApplied(
+  placeDrawer: Locator,
+  membershipButton: Locator
+) {
+  await expect(membershipButton).toHaveAttribute('aria-pressed', 'true')
+  const tagInput = placeDrawer.getByPlaceholder('Add tags (comma-separated)')
+  await expect(tagInput).toBeVisible()
+  await expect(tagInput).toBeEnabled()
+  return tagInput
+}
+
+test('place drawer opens and tags are editable for active list', async ({ page }, testInfo) => {
   await page.goto('/')
 
   await ensureSignedIn(page)
@@ -57,10 +79,12 @@ test('place drawer opens and tags are editable for active list', async ({ page }
   await listDrawer.getByRole('button', { name: seed.list.name }).click()
 
   const placesSection = listDrawer.getByRole('heading', { name: 'Places' }).locator('..')
-  await placesSection.getByText(seed.place_name).click()
+  const placeButton = placesSection.getByRole('button', { name: seed.place_name })
+  await expect(placeButton).toBeVisible()
+  await placeButton.click()
 
   const placeDrawer = page.getByTestId('place-drawer')
-  await expect(placeDrawer).toBeVisible()
+  await waitForPlaceDrawerReady(placeDrawer, seed.place_name)
 
   const membershipButton = placeDrawer.getByRole('button', {
     name: new RegExp(seed.list.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')),
@@ -71,14 +95,24 @@ test('place drawer opens and tags are editable for active list', async ({ page }
     .catch(() => false)
   if (!isSelected) {
     await membershipButton.click()
-    await expect(placeDrawer.getByText('List tags')).toBeVisible()
   }
 
-  const tagInput = placeDrawer.getByPlaceholder('Add tags (comma-separated)')
-  await expect(tagInput).toBeVisible()
-  await tagInput.fill('playwright-smoke')
+  const tagInput = await waitForMembershipApplied(placeDrawer, membershipButton)
+  const tagValue = `playwright-smoke-${testInfo.workerIndex}-${randomUUID().slice(0, 8)}`
+  await tagInput.fill(tagValue)
+  const listItemsResponse = page.waitForResponse((res) => {
+    return (
+      res.request().method() === 'GET' &&
+      res.url().includes(`/api/lists/${seed.list.id}/items`) &&
+      res.ok()
+    )
+  })
   await placeDrawer.getByRole('button', { name: 'Add' }).click()
-  await expect(placeDrawer.getByText('Saved.')).toBeVisible()
+  await listItemsResponse
+  const tagSection = placeDrawer.getByText('List tags').locator('..')
+  await expect(tagSection.getByText(tagValue)).toBeVisible()
+  const placeRow = placeButton.locator('..').locator('..')
+  await expect(placeRow.getByText(tagValue)).toBeVisible()
 })
 
 test('place drawer stays below inspector overlay', async ({ page }) => {
@@ -92,12 +126,14 @@ test('place drawer stays below inspector overlay', async ({ page }) => {
   await expect(listDrawer).toBeVisible()
   await listDrawer.getByRole('button', { name: seed.list.name }).click()
   const placesSection = listDrawer.getByRole('heading', { name: 'Places' }).locator('..')
-  await placesSection.getByText(seed.place_name).click()
+  const placeButton = placesSection.getByRole('button', { name: seed.place_name })
+  await expect(placeButton).toBeVisible()
+  await placeButton.click()
 
   const placeDrawer = page.getByTestId('place-drawer')
   const rightOverlay = page.getByTestId('map-overlay-right')
 
-  await expect(placeDrawer).toBeVisible()
+  await waitForPlaceDrawerReady(placeDrawer, seed.place_name)
   await expect(rightOverlay).toBeVisible()
 
   const placeBox = await placeDrawer.boundingBox()

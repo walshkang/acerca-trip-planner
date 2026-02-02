@@ -14,8 +14,11 @@ type Props = {
   open: boolean
   place: PlaceDrawerSummary | null
   activeListId?: string | null
+  activeListItemOverride?: { id: string; list_id: string; tags: string[] } | null
   topOffset?: number
   onClose: () => void
+  tagsRefreshKey?: number
+  onTagsUpdated?: () => void
 }
 
 type ListsResponse = {
@@ -28,8 +31,11 @@ export default function PlaceDrawer({
   open,
   place,
   activeListId = null,
+  activeListItemOverride = null,
   topOffset,
   onClose,
+  tagsRefreshKey,
+  onTagsUpdated,
 }: Props) {
   const [listIds, setListIds] = useState<string[]>([])
   const [listItems, setListItems] = useState<
@@ -48,6 +54,23 @@ export default function PlaceDrawer({
     if (!activeListId) return null
     return listItems.find((item) => item.list_id === activeListId) ?? null
   }, [activeListId, listItems])
+  const effectiveActiveListItem = useMemo(() => {
+    if (activeListItem) return activeListItem
+    if (
+      activeListItemOverride &&
+      activeListId &&
+      activeListItemOverride.list_id === activeListId
+    ) {
+      return activeListItemOverride
+    }
+    return null
+  }, [activeListId, activeListItem, activeListItemOverride])
+  const effectiveListIds = useMemo(() => {
+    if (!activeListItemOverride) return listIds
+    const listId = activeListItemOverride.list_id
+    if (listIds.includes(listId)) return listIds
+    return [...listIds, listId]
+  }, [activeListItemOverride, listIds])
 
   const fetchMembership = useCallback(async () => {
     if (!open || !place) return
@@ -92,19 +115,19 @@ export default function PlaceDrawer({
     }
 
     fetchMembership()
-  }, [fetchMembership, open, place])
+  }, [fetchMembership, open, place, tagsRefreshKey])
 
   if (!open || !place) return null
 
-  const activeListTags = activeListItem?.tags ?? []
+  const activeListTags = effectiveActiveListItem?.tags ?? []
 
   async function commitTags(nextTags: string[]) {
-    if (!activeListId || !activeListItem) return
+    if (!activeListId || !effectiveActiveListItem) return
     setTagStatus('saving')
     setTagError(null)
     try {
       const res = await fetch(
-        `/api/lists/${activeListId}/items/${activeListItem.id}/tags`,
+        `/api/lists/${activeListId}/items/${effectiveActiveListItem.id}/tags`,
         {
           method: 'PATCH',
           headers: { 'content-type': 'application/json' },
@@ -121,11 +144,14 @@ export default function PlaceDrawer({
       const updated = Array.isArray(json?.item?.tags) ? json.item.tags : []
       setListItems((prev) =>
         prev.map((item) =>
-          item.id === activeListItem.id ? { ...item, tags: updated } : item
+          item.id === effectiveActiveListItem.id
+            ? { ...item, tags: updated }
+            : item
         )
       )
       setTagInput('')
       setTagStatus('saved')
+      onTagsUpdated?.()
     } catch (err: unknown) {
       setTagStatus('error')
       setTagError(err instanceof Error ? err.message : 'Save failed')
@@ -191,7 +217,7 @@ export default function PlaceDrawer({
         {loading ? <p className="text-xs text-gray-500">Loading lists…</p> : null}
         {error ? <p className="text-xs text-red-600">{error}</p> : null}
 
-        {activeListItem ? (
+        {effectiveActiveListItem ? (
           <div className="space-y-2">
             <p className="text-[11px] font-semibold text-gray-600">
               List tags
@@ -275,7 +301,7 @@ export default function PlaceDrawer({
 
         <PlaceListMembershipEditor
           placeId={place.id}
-          initialSelectedIds={listIds}
+          initialSelectedIds={effectiveListIds}
           onMembershipChange={() => {
             fetchMembership()
           }}

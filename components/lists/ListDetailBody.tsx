@@ -318,10 +318,7 @@ export default function ListDetailBody({
                 ) : null}
                 <TagEditor
                   itemId={item.id}
-                  tags={
-                    item.tags ??
-                    (item.place?.user_tags ?? [])
-                  }
+                  tags={item.tags ?? []}
                   onTagsUpdate={onTagsUpdate}
                 />
               </div>

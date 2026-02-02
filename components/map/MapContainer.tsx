@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import Map, { Marker } from 'react-map-gl/mapbox'
+import MapGL, { Marker } from 'react-map-gl/mapbox'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase/client'
@@ -43,8 +43,13 @@ export default function MapContainer() {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [activeListId, setActiveListId] = useState<string | null>(null)
   const [activeListPlaceIds, setActiveListPlaceIds] = useState<string[]>([])
+  const [activeListItems, setActiveListItems] = useState<
+    Array<{ id: string; list_id: string; place_id: string; tags: string[] }>
+  >([])
   const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null)
   const [inspectorHeight, setInspectorHeight] = useState(0)
+  const [listTagRefreshKey, setListTagRefreshKey] = useState(0)
+  const [placeTagRefreshKey, setPlaceTagRefreshKey] = useState(0)
   const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN
   const router = useRouter()
   const ghostLocation = useDiscoveryStore((s) => s.ghostLocation)
@@ -52,6 +57,34 @@ export default function MapContainer() {
   const setSearchBias = useDiscoveryStore((s) => s.setSearchBias)
   const mapRef = useRef<MapRef | null>(null)
   const inspectorRef = useRef<HTMLDivElement | null>(null)
+  const bumpListTagRefresh = useCallback(() => {
+    setListTagRefreshKey((prev) => prev + 1)
+  }, [])
+  const bumpPlaceTagRefresh = useCallback(() => {
+    setPlaceTagRefreshKey((prev) => prev + 1)
+  }, [])
+  const handleActiveListPlaceIdsChange = useCallback((nextIds: string[]) => {
+    setActiveListPlaceIds((prev) => {
+      if (prev.length !== nextIds.length) return nextIds
+      for (let i = 0; i < prev.length; i += 1) {
+        if (prev[i] !== nextIds[i]) return nextIds
+      }
+      return prev
+    })
+  }, [])
+  const handleActiveListItemsChange = useCallback(
+    (
+      items: Array<{
+        id: string
+        list_id: string
+        place_id: string
+        tags: string[]
+      }>
+    ) => {
+      setActiveListItems(items)
+    },
+    []
+  )
 
   const defaultViewState = useMemo<ViewState>(
     () => ({
@@ -69,6 +102,10 @@ export default function MapContainer() {
     () => new Set(activeListPlaceIds),
     [activeListPlaceIds]
   )
+  const placeIdSet = useMemo(
+    () => new Set(places.map((place) => place.id)),
+    [places]
+  )
   const activeListPlaces = useMemo(
     () =>
       activeListPlaceIds.length
@@ -76,6 +113,24 @@ export default function MapContainer() {
         : [],
     [activeListPlaceIdSet, activeListPlaceIds, places]
   )
+  const activeListItemByPlaceId = useMemo(() => {
+    const listItemMap = new Map<
+      string,
+      { id: string; list_id: string; tags: string[] }
+    >()
+    for (const item of activeListItems) {
+      listItemMap.set(item.place_id, {
+        id: item.id,
+        list_id: item.list_id,
+        tags: item.tags,
+      })
+    }
+    return listItemMap
+  }, [activeListItems])
+  const activeListItemOverride = useMemo(() => {
+    if (!selectedPlaceId) return null
+    return activeListItemByPlaceId.get(selectedPlaceId) ?? null
+  }, [activeListItemByPlaceId, selectedPlaceId])
   const selectedPlace = useMemo(
     () => places.find((place) => place.id === selectedPlaceId) ?? null,
     [places, selectedPlaceId]
@@ -247,10 +302,21 @@ export default function MapContainer() {
 
   useEffect(() => {
     if (!selectedPlaceId) return
-    if (!places.some((place) => place.id === selectedPlaceId)) {
-      setSelectedPlaceId(null)
+    if (placeIdSet.has(selectedPlaceId)) return
+    if (activeListPlaceIdSet.has(selectedPlaceId)) {
+      fetchPlaces()
+      return
     }
-  }, [places, selectedPlaceId])
+    setSelectedPlaceId(null)
+  }, [activeListPlaceIdSet, fetchPlaces, placeIdSet, selectedPlaceId])
+
+  useEffect(() => {
+    if (!activeListPlaceIds.length) return
+    const missing = activeListPlaceIds.some((id) => !placeIdSet.has(id))
+    if (missing) {
+      fetchPlaces()
+    }
+  }, [activeListPlaceIds, fetchPlaces, placeIdSet])
 
   useEffect(() => {
     if (!pendingFocusPlaceId) return
@@ -390,22 +456,28 @@ export default function MapContainer() {
           setActiveListPlaceIds([])
           if (id) setDrawerOpen(true)
         }}
-        onPlaceIdsChange={setActiveListPlaceIds}
+        onPlaceIdsChange={handleActiveListPlaceIdsChange}
+        onActiveListItemsChange={handleActiveListItemsChange}
         onPlaceSelect={(placeId) => {
           setPendingFocusPlaceId(placeId)
           setSelectedPlaceId(placeId)
         }}
+        tagsRefreshKey={listTagRefreshKey}
+        onTagsUpdated={bumpPlaceTagRefresh}
       />
 
       <PlaceDrawer
         open={Boolean(selectedPlace)}
         place={selectedPlace}
         activeListId={activeListId}
+        activeListItemOverride={activeListItemOverride}
         topOffset={inspectorHeight}
         onClose={() => setSelectedPlaceId(null)}
+        tagsRefreshKey={placeTagRefreshKey}
+        onTagsUpdated={bumpListTagRefresh}
       />
 
-      <Map
+      <MapGL
         mapboxAccessToken={mapboxToken}
         initialViewState={defaultViewState}
         style={{ width: '100%', height: '100%' }}
@@ -478,7 +550,7 @@ export default function MapContainer() {
             </button>
           </Marker>
         ))}
-      </Map>
+      </MapGL>
     </div>
   )
 }

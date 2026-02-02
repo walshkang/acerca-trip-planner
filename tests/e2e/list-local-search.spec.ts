@@ -57,10 +57,12 @@ test('list detail local search adds approved places', async ({ page }) => {
   await expect(searchInput).toBeVisible()
   await searchInput.fill(seedB.place_name)
 
-  const resultName = page.getByText(seedB.place_name)
-  await expect(resultName).toBeVisible()
-
-  const resultCard = resultName.locator('..').locator('..').locator('..')
+  const results = page.getByTestId('local-search-results')
+  await expect(results).toBeVisible()
+  const resultCard = results
+    .locator('div', { has: results.getByText(seedB.place_name) })
+    .first()
+  await expect(resultCard.getByText(seedB.place_name)).toBeVisible()
   await expect(resultCard.getByText('Approved')).toBeVisible()
   await resultCard.getByRole('button', { name: 'Add' }).click()
 
