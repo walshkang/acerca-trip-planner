@@ -144,6 +144,9 @@ test('map marker click focuses list row and opens place drawer', async ({ page }
   await expect(
     placeDrawer.getByRole('heading', { name: seed.place_name })
   ).toBeVisible()
+  await expect(page).toHaveURL(
+    new RegExp(`[?&]place=${encodeURIComponent(seed.place_id)}`)
+  )
 
   const focusedRow = listDrawer.locator(`[data-place-id="${seed.place_id}"]`)
   await expect(focusedRow).toBeVisible()

@@ -144,3 +144,27 @@ test('place drawer stays below inspector overlay', async ({ page }) => {
 
   expect(placeBox.y).toBeGreaterThanOrEqual(overlayBox.y + overlayBox.height - 1)
 })
+
+test('place drawer URL supports deep link and back/forward', async ({ page }) => {
+  const seed = await seedListWithPlace(page)
+  const encodedPlaceId = encodeURIComponent(seed.place_id)
+
+  await page.goto(`/?place=${encodedPlaceId}`)
+  await ensureSignedIn(page)
+
+  const placeDrawer = page.getByTestId('place-drawer')
+  await waitForPlaceDrawerReady(placeDrawer, seed.place_name)
+  await expect(page).toHaveURL(new RegExp(`[?&]place=${encodedPlaceId}`))
+
+  await placeDrawer.getByRole('button', { name: 'Close' }).click()
+  await expect(placeDrawer).toBeHidden()
+  await expect(page).toHaveURL(/\/$/)
+
+  await page.goBack()
+  await waitForPlaceDrawerReady(placeDrawer, seed.place_name)
+  await expect(page).toHaveURL(new RegExp(`[?&]place=${encodedPlaceId}`))
+
+  await page.goForward()
+  await expect(placeDrawer).toBeHidden()
+  await expect(page).toHaveURL(/\/$/)
+})

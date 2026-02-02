@@ -13,6 +13,16 @@
 - Planned (Phase 2): P2-E3 List Workspace + Tags (per-place tags + multi-list add/remove).
 - Planned (Phase 2): P2-E4 Map-First List Context (drawer overlay, URL-driven place drawer, search bias, default view).
 
+## ✅ P2-E4 Remaining Plan (Tracking)
+- [x] Decide URL contract: `/?place=<id>` map drawer deep link; keep `/places/[id]` full detail page.
+- [x] Decide history semantics: URL open/close should create history entries so Back/Forward toggles drawer state.
+- [x] Implement URL-driven drawer state in `components/map/MapContainer.tsx` (read/write `?place=`, close clears param, handle missing id by clearing param after load).
+- [x] Convert every open/close path to URL (map click clears param + discovery, marker click sets param with propagation guard intact, PlaceDrawer close clears param, ListDrawer onPlaceSelect sets param).
+- [x] Replace map-away navigation (Inspector approve + list detail selection) with map-shell `/?place=<id>`.
+- [x] Preserve deep links through sign-in (include search params in `next`).
+- [x] Add/extend Playwright tests for URL open/close + back/forward + marker click updates URL.
+- [ ] MapLibre feasibility note (token gating + mapbox entrypoint implications) captured in docs or roadmap.
+
 ## 🗺️ Roadmap Visualization
 
 ```mermaid

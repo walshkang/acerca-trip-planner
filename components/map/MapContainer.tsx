@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import MapGL, { Marker } from 'react-map-gl/mapbox'
 import 'mapbox-gl/dist/mapbox-gl.css'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase/client'
 import { getCategoryIcon } from '@/lib/icons/mapping'
 import type { CategoryEnum } from '@/lib/types/enums'
@@ -50,12 +50,13 @@ export default function MapContainer() {
   const [focusedListPlaceId, setFocusedListPlaceId] = useState<string | null>(
     null
   )
-  const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null)
   const [inspectorHeight, setInspectorHeight] = useState(0)
   const [listTagRefreshKey, setListTagRefreshKey] = useState(0)
   const [placeTagRefreshKey, setPlaceTagRefreshKey] = useState(0)
   const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN
   const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
   const ghostLocation = useDiscoveryStore((s) => s.ghostLocation)
   const clearDiscovery = useDiscoveryStore((s) => s.clear)
   const setSearchBias = useDiscoveryStore((s) => s.setSearchBias)
@@ -101,6 +102,27 @@ export default function MapContainer() {
   const viewStorageKey = 'acerca:lastMapView'
   const lastActiveListKey = 'acerca:lastActiveListId'
   const lastAddedPlaceKey = 'acerca:lastAddedPlaceId'
+
+  const selectedPlaceId = searchParams.get('place')
+  const setPlaceParam = useCallback(
+    (nextId: string | null) => {
+      const params = new URLSearchParams(searchParams.toString())
+      const current = params.get('place')
+      if (current === nextId) return
+      if (nextId) {
+        params.set('place', nextId)
+      } else {
+        params.delete('place')
+      }
+      const next = params.toString()
+      router.push(next ? `${pathname}?${next}` : pathname)
+    },
+    [pathname, router, searchParams]
+  )
+  const signInHref = useMemo(() => {
+    const next = `${pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`
+    return `/auth/sign-in?next=${encodeURIComponent(next)}`
+  }, [pathname, searchParams])
 
   const activeListPlaceIdSet = useMemo(
     () => new Set(activeListPlaceIds),
@@ -307,13 +329,21 @@ export default function MapContainer() {
 
   useEffect(() => {
     if (!selectedPlaceId) return
+    if (loading) return
     if (placeIdSet.has(selectedPlaceId)) return
     if (activeListPlaceIdSet.has(selectedPlaceId)) {
       fetchPlaces()
       return
     }
-    setSelectedPlaceId(null)
-  }, [activeListPlaceIdSet, fetchPlaces, placeIdSet, selectedPlaceId])
+    setPlaceParam(null)
+  }, [
+    activeListPlaceIdSet,
+    fetchPlaces,
+    loading,
+    placeIdSet,
+    selectedPlaceId,
+    setPlaceParam,
+  ])
 
   useEffect(() => {
     if (!activeListPlaceIds.length) return
@@ -394,7 +424,7 @@ export default function MapContainer() {
           <p className="text-sm text-gray-700">You’re signed out.</p>
           <a
             className="mt-2 inline-block text-sm underline"
-            href="/auth/sign-in?next=/"
+            href={signInHref}
           >
             Sign in
           </a>
@@ -446,7 +476,7 @@ export default function MapContainer() {
               }
               setPendingFocusPlaceId(placeId)
               fetchPlaces()
-              router.push(`/places/${placeId}`)
+              setPlaceParam(placeId)
             }}
           />
         </div>
@@ -466,7 +496,7 @@ export default function MapContainer() {
         focusedPlaceId={focusedListPlaceId}
         onPlaceSelect={(placeId) => {
           setPendingFocusPlaceId(placeId)
-          setSelectedPlaceId(placeId)
+          setPlaceParam(placeId)
           setFocusedListPlaceId(placeId)
         }}
         tagsRefreshKey={listTagRefreshKey}
@@ -479,7 +509,7 @@ export default function MapContainer() {
         activeListId={activeListId}
         activeListItemOverride={activeListItemOverride}
         topOffset={inspectorHeight}
-        onClose={() => setSelectedPlaceId(null)}
+        onClose={() => setPlaceParam(null)}
         tagsRefreshKey={placeTagRefreshKey}
         onTagsUpdated={bumpListTagRefresh}
       />
@@ -491,7 +521,9 @@ export default function MapContainer() {
         mapStyle="mapbox://styles/mapbox/streets-v12"
         onClick={() => {
           clearDiscovery()
-          setSelectedPlaceId(null)
+          if (selectedPlaceId) {
+            setPlaceParam(null)
+          }
         }}
         onMoveEnd={(evt) => {
           if (typeof window === 'undefined') return
@@ -552,11 +584,11 @@ export default function MapContainer() {
                 if (activeListId && activeListPlaceIdSet.has(place.id)) {
                   setDrawerOpen(true)
                   setFocusedListPlaceId(place.id)
-                  setSelectedPlaceId(place.id)
+                  setPlaceParam(place.id)
                   return
                 }
                 setFocusedListPlaceId(null)
-                setSelectedPlaceId(place.id)
+                setPlaceParam(place.id)
               }}
               aria-label={`Open ${place.name}`}
             >

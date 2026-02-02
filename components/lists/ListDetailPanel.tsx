@@ -233,7 +233,7 @@ export default function ListDetailPanel({ listId }: Props) {
 
   const handlePlaceSelect = useCallback(
     (placeId: string) => {
-      router.push(`/places/${placeId}`)
+      router.push(`/?place=${encodeURIComponent(placeId)}`)
     },
     [router]
   )
