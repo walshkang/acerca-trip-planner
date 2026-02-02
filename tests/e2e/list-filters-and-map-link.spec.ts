@@ -108,7 +108,7 @@ test('list tag filters work in list detail view', async ({ page }) => {
   await expect(placesSection.getByText(seedB.place_name)).toBeVisible()
 
   const tagsHeader = page.getByText('Tags', { exact: true })
-  const tagsSection = tagsHeader.locator('..').locator('..')
+  const tagsSection = tagsHeader.locator('..').locator('..').locator('..')
   const dateNightFilter = tagsSection.getByRole('button', { name: 'date-night' })
   await dateNightFilter.click()
   await expect(placesSection.getByText(seedA.place_name)).toBeVisible()
