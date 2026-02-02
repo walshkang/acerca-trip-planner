@@ -408,7 +408,7 @@ export default function MapContainer() {
           <button
             type="button"
             onClick={() => setDrawerOpen((prev) => !prev)}
-            className="inline-flex items-center rounded-full border border-gray-200 bg-white/95 px-3 py-1 text-xs text-gray-700 shadow-sm"
+            className="glass-button"
           >
             {drawerOpen ? 'Hide lists' : 'Lists'}
           </button>
@@ -427,7 +427,7 @@ export default function MapContainer() {
           className="pointer-events-auto"
         >
           <button
-            className="rounded-full border border-gray-200 bg-white/95 px-3 py-1 text-xs text-gray-700 shadow-sm"
+            className="glass-button"
             type="submit"
           >
             Sign out

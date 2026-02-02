@@ -48,6 +48,7 @@ type Props = {
   onTagFilterToggle?: (tag: string) => void
   onClearTagFilters?: () => void
   onTagsUpdate?: (itemId: string, tags: string[]) => Promise<string[]>
+  tone?: 'light' | 'dark'
 }
 
 function formatDateRange(list: ListSummary) {
@@ -61,15 +62,32 @@ type TagEditorProps = {
   itemId: string
   tags: string[] | null
   onTagsUpdate?: (itemId: string, tags: string[]) => Promise<string[]>
+  tone?: 'light' | 'dark'
 }
 
-function TagEditor({ itemId, tags, onTagsUpdate }: TagEditorProps) {
+function TagEditor({ itemId, tags, onTagsUpdate, tone = 'light' }: TagEditorProps) {
   const [tagInput, setTagInput] = useState('')
   const [chipTags, setChipTags] = useState(tags ?? [])
   const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>(
     'idle'
   )
   const [error, setError] = useState<string | null>(null)
+  const isDark = tone === 'dark'
+  const chipClass = isDark
+    ? 'border-white/10 text-slate-200'
+    : 'border-gray-200 text-gray-600'
+  const chipButtonClass = isDark
+    ? 'text-slate-400 hover:text-slate-200'
+    : 'text-gray-400 hover:text-gray-600'
+  const mutedText = isDark ? 'text-slate-300' : 'text-gray-500'
+  const inputClass = isDark
+    ? 'glass-input flex-1 text-xs'
+    : 'flex-1 rounded-md border border-gray-200 px-2 py-1 text-xs text-gray-700'
+  const buttonClass = isDark
+    ? 'glass-button rounded-md px-2 py-1 text-[11px] disabled:opacity-60'
+    : 'rounded-md border border-gray-200 px-2 py-1 text-[11px] text-gray-600 disabled:opacity-60'
+  const savedClass = isDark ? 'text-emerald-300' : 'text-green-700'
+  const errorClass = isDark ? 'text-red-300' : 'text-red-600'
 
   useEffect(() => {
     setChipTags(tags ?? [])
@@ -120,13 +138,13 @@ function TagEditor({ itemId, tags, onTagsUpdate }: TagEditorProps) {
           {chipTags.map((tag) => (
             <span
               key={`${itemId}-${tag}`}
-              className="inline-flex items-center gap-1 rounded-full border border-gray-200 px-2 py-0.5 text-[10px] text-gray-600"
+              className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] ${chipClass}`}
             >
               {tag}
               <button
                 type="button"
                 onClick={() => handleRemove(tag)}
-                className="text-[10px] text-gray-400 hover:text-gray-600"
+                className={`text-[10px] ${chipButtonClass}`}
                 aria-label={`Remove ${tag}`}
               >
                 ×
@@ -136,18 +154,18 @@ function TagEditor({ itemId, tags, onTagsUpdate }: TagEditorProps) {
           <button
             type="button"
             onClick={handleClear}
-            className="text-[10px] text-gray-500 underline"
+            className={`text-[10px] ${mutedText} underline`}
           >
             × Clear
           </button>
         </div>
       ) : (
-        <p className="text-[11px] text-gray-500">No tags yet.</p>
+        <p className={`text-[11px] ${mutedText}`}>No tags yet.</p>
       )}
 
       <div className="flex flex-wrap items-center gap-2">
         <input
-          className="flex-1 rounded-md border border-gray-200 px-2 py-1 text-xs text-gray-700"
+          className={inputClass}
           placeholder="Add tags (comma-separated)"
           value={tagInput}
           onChange={(event) => {
@@ -161,17 +179,17 @@ function TagEditor({ itemId, tags, onTagsUpdate }: TagEditorProps) {
         />
         <button
           type="submit"
-          className="rounded-md border border-gray-200 px-2 py-1 text-[11px] text-gray-600 disabled:opacity-60"
+          className={buttonClass}
           disabled={status === 'saving'}
         >
           {status === 'saving' ? 'Saving…' : 'Add'}
         </button>
       </div>
       {status === 'saved' ? (
-        <p className="text-[11px] text-green-700">Saved.</p>
+        <p className={`text-[11px] ${savedClass}`}>Saved.</p>
       ) : null}
       {status === 'error' ? (
-        <p className="text-[11px] text-red-600">{error}</p>
+        <p className={`text-[11px] ${errorClass}`}>{error}</p>
       ) : null}
     </form>
   )
@@ -189,26 +207,41 @@ export default function ListDetailBody({
   onTagFilterToggle,
   onClearTagFilters,
   onTagsUpdate,
+  tone = 'light',
 }: Props) {
   const rangeLabel = useMemo(
     () => (list ? formatDateRange(list) : null),
     [list]
   )
+  const isDark = tone === 'dark'
+  const panelClass = isDark ? 'border-white/10 bg-slate-900/40' : 'border-gray-200 bg-white'
+  const titleClass = isDark ? 'text-slate-100' : 'text-gray-900'
+  const bodyText = isDark ? 'text-slate-300' : 'text-gray-600'
+  const mutedText = isDark ? 'text-slate-400' : 'text-gray-500'
+  const chipClass = isDark ? 'border-white/10 text-slate-300' : 'border-gray-200 text-gray-500'
+  const tagInactiveClass = isDark
+    ? 'border-white/10 text-slate-200 hover:border-white/30'
+    : 'border-gray-200 text-gray-600'
+  const tagActiveClass = isDark
+    ? 'border-slate-100 bg-slate-100 text-slate-900'
+    : 'border-gray-900 bg-gray-900 text-white'
+  const rowBorder = isDark ? 'border-white/10' : 'border-gray-100'
+  const errorText = isDark ? 'text-red-300' : 'text-red-600'
 
   if (loading && !list) {
-    return <p className="text-sm text-gray-500">Loading list…</p>
+    return <p className={`text-sm ${mutedText}`}>Loading list…</p>
   }
 
   if (error && !list) {
-    return <p className="text-sm text-red-600">{error}</p>
+    return <p className={`text-sm ${errorText}`}>{error}</p>
   }
 
   return (
     <section className="space-y-6">
       {list ? (
-        <div className="rounded-lg border border-gray-200 bg-white p-4">
+        <div className={`rounded-lg border p-4 ${panelClass}`}>
           <div className="flex flex-wrap items-center gap-2">
-            <h2 className="text-lg font-semibold text-gray-900">
+            <h2 className={`text-lg font-semibold ${titleClass}`}>
               <a
                 className="hover:underline"
                 href={`/lists/${list.id}`}
@@ -217,42 +250,42 @@ export default function ListDetailBody({
               </a>
             </h2>
             {list.is_default ? (
-              <span className="rounded-full border border-gray-200 px-2 py-0.5 text-[10px] text-gray-500">
+              <span className={`rounded-full border px-2 py-0.5 text-[10px] ${chipClass}`}>
                 Default
               </span>
             ) : null}
           </div>
           {list.description ? (
-            <p className="mt-1 text-sm text-gray-600">{list.description}</p>
+            <p className={`mt-1 text-sm ${bodyText}`}>{list.description}</p>
           ) : null}
           {rangeLabel ? (
-            <p className="mt-2 text-xs text-gray-500">Dates: {rangeLabel}</p>
+            <p className={`mt-2 text-xs ${mutedText}`}>Dates: {rangeLabel}</p>
           ) : null}
           {list.timezone ? (
-            <p className="mt-1 text-xs text-gray-500">
+            <p className={`mt-1 text-xs ${mutedText}`}>
               Timezone: {list.timezone}
             </p>
           ) : null}
         </div>
       ) : null}
 
-      <div className="rounded-lg border border-gray-200 bg-white p-4 space-y-3">
-        <h3 className="text-sm font-semibold text-gray-900">Places</h3>
-        {loading ? <p className="text-xs text-gray-500">Loading…</p> : null}
+      <div className={`rounded-lg border p-4 space-y-3 ${panelClass}`}>
+        <h3 className={`text-sm font-semibold ${titleClass}`}>Places</h3>
+        {loading ? <p className={`text-xs ${mutedText}`}>Loading…</p> : null}
         {!loading && !items.length ? (
-          <p className="text-xs text-gray-500">{emptyLabel}</p>
+          <p className={`text-xs ${mutedText}`}>{emptyLabel}</p>
         ) : null}
 
         {availableTags.length ? (
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <p className="text-[11px] font-semibold text-gray-600">
+              <p className={`text-[11px] font-semibold ${bodyText}`}>
                 Filter tags
               </p>
               {activeTagFilters.length && onClearTagFilters ? (
                 <button
                   type="button"
-                  className="text-[11px] text-gray-500 underline"
+                  className={`text-[11px] ${mutedText} underline`}
                   onClick={() => onClearTagFilters?.()}
                 >
                   Clear
@@ -268,9 +301,7 @@ export default function ListDetailBody({
                     type="button"
                     onClick={() => onTagFilterToggle?.(tag)}
                     className={`rounded-full border px-2 py-0.5 text-[11px] ${
-                      active
-                        ? 'border-gray-900 bg-gray-900 text-white'
-                        : 'border-gray-200 text-gray-600'
+                      active ? tagActiveClass : tagInactiveClass
                     }`}
                   >
                     {tag}
@@ -288,45 +319,46 @@ export default function ListDetailBody({
             return (
               <div
                 key={item.id}
-                className="rounded-md border border-gray-100 px-3 py-2"
+                className={`rounded-md border px-3 py-2 ${rowBorder}`}
               >
                 <div className="flex flex-wrap items-center gap-2">
                   {onPlaceSelect ? (
                     <button
                       type="button"
-                      className="text-sm font-medium text-gray-900 hover:underline"
+                      className={`text-sm font-medium ${titleClass} hover:underline`}
                       onClick={() => onPlaceSelect(place.id)}
                     >
                       {place.name}
                     </button>
                   ) : (
-                    <span className="text-sm font-medium text-gray-900">
+                    <span className={`text-sm font-medium ${titleClass}`}>
                       {place.name}
                     </span>
                   )}
-                  <span className="rounded-full border border-gray-200 px-2 py-0.5 text-[10px] text-gray-500">
+                  <span className={`rounded-full border px-2 py-0.5 text-[10px] ${chipClass}`}>
                     {place.category}
                   </span>
                   {item.completed_at ? (
-                    <span className="rounded-full border border-gray-200 px-2 py-0.5 text-[10px] text-gray-500">
+                    <span className={`rounded-full border px-2 py-0.5 text-[10px] ${chipClass}`}>
                       Done
                     </span>
                   ) : null}
                 </div>
                 {place.address ? (
-                  <p className="mt-1 text-xs text-gray-500">{place.address}</p>
+                  <p className={`mt-1 text-xs ${mutedText}`}>{place.address}</p>
                 ) : null}
                 <TagEditor
                   itemId={item.id}
                   tags={item.tags ?? []}
                   onTagsUpdate={onTagsUpdate}
+                  tone={tone}
                 />
               </div>
             )
           })}
         </div>
 
-        {error ? <p className="text-xs text-red-600">{error}</p> : null}
+        {error ? <p className={`text-xs ${errorText}`}>{error}</p> : null}
       </div>
     </section>
   )

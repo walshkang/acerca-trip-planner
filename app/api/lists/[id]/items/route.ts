@@ -168,6 +168,46 @@ export async function POST(
         ? (normalizeTagList([...seedTags, ...providedTags]) ?? [])
         : []
 
+    const { data: existing, error: existingError } = await supabase
+      .from('list_items')
+      .select('id, list_id, place_id, tags')
+      .eq('list_id', params.id)
+      .eq('place_id', placeId)
+      .maybeSingle()
+
+    if (existingError) {
+      return NextResponse.json(
+        { error: existingError?.message || 'Failed to load list item' },
+        { status: 500 }
+      )
+    }
+
+    const existingTags = Array.isArray(existing?.tags) ? existing?.tags ?? [] : []
+    const shouldUpdateTags =
+      desiredTags.length > 0 && (hasTagsField || existingTags.length === 0)
+
+    if (existing) {
+      if (!shouldUpdateTags) {
+        return NextResponse.json({ item: existing })
+      }
+
+      const { data: updated, error: updateError } = await supabase
+        .from('list_items')
+        .update({ tags: desiredTags })
+        .eq('id', existing.id)
+        .select('id, list_id, place_id, tags')
+        .single()
+
+      if (updateError || !updated) {
+        return NextResponse.json(
+          { error: updateError?.message || 'Failed to update list item tags' },
+          { status: 500 }
+        )
+      }
+
+      return NextResponse.json({ item: updated })
+    }
+
     const insertPayload: {
       list_id: string
       place_id: string
@@ -182,39 +222,60 @@ export async function POST(
 
     const { data: item, error: itemError } = await supabase
       .from('list_items')
-      .upsert(insertPayload, {
-        onConflict: 'list_id,place_id',
-        ignoreDuplicates: true,
-      })
+      .insert(insertPayload)
       .select('id, list_id, place_id, tags')
-      .maybeSingle()
+      .single()
 
-    if (itemError) {
+    if (itemError || !item) {
+      if (itemError?.code === '23505') {
+        const { data: fallback, error: fallbackError } = await supabase
+          .from('list_items')
+          .select('id, list_id, place_id, tags')
+          .eq('list_id', params.id)
+          .eq('place_id', placeId)
+          .single()
+
+        if (fallbackError || !fallback) {
+          return NextResponse.json(
+            { error: fallbackError?.message || 'Failed to add list item' },
+            { status: 500 }
+          )
+        }
+
+        const fallbackTags = Array.isArray(fallback.tags)
+          ? fallback.tags ?? []
+          : []
+        const shouldUpdateFallback =
+          desiredTags.length > 0 && (hasTagsField || fallbackTags.length === 0)
+
+        if (!shouldUpdateFallback) {
+          return NextResponse.json({ item: fallback })
+        }
+
+        const { data: updated, error: updateError } = await supabase
+          .from('list_items')
+          .update({ tags: desiredTags })
+          .eq('id', fallback.id)
+          .select('id, list_id, place_id, tags')
+          .single()
+
+        if (updateError || !updated) {
+          return NextResponse.json(
+            { error: updateError?.message || 'Failed to update list item tags' },
+            { status: 500 }
+          )
+        }
+
+        return NextResponse.json({ item: updated })
+      }
+
       return NextResponse.json(
         { error: itemError?.message || 'Failed to add list item' },
         { status: 500 }
       )
     }
 
-    if (item) {
-      return NextResponse.json({ item })
-    }
-
-    const { data: existing, error: existingError } = await supabase
-      .from('list_items')
-      .select('id, list_id, place_id, tags')
-      .eq('list_id', params.id)
-      .eq('place_id', placeId)
-      .single()
-
-    if (existingError || !existing) {
-      return NextResponse.json(
-        { error: existingError?.message || 'Failed to load list item' },
-        { status: 500 }
-      )
-    }
-
-    return NextResponse.json({ item: existing })
+    return NextResponse.json({ item })
   } catch (error: unknown) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Internal server error' },

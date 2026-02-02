@@ -1,7 +1,7 @@
 {
   "project_name": "AI_Travel_Itinerary_Manager",
   "version": "2.2.0-phase2-defined",
-  "last_updated": "2026-01-29",
+  "last_updated": "2026-02-02",
   "development_principles": [
     "LLMs label and translate intent; deterministic systems retrieve and compute.",
     "Only approved pins are truth (Map is the interface).",
@@ -358,6 +358,7 @@
           "id": "P2-E4",
           "title": "Map-First List Context",
           "features": [
+            "Slate Glass overlay system for map UI (Omnibox, inspector, drawers, pills) while preserving overlay offsets.",
             "Lists render in a drawer/overlay so the map remains the primary interface.",
             "Selecting a list highlights/filters existing pins without refetching all places.",
             "Create list inline from the map drawer (reuse /api/lists).",

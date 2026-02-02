@@ -129,12 +129,14 @@ export default function InspectorCard(props: { onCommitted?: (placeId: string) =
     setCommitError(null)
     setIsCommitting(true)
     try {
+      const trimmedTags = tagInput.trim()
       const res = await fetch('/api/places/promote', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
           candidate_id: candidateId,
           list_id: selectedListId ?? null,
+          tags: trimmedTags.length ? trimmedTags : undefined,
         }),
       })
       const json = await res.json().catch(() => ({}))
@@ -143,23 +145,27 @@ export default function InspectorCard(props: { onCommitted?: (placeId: string) =
         return
       }
       const placeId = String(json?.place_id ?? '')
+      const resolvedListId = typeof json?.list_id === 'string' ? json.list_id : null
       if (!placeId) {
         setCommitError('Promotion succeeded but no place_id returned')
         return
       }
-      if (selectedListId) {
-        const payload: { place_id: string; tags?: string } = { place_id: placeId }
-        if (tagInput.trim().length) {
-          payload.tags = tagInput
-        }
-        const tagsRes = await fetch(`/api/lists/${selectedListId}/items`, {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify(payload),
-        })
-        if (!tagsRes.ok) {
-          const tagsJson = await tagsRes.json().catch(() => ({}))
-          console.error('Failed to save tags on approval', tagsJson)
+      if (trimmedTags.length) {
+        const listIdForTags = resolvedListId ?? selectedListId
+        if (listIdForTags) {
+          const payload: { place_id: string; tags: string } = {
+            place_id: placeId,
+            tags: trimmedTags,
+          }
+          const tagsRes = await fetch(`/api/lists/${listIdForTags}/items`, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify(payload),
+          })
+          if (!tagsRes.ok) {
+            const tagsJson = await tagsRes.json().catch(() => ({}))
+            console.error('Failed to save tags on approval', tagsJson)
+          }
         }
       }
       clear()
@@ -173,7 +179,7 @@ export default function InspectorCard(props: { onCommitted?: (placeId: string) =
 
   return (
     <div
-      className="pointer-events-auto w-[min(420px,92vw)] rounded-lg border border-gray-200 bg-white shadow-lg"
+      className="glass-panel pointer-events-auto w-[min(420px,92vw)] rounded-lg text-slate-100"
       onClick={(e) => e.stopPropagation()}
       role="dialog"
       aria-label="Candidate preview"
@@ -181,17 +187,19 @@ export default function InspectorCard(props: { onCommitted?: (placeId: string) =
       <div className="p-4 space-y-3">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <h3 className="truncate text-sm font-semibold text-gray-900">
+            <h3 className="truncate text-sm font-semibold text-slate-100">
               {candidate.name}
             </h3>
             {candidate.address ? (
-              <p className="mt-1 truncate text-xs text-gray-600">{candidate.address}</p>
+              <p className="mt-1 truncate text-xs text-slate-300">
+                {candidate.address}
+              </p>
             ) : null}
           </div>
           <button
             type="button"
             onClick={clear}
-            className="rounded-md border border-gray-200 px-2 py-1 text-xs text-gray-700"
+            className="glass-button px-2 py-1 text-[11px]"
           >
             Close
           </button>
@@ -204,18 +212,18 @@ export default function InspectorCard(props: { onCommitted?: (placeId: string) =
               <img
                 src={curated.thumbnail_url}
                 alt={curated.wikipedia_title ?? candidate.name}
-                className="h-14 w-14 shrink-0 rounded-md object-cover bg-gray-50"
+                className="h-14 w-14 shrink-0 rounded-md object-cover bg-slate-800/60"
               />
             ) : null}
             <div className="min-w-0">
               {curated?.wikipedia_title ? (
-                <p className="text-[11px] text-gray-500">
+                <p className="text-[11px] text-slate-300">
                   {curated.wikipedia_title}
                   {curated.wikidata_qid ? ` · ${curated.wikidata_qid}` : ''}
                 </p>
               ) : null}
               {curated?.summary ? (
-                <p className="mt-1 text-xs text-gray-700 line-clamp-4">
+                <p className="mt-1 text-xs text-slate-200 line-clamp-4">
                   {curated.summary}
                 </p>
               ) : null}
@@ -226,16 +234,16 @@ export default function InspectorCard(props: { onCommitted?: (placeId: string) =
         {normalized ? (
           <div className="space-y-2">
             <div className="flex flex-wrap gap-2">
-              <span className="rounded-full border border-gray-200 px-2 py-0.5 text-[11px]">
+              <span className="rounded-full border border-white/10 px-2 py-0.5 text-[11px] text-slate-200">
                 {normalized.category}
               </span>
               {normalized.energy ? (
-                <span className="rounded-full border border-gray-200 px-2 py-0.5 text-[11px]">
+                <span className="rounded-full border border-white/10 px-2 py-0.5 text-[11px] text-slate-200">
                   Energy: {normalized.energy}
                 </span>
               ) : null}
               {normalized.vibe ? (
-                <span className="rounded-full border border-gray-200 px-2 py-0.5 text-[11px]">
+                <span className="rounded-full border border-white/10 px-2 py-0.5 text-[11px] text-slate-200">
                   Vibe: {normalized.vibe}
                 </span>
               ) : null}
@@ -244,7 +252,10 @@ export default function InspectorCard(props: { onCommitted?: (placeId: string) =
             {normalized.tags?.length ? (
               <div className="flex flex-wrap gap-2">
                 {normalized.tags.slice(0, 10).map((t) => (
-                  <span key={t} className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px]">
+                  <span
+                    key={t}
+                    className="rounded-full bg-slate-800/70 px-2 py-0.5 text-[11px] text-slate-200"
+                  >
                     {t}
                   </span>
                 ))}
@@ -253,17 +264,17 @@ export default function InspectorCard(props: { onCommitted?: (placeId: string) =
           </div>
         ) : null}
 
-        {commitError ? <p className="text-xs text-red-600">{commitError}</p> : null}
+        {commitError ? <p className="text-xs text-red-300">{commitError}</p> : null}
 
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <p className="text-xs font-medium text-gray-600">List</p>
-            <a className="text-xs underline text-gray-500" href="/lists">
+            <p className="text-xs font-medium text-slate-300">List</p>
+            <a className="text-xs underline text-slate-300" href="/lists">
               Manage lists
             </a>
           </div>
           <select
-            className="w-full rounded-md border border-gray-200 bg-white px-2 py-2 text-xs"
+            className="glass-input w-full px-2 py-2 text-xs"
             value={selectedListId ?? ''}
             onChange={(e) => setSelectedListId(e.target.value)}
             disabled={listsLoading || !lists.length}
@@ -284,7 +295,7 @@ export default function InspectorCard(props: { onCommitted?: (placeId: string) =
 
           <div className="flex items-center gap-2">
             <input
-              className="flex-1 rounded-md border border-gray-200 px-2 py-1 text-xs"
+              className="glass-input flex-1 text-xs"
               value={newListName}
               onChange={(e) => setNewListName(e.target.value)}
               placeholder="New list name"
@@ -293,24 +304,24 @@ export default function InspectorCard(props: { onCommitted?: (placeId: string) =
               type="button"
               onClick={createList}
               disabled={creatingList || !newListName.trim()}
-              className="rounded-md border border-gray-200 px-2 py-1 text-xs disabled:opacity-50"
+              className="glass-button rounded-md px-2 py-1 text-[11px] disabled:opacity-50"
             >
               {creatingList ? 'Adding…' : 'Add'}
             </button>
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600">
+            <label className="block text-xs font-medium text-slate-300">
               Add tags (optional)
             </label>
             <input
-              className="mt-1 w-full rounded-md border border-gray-200 px-2 py-1 text-xs"
+              className="glass-input mt-1 w-full text-xs"
               value={tagInput}
               onChange={(e) => setTagInput(e.target.value)}
               placeholder="date-night, rooftop, kid-friendly"
             />
           </div>
           {listsError ? (
-            <p className="text-xs text-red-600">{listsError}</p>
+            <p className="text-xs text-red-300">{listsError}</p>
           ) : null}
         </div>
 
@@ -318,7 +329,7 @@ export default function InspectorCard(props: { onCommitted?: (placeId: string) =
           type="button"
           onClick={commit}
           disabled={isCommitting}
-          className="w-full rounded-md bg-black px-3 py-2 text-sm text-white disabled:opacity-50"
+          className="w-full rounded-md bg-slate-100/90 px-3 py-2 text-sm text-slate-900 shadow-sm transition-colors hover:bg-slate-100 disabled:opacity-50"
         >
           {isCommitting ? 'Approving…' : 'Approve Pin'}
         </button>

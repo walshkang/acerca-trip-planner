@@ -8,8 +8,8 @@
 
 ## 🧠 Active Context
 - Current Phase: The Interactive Planner (Birthday Cake)
-- Active Epic: P2-E3 List Workspace + Tags
-- Immediate Blocker: None. Next slice: fix local search, unify tag chips with clear-all + sync, stabilize map camera, fix Omnibox layering, and add sign-out affordance.
+- Active Epic: P2-E4 Map-First List Context (UI/UX polish)
+- Immediate Blocker: None. Next slice: Track A Slate Glass overlays (omnibox, inspector, list/placedrawers, pills) while keeping the place drawer offset invariant.
 - Planned (Phase 2): P2-E3 List Workspace + Tags (per-place tags + multi-list add/remove).
 - Planned (Phase 2): P2-E4 Map-First List Context (drawer overlay, URL-driven place drawer, search bias, default view).
 
@@ -43,6 +43,8 @@ gantt
 - User edits never overwrite frozen AI enrichment.
 
 ## 📝 Implementation Memory
+- 2026-02-02 – plan: slate glass overlays + dockable windows
+    Tracking the UI/UX sprint: apply the Slate/Stone/Ice glass system to map overlays first, then add minimize/dock chrome and drag later while preserving overlay offset invariants.
 - 2026-01-30 – test: add deterministic seed API for Playwright
     Added a guarded /api/test/seed endpoint and seed helper to create lists + places for E2E tests, removing conditional skips.
 - 2026-01-30 – test: add Playwright e2e smoke coverage

@@ -16,18 +16,29 @@ type Props = {
   placeId: string
   initialSelectedIds: string[]
   onMembershipChange?: () => void
+  tone?: 'light' | 'dark'
 }
 
 export default function PlaceListMembershipEditor({
   placeId,
   initialSelectedIds,
   onMembershipChange,
+  tone = 'light',
 }: Props) {
   const [lists, setLists] = useState<ListSummary[]>([])
   const [selectedIds, setSelectedIds] = useState<string[]>(initialSelectedIds)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [busyId, setBusyId] = useState<string | null>(null)
+  const isDark = tone === 'dark'
+  const mutedText = isDark ? 'text-slate-300' : 'text-gray-500'
+  const errorText = isDark ? 'text-red-300' : 'text-red-600'
+  const chipInactive = isDark
+    ? 'border-white/10 text-slate-200 hover:border-white/30'
+    : 'border-gray-200 text-gray-700'
+  const chipActive = isDark
+    ? 'border-slate-100 bg-slate-100 text-slate-900'
+    : 'border-gray-900 bg-gray-900 text-white'
 
   const selectedSet = useMemo(() => new Set(selectedIds), [selectedIds])
   const initialKey = useMemo(
@@ -105,16 +116,16 @@ export default function PlaceListMembershipEditor({
   )
 
   if (loading && !lists.length) {
-    return <p className="text-sm text-gray-500">Loading lists…</p>
+    return <p className={`text-sm ${mutedText}`}>Loading lists…</p>
   }
 
   if (!lists.length) {
     return (
       <div className="space-y-2">
         {error ? (
-          <p className="text-sm text-red-600">{error}</p>
+          <p className={`text-sm ${errorText}`}>{error}</p>
         ) : (
-          <p className="text-sm text-gray-500">
+          <p className={`text-sm ${mutedText}`}>
             No lists yet. Create one from the Lists page.
           </p>
         )}
@@ -136,9 +147,7 @@ export default function PlaceListMembershipEditor({
               disabled={disabled}
               onClick={() => toggleMembership(list.id)}
               className={`rounded-full border px-3 py-1 text-xs transition disabled:opacity-60 ${
-                selected
-                  ? 'border-gray-900 bg-gray-900 text-white'
-                  : 'border-gray-200 text-gray-700'
+                selected ? chipActive : chipInactive
               }`}
             >
               {selected ? '✓ ' : ''}
@@ -148,8 +157,8 @@ export default function PlaceListMembershipEditor({
           )
         })}
       </div>
-      {error ? <p className="text-xs text-red-600">{error}</p> : null}
-      <p className="text-[11px] text-gray-500">
+      {error ? <p className={`text-xs ${errorText}`}>{error}</p> : null}
+      <p className={`text-[11px] ${mutedText}`}>
         Add/remove this place from lists. Changes are saved immediately.
       </p>
     </div>

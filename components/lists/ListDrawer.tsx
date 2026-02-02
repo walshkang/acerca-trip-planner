@@ -255,36 +255,36 @@ export default function ListDrawer({
 
   return (
     <aside
-      className="absolute left-4 top-20 z-20 w-[min(360px,90vw)] max-h-[80vh] overflow-hidden rounded-xl border border-gray-200 bg-white/95 shadow-lg"
+      className="glass-panel absolute left-4 top-20 z-20 w-[min(360px,90vw)] max-h-[80vh] overflow-hidden rounded-xl text-slate-100"
       data-testid="list-drawer"
     >
-      <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
+      <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
         <div>
-          <h2 className="text-sm font-semibold text-gray-900">Lists</h2>
-          <p className="text-xs text-gray-500">Keep the map in view.</p>
+          <h2 className="text-sm font-semibold text-slate-100">Lists</h2>
+          <p className="text-xs text-slate-300">Keep the map in view.</p>
         </div>
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={() => onActiveListChange(null)}
-            className="text-xs text-gray-500 hover:text-gray-800"
+            className="text-xs text-slate-300 hover:text-slate-100"
           >
             Clear
           </button>
           <button
             type="button"
             onClick={onClose}
-            className="text-xs text-gray-500 hover:text-gray-800"
+            className="text-xs text-slate-300 hover:text-slate-100"
           >
             Close
           </button>
         </div>
       </div>
 
-      <div className="border-b border-gray-200 px-4 py-3 space-y-2">
+      <div className="border-b border-white/10 px-4 py-3 space-y-2">
         <div className="flex items-center gap-2">
           <input
-            className="flex-1 rounded-md border border-gray-200 px-2 py-1 text-xs"
+            className="glass-input flex-1 text-xs"
             placeholder="New list name"
             value={newListName}
             onChange={(e) => setNewListName(e.target.value)}
@@ -293,19 +293,19 @@ export default function ListDrawer({
             type="button"
             onClick={createList}
             disabled={creatingList || !newListName.trim()}
-            className="rounded-md border border-gray-200 px-2 py-1 text-[11px] text-gray-700 disabled:opacity-50"
+            className="glass-button rounded-md px-2 py-1 text-[11px] disabled:opacity-50"
           >
             {creatingList ? 'Creating…' : 'Create'}
           </button>
         </div>
         {listsLoading ? (
-          <p className="text-xs text-gray-500">Loading lists…</p>
+          <p className="text-xs text-slate-300">Loading lists…</p>
         ) : null}
         {listsError ? (
-          <p className="text-xs text-red-600">{listsError}</p>
+          <p className="text-xs text-red-300">{listsError}</p>
         ) : null}
         {!listsLoading && !lists.length ? (
-          <p className="text-xs text-gray-500">No lists yet.</p>
+          <p className="text-xs text-slate-300">No lists yet.</p>
         ) : null}
         <div className="flex flex-wrap gap-2">
           {lists.map((list) => {
@@ -317,10 +317,10 @@ export default function ListDrawer({
                 onClick={() =>
                   onActiveListChange(selected ? null : list.id)
                 }
-                className={`rounded-full border px-3 py-1 text-xs ${
+                className={`rounded-full border px-3 py-1 text-xs transition ${
                   selected
-                    ? 'border-gray-900 bg-gray-900 text-white'
-                    : 'border-gray-200 text-gray-700'
+                    ? 'border-slate-100 bg-slate-100 text-slate-900'
+                    : 'border-white/10 text-slate-200 hover:border-white/30'
                 }`}
               >
                 {list.name}
@@ -329,7 +329,7 @@ export default function ListDrawer({
           })}
         </div>
         <a
-          className="text-[11px] text-gray-500 underline"
+          className="text-[11px] text-slate-300 underline"
           href="/lists"
         >
           Manage lists
@@ -355,6 +355,7 @@ export default function ListDrawer({
           onTagFilterToggle={handleTagToggle}
           onClearTagFilters={handleClearFilters}
           onTagsUpdate={handleTagsUpdate}
+          tone="dark"
         />
       </div>
     </aside>

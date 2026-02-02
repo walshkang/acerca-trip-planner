@@ -60,17 +60,27 @@ export default async function PlaceDetailPage({
 
   const { data: listItems } = await supabase
     .from('list_items')
-    .select('lists ( id, name, is_default )')
+    .select('id, tags, lists ( id, name, is_default )')
     .eq('place_id', place.id)
 
-  const lists = ((listItems ?? []) as Array<{
+  const listEntries = ((listItems ?? []) as Array<{
+    id: string
+    tags: string[] | null
     lists: { id: string; name: string; is_default: boolean } | null
   }>)
-    .map((row) => row.lists)
-    .filter((list): list is { id: string; name: string; is_default: boolean } =>
-      Boolean(list)
+    .map((row) => ({
+      list: row.lists,
+      tags: Array.isArray(row.tags) ? row.tags : [],
+    }))
+    .filter(
+      (
+        row
+      ): row is {
+        list: { id: string; name: string; is_default: boolean }
+        tags: string[]
+      } => Boolean(row.list)
     )
-  const listIds = lists.map((list) => list.id)
+  const listIds = listEntries.map((entry) => entry.list.id)
 
   const enrichment = place.enrichment_id
     ? await getEnrichmentById(place.enrichment_id)
@@ -250,6 +260,38 @@ export default async function PlaceDetailPage({
               initialSelectedIds={listIds}
             />
           </div>
+          {listEntries.length ? (
+            <div className="mt-4 space-y-3">
+              {listEntries.map((entry) => (
+                <div key={entry.list.id} className="rounded-md border border-gray-100 px-3 py-2">
+                  <div className="flex items-center gap-2">
+                    <p className="text-xs font-semibold text-gray-900">
+                      {entry.list.name}
+                    </p>
+                    {entry.list.is_default ? (
+                      <span className="rounded-full border border-gray-200 px-2 py-0.5 text-[10px] text-gray-500">
+                        Default
+                      </span>
+                    ) : null}
+                  </div>
+                  {entry.tags.length ? (
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {entry.tags.map((tag) => (
+                        <span
+                          key={`${entry.list.id}:${tag}`}
+                          className="rounded-full border border-gray-200 px-2 py-0.5 text-[11px] text-gray-600"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="mt-2 text-xs text-gray-500">No list tags yet.</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : null}
         </section>
       </div>
     </main>

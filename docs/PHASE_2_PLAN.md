@@ -144,6 +144,11 @@ Notes:
 
 ## Map-First UX Additions (Phase 2 refinements)
 
+### UI/UX Track A — Slate Glass System
+- Apply Slate/Stone/Ice glass styling to all map overlays (Omnibox, inspector, list drawer, place drawer, and map shell pills).
+- Keep existing overlay layout + measurement invariants (place drawer offset stays tied to inspector height).
+- Update contrast on text/inputs so readability stays high on dark glass surfaces.
+
 ### List Drawer Overlay (Map stays primary)
 - Provide a drawer/overlay next to the map (do not navigate away by default).
 - Reuse a presentational list detail body component across `/lists/[id]` and the drawer.
@@ -172,6 +177,7 @@ Notes:
 - Avoid global-scale fitBounds; prefer the active list or last place when clusters are far apart.
 
 ## Sequencing (recommended)
+0. UI/UX Track A: apply Slate Glass overlays (Omnibox, inspector, list/placedrawers, pills) without changing layout invariants.
 1. Read-only list detail API + view (done).
 2. Map drawer overlay + active list selection state.
 3. Search location bias using map center + radius.

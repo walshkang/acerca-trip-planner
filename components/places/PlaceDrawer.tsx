@@ -186,19 +186,19 @@ export default function PlaceDrawer({
 
   return (
     <aside
-      className="absolute right-4 z-20 w-[min(360px,90vw)] max-h-[80vh] overflow-hidden rounded-xl border border-gray-200 bg-white/95 shadow-lg"
+      className="glass-panel absolute right-4 z-20 w-[min(360px,90vw)] max-h-[80vh] overflow-hidden rounded-xl text-slate-100"
       style={{ top: `${computedTop}px` }}
       data-testid="place-drawer"
     >
-      <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
+      <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
         <div>
-          <p className="text-[11px] uppercase tracking-wide text-gray-400">Place</p>
-          <h2 className="text-sm font-semibold text-gray-900">{place.name}</h2>
+          <p className="text-[11px] uppercase tracking-wide text-slate-400">Place</p>
+          <h2 className="text-sm font-semibold text-slate-100">{place.name}</h2>
         </div>
         <button
           type="button"
           onClick={onClose}
-          className="text-xs text-gray-500 hover:text-gray-800"
+          className="text-xs text-slate-300 hover:text-slate-100"
         >
           Close
         </button>
@@ -206,20 +206,20 @@ export default function PlaceDrawer({
 
       <div className="space-y-4 px-4 py-3">
         <div className="flex items-center gap-2">
-          <span className="rounded-full border border-gray-200 px-2 py-0.5 text-[10px] text-gray-500">
+          <span className="rounded-full border border-white/10 px-2 py-0.5 text-[10px] text-slate-300">
             {place.category}
           </span>
-          <a className="text-[11px] text-gray-500 underline" href={`/places/${place.id}`}>
+          <a className="text-[11px] text-slate-300 underline" href={`/places/${place.id}`}>
             Open full details
           </a>
         </div>
 
-        {loading ? <p className="text-xs text-gray-500">Loading lists…</p> : null}
-        {error ? <p className="text-xs text-red-600">{error}</p> : null}
+        {loading ? <p className="text-xs text-slate-300">Loading lists…</p> : null}
+        {error ? <p className="text-xs text-red-300">{error}</p> : null}
 
         {effectiveActiveListItem ? (
           <div className="space-y-2">
-            <p className="text-[11px] font-semibold text-gray-600">
+            <p className="text-[11px] font-semibold text-slate-300">
               List tags
             </p>
             {activeListTags.length ? (
@@ -227,13 +227,13 @@ export default function PlaceDrawer({
                 {activeListTags.map((tag) => (
                   <span
                     key={`list-tag:${tag}`}
-                    className="inline-flex items-center gap-1 rounded-full border border-gray-200 px-2 py-0.5 text-[10px] text-gray-600"
+                    className="inline-flex items-center gap-1 rounded-full border border-white/10 px-2 py-0.5 text-[10px] text-slate-200"
                   >
                     {tag}
                     <button
                       type="button"
                       onClick={() => handleRemoveTag(tag)}
-                      className="text-[10px] text-gray-400 hover:text-gray-600"
+                      className="text-[10px] text-slate-400 hover:text-slate-200"
                       aria-label={`Remove ${tag}`}
                     >
                       ×
@@ -243,17 +243,17 @@ export default function PlaceDrawer({
                 <button
                   type="button"
                   onClick={handleClearTags}
-                  className="text-[10px] text-gray-500 underline"
+                  className="text-[10px] text-slate-300 underline"
                 >
                   × Clear
                 </button>
               </div>
             ) : (
-              <p className="text-[11px] text-gray-500">No tags yet.</p>
+              <p className="text-[11px] text-slate-400">No tags yet.</p>
             )}
             <form onSubmit={handleAddTag} className="flex flex-wrap items-center gap-2">
               <input
-                className="flex-1 rounded-md border border-gray-200 px-2 py-1 text-xs text-gray-700"
+                className="glass-input flex-1 text-xs"
                 placeholder="Add tags (comma-separated)"
                 value={tagInput}
                 onChange={(event) => {
@@ -264,29 +264,29 @@ export default function PlaceDrawer({
               />
               <button
                 type="submit"
-                className="rounded-md border border-gray-200 px-2 py-1 text-[11px] text-gray-600 disabled:opacity-60"
+                className="glass-button rounded-md px-2 py-1 text-[11px] disabled:opacity-60"
                 disabled={tagStatus === 'saving'}
               >
                 {tagStatus === 'saving' ? 'Saving…' : 'Add'}
               </button>
             </form>
             {tagStatus === 'saved' ? (
-              <p className="text-[11px] text-green-700">Saved.</p>
+              <p className="text-[11px] text-emerald-300">Saved.</p>
             ) : null}
             {tagStatus === 'error' ? (
-              <p className="text-[11px] text-red-600">{tagError}</p>
+              <p className="text-[11px] text-red-300">{tagError}</p>
             ) : null}
           </div>
         ) : userTags.length ? (
           <div className="space-y-1">
-            <p className="text-[11px] font-semibold text-gray-600">
+            <p className="text-[11px] font-semibold text-slate-300">
               Your tags
             </p>
             <div className="flex flex-wrap gap-2">
               {userTags.map((tag) => (
                 <span
                   key={`user-tag:${tag}`}
-                  className="rounded-full border border-gray-200 px-2 py-0.5 text-[10px] text-gray-600"
+                  className="rounded-full border border-white/10 px-2 py-0.5 text-[10px] text-slate-200"
                 >
                   {tag}
                 </span>
@@ -294,7 +294,7 @@ export default function PlaceDrawer({
             </div>
           </div>
         ) : activeListId ? (
-          <p className="text-[11px] text-gray-500">
+          <p className="text-[11px] text-slate-400">
             Add this place to the active list to edit tags.
           </p>
         ) : null}
@@ -302,6 +302,7 @@ export default function PlaceDrawer({
         <PlaceListMembershipEditor
           placeId={place.id}
           initialSelectedIds={effectiveListIds}
+          tone="dark"
           onMembershipChange={() => {
             fetchMembership()
           }}

@@ -50,9 +50,9 @@ export default function Omnibox() {
 
   return (
     <div className="pointer-events-auto" ref={anchorRef}>
-      <div className="flex items-center gap-2 rounded-full border border-gray-200 bg-white/95 px-3 py-2 shadow-sm">
+      <div className="glass-panel flex items-center gap-2 rounded-full px-3 py-2">
         <input
-          className="w-[min(520px,70vw)] bg-transparent text-sm outline-none"
+          className="w-[min(520px,70vw)] bg-transparent text-sm text-slate-100 outline-none placeholder:text-slate-400"
           value={query}
           onChange={(e) => {
             setQuery(e.target.value)
@@ -75,7 +75,7 @@ export default function Omnibox() {
           <button
             type="button"
             onClick={clear}
-            className="rounded-full border border-gray-200 px-3 py-1 text-xs text-gray-700"
+            className="glass-button"
           >
             Clear
           </button>
@@ -84,7 +84,7 @@ export default function Omnibox() {
           type="button"
           onClick={submit}
           disabled={isSubmitting}
-          className="rounded-full bg-black px-4 py-1.5 text-xs text-white disabled:opacity-50"
+          className="glass-button px-4 py-1.5 text-slate-900 bg-slate-100/90 hover:bg-slate-100 disabled:opacity-50"
         >
           {isSubmitting ? 'Searching…' : 'Search'}
         </button>
@@ -92,7 +92,7 @@ export default function Omnibox() {
       {results.length && dropdownStyle
         ? createPortal(
             <div
-              className="overflow-hidden rounded-xl border border-gray-200 bg-white/95 shadow-sm"
+              className="glass-panel overflow-hidden rounded-xl"
               style={{
                 position: 'fixed',
                 top: dropdownStyle.top,
@@ -108,15 +108,15 @@ export default function Omnibox() {
                     key={result.place_id}
                     type="button"
                     onClick={() => previewResult(result)}
-                    className={`flex w-full flex-col gap-1 px-4 py-2 text-left text-xs text-gray-800 hover:bg-gray-100 ${
-                      isSelected ? 'bg-gray-100' : ''
+                    className={`flex w-full flex-col gap-1 px-4 py-2 text-left text-xs text-slate-100 hover:bg-white/5 ${
+                      isSelected ? 'bg-white/5' : ''
                     }`}
                   >
                     <span className="font-medium">
                       {result.name ?? 'Untitled place'}
                     </span>
                     {result.address ? (
-                      <span className="text-[11px] text-gray-500">
+                      <span className="text-[11px] text-slate-300">
                         {result.address}
                       </span>
                     ) : null}
@@ -128,7 +128,7 @@ export default function Omnibox() {
           )
         : null}
       {error ? (
-        <div className="mt-2 rounded-md border border-red-200 bg-white/95 px-3 py-2 text-xs text-red-700 shadow-sm">
+        <div className="mt-2 rounded-md border border-red-500/40 bg-red-900/40 px-3 py-2 text-xs text-red-200 shadow-sm">
           {error}
         </div>
       ) : null}
