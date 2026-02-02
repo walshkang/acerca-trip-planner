@@ -182,6 +182,12 @@ Notes:
 - Avoid global-scale fitBounds; prefer the active list or last place when clusters are far apart.
  - Status: Done (2026-02-02).
 
+### MapLibre Feasibility (note)
+- Current map uses `react-map-gl/mapbox` with a Mapbox style URL and hard-requires `NEXT_PUBLIC_MAPBOX_TOKEN`.
+- PMTiles assets are staged under `public/map`, but a MapLibre experiment likely requires swapping the map entrypoint
+  (for example `react-map-gl/maplibre`) and revisiting the token gating/early-return behavior.
+- Treat MapLibre as a feasibility slice; document the migration path before making map implementation changes.
+
 ## Sequencing (recommended)
 0. UI/UX Track A: apply Slate Glass overlays (Omnibox, inspector, list/placedrawers, pills) without changing layout invariants. (done)
 1. Read-only list detail API + view (done).

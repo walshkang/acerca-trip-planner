@@ -21,7 +21,7 @@
 - [x] Replace map-away navigation (Inspector approve + list detail selection) with map-shell `/?place=<id>`.
 - [x] Preserve deep links through sign-in (include search params in `next`).
 - [x] Add/extend Playwright tests for URL open/close + back/forward + marker click updates URL.
-- [ ] MapLibre feasibility note (token gating + mapbox entrypoint implications) captured in docs or roadmap.
+- [x] MapLibre feasibility note (token gating + mapbox entrypoint implications) captured in docs or roadmap.
 
 ## 🗺️ Roadmap Visualization
 
