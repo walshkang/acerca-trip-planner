@@ -144,12 +144,13 @@ Notes:
 
 ## Map-First UX Additions (Phase 2 refinements)
 
-### UI/UX Track A — Slate Glass System
+### UI/UX Track A — Slate Glass System (done)
 - Apply Slate/Stone/Ice glass styling to all map overlays (Omnibox, inspector, list drawer, place drawer, and map shell pills).
 - Keep existing overlay layout + measurement invariants (place drawer offset stays tied to inspector height).
 - Update contrast on text/inputs so readability stays high on dark glass surfaces.
+ - Status: Done (2026-02-02).
 
-### List Drawer Overlay (Map stays primary)
+### List Drawer Overlay (Map stays primary, done)
 - Provide a drawer/overlay next to the map (do not navigate away by default).
 - Reuse a presentational list detail body component across `/lists/[id]` and the drawer.
 - Selecting a list should not re-fetch all places; only fetch list_items to derive place_ids.
@@ -159,33 +160,38 @@ Notes:
 - Omnibox results should render in a portal to avoid clipping by drawer overflow.
 - Creating or switching to an empty list must not change the map camera.
 - Add a sign-out affordance within the map shell (non-blocking placement).
+ - Status: Done (2026-02-02).
 
-### Search Location Bias (no extra calls)
+### Search Location Bias (no extra calls, done)
 - Add optional `lat`, `lng`, `radius_m` to `/api/places/search`.
 - For Find Place (legacy), use `locationbias=circle:radius@lat,lng`.
 - Increase result limit up to max 10 without extra API calls; larger result sets require Text Search (future).
+ - Status: Done (2026-02-02).
 
-### Place Drawer + URL State
-- Marker click should open a place drawer without leaving the map.
-- Drive drawer state from the URL (`/?place=<id>` or shallow `/places/[id]`) to preserve deep links.
-- Closing the drawer clears the URL state; `/places/[id]` remains valid for direct navigation.
+### Place Drawer + URL State (remaining)
+- Marker click should open a place drawer without leaving the map. (done)
+- Drawer state is driven from the URL (`/?place=<id>` or shallow `/places/[id]`) to preserve deep links.
+- Closing the drawer clears the URL state and returns to the base map route.
+- Approve flow and list detail clicks should update URL state (no navigation away from the map).
+- `/places/[id]` remains valid for direct navigation and resolves to map + drawer (or redirects to map + `?place=`).
 
-### Default Map View Policy
+### Default Map View Policy (done)
 - If `lastActiveListId` is set, fit bounds to that list’s places.
 - Else if `lastAddedPlaceId` is set, flyTo that place.
 - Else fall back to saved viewport.
 - Avoid global-scale fitBounds; prefer the active list or last place when clusters are far apart.
+ - Status: Done (2026-02-02).
 
 ## Sequencing (recommended)
-0. UI/UX Track A: apply Slate Glass overlays (Omnibox, inspector, list/placedrawers, pills) without changing layout invariants.
+0. UI/UX Track A: apply Slate Glass overlays (Omnibox, inspector, list/placedrawers, pills) without changing layout invariants. (done)
 1. Read-only list detail API + view (done).
-2. Map drawer overlay + active list selection state.
-3. Search location bias using map center + radius.
-4. Default map view policy (active list → last place → saved viewport).
-5. Place drawer with URL state + list membership add/remove.
-6. List add flow: local search + add with tags, list drawer create list.
-7. Tagging UI + API updates (P2-E3) including add-time tag seeding.
-8. Map camera stability + overlay layering + sign-out placement.
+2. Map drawer overlay + active list selection state. (done)
+3. Search location bias using map center + radius. (done)
+4. Default map view policy (active list → last place → saved viewport). (done)
+5. Place drawer URL state + route reconciliation (remaining).
+6. List add flow: local search + add with tags, list drawer create list. (done)
+7. Tagging UI + API updates (P2-E3) including add-time tag seeding. (done)
+8. Map camera stability + overlay layering + sign-out placement. (done)
 9. Scheduling UI + API updates (P2-E1).
 10. Filter translation + query pipeline (P2-E2).
 
@@ -194,10 +200,9 @@ Notes:
 - API tests for scheduling and tag endpoints (ownership + validation).
 - UI tests: drag-and-drop updates schedule; tag editing persists.
 - Manual smoke:
-  - Create list → add places → schedule → refresh.
-  - Add tags → filter by tags → verify results.
-  - Toggle open-now filter with stored timezone.
-  - Switch active list → map recenters to list cluster.
+  - Open place drawer from marker → URL updates; close clears URL state.
+  - Direct `/places/[id]` opens map + drawer (or redirects to map + `?place=`).
+  - Approve from Inspector stays on map and opens drawer via URL state.
+  - Switch active list → map remains static on empty list, recenters on non-empty.
   - Search while map is in Hong Kong → results bias to that area.
-  - Open place drawer from marker → URL updates and map stays visible.
   - Add/remove list membership → list item appears/disappears without errors.

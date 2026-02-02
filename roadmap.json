@@ -377,19 +377,19 @@
           "id": "P2-E4",
           "title": "Map-First List Context",
           "features": [
-            "Slate Glass overlay system for map UI (Omnibox, inspector, drawers, pills) while preserving overlay offsets.",
-            "Lists render in a drawer/overlay so the map remains the primary interface.",
-            "Selecting a list highlights/filters existing pins without refetching all places.",
-            "Create list inline from the map drawer (reuse /api/lists).",
-            "Search results are location-biased to the current map view (Find Place locationbias).",
-            "Default map view prefers lastActiveListId or lastAddedPlaceId over global fitBounds.",
-            "Place detail opens in a drawer driven by URL state to preserve deep links.",
-            "Omnibox results stay above drawers via a predictable overlay layer (portal if needed).",
-            "Creating or switching to an empty list must not change the map camera.",
-            "Map shell includes a non-blocking sign-out affordance.",
-            "Map marker click focuses the list row and opens the place drawer; list row click pans the map and opens the place drawer.",
-            "Focused list row + place drawer share a subtle glow outline for visual linkage.",
-            "MapLibre pmtiles assets staged under public/map for future map style swaps."
+            "Slate Glass overlay system for map UI (Omnibox, inspector, drawers, pills) while preserving overlay offsets. (done)",
+            "Lists render in a drawer/overlay so the map remains the primary interface. (done)",
+            "Selecting a list highlights/filters existing pins without refetching all places. (done)",
+            "Create list inline from the map drawer (reuse /api/lists). (done)",
+            "Search results are location-biased to the current map view (Find Place locationbias). (done)",
+            "Default map view prefers lastActiveListId or lastAddedPlaceId over global fitBounds. (done)",
+            "Place detail opens in a drawer driven by URL state to preserve deep links. (remaining)",
+            "Omnibox results stay above drawers via a predictable overlay layer (portal if needed). (done)",
+            "Creating or switching to an empty list must not change the map camera. (done)",
+            "Map shell includes a non-blocking sign-out affordance. (done)",
+            "Map marker click focuses the list row and opens the place drawer; list row click pans the map and opens the place drawer. (done)",
+            "Focused list row + place drawer share a subtle glow outline for visual linkage. (done)",
+            "MapLibre pmtiles assets staged under public/map for future map style swaps. (done)"
           ]
         }
       ]
