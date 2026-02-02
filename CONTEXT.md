@@ -9,7 +9,7 @@
 ## 🧠 Active Context
 - Current Phase: The Interactive Planner (Birthday Cake)
 - Active Epic: P2-E4 Map-First List Context (UI/UX polish)
-- Immediate Blocker: None. Next slice: Track A Slate Glass overlays (omnibox, inspector, list/placedrawers, pills) while keeping the place drawer offset invariant.
+- Immediate Blocker: None. Next slice: MapLibre style swap + dark map readiness, then return to Slate Glass overlay polish while keeping the place drawer offset invariant.
 - Planned (Phase 2): P2-E3 List Workspace + Tags (per-place tags + multi-list add/remove).
 - Planned (Phase 2): P2-E4 Map-First List Context (drawer overlay, URL-driven place drawer, search bias, default view).
 
@@ -43,6 +43,14 @@ gantt
 - User edits never overwrite frozen AI enrichment.
 
 ## 📝 Implementation Memory
+- 2026-02-02 – feat: place type + tag filters + helper copy
+    Added separate place type and tag chip groups in list views (types drive icons), with OR-within/AND-across filtering and clarified copy for type vs tags.
+- 2026-02-02 – feat: map/list linking + focused glow
+    Clicking a map pin focuses the list row, opens the place drawer, and both surfaces share a subtle glow outline; list row clicks pan to map and open the drawer.
+- 2026-02-02 – test: list filters + map linking e2e coverage
+    Added Playwright coverage for list tag filtering and map marker → list focus + place drawer behavior.
+- 2026-02-02 – chore: stage MapLibre pmtiles assets
+    Added pmtiles assets under public/map to support future MapLibre map style experiments.
 - 2026-02-02 – plan: slate glass overlays + dockable windows
     Tracking the UI/UX sprint: apply the Slate/Stone/Ice glass system to map overlays first, then add minimize/dock chrome and drag later while preserving overlay offset invariants.
 - 2026-01-30 – test: add deterministic seed API for Playwright

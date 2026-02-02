@@ -11,6 +11,24 @@
   ],
   "pr_history": [
     {
+      "id": "46e9d05",
+      "date": "2026-02-02",
+      "title": "Add Playwright coverage for list filters and map linking",
+      "summary": "Added Playwright coverage for list tag filters and the map marker → list row focus + place drawer behavior."
+    },
+    {
+      "id": "6f8573b",
+      "date": "2026-02-02",
+      "title": "Add MapLibre pmtiles assets",
+      "summary": "Added pmtiles assets under public/map to support upcoming MapLibre map style experiments."
+    },
+    {
+      "id": "c4faf37",
+      "date": "2026-02-02",
+      "title": "Place type + tag filters with focused glow",
+      "summary": "Added separate place type and tag filter chip groups (icon-linked types, list-item tags) with OR-within/AND-across semantics, helper copy clarity, and focused list/place glow for map linking."
+    },
+    {
       "id": "1b437c3",
       "date": "2026-01-27",
       "title": "Add lists link to map",
@@ -344,6 +362,7 @@
             "List detail view: click a list to open a scrollable list of saved places.",
             "List-scoped tags per place, editable inline in the list view.",
             "Tag filters scoped to a list; define multi-select semantics (AND/OR) explicitly.",
+            "Place type filter chips (icon-linked) rendered in a separate row from tags; OR within group, AND across groups.",
             "List membership uses add/remove semantics (multi-list ready), not move semantics.",
             "List detail view supports local search of canonical places with add-to-list actions.",
             "Add-time tags can be provided and are unioned with seeded enrichment tags (stored on list_items.tags).",
@@ -367,7 +386,10 @@
             "Place detail opens in a drawer driven by URL state to preserve deep links.",
             "Omnibox results stay above drawers via a predictable overlay layer (portal if needed).",
             "Creating or switching to an empty list must not change the map camera.",
-            "Map shell includes a non-blocking sign-out affordance."
+            "Map shell includes a non-blocking sign-out affordance.",
+            "Map marker click focuses the list row and opens the place drawer; list row click pans the map and opens the place drawer.",
+            "Focused list row + place drawer share a subtle glow outline for visual linkage.",
+            "MapLibre pmtiles assets staged under public/map for future map style swaps."
           ]
         }
       ]
