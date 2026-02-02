@@ -111,6 +111,9 @@ export default function PlaceUserMetaForm(props: {
 
       <div>
         <label className="block text-sm font-medium text-gray-700">Tags</label>
+        <p className="mt-1 text-xs text-gray-500">
+          Your labels to organize places any way you like.
+        </p>
         {tags.length ? (
           <div className="mt-2 flex flex-wrap items-center gap-2">
             {tags.map((tag) => (

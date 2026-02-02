@@ -1,7 +1,10 @@
 'use client'
 
 import { type FormEvent, useEffect, useMemo, useState } from 'react'
+import { getCategoryIcon } from '@/lib/icons/mapping'
+import type { CategoryEnum } from '@/lib/types/enums'
 import { normalizeTagList } from '@/lib/lists/tags'
+import { PLACE_FOCUS_GLOW } from '@/lib/ui/glow'
 
 export type ListSummary = {
   id: string
@@ -17,7 +20,7 @@ export type ListSummary = {
 export type PlaceSummary = {
   id: string
   name: string
-  category: string
+  category: CategoryEnum
   address: string | null
   created_at: string
   user_notes: string | null
@@ -43,11 +46,16 @@ type Props = {
   error?: string | null
   onPlaceSelect?: (placeId: string) => void
   emptyLabel?: string
+  availableTypes?: CategoryEnum[]
+  activeTypeFilters?: CategoryEnum[]
+  onTypeFilterToggle?: (type: CategoryEnum) => void
+  onClearTypeFilters?: () => void
   availableTags?: string[]
   activeTagFilters?: string[]
   onTagFilterToggle?: (tag: string) => void
   onClearTagFilters?: () => void
   onTagsUpdate?: (itemId: string, tags: string[]) => Promise<string[]>
+  focusedPlaceId?: string | null
   tone?: 'light' | 'dark'
 }
 
@@ -202,11 +210,16 @@ export default function ListDetailBody({
   error = null,
   onPlaceSelect,
   emptyLabel = 'No places in this list yet.',
+  availableTypes = [],
+  activeTypeFilters = [],
+  onTypeFilterToggle,
+  onClearTypeFilters,
   availableTags = [],
   activeTagFilters = [],
   onTagFilterToggle,
   onClearTagFilters,
   onTagsUpdate,
+  focusedPlaceId = null,
   tone = 'light',
 }: Props) {
   const rangeLabel = useMemo(
@@ -219,6 +232,12 @@ export default function ListDetailBody({
   const bodyText = isDark ? 'text-slate-300' : 'text-gray-600'
   const mutedText = isDark ? 'text-slate-400' : 'text-gray-500'
   const chipClass = isDark ? 'border-white/10 text-slate-300' : 'border-gray-200 text-gray-500'
+  const typeInactiveClass = isDark
+    ? 'border-white/20 text-slate-200 hover:border-white/40'
+    : 'border-gray-300 text-gray-700'
+  const typeActiveClass = isDark
+    ? 'border-slate-100 bg-slate-100 text-slate-900'
+    : 'border-gray-900 bg-gray-900 text-white'
   const tagInactiveClass = isDark
     ? 'border-white/10 text-slate-200 hover:border-white/30'
     : 'border-gray-200 text-gray-600'
@@ -227,6 +246,25 @@ export default function ListDetailBody({
     : 'border-gray-900 bg-gray-900 text-white'
   const rowBorder = isDark ? 'border-white/10' : 'border-gray-100'
   const errorText = isDark ? 'text-red-300' : 'text-red-600'
+  const showFilters =
+    availableTypes.length > 0 ||
+    availableTags.length > 0 ||
+    activeTypeFilters.length > 0 ||
+    activeTagFilters.length > 0
+  const isTypeFiltering = activeTypeFilters.length > 0
+  const focusedRowClass = isDark
+    ? `border-white/60 bg-white/5 animate-[pulse_1.2s_ease-in-out_1] ${PLACE_FOCUS_GLOW}`
+    : `border-slate-200/80 bg-gray-50 animate-[pulse_1.2s_ease-in-out_1] ${PLACE_FOCUS_GLOW}`
+
+  useEffect(() => {
+    if (!focusedPlaceId) return
+    const node = document.querySelector<HTMLElement>(
+      `[data-place-id="${focusedPlaceId}"]`
+    )
+    if (node) {
+      node.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+  }, [focusedPlaceId, items.length])
 
   if (loading && !list) {
     return <p className={`text-sm ${mutedText}`}>Loading list…</p>
@@ -276,38 +314,102 @@ export default function ListDetailBody({
           <p className={`text-xs ${mutedText}`}>{emptyLabel}</p>
         ) : null}
 
-        {availableTags.length ? (
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <p className={`text-[11px] font-semibold ${bodyText}`}>
-                Filter tags
-              </p>
-              {activeTagFilters.length && onClearTagFilters ? (
-                <button
-                  type="button"
-                  className={`text-[11px] ${mutedText} underline`}
-                  onClick={() => onClearTagFilters?.()}
-                >
-                  Clear
-                </button>
-              ) : null}
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {availableTags.map((tag) => {
-                const active = activeTagFilters.includes(tag)
-                return (
+        {showFilters ? (
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <p className={`text-[11px] font-semibold ${bodyText}`}>
+                    Place type
+                  </p>
+                  <p className={`text-[11px] ${mutedText}`}>
+                    A fixed category that sets this place's map icon.
+                  </p>
+                </div>
+                {activeTypeFilters.length && onClearTypeFilters ? (
                   <button
-                    key={tag}
                     type="button"
-                    onClick={() => onTagFilterToggle?.(tag)}
-                    className={`rounded-full border px-2 py-0.5 text-[11px] ${
-                      active ? tagActiveClass : tagInactiveClass
-                    }`}
+                    className={`text-[11px] ${mutedText} underline`}
+                    onClick={() => onClearTypeFilters?.()}
                   >
-                    {tag}
+                    Clear
                   </button>
-                )
-              })}
+                ) : null}
+              </div>
+              {availableTypes.length ? (
+                <div className="flex flex-wrap gap-2">
+                  {availableTypes.map((type) => {
+                    const active = activeTypeFilters.includes(type)
+                    return (
+                      <button
+                        key={type}
+                        type="button"
+                        onClick={() => onTypeFilterToggle?.(type)}
+                        className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[11px] ${
+                          active ? typeActiveClass : typeInactiveClass
+                        } ${
+                          isTypeFiltering && !active ? 'opacity-50' : 'opacity-100'
+                        }`}
+                      >
+                        <img
+                          src={getCategoryIcon(type)}
+                          alt=""
+                          aria-hidden="true"
+                          className="h-3 w-3"
+                        />
+                        <span>{type}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+              ) : (
+                <p className={`text-[11px] ${mutedText}`}>
+                  No place types yet.
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <p className={`text-[11px] font-semibold ${bodyText}`}>
+                    Tags
+                  </p>
+                  <p className={`text-[11px] ${mutedText}`}>
+                    Your labels to organize places any way you like.
+                  </p>
+                </div>
+                {activeTagFilters.length && onClearTagFilters ? (
+                  <button
+                    type="button"
+                    className={`text-[11px] ${mutedText} underline`}
+                    onClick={() => onClearTagFilters?.()}
+                  >
+                    Clear
+                  </button>
+                ) : null}
+              </div>
+              {availableTags.length ? (
+                <div className="flex flex-wrap gap-2">
+                  {availableTags.map((tag) => {
+                    const active = activeTagFilters.includes(tag)
+                    return (
+                      <button
+                        key={tag}
+                        type="button"
+                        onClick={() => onTagFilterToggle?.(tag)}
+                        className={`rounded-full border px-2 py-0.5 text-[11px] ${
+                          active ? tagActiveClass : tagInactiveClass
+                        }`}
+                      >
+                        {tag}
+                      </button>
+                    )
+                  })}
+                </div>
+              ) : (
+                <p className={`text-[11px] ${mutedText}`}>No tags yet.</p>
+              )}
             </div>
           </div>
         ) : null}
@@ -316,34 +418,48 @@ export default function ListDetailBody({
           {items.map((item) => {
             const place = item.place
             if (!place) return null
+            const isFocused = focusedPlaceId === place.id
             return (
               <div
                 key={item.id}
-                className={`rounded-md border px-3 py-2 ${rowBorder}`}
+                data-place-id={place.id}
+                className={`rounded-md border px-3 py-2 ${rowBorder} ${
+                  isFocused ? focusedRowClass : ''
+                }`}
               >
-                <div className="flex flex-wrap items-center gap-2">
-                  {onPlaceSelect ? (
-                    <button
-                      type="button"
-                      className={`text-sm font-medium ${titleClass} hover:underline`}
-                      onClick={() => onPlaceSelect(place.id)}
-                    >
+                {onPlaceSelect ? (
+                  <button
+                    type="button"
+                    className="flex w-full flex-wrap items-center gap-2 text-left"
+                    onClick={() => onPlaceSelect(place.id)}
+                  >
+                    <span className={`text-sm font-medium ${titleClass} hover:underline`}>
                       {place.name}
-                    </button>
-                  ) : (
+                    </span>
+                    <span className={`rounded-full border px-2 py-0.5 text-[10px] ${chipClass}`}>
+                      {place.category}
+                    </span>
+                    {item.completed_at ? (
+                      <span className={`rounded-full border px-2 py-0.5 text-[10px] ${chipClass}`}>
+                        Done
+                      </span>
+                    ) : null}
+                  </button>
+                ) : (
+                  <div className="flex flex-wrap items-center gap-2">
                     <span className={`text-sm font-medium ${titleClass}`}>
                       {place.name}
                     </span>
-                  )}
-                  <span className={`rounded-full border px-2 py-0.5 text-[10px] ${chipClass}`}>
-                    {place.category}
-                  </span>
-                  {item.completed_at ? (
                     <span className={`rounded-full border px-2 py-0.5 text-[10px] ${chipClass}`}>
-                      Done
+                      {place.category}
                     </span>
-                  ) : null}
-                </div>
+                    {item.completed_at ? (
+                      <span className={`rounded-full border px-2 py-0.5 text-[10px] ${chipClass}`}>
+                        Done
+                      </span>
+                    ) : null}
+                  </div>
+                )}
                 {place.address ? (
                   <p className={`mt-1 text-xs ${mutedText}`}>{place.address}</p>
                 ) : null}

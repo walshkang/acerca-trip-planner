@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase/client'
 import { getCategoryIcon } from '@/lib/icons/mapping'
 import type { CategoryEnum } from '@/lib/types/enums'
+import { PLACE_ICON_GLOW } from '@/lib/ui/glow'
 import Omnibox from '@/components/discovery/Omnibox'
 import GhostMarker from '@/components/discovery/GhostMarker'
 import InspectorCard from '@/components/discovery/InspectorCard'
@@ -46,6 +47,9 @@ export default function MapContainer() {
   const [activeListItems, setActiveListItems] = useState<
     Array<{ id: string; list_id: string; place_id: string; tags: string[] }>
   >([])
+  const [focusedListPlaceId, setFocusedListPlaceId] = useState<string | null>(
+    null
+  )
   const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null)
   const [inspectorHeight, setInspectorHeight] = useState(0)
   const [listTagRefreshKey, setListTagRefreshKey] = useState(0)
@@ -169,6 +173,7 @@ export default function MapContainer() {
     } else {
       window.localStorage.removeItem(lastActiveListKey)
     }
+    setFocusedListPlaceId(null)
   }, [activeListId])
 
   const fetchPlaces = useCallback(async () => {
@@ -458,9 +463,11 @@ export default function MapContainer() {
         }}
         onPlaceIdsChange={handleActiveListPlaceIdsChange}
         onActiveListItemsChange={handleActiveListItemsChange}
+        focusedPlaceId={focusedListPlaceId}
         onPlaceSelect={(placeId) => {
           setPendingFocusPlaceId(placeId)
           setSelectedPlaceId(placeId)
+          setFocusedListPlaceId(placeId)
         }}
         tagsRefreshKey={listTagRefreshKey}
         onTagsUpdated={bumpPlaceTagRefresh}
@@ -514,12 +521,16 @@ export default function MapContainer() {
           />
         ) : null}
 
-        {places.map((place) => (
-          <Marker
-            key={place.id}
-            longitude={place.lng}
-            latitude={place.lat}
-          >
+        {places.map((place) => {
+          const isFocusedMarker =
+            selectedPlaceId === place.id ||
+            focusedListPlaceId === place.id
+          return (
+            <Marker
+              key={place.id}
+              longitude={place.lng}
+              latitude={place.lat}
+            >
             <button
               type="button"
               className={`cursor-pointer transition-opacity ${
@@ -538,6 +549,13 @@ export default function MapContainer() {
                 if (native?.stopPropagation) {
                   native.stopPropagation()
                 }
+                if (activeListId && activeListPlaceIdSet.has(place.id)) {
+                  setDrawerOpen(true)
+                  setFocusedListPlaceId(place.id)
+                  setSelectedPlaceId(place.id)
+                  return
+                }
+                setFocusedListPlaceId(null)
                 setSelectedPlaceId(place.id)
               }}
               aria-label={`Open ${place.name}`}
@@ -545,11 +563,12 @@ export default function MapContainer() {
               <img
                 src={getCategoryIcon(place.category)}
                 alt={place.category}
-                className="w-6 h-6"
+                className={`w-6 h-6 ${isFocusedMarker ? PLACE_ICON_GLOW : ''}`}
               />
             </button>
-          </Marker>
-        ))}
+            </Marker>
+          )
+        })}
       </MapGL>
     </div>
   )

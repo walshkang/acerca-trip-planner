@@ -113,14 +113,24 @@ export default async function PlaceDetailPage({
             </a>
             <h1 className="mt-2 text-2xl font-semibold">{place.name}</h1>
             <p className="mt-1 text-sm text-gray-600">{place.address}</p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              <span className="rounded-full border border-gray-200 px-3 py-1 text-xs">
-                {place.category}
-              </span>
+            <div className="mt-3 space-y-2">
+              <div>
+                <p className="text-xs font-semibold text-gray-700">Place type</p>
+                <p className="text-xs text-gray-500">
+                  A fixed category that sets this place's map icon.
+                </p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <span className="rounded-full border border-gray-200 px-3 py-1 text-xs">
+                    {place.category}
+                  </span>
+                </div>
+              </div>
               {place.energy ? (
-                <span className="rounded-full border border-gray-200 px-3 py-1 text-xs">
-                  Energy: {place.energy}
-                </span>
+                <div className="flex flex-wrap gap-2">
+                  <span className="rounded-full border border-gray-200 px-3 py-1 text-xs">
+                    Energy: {place.energy}
+                  </span>
+                </div>
               ) : null}
             </div>
             {place.user_tags?.length ? (

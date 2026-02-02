@@ -6,6 +6,11 @@ import ListDetailBody, {
   ListItemRow,
   ListSummary,
 } from '@/components/lists/ListDetailBody'
+import type { CategoryEnum } from '@/lib/types/enums'
+import {
+  distinctTypesFromItems,
+  matchesListFilters,
+} from '@/lib/lists/filters'
 import { distinctTagsFromItems } from '@/lib/lists/tags'
 
 type ApiResponse = {
@@ -31,6 +36,8 @@ export default function ListDetailPanel({ listId }: Props) {
   const [items, setItems] = useState<ListItemRow[]>([])
   const [distinctTags, setDistinctTags] = useState<string[]>([])
   const [activeTagFilters, setActiveTagFilters] = useState<string[]>([])
+  const [distinctTypes, setDistinctTypes] = useState<CategoryEnum[]>([])
+  const [activeTypeFilters, setActiveTypeFilters] = useState<CategoryEnum[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<SearchResult[]>([])
   const [searchLoading, setSearchLoading] = useState(false)
@@ -48,6 +55,14 @@ export default function ListDetailPanel({ listId }: Props) {
     setDistinctTags(nextDistinct)
     setActiveTagFilters((prev) =>
       prev.filter((tag) => nextDistinct.includes(tag))
+    )
+  }, [])
+
+  const reconcileTypeFilters = useCallback((nextItems: ListItemRow[]) => {
+    const nextDistinct = distinctTypesFromItems(nextItems)
+    setDistinctTypes(nextDistinct)
+    setActiveTypeFilters((prev) =>
+      prev.filter((type) => nextDistinct.includes(type))
     )
   }, [])
 
@@ -74,12 +89,13 @@ export default function ListDetailPanel({ listId }: Props) {
       } else {
         reconcileTagFilters(nextItems)
       }
+      reconcileTypeFilters(nextItems)
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Request failed')
     } finally {
       setLoading(false)
     }
-  }, [listId, reconcileTagFilters])
+  }, [listId, reconcileTagFilters, reconcileTypeFilters])
 
   useEffect(() => {
     fetchItems()
@@ -88,6 +104,8 @@ export default function ListDetailPanel({ listId }: Props) {
   useEffect(() => {
     setActiveTagFilters([])
     setDistinctTags([])
+    setActiveTypeFilters([])
+    setDistinctTypes([])
     setSearchQuery('')
     setSearchResults([])
     setSearchError(null)
@@ -140,12 +158,11 @@ export default function ListDetailPanel({ listId }: Props) {
   }, [searchQuery])
 
   const filteredItems = useMemo(() => {
-    if (!activeTagFilters.length) return items
-    return items.filter((item) => {
-      const tags = item.tags ?? []
-      return activeTagFilters.some((tag) => tags.includes(tag))
-    })
-  }, [activeTagFilters, items])
+    if (!activeTagFilters.length && !activeTypeFilters.length) return items
+    return items.filter((item) =>
+      matchesListFilters(item, activeTypeFilters, activeTagFilters)
+    )
+  }, [activeTagFilters, activeTypeFilters, items])
 
   const existingPlaceIds = useMemo(() => {
     return new Set(
@@ -158,6 +175,12 @@ export default function ListDetailPanel({ listId }: Props) {
   const handleTagToggle = useCallback((tag: string) => {
     setActiveTagFilters((prev) =>
       prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+    )
+  }, [])
+
+  const handleTypeToggle = useCallback((type: CategoryEnum) => {
+    setActiveTypeFilters((prev) =>
+      prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]
     )
   }, [])
 
@@ -200,8 +223,12 @@ export default function ListDetailPanel({ listId }: Props) {
     [addingPlaceId, fetchItems, listId, searchTagInputs]
   )
 
-  const handleClearFilters = useCallback(() => {
+  const handleClearTagFilters = useCallback(() => {
     setActiveTagFilters([])
+  }, [])
+
+  const handleClearTypeFilters = useCallback(() => {
+    setActiveTypeFilters([])
   }, [])
 
   const handlePlaceSelect = useCallback(
@@ -332,15 +359,19 @@ export default function ListDetailPanel({ listId }: Props) {
         loading={loading}
         error={error}
         emptyLabel={
-          activeTagFilters.length
-            ? 'No places match these tags.'
+          activeTagFilters.length || activeTypeFilters.length
+            ? 'No places match these filters.'
             : 'No places in this list yet.'
         }
         onPlaceSelect={handlePlaceSelect}
+        availableTypes={distinctTypes}
+        activeTypeFilters={activeTypeFilters}
+        onTypeFilterToggle={handleTypeToggle}
+        onClearTypeFilters={handleClearTypeFilters}
         availableTags={distinctTags}
         activeTagFilters={activeTagFilters}
         onTagFilterToggle={handleTagToggle}
-        onClearTagFilters={handleClearFilters}
+        onClearTagFilters={handleClearTagFilters}
         onTagsUpdate={handleTagsUpdate}
       />
     </div>

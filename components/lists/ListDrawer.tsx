@@ -5,6 +5,11 @@ import ListDetailBody, {
   ListItemRow,
   ListSummary,
 } from '@/components/lists/ListDetailBody'
+import type { CategoryEnum } from '@/lib/types/enums'
+import {
+  distinctTypesFromItems,
+  matchesListFilters,
+} from '@/lib/lists/filters'
 import { distinctTagsFromItems } from '@/lib/lists/tags'
 
 type Props = {
@@ -17,6 +22,7 @@ type Props = {
   onActiveListItemsChange?: (
     items: Array<{ id: string; list_id: string; place_id: string; tags: string[] }>
   ) => void
+  focusedPlaceId?: string | null
   tagsRefreshKey?: number
   onTagsUpdated?: () => void
 }
@@ -39,6 +45,7 @@ export default function ListDrawer({
   onPlaceIdsChange,
   onPlaceSelect,
   onActiveListItemsChange,
+  focusedPlaceId = null,
   tagsRefreshKey,
   onTagsUpdated,
 }: Props) {
@@ -51,6 +58,8 @@ export default function ListDrawer({
   const [items, setItems] = useState<ListItemRow[]>([])
   const [distinctTags, setDistinctTags] = useState<string[]>([])
   const [activeTagFilters, setActiveTagFilters] = useState<string[]>([])
+  const [distinctTypes, setDistinctTypes] = useState<CategoryEnum[]>([])
+  const [activeTypeFilters, setActiveTypeFilters] = useState<CategoryEnum[]>([])
   const [itemsLoading, setItemsLoading] = useState(false)
   const [itemsError, setItemsError] = useState<string | null>(null)
 
@@ -133,6 +142,11 @@ export default function ListDrawer({
             prev.filter((tag) => nextDistinct.includes(tag))
           )
         }
+        const nextDistinctTypes = distinctTypesFromItems(nextItems)
+        setDistinctTypes(nextDistinctTypes)
+        setActiveTypeFilters((prev) =>
+          prev.filter((type) => nextDistinctTypes.includes(type))
+        )
       } catch (e: unknown) {
         setItemsError(e instanceof Error ? e.message : 'Request failed')
       } finally {
@@ -153,6 +167,8 @@ export default function ListDrawer({
       setItems([])
       setDistinctTags([])
       setActiveTagFilters([])
+      setDistinctTypes([])
+      setActiveTypeFilters([])
       onPlaceIdsChange([])
       return
     }
@@ -162,6 +178,7 @@ export default function ListDrawer({
 
   useEffect(() => {
     setActiveTagFilters([])
+    setActiveTypeFilters([])
   }, [activeListId])
 
   useEffect(() => {
@@ -194,12 +211,11 @@ export default function ListDrawer({
   }, [activeListId, items, onActiveListItemsChange])
 
   const filteredItems = useMemo(() => {
-    if (!activeTagFilters.length) return items
-    return items.filter((item) => {
-      const tags = item.tags ?? []
-      return activeTagFilters.some((tag) => tags.includes(tag))
-    })
-  }, [activeTagFilters, items])
+    if (!activeTagFilters.length && !activeTypeFilters.length) return items
+    return items.filter((item) =>
+      matchesListFilters(item, activeTypeFilters, activeTagFilters)
+    )
+  }, [activeTagFilters, activeTypeFilters, items])
 
   const handleTagToggle = useCallback((tag: string) => {
     setActiveTagFilters((prev) =>
@@ -207,8 +223,18 @@ export default function ListDrawer({
     )
   }, [])
 
-  const handleClearFilters = useCallback(() => {
+  const handleTypeToggle = useCallback((type: CategoryEnum) => {
+    setActiveTypeFilters((prev) =>
+      prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]
+    )
+  }, [])
+
+  const handleClearTagFilters = useCallback(() => {
     setActiveTagFilters([])
+  }, [])
+
+  const handleClearTypeFilters = useCallback(() => {
+    setActiveTypeFilters([])
   }, [])
 
   const handleTagsUpdate = useCallback(
@@ -344,16 +370,21 @@ export default function ListDrawer({
           error={itemsError}
           emptyLabel={
             activeList
-              ? activeTagFilters.length
-                ? 'No places match these tags.'
+              ? activeTagFilters.length || activeTypeFilters.length
+                ? 'No places match these filters.'
                 : 'No places in this list yet.'
               : 'Select a list to see its places.'
           }
           onPlaceSelect={onPlaceSelect}
+          focusedPlaceId={focusedPlaceId}
+          availableTypes={distinctTypes}
+          activeTypeFilters={activeTypeFilters}
+          onTypeFilterToggle={handleTypeToggle}
+          onClearTypeFilters={handleClearTypeFilters}
           availableTags={distinctTags}
           activeTagFilters={activeTagFilters}
           onTagFilterToggle={handleTagToggle}
-          onClearTagFilters={handleClearFilters}
+          onClearTagFilters={handleClearTagFilters}
           onTagsUpdate={handleTagsUpdate}
           tone="dark"
         />

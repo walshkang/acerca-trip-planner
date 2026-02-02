@@ -3,6 +3,7 @@
 import { type FormEvent, useCallback, useEffect, useMemo, useState } from 'react'
 import PlaceListMembershipEditor from '@/components/places/PlaceListMembershipEditor'
 import { normalizeTagList } from '@/lib/lists/tags'
+import { PLACE_FOCUS_GLOW } from '@/lib/ui/glow'
 
 export type PlaceDrawerSummary = {
   id: string
@@ -186,7 +187,7 @@ export default function PlaceDrawer({
 
   return (
     <aside
-      className="glass-panel absolute right-4 z-20 w-[min(360px,90vw)] max-h-[80vh] overflow-hidden rounded-xl text-slate-100"
+      className={`glass-panel absolute right-4 z-20 w-[min(360px,90vw)] max-h-[80vh] overflow-hidden rounded-xl text-slate-100 ${PLACE_FOCUS_GLOW}`}
       style={{ top: `${computedTop}px` }}
       data-testid="place-drawer"
     >
@@ -205,13 +206,22 @@ export default function PlaceDrawer({
       </div>
 
       <div className="space-y-4 px-4 py-3">
-        <div className="flex items-center gap-2">
-          <span className="rounded-full border border-white/10 px-2 py-0.5 text-[10px] text-slate-300">
-            {place.category}
-          </span>
-          <a className="text-[11px] text-slate-300 underline" href={`/places/${place.id}`}>
-            Open full details
-          </a>
+        <div className="space-y-1">
+          <p className="text-[11px] font-semibold text-slate-300">Place type</p>
+          <p className="text-[11px] text-slate-400">
+            A fixed category that sets this place's map icon.
+          </p>
+          <div className="flex items-center gap-2">
+            <span className="rounded-full border border-white/10 px-2 py-0.5 text-[10px] text-slate-300">
+              {place.category}
+            </span>
+            <a
+              className="text-[11px] text-slate-300 underline"
+              href={`/places/${place.id}`}
+            >
+              Open full details
+            </a>
+          </div>
         </div>
 
         {loading ? <p className="text-xs text-slate-300">Loading lists…</p> : null}
