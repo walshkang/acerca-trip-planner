@@ -107,17 +107,17 @@ test('list tag filters work in list detail view', async ({ page }) => {
   await expect(placesSection.getByText(seedA.place_name)).toBeVisible()
   await expect(placesSection.getByText(seedB.place_name)).toBeVisible()
 
-  const dateNightFilter = page.getByRole('button', { name: 'date-night' })
+  const tagsHeader = page.getByText('Tags', { exact: true })
+  const tagsSection = tagsHeader.locator('..').locator('..')
+  const dateNightFilter = tagsSection.getByRole('button', { name: 'date-night' })
   await dateNightFilter.click()
   await expect(placesSection.getByText(seedA.place_name)).toBeVisible()
   await expect(placesSection.getByText(seedB.place_name)).toBeHidden()
 
-  const tagsHeader = page.getByText('Tags', { exact: true })
-  const tagsHeaderRow = tagsHeader.locator('..').locator('..')
-  await tagsHeaderRow.getByRole('button', { name: 'Clear' }).click()
+  await tagsSection.getByRole('button', { name: 'Clear' }).click()
   await expect(placesSection.getByText(seedB.place_name)).toBeVisible()
 
-  const brunchFilter = page.getByRole('button', { name: 'brunch' })
+  const brunchFilter = tagsSection.getByRole('button', { name: 'brunch' })
   await brunchFilter.click()
   await expect(placesSection.getByText(seedB.place_name)).toBeVisible()
   await expect(placesSection.getByText(seedA.place_name)).toBeHidden()
