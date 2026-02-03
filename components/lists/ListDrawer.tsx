@@ -179,6 +179,11 @@ export default function ListDrawer({
   }, [activeListId, fetchItems, onPlaceIdsChange, tagsRefreshKey])
 
   useEffect(() => {
+    if (!open || !activeListId) return
+    fetchItems(activeListId)
+  }, [open, activeListId, fetchItems])
+
+  useEffect(() => {
     setActiveTagFilters([])
     setActiveTypeFilters([])
   }, [activeListId])

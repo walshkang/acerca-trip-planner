@@ -287,10 +287,16 @@ export default function PlaceDrawer({
               <p className="text-[11px] text-red-300">{tagError}</p>
             ) : null}
           </div>
-        ) : userTags.length ? (
+        ) : activeListId ? (
+          <p className="text-[11px] text-slate-400">
+            Add this place to the active list to edit list tags.
+          </p>
+        ) : null}
+
+        {userTags.length ? (
           <div className="space-y-1">
             <p className="text-[11px] font-semibold text-slate-300">
-              Your tags
+              Place tags
             </p>
             <div className="flex flex-wrap gap-2">
               {userTags.map((tag) => (
@@ -303,10 +309,6 @@ export default function PlaceDrawer({
               ))}
             </div>
           </div>
-        ) : activeListId ? (
-          <p className="text-[11px] text-slate-400">
-            Add this place to the active list to edit tags.
-          </p>
         ) : null}
 
         <PlaceListMembershipEditor
