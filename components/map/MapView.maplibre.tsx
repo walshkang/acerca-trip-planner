@@ -3,7 +3,7 @@
 import { forwardRef, useEffect, useState } from 'react'
 import MapGL, { Layer, Marker, Source } from 'react-map-gl/maplibre'
 import 'maplibre-gl/dist/maplibre-gl.css'
-import { getCategoryIcon } from '@/lib/icons/mapping'
+import { getCategoryEmoji } from '@/lib/icons/mapping'
 import { PLACE_ICON_GLOW } from '@/lib/ui/glow'
 import type { MapViewProps, MapViewRef } from './MapView.types'
 import { useGeoJson } from './useGeoJson'
@@ -121,7 +121,6 @@ const MapViewMaplibre = forwardRef<MapViewRef, MapViewProps>(
       transitLinesUrl,
       transitStationsUrl,
       transitBeforeId,
-      markerIconClassName = '',
       styleKey,
     },
     ref
@@ -223,11 +222,12 @@ const MapViewMaplibre = forwardRef<MapViewRef, MapViewProps>(
                 }}
                 aria-label={`Open ${place.name}`}
               >
-                <img
-                  src={getCategoryIcon(place.category)}
-                  alt={place.category}
-                  className={`w-6 h-6 ${markerIconClassName} ${isFocusedMarker ? PLACE_ICON_GLOW : ''}`}
-                />
+                <span
+                  aria-hidden="true"
+                  className={`flex h-6 w-6 items-center justify-center text-[16px] ${isFocusedMarker ? PLACE_ICON_GLOW : ''}`}
+                >
+                  {getCategoryEmoji(place.category)}
+                </span>
               </button>
             </Marker>
           )
