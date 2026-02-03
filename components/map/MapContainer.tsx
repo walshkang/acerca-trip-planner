@@ -99,7 +99,7 @@ export default function MapContainer() {
   const [placeTagRefreshKey, setPlaceTagRefreshKey] = useState(0)
   const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN
   const mapProvider =
-    process.env.NEXT_PUBLIC_MAP_PROVIDER === 'maplibre' ? 'maplibre' : 'mapbox'
+    process.env.NEXT_PUBLIC_MAP_PROVIDER === 'mapbox' ? 'mapbox' : 'maplibre'
   const isMapbox = mapProvider === 'mapbox'
   const mapStyle = useMemo(() => {
     if (isMapbox) {
