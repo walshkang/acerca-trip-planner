@@ -32,6 +32,7 @@ export type MapViewProps = {
   transitLinesUrl?: string
   transitStationsUrl?: string
   transitBeforeId?: string
+  markerBackdropClassName?: string
   styleKey?: string
 }
 

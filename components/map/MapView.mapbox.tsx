@@ -4,7 +4,7 @@ import { forwardRef, useEffect, useState } from 'react'
 import MapGL, { Layer, Marker, Source } from 'react-map-gl/mapbox'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import { getCategoryEmoji } from '@/lib/icons/mapping'
-import { PLACE_ICON_GLOW } from '@/lib/ui/glow'
+import { PLACE_FOCUS_GLOW } from '@/lib/ui/glow'
 import type { MapViewProps, MapViewRef } from './MapView.types'
 import { useGeoJson } from './useGeoJson'
 
@@ -121,6 +121,7 @@ const MapViewMapbox = forwardRef<MapViewRef, MapViewProps>(function MapViewMapbo
     transitLinesUrl,
     transitStationsUrl,
     transitBeforeId,
+    markerBackdropClassName = '',
     styleKey,
   },
   ref
@@ -223,11 +224,13 @@ const MapViewMapbox = forwardRef<MapViewRef, MapViewProps>(function MapViewMapbo
               }}
               aria-label={`Open ${place.name}`}
             >
-              <span
-                aria-hidden="true"
-                className={`flex h-6 w-6 items-center justify-center text-[16px] ${isFocusedMarker ? PLACE_ICON_GLOW : ''}`}
-              >
-                {getCategoryEmoji(place.category)}
+                <span
+                  aria-hidden="true"
+                  className={`flex h-7 w-7 items-center justify-center rounded-full ${markerBackdropClassName} ${isFocusedMarker ? PLACE_FOCUS_GLOW : ''}`}
+                >
+                <span className="text-[15px] leading-none">
+                  {getCategoryEmoji(place.category)}
+                </span>
               </span>
             </button>
           </Marker>

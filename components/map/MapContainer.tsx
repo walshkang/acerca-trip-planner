@@ -104,19 +104,22 @@ export default function MapContainer() {
   const mapStyle = useMemo(() => {
     if (isMapbox) {
       return mapStyleMode === 'dark'
-        ? 'mapbox://styles/mapbox/dark-v11'
-        : 'mapbox://styles/mapbox/streets-v12'
+        ? 'mapbox://styles/mapbox/navigation-night-v1'
+        : 'mapbox://styles/mapbox/light-v11'
     }
     return mapStyleMode === 'dark'
-      ? '/map/style.maplibre.dark.json'
-      : '/map/style.maplibre.json'
+      ? 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json'
+      : 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json'
   }, [isMapbox, mapStyleMode])
   const styleKey = `${mapProvider}-${mapStyleMode}`
+  const markerBackdropClassName =
+    mapStyleMode === 'dark'
+      ? 'bg-slate-900/80 border border-white/20 shadow-[0_2px_6px_rgba(0,0,0,0.45)]'
+      : 'bg-white/90 border border-slate-900/10 shadow-[0_2px_6px_rgba(15,23,42,0.15)]'
   const canRenderMap = isMapbox ? Boolean(mapboxToken) : true
   const transitLinesUrl = '/map/overlays/nyc_subway_lines.geojson'
   const transitStationsUrl = '/map/overlays/nyc_subway_stations.geojson'
-  const transitBeforeId =
-    !isMapbox && mapStyleMode === 'dark' ? 'maplibre-dark-labels' : undefined
+  const transitBeforeId = undefined
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -725,6 +728,7 @@ export default function MapContainer() {
         transitLinesUrl={transitLinesUrl}
         transitStationsUrl={transitStationsUrl}
         transitBeforeId={transitBeforeId}
+        markerBackdropClassName={markerBackdropClassName}
         styleKey={styleKey}
       />
     </div>
