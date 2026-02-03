@@ -27,6 +27,10 @@ export type MapViewProps = {
   onPlaceClick: (placeId: string) => void
   isPlaceDimmed: (place: MapPlace) => boolean
   isPlaceFocused: (place: MapPlace) => boolean
+  showTransit?: boolean
+  showTransitStations?: boolean
+  transitLinesUrl?: string
+  transitStationsUrl?: string
 }
 
 export type MapViewRef = MapRef

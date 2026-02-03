@@ -2,10 +2,36 @@
 
 import { forwardRef } from 'react'
 import MapGL, { Marker } from 'react-map-gl/mapbox'
+import { Layer, Source } from 'react-map-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import { getCategoryIcon } from '@/lib/icons/mapping'
 import { PLACE_ICON_GLOW } from '@/lib/ui/glow'
 import type { MapViewProps, MapViewRef } from './MapView.types'
+import { useGeoJson } from './useGeoJson'
+
+const transitLineLayer = {
+  id: 'transit-lines',
+  type: 'line' as const,
+  source: 'transit-lines',
+  paint: {
+    'line-color': '#38bdf8',
+    'line-width': 2,
+    'line-opacity': 0.75,
+  },
+}
+
+const transitStationLayer = {
+  id: 'transit-stations',
+  type: 'circle' as const,
+  source: 'transit-stations',
+  paint: {
+    'circle-color': '#22d3ee',
+    'circle-radius': 3,
+    'circle-opacity': 0.9,
+    'circle-stroke-color': '#0f172a',
+    'circle-stroke-width': 1,
+  },
+}
 
 const MapViewMapbox = forwardRef<MapViewRef, MapViewProps>(function MapViewMapbox(
   {
@@ -19,9 +45,17 @@ const MapViewMapbox = forwardRef<MapViewRef, MapViewProps>(function MapViewMapbo
     onPlaceClick,
     isPlaceDimmed,
     isPlaceFocused,
+    showTransit = false,
+    showTransitStations = false,
+    transitLinesUrl,
+    transitStationsUrl,
   },
   ref
 ) {
+  const showStations = showTransit && showTransitStations
+  const transitLines = useGeoJson(transitLinesUrl, showTransit)
+  const transitStations = useGeoJson(transitStationsUrl, showStations)
+
   return (
     <MapGL
       ref={ref}
@@ -32,6 +66,24 @@ const MapViewMapbox = forwardRef<MapViewRef, MapViewProps>(function MapViewMapbo
       onClick={onMapClick}
       onMoveEnd={onMoveEnd}
     >
+      {showTransit && transitLines ? (
+        <Source
+          id="transit-lines"
+          type="geojson"
+          data={transitLines as any}
+        >
+          <Layer {...transitLineLayer} />
+        </Source>
+      ) : null}
+      {showStations && transitStations ? (
+        <Source
+          id="transit-stations"
+          type="geojson"
+          data={transitStations as any}
+        >
+          <Layer {...transitStationLayer} />
+        </Source>
+      ) : null}
       {ghostLocation ? (
         <Marker
           longitude={ghostLocation.lng}

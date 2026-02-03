@@ -194,6 +194,23 @@ Notes:
 - Document the optional Playwright run with `NEXT_PUBLIC_MAP_PROVIDER=maplibre`.
 - Acceptance: MapLibre mode loads without Mapbox token; marker click opens drawer and updates `?place=`.
 
+### Map Customization (planned)
+
+#### Transit Overlay (NYC first, runtime GeoJSON)
+- Use static GeoJSON assets under `public/map/overlays/` (lines + optional stations).
+- Render as non-interactive overlay layers inside `MapView.*` so marker clicks remain reliable.
+- Toggle lives inside the right overlay (pointer-events-auto) and increases the measured inspector height by design.
+- Lazy-load GeoJSON on first toggle; cache after load to keep initial map boot fast.
+- Acceptance: marker click still opens the place drawer with transit enabled (Mapbox + MapLibre).
+
+#### Map Style Selection (map-only)
+- Map style changes do not affect the dark glass UI (map-only selection).
+- Provide a dark style for Mapbox and a corresponding MapLibre style JSON.
+
+#### Neighborhood Boundaries (NYC)
+- Start as static GeoJSON under `public/map/overlays/` and render as runtime overlay layers.
+- Optional future slice: DB-backed ingestion if needed (separate schema + RLS).
+
 ## Sequencing (recommended)
 0. UI/UX Track A: apply Slate Glass overlays (Omnibox, inspector, list/placedrawers, pills) without changing layout invariants. (done)
 1. Read-only list detail API + view (done).
@@ -202,11 +219,14 @@ Notes:
 4. Default map view policy (active list → last place → saved viewport). (done)
 5. Place drawer URL state + route reconciliation (done).
 6. MapLibre feasibility spike (flag + renderer split + provider-agnostic bounds + minimal style).
-7. List add flow: local search + add with tags, list drawer create list. (done)
-8. Tagging UI + API updates (P2-E3) including add-time tag seeding. (done)
-9. Map camera stability + overlay layering + sign-out placement. (done)
-10. Scheduling UI + API updates (P2-E1).
-11. Filter translation + query pipeline (P2-E2).
+7. Transit overlay (NYC GeoJSON, runtime layers, toggle in right overlay).
+8. Map style selection (map-only dark style).
+9. Neighborhood boundaries (NYC GeoJSON, runtime layers).
+10. List add flow: local search + add with tags, list drawer create list. (done)
+11. Tagging UI + API updates (P2-E3) including add-time tag seeding. (done)
+12. Map camera stability + overlay layering + sign-out placement. (done)
+13. Scheduling UI + API updates (P2-E1).
+14. Filter translation + query pipeline (P2-E2).
 
 ## Testing & Verification
 - Unit tests for filter schema validation and query builder.
@@ -219,3 +239,4 @@ Notes:
   - Search while map is in Hong Kong → results bias to that area.
   - Add/remove list membership → list item appears/disappears without errors.
   - MapLibre mode (provider flag) loads without Mapbox token; marker click opens drawer and updates `?place=`.
+  - Transit overlay enabled → marker click still opens the place drawer.

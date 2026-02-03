@@ -9,7 +9,7 @@
 ## 🧠 Active Context
 - Current Phase: The Interactive Planner (Birthday Cake)
 - Active Epic: P2-E4 Map-First List Context (UI/UX polish)
-- Immediate Blocker: None. Next slice: Optional PMTiles wiring + MapLibre style refinement, then return to Slate Glass overlay polish while keeping the place drawer offset invariant.
+- Immediate Blocker: None. Next slice: NYC transit overlay (GeoJSON runtime layers), then optional PMTiles wiring + MapLibre style refinement.
 - Planned (Phase 2): P2-E3 List Workspace + Tags (per-place tags + multi-list add/remove).
 - Planned (Phase 2): P2-E4 Map-First List Context (drawer overlay, URL-driven place drawer, search bias, default view).
 
@@ -31,6 +31,14 @@
 - [x] Add minimal MapLibre style JSON and wire the MapLibre renderer.
 - [ ] Optional: PMTiles protocol wiring + pmtiles style JSON for staged assets.
 - [x] Document optional MapLibre Playwright run in `docs/PLAYWRIGHT.md`.
+
+## 🧭 Map Customization (Tracking)
+- [x] Transit overlay (NYC): add GeoJSON assets under `public/map/overlays/` (lines + optional stations).
+- [x] Add right-overlay "Layers" toggle (pointer-events-auto) and accept drawer offset shift.
+- [x] Render transit overlays in `MapView.*` (non-interactive layers, lazy-load/cached).
+- [x] E2E: transit enabled does not block marker click → place drawer opens.
+- [ ] Map style selection: dark map style for Mapbox + MapLibre (map-only).
+- [ ] Neighborhood boundaries: NYC GeoJSON overlay (runtime layer).
 
 ## 🗺️ Roadmap Visualization
 

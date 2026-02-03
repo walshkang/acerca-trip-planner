@@ -168,3 +168,26 @@ test('place drawer URL supports deep link and back/forward', async ({ page }) =>
   await expect(placeDrawer).toBeHidden()
   await expect(page).toHaveURL(/\/$/)
 })
+
+test('transit overlay does not block marker clicks', async ({ page }) => {
+  await page.goto('/')
+  await ensureSignedIn(page)
+
+  const seed = await seedListWithPlace(page)
+
+  const transitToggle = page.getByLabel('Transit lines')
+  await transitToggle.check()
+
+  await page.getByRole('button', { name: 'Lists' }).click()
+  const listDrawer = page.getByTestId('list-drawer')
+  await expect(listDrawer).toBeVisible()
+  await listDrawer.getByRole('button', { name: seed.list.name }).click()
+
+  await page.getByRole('button', { name: `Open ${seed.place_name}` }).click()
+
+  const placeDrawer = page.getByTestId('place-drawer')
+  await expect(placeDrawer).toBeVisible()
+  await expect(
+    placeDrawer.getByRole('heading', { name: seed.place_name })
+  ).toBeVisible()
+})

@@ -390,7 +390,10 @@
             "Map marker click focuses the list row and opens the place drawer; list row click pans the map and opens the place drawer. (done)",
             "Focused list row + place drawer share a subtle glow outline for visual linkage. (done)",
             "MapLibre pmtiles assets staged under public/map for future map style swaps. (done)",
-            "MapLibre feasibility spike: provider flag + renderer split + provider-agnostic bounds + minimal style (PMTiles optional). (planned)"
+            "MapLibre feasibility spike: provider flag + renderer split + provider-agnostic bounds + minimal style (PMTiles optional). (planned)",
+            "Transit overlay (NYC GeoJSON lines + optional stations) with a right-overlay toggle and non-interactive layers. (planned)",
+            "Map style selection: map-only dark style for Mapbox + MapLibre. (planned)",
+            "Neighborhood boundaries (NYC GeoJSON) rendered as runtime overlays. (planned)"
           ]
         }
       ]

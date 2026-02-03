@@ -91,6 +91,8 @@ export default function MapContainer() {
   const [focusedListPlaceId, setFocusedListPlaceId] = useState<string | null>(
     null
   )
+  const [showTransit, setShowTransit] = useState(false)
+  const [showTransitStations, setShowTransitStations] = useState(false)
   const [inspectorHeight, setInspectorHeight] = useState(0)
   const [listTagRefreshKey, setListTagRefreshKey] = useState(0)
   const [placeTagRefreshKey, setPlaceTagRefreshKey] = useState(0)
@@ -106,6 +108,8 @@ export default function MapContainer() {
     [isMapbox]
   )
   const canRenderMap = isMapbox ? Boolean(mapboxToken) : true
+  const transitLinesUrl = '/map/overlays/nyc_subway_lines.geojson'
+  const transitStationsUrl = '/map/overlays/nyc_subway_stations.geojson'
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -579,6 +583,36 @@ export default function MapContainer() {
           </button>
         </form>
         <div className="pointer-events-auto">
+          <div className="glass-panel rounded-lg px-3 py-2 text-slate-100">
+            <p className="text-[11px] font-semibold text-slate-200">Layers</p>
+            <label className="mt-2 flex items-center gap-2 text-[11px] text-slate-200">
+              <input
+                type="checkbox"
+                className="accent-slate-200"
+                checked={showTransit}
+                onChange={(event) => {
+                  const next = event.target.checked
+                  setShowTransit(next)
+                  if (!next) {
+                    setShowTransitStations(false)
+                  }
+                }}
+              />
+              Transit lines
+            </label>
+            <label className="mt-1 flex items-center gap-2 text-[11px] text-slate-300">
+              <input
+                type="checkbox"
+                className="accent-slate-200"
+                checked={showTransitStations}
+                disabled={!showTransit}
+                onChange={(event) => setShowTransitStations(event.target.checked)}
+              />
+              Stations
+            </label>
+          </div>
+        </div>
+        <div className="pointer-events-auto">
           <InspectorCard
             onCommitted={(placeId) => {
               if (typeof window !== 'undefined') {
@@ -637,6 +671,10 @@ export default function MapContainer() {
         onPlaceClick={handlePlaceClick}
         isPlaceDimmed={isPlaceDimmed}
         isPlaceFocused={isPlaceFocused}
+        showTransit={showTransit}
+        showTransitStations={showTransitStations}
+        transitLinesUrl={transitLinesUrl}
+        transitStationsUrl={transitStationsUrl}
       />
     </div>
   )
