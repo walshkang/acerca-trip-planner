@@ -114,8 +114,13 @@ export default function MapContainer() {
   const styleKey = `${mapProvider}-${mapStyleMode}`
   const markerBackdropClassName =
     mapStyleMode === 'dark'
-      ? 'bg-slate-900/80 border border-white/20 shadow-[0_2px_6px_rgba(0,0,0,0.45)]'
+      ? 'bg-slate-100/90 border border-white/70 shadow-[0_2px_6px_rgba(0,0,0,0.45)]'
       : 'bg-white/90 border border-slate-900/10 shadow-[0_2px_6px_rgba(15,23,42,0.15)]'
+  const transitLineWidth = 2.5
+  const transitLineOpacity = 0.75
+  const transitCasingWidth = 4
+  const transitCasingOpacity = mapStyleMode === 'dark' ? 0.35 : 0.25
+  const transitCasingColor = mapStyleMode === 'dark' ? '#e2e8f0' : '#0f172a'
   const canRenderMap = isMapbox ? Boolean(mapboxToken) : true
   const transitLinesUrl = '/map/overlays/nyc_subway_lines.geojson'
   const transitStationsUrl = '/map/overlays/nyc_subway_stations.geojson'
@@ -728,6 +733,11 @@ export default function MapContainer() {
         transitLinesUrl={transitLinesUrl}
         transitStationsUrl={transitStationsUrl}
         transitBeforeId={transitBeforeId}
+        transitLineWidth={transitLineWidth}
+        transitLineOpacity={transitLineOpacity}
+        transitCasingWidth={transitCasingWidth}
+        transitCasingColor={transitCasingColor}
+        transitCasingOpacity={transitCasingOpacity}
         markerBackdropClassName={markerBackdropClassName}
         styleKey={styleKey}
       />
