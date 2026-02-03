@@ -1,28 +1,66 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import MapGL, { Marker } from 'react-map-gl/mapbox'
-import 'mapbox-gl/dist/mapbox-gl.css'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase/client'
-import { getCategoryIcon } from '@/lib/icons/mapping'
 import type { CategoryEnum } from '@/lib/types/enums'
-import { PLACE_ICON_GLOW } from '@/lib/ui/glow'
+import MapViewMapbox from '@/components/map/MapView.mapbox'
+import MapViewMaplibre from '@/components/map/MapView.maplibre'
+import type { MapPlace, LatLng } from '@/components/map/MapView.types'
 import Omnibox from '@/components/discovery/Omnibox'
-import GhostMarker from '@/components/discovery/GhostMarker'
 import InspectorCard from '@/components/discovery/InspectorCard'
 import ListDrawer from '@/components/lists/ListDrawer'
 import PlaceDrawer from '@/components/places/PlaceDrawer'
 import { useDiscoveryStore } from '@/lib/state/useDiscoveryStore'
-import type { MapRef, ViewState } from 'react-map-gl'
-import { LngLatBounds } from 'mapbox-gl'
+import type { MapRef, ViewState, ViewStateChangeEvent } from 'react-map-gl'
 
-interface Place {
-  id: string
-  name: string
-  category: CategoryEnum
-  lat: number
-  lng: number
+type Bounds = { sw: LatLng; ne: LatLng }
+
+const EARTH_RADIUS_METERS = 6371000
+
+function haversineMeters(a: LatLng, b: LatLng) {
+  const toRadians = (deg: number) => (deg * Math.PI) / 180
+  const dLat = toRadians(b.lat - a.lat)
+  const dLng = toRadians(b.lng - a.lng)
+  const lat1 = toRadians(a.lat)
+  const lat2 = toRadians(b.lat)
+  const sinLat = Math.sin(dLat / 2)
+  const sinLng = Math.sin(dLng / 2)
+  const value = sinLat * sinLat + Math.cos(lat1) * Math.cos(lat2) * sinLng * sinLng
+  return 2 * EARTH_RADIUS_METERS * Math.asin(Math.min(1, Math.sqrt(value)))
+}
+
+function boundsFromPlaces(places: MapPlace[]): Bounds | null {
+  if (!places.length) return null
+  let minLng = Infinity
+  let minLat = Infinity
+  let maxLng = -Infinity
+  let maxLat = -Infinity
+  for (const place of places) {
+    minLng = Math.min(minLng, place.lng)
+    maxLng = Math.max(maxLng, place.lng)
+    minLat = Math.min(minLat, place.lat)
+    maxLat = Math.max(maxLat, place.lat)
+  }
+  if (!Number.isFinite(minLng) || !Number.isFinite(minLat)) return null
+  return {
+    sw: { lng: minLng, lat: minLat },
+    ne: { lng: maxLng, lat: maxLat },
+  }
+}
+
+function boundsToArray(bounds: Bounds): [[number, number], [number, number]] {
+  return [
+    [bounds.sw.lng, bounds.sw.lat],
+    [bounds.ne.lng, bounds.ne.lat],
+  ]
+}
+
+function boundsSpan(bounds: Bounds) {
+  return {
+    lngSpan: Math.abs(bounds.ne.lng - bounds.sw.lng),
+    latSpan: Math.abs(bounds.ne.lat - bounds.sw.lat),
+  }
 }
 
 type PlacesRow = {
@@ -34,7 +72,7 @@ type PlacesRow = {
 }
 
 export default function MapContainer() {
-  const [places, setPlaces] = useState<Place[]>([])
+  const [places, setPlaces] = useState<MapPlace[]>([])
   const [loading, setLoading] = useState(true)
   const [authChecked, setAuthChecked] = useState(false)
   const [isAuthed, setIsAuthed] = useState(false)
@@ -57,6 +95,17 @@ export default function MapContainer() {
   const [listTagRefreshKey, setListTagRefreshKey] = useState(0)
   const [placeTagRefreshKey, setPlaceTagRefreshKey] = useState(0)
   const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN
+  const mapProvider =
+    process.env.NEXT_PUBLIC_MAP_PROVIDER === 'maplibre' ? 'maplibre' : 'mapbox'
+  const isMapbox = mapProvider === 'mapbox'
+  const mapStyle = useMemo(
+    () =>
+      isMapbox
+        ? 'mapbox://styles/mapbox/streets-v12'
+        : '/map/style.maplibre.json',
+    [isMapbox]
+  )
+  const canRenderMap = isMapbox ? Boolean(mapboxToken) : true
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -93,6 +142,22 @@ export default function MapContainer() {
     },
     []
   )
+  const updateSearchBiasFromMap = useCallback(() => {
+    const map = mapRef.current
+    if (!map) return
+    const bounds = map.getBounds() as {
+      getCenter: () => LatLng
+      getNorthEast: () => LatLng
+    }
+    const center = bounds.getCenter()
+    const northEast = bounds.getNorthEast()
+    const radiusMeters = haversineMeters(center, northEast)
+    setSearchBias({
+      lat: center.lat,
+      lng: center.lng,
+      radiusMeters,
+    })
+  }, [setSearchBias])
 
   const defaultViewState = useMemo<ViewState>(
     () => ({
@@ -168,9 +233,30 @@ export default function MapContainer() {
     () => places.find((place) => place.id === selectedPlaceId) ?? null,
     [places, selectedPlaceId]
   )
+  const isPlaceFocused = useCallback(
+    (place: MapPlace) =>
+      selectedPlaceId === place.id || focusedListPlaceId === place.id,
+    [focusedListPlaceId, selectedPlaceId]
+  )
+  const isPlaceDimmed = useCallback(
+    (place: MapPlace) => {
+      const dimmedByList =
+        activeListPlaceIds.length > 0 && !activeListPlaceIdSet.has(place.id)
+      const dimmedByType =
+        activeListTypeFilters.length > 0 &&
+        !activeListTypeFilterSet.has(place.category)
+      return dimmedByList || dimmedByType
+    },
+    [
+      activeListPlaceIdSet,
+      activeListPlaceIds.length,
+      activeListTypeFilterSet,
+      activeListTypeFilters.length,
+    ]
+  )
 
   useEffect(() => {
-    if (!mapboxToken) {
+    if (isMapbox && !mapboxToken) {
       console.error('NEXT_PUBLIC_MAPBOX_TOKEN is not set')
       return
     }
@@ -185,7 +271,7 @@ export default function MapContainer() {
     }
 
     checkAuth().catch(() => null)
-  }, [mapboxToken])
+  }, [isMapbox, mapboxToken])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -247,25 +333,20 @@ export default function MapContainer() {
   }, [])
 
   useEffect(() => {
-    if (!mapboxToken) return
+    if (!canRenderMap) return
     fetchPlaces()
-  }, [mapboxToken, fetchPlaces])
+  }, [canRenderMap, fetchPlaces])
 
   useEffect(() => {
     if (loading) return
     const map = mapRef.current
     if (!map) return
 
-    const fitPlaces = (selected: Place[]) => {
-      const bounds = new LngLatBounds()
-      for (const place of selected) {
-        bounds.extend([place.lng, place.lat])
-      }
-      if (!bounds.isEmpty()) {
-        map.fitBounds(bounds, { padding: 80, maxZoom: 14 })
-        return true
-      }
-      return false
+    const fitPlaces = (selected: MapPlace[]) => {
+      const bounds = boundsFromPlaces(selected)
+      if (!bounds) return false
+      map.fitBounds(boundsToArray(bounds), { padding: 80, maxZoom: 14 })
+      return true
     }
 
     if (activeListId) {
@@ -314,15 +395,11 @@ export default function MapContainer() {
     }
 
     if (places.length > 0) {
-      const bounds = new LngLatBounds()
-      for (const place of places) {
-        bounds.extend([place.lng, place.lat])
-      }
-      if (!bounds.isEmpty()) {
-        const lngSpan = Math.abs(bounds.getEast() - bounds.getWest())
-        const latSpan = Math.abs(bounds.getNorth() - bounds.getSouth())
+      const bounds = boundsFromPlaces(places)
+      if (bounds) {
+        const { lngSpan, latSpan } = boundsSpan(bounds)
         if (lngSpan < 90 && latSpan < 45) {
-          map.fitBounds(bounds, { padding: 80, maxZoom: 14 })
+          map.fitBounds(boundsToArray(bounds), { padding: 80, maxZoom: 14 })
           return
         }
       }
@@ -378,17 +455,8 @@ export default function MapContainer() {
 
   useEffect(() => {
     if (loading) return
-    const map = mapRef.current
-    if (!map) return
-    const bounds = map.getBounds()
-    const center = bounds.getCenter()
-    const radiusMeters = center.distanceTo(bounds.getNorthEast())
-    setSearchBias({
-      lat: center.lat,
-      lng: center.lng,
-      radiusMeters,
-    })
-  }, [loading, setSearchBias])
+    updateSearchBiasFromMap()
+  }, [loading, updateSearchBiasFromMap])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -408,7 +476,42 @@ export default function MapContainer() {
     return () => observer.disconnect()
   }, [])
 
-  if (!mapboxToken) {
+  const handleMapClick = useCallback(() => {
+    clearDiscovery()
+    if (selectedPlaceId) {
+      setPlaceParam(null)
+    }
+  }, [clearDiscovery, selectedPlaceId, setPlaceParam])
+
+  const handleMoveEnd = useCallback(
+    (evt: ViewStateChangeEvent) => {
+      if (typeof window === 'undefined') return
+      const { longitude, latitude, zoom, bearing, pitch } = evt.viewState
+      window.localStorage.setItem(
+        viewStorageKey,
+        JSON.stringify({ longitude, latitude, zoom, bearing, pitch })
+      )
+      updateSearchBiasFromMap()
+    },
+    [updateSearchBiasFromMap]
+  )
+
+  const handlePlaceClick = useCallback(
+    (placeId: string) => {
+      if (activeListId && activeListPlaceIdSet.has(placeId)) {
+        setDrawerOpen(true)
+        setFocusedListPlaceId(placeId)
+        setPlaceParam(placeId)
+        return
+      }
+      setFocusedListPlaceId(null)
+      setPlaceParam(placeId)
+    },
+    [activeListId, activeListPlaceIdSet, setPlaceParam]
+  )
+  const MapView = isMapbox ? MapViewMapbox : MapViewMaplibre
+
+  if (isMapbox && !mapboxToken) {
     return (
       <div className="flex items-center justify-center h-screen">
         <p className="text-red-500">Mapbox token is not configured</p>
@@ -522,96 +625,19 @@ export default function MapContainer() {
         onTagsUpdated={bumpListTagRefresh}
       />
 
-      <MapGL
-        mapboxAccessToken={mapboxToken}
-        initialViewState={defaultViewState}
-        style={{ width: '100%', height: '100%' }}
-        mapStyle="mapbox://styles/mapbox/streets-v12"
-        onClick={() => {
-          clearDiscovery()
-          if (selectedPlaceId) {
-            setPlaceParam(null)
-          }
-        }}
-        onMoveEnd={(evt) => {
-          if (typeof window === 'undefined') return
-          const { longitude, latitude, zoom, bearing, pitch } = evt.viewState
-          window.localStorage.setItem(
-            viewStorageKey,
-            JSON.stringify({ longitude, latitude, zoom, bearing, pitch })
-          )
-          const map = mapRef.current
-          if (map) {
-            const bounds = map.getBounds()
-            const center = bounds.getCenter()
-            const radiusMeters = center.distanceTo(bounds.getNorthEast())
-            setSearchBias({
-              lat: center.lat,
-              lng: center.lng,
-              radiusMeters,
-            })
-          }
-        }}
+      <MapView
         ref={mapRef}
-      >
-        {ghostLocation ? (
-          <GhostMarker
-            lng={ghostLocation.lng}
-            lat={ghostLocation.lat}
-          />
-        ) : null}
-
-        {places.map((place) => {
-          const isFocusedMarker =
-            selectedPlaceId === place.id ||
-            focusedListPlaceId === place.id
-          return (
-            <Marker
-              key={place.id}
-              longitude={place.lng}
-              latitude={place.lat}
-            >
-            <button
-              type="button"
-              className={`cursor-pointer transition-opacity ${
-                (activeListPlaceIds.length &&
-                  !activeListPlaceIdSet.has(place.id)) ||
-                (activeListTypeFilters.length &&
-                  !activeListTypeFilterSet.has(place.category))
-                  ? 'opacity-30'
-                  : 'opacity-100'
-              }`}
-              onClick={(event) => {
-                event.preventDefault()
-                event.stopPropagation()
-                const native = event.nativeEvent as MouseEvent
-                if (native?.stopImmediatePropagation) {
-                  native.stopImmediatePropagation()
-                }
-                if (native?.stopPropagation) {
-                  native.stopPropagation()
-                }
-                if (activeListId && activeListPlaceIdSet.has(place.id)) {
-                  setDrawerOpen(true)
-                  setFocusedListPlaceId(place.id)
-                  setPlaceParam(place.id)
-                  return
-                }
-                setFocusedListPlaceId(null)
-                setPlaceParam(place.id)
-              }}
-              aria-label={`Open ${place.name}`}
-            >
-              <img
-                src={getCategoryIcon(place.category)}
-                alt={place.category}
-                className={`w-6 h-6 ${isFocusedMarker ? PLACE_ICON_GLOW : ''}`}
-              />
-            </button>
-            </Marker>
-          )
-        })}
-      </MapGL>
+        mapboxAccessToken={isMapbox ? mapboxToken : undefined}
+        initialViewState={defaultViewState}
+        mapStyle={mapStyle}
+        onMapClick={handleMapClick}
+        onMoveEnd={handleMoveEnd}
+        places={places}
+        ghostLocation={ghostLocation}
+        onPlaceClick={handlePlaceClick}
+        isPlaceDimmed={isPlaceDimmed}
+        isPlaceFocused={isPlaceFocused}
+      />
     </div>
   )
 }

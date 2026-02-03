@@ -9,7 +9,7 @@
 ## 🧠 Active Context
 - Current Phase: The Interactive Planner (Birthday Cake)
 - Active Epic: P2-E4 Map-First List Context (UI/UX polish)
-- Immediate Blocker: None. Next slice: MapLibre feasibility spike (flag + renderer split + provider-agnostic bounds), then return to Slate Glass overlay polish while keeping the place drawer offset invariant.
+- Immediate Blocker: None. Next slice: Optional PMTiles wiring + MapLibre style refinement, then return to Slate Glass overlay polish while keeping the place drawer offset invariant.
 - Planned (Phase 2): P2-E3 List Workspace + Tags (per-place tags + multi-list add/remove).
 - Planned (Phase 2): P2-E4 Map-First List Context (drawer overlay, URL-driven place drawer, search bias, default view).
 
@@ -24,13 +24,13 @@
 - [x] MapLibre feasibility note (token gating + mapbox entrypoint implications) captured in docs or roadmap.
 
 ## 🧭 MapLibre Feasibility Plan (Tracking)
-- [ ] Add provider flag (`NEXT_PUBLIC_MAP_PROVIDER=mapbox|maplibre`) and make token gating provider-aware.
-- [ ] Split renderers: `MapView.mapbox.tsx` / `MapView.maplibre.tsx` with `forwardRef` to preserve `mapRef`.
-- [ ] Move all Marker rendering (including GhostMarker) into the renderer to avoid mixed providers.
-- [ ] Make bounds + radius calculations provider-agnostic (remove `LngLatBounds` + `distanceTo`).
-- [ ] Add minimal MapLibre style JSON and wire the MapLibre renderer.
+- [x] Add provider flag (`NEXT_PUBLIC_MAP_PROVIDER=mapbox|maplibre`) and make token gating provider-aware.
+- [x] Split renderers: `MapView.mapbox.tsx` / `MapView.maplibre.tsx` with `forwardRef` to preserve `mapRef`.
+- [x] Move all Marker rendering (including GhostMarker) into the renderer to avoid mixed providers.
+- [x] Make bounds + radius calculations provider-agnostic (remove `LngLatBounds` + `distanceTo`).
+- [x] Add minimal MapLibre style JSON and wire the MapLibre renderer.
 - [ ] Optional: PMTiles protocol wiring + pmtiles style JSON for staged assets.
-- [ ] Document optional MapLibre Playwright run in `docs/PLAYWRIGHT.md`.
+- [x] Document optional MapLibre Playwright run in `docs/PLAYWRIGHT.md`.
 
 ## 🗺️ Roadmap Visualization
 
