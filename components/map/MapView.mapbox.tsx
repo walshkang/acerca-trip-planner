@@ -1,6 +1,6 @@
 'use client'
 
-import { forwardRef } from 'react'
+import { forwardRef, useEffect, useState } from 'react'
 import MapGL, { Layer, Marker, Source } from 'react-map-gl/mapbox'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import { getCategoryIcon } from '@/lib/icons/mapping'
@@ -121,12 +121,23 @@ const MapViewMapbox = forwardRef<MapViewRef, MapViewProps>(function MapViewMapbo
     transitLinesUrl,
     transitStationsUrl,
     transitBeforeId,
+    markerIconClassName = '',
+    styleKey,
   },
   ref
 ) {
   const showStations = showTransit && showTransitStations
   const transitLines = useGeoJson(transitLinesUrl, showTransit)
   const transitStations = useGeoJson(transitStationsUrl, showStations)
+  const [styleReady, setStyleReady] = useState(false)
+  const transitLinesKey = styleKey ? `transit-lines-${styleKey}` : 'transit-lines'
+  const transitStationsKey = styleKey
+    ? `transit-stations-${styleKey}`
+    : 'transit-stations'
+
+  useEffect(() => {
+    setStyleReady(false)
+  }, [mapStyle])
 
   return (
     <MapGL
@@ -137,26 +148,32 @@ const MapViewMapbox = forwardRef<MapViewRef, MapViewProps>(function MapViewMapbo
       mapStyle={mapStyle}
       onClick={onMapClick}
       onMoveEnd={onMoveEnd}
+      onLoad={() => setStyleReady(true)}
+      onStyleData={() => setStyleReady(true)}
     >
-      {showTransit && transitLines ? (
+      {styleReady && showTransit && transitLines ? (
         <Source
+          key={transitLinesKey}
           id="transit-lines"
           type="geojson"
           data={transitLines as any}
         >
           <Layer
+            key={`${transitLinesKey}-layer`}
             {...transitLineLayer}
             beforeId={transitBeforeId}
           />
         </Source>
       ) : null}
-      {showStations && transitStations ? (
+      {styleReady && showStations && transitStations ? (
         <Source
+          key={transitStationsKey}
           id="transit-stations"
           type="geojson"
           data={transitStations as any}
         >
           <Layer
+            key={`${transitStationsKey}-layer`}
             {...transitStationLayer}
             beforeId={transitBeforeId}
           />
@@ -210,7 +227,7 @@ const MapViewMapbox = forwardRef<MapViewRef, MapViewProps>(function MapViewMapbo
               <img
                 src={getCategoryIcon(place.category)}
                 alt={place.category}
-                className={`w-6 h-6 ${isFocusedMarker ? PLACE_ICON_GLOW : ''}`}
+                className={`w-6 h-6 ${markerIconClassName} ${isFocusedMarker ? PLACE_ICON_GLOW : ''}`}
               />
             </button>
           </Marker>

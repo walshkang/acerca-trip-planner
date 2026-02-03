@@ -111,6 +111,9 @@ export default function MapContainer() {
       ? '/map/style.maplibre.dark.json'
       : '/map/style.maplibre.json'
   }, [isMapbox, mapStyleMode])
+  const styleKey = `${mapProvider}-${mapStyleMode}`
+  const markerIconClassName =
+    mapStyleMode === 'dark' ? 'filter invert brightness-110' : ''
   const canRenderMap = isMapbox ? Boolean(mapboxToken) : true
   const transitLinesUrl = '/map/overlays/nyc_subway_lines.geojson'
   const transitStationsUrl = '/map/overlays/nyc_subway_stations.geojson'
@@ -724,6 +727,8 @@ export default function MapContainer() {
         transitLinesUrl={transitLinesUrl}
         transitStationsUrl={transitStationsUrl}
         transitBeforeId={transitBeforeId}
+        markerIconClassName={markerIconClassName}
+        styleKey={styleKey}
       />
     </div>
   )
