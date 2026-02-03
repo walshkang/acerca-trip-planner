@@ -1,6 +1,8 @@
-# Playwright E2E (local workflow)
+# Playwright E2E (paused)
 
-This repo uses Playwright for browser-level smoke checks. The tests assume you are logged in.
+Playwright is currently paused to avoid test data churn. The seeded endpoints
+and helper scripts have been removed. If we revisit Playwright, we can re-add
+the seeding flow and update these instructions.
 
 ## 1) Install browsers (one-time)
 ```sh
@@ -19,41 +21,13 @@ npx playwright codegen http://localhost:3000 --save-storage=playwright/.auth/use
 
 Tip: If you want to re-auth, delete that file and run the command again.
 
-## 2.5) Configure the seed token (required for E2E seeding)
-Playwright seeds data via `/api/test/seed`. Set a token in your dev env:
-
-```
-export PLAYWRIGHT_SEED_TOKEN=local-playwright
-```
-
-Also ensure your server has `SUPABASE_SERVICE_ROLE_KEY` set (used for seeding).
-
-Seed data is created under a dedicated test account so it does not pollute your
-personal lists. Set the seed credentials in your dev env:
-
-```
-export PLAYWRIGHT_SEED_EMAIL=playwright@example.com
-export PLAYWRIGHT_SEED_PASSWORD=replace-with-a-strong-password
-```
-
-If you hit email rate limits, you can generate a magic login link for the seed
-user without sending email:
-
-```
-npx tsx scripts/generate-seed-login-link.ts
-```
-
-Alternatively, you can generate the Playwright storage state directly via
-password auth (no email, no browser):
-
-```
-npx tsx scripts/generate-playwright-storage.ts
-```
-
 ## 3) Run tests
 ```sh
 npm run test:e2e
 ```
+
+Note: these tests are currently unmaintained and may fail until the seeding
+flow is restored.
 
 Useful variants:
 - UI mode (interactive): `npm run test:e2e:ui`
