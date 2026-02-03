@@ -25,7 +25,6 @@ type Props = {
 type ListsResponse = {
   list_ids: string[]
   list_items?: Array<{ list_id: string; tags?: string[] | null }>
-  user_tags?: string[]
 }
 
 export default function PlaceDrawer({
@@ -42,7 +41,6 @@ export default function PlaceDrawer({
   const [listItems, setListItems] = useState<
     Array<{ id: string; list_id: string; tags: string[] }>
   >([])
-  const [userTags, setUserTags] = useState<string[]>([])
   const [tagInput, setTagInput] = useState('')
   const [tagStatus, setTagStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>(
     'idle'
@@ -95,7 +93,6 @@ export default function PlaceDrawer({
           tags: Array.isArray(item.tags) ? item.tags : [],
         }))
       )
-      setUserTags((json?.user_tags ?? []) as string[])
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Request failed')
     } finally {
@@ -107,7 +104,6 @@ export default function PlaceDrawer({
     if (!open || !place) {
       setListIds([])
       setListItems([])
-      setUserTags([])
       setTagInput('')
       setTagStatus('idle')
       setTagError(null)
@@ -291,24 +287,6 @@ export default function PlaceDrawer({
           <p className="text-[11px] text-slate-400">
             Add this place to the active list to edit list tags.
           </p>
-        ) : null}
-
-        {userTags.length ? (
-          <div className="space-y-1">
-            <p className="text-[11px] font-semibold text-slate-300">
-              Place tags
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {userTags.map((tag) => (
-                <span
-                  key={`user-tag:${tag}`}
-                  className="rounded-full border border-white/10 px-2 py-0.5 text-[10px] text-slate-200"
-                >
-                  {tag}
-                </span>
-              ))}
-            </div>
-          </div>
         ) : null}
 
         <PlaceListMembershipEditor

@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import PlaceUserMetaForm from '@/components/places/PlaceUserMetaForm'
 import PlaceListMembershipEditor from '@/components/places/PlaceListMembershipEditor'
+import PlaceListTagsEditor from '@/components/places/PlaceListTagsEditor'
 import { getEnrichmentById } from '@/lib/server/places/getPlaceEnrichment'
 import { assertValidWikiCuratedData, type WikiCuratedData } from '@/lib/enrichment/wikiCurated'
 
@@ -10,20 +11,6 @@ type NormalizedData = {
   energy?: string | null
   tags: string[]
   vibe?: string | null
-}
-
-function mergeTags(primary: string[], secondary: string[]) {
-  const merged: string[] = []
-  const seen = new Set<string>()
-  const addTag = (tag: string) => {
-    const key = tag.trim().toLowerCase()
-    if (!key || seen.has(key)) return
-    seen.add(key)
-    merged.push(tag)
-  }
-  primary.forEach(addTag)
-  secondary.forEach(addTag)
-  return merged
 }
 
 function safeWikiCurated(v: unknown): WikiCuratedData | null {
@@ -62,7 +49,7 @@ export default async function PlaceDetailPage({
   const { data: place, error } = await supabase
     .from('places')
     .select(
-      'id, name, address, category, energy, user_notes, user_tags, enrichment_id, created_at, updated_at'
+      'id, name, address, category, energy, user_notes, enrichment_id, created_at, updated_at'
     )
     .eq('id', params.id)
     .eq('user_id', user.id)
@@ -84,6 +71,7 @@ export default async function PlaceDetailPage({
   }>)
     .map((row) => ({
       list: row.lists,
+      itemId: row.id,
       tags: Array.isArray(row.tags) ? row.tags : [],
     }))
     .filter(
@@ -91,6 +79,7 @@ export default async function PlaceDetailPage({
         row
       ): row is {
         list: { id: string; name: string; is_default: boolean }
+        itemId: string
         tags: string[]
       } => Boolean(row.list)
     )
@@ -102,9 +91,6 @@ export default async function PlaceDetailPage({
 
   const normalized = safeNormalizedData(enrichment?.normalized_data ?? null)
   const wikiCurated = safeWikiCurated(enrichment?.curated_data ?? null)
-  const userTags = Array.isArray(place.user_tags) ? place.user_tags : []
-  const enrichedTags = normalized?.tags ?? []
-  const combinedTags = mergeTags(enrichedTags, userTags)
 
   const rawSources = enrichment?.raw_sources as any
   const fallbackSummary =
@@ -143,50 +129,30 @@ export default async function PlaceDetailPage({
         </div>
 
         <section className="glass-panel rounded-lg p-4">
-          <div className="space-y-2">
-            <div>
-              <p className="text-[11px] font-semibold text-slate-300">Type</p>
-              <p className="text-[11px] text-slate-400">
-                The fixed category that sets this place&apos;s map icon.
-              </p>
-              <div className="mt-2 flex flex-wrap gap-2">
-                <span className="rounded-full border border-white/10 px-3 py-1 text-xs text-slate-100">
-                  {place.category}
-                </span>
-                {place.energy ? (
-                  <span className="rounded-full border border-white/10 px-3 py-1 text-xs text-slate-200">
-                    Energy: {place.energy}
+            <div className="space-y-2">
+              <div>
+                <p className="text-[11px] font-semibold text-slate-300">Type</p>
+                <p className="text-[11px] text-slate-400">
+                  The fixed category that sets this place&apos;s map icon.
+                </p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <span className="rounded-full border border-white/10 px-3 py-1 text-xs text-slate-100">
+                    {place.category}
                   </span>
-                ) : null}
-                {normalized?.vibe ? (
-                  <span className="rounded-full border border-white/10 px-3 py-1 text-xs text-slate-200">
-                    Vibe: {normalized.vibe}
-                  </span>
-                ) : null}
+                  {place.energy ? (
+                    <span className="rounded-full border border-white/10 px-3 py-1 text-xs text-slate-200">
+                      Energy: {place.energy}
+                    </span>
+                  ) : null}
+                  {normalized?.vibe ? (
+                    <span className="rounded-full border border-white/10 px-3 py-1 text-xs text-slate-200">
+                      Vibe: {normalized.vibe}
+                    </span>
+                  ) : null}
+                </div>
               </div>
             </div>
-
-            <div>
-              <p className="text-[11px] font-semibold text-slate-300">Tags</p>
-              {combinedTags.length ? (
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {combinedTags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="rounded-full border border-white/10 bg-slate-900/60 px-2 py-0.5 text-[11px] text-slate-200"
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              ) : (
-                <p className="mt-2 text-[11px] text-slate-400">
-                  No tags yet.
-                </p>
-              )}
-            </div>
-          </div>
-        </section>
+          </section>
 
         {showWiki ? (
           <section className="glass-panel rounded-lg p-4">
@@ -239,7 +205,6 @@ export default async function PlaceDetailPage({
             <PlaceUserMetaForm
               placeId={place.id}
               initialNotes={place.user_notes ?? null}
-              initialTags={place.user_tags ?? null}
               tone="dark"
             />
           </div>
@@ -254,41 +219,9 @@ export default async function PlaceDetailPage({
               tone="dark"
             />
           </div>
-          {listEntries.length ? (
-            <div className="mt-4 space-y-3">
-              {listEntries.map((entry) => (
-                <div
-                  key={entry.list.id}
-                  className="rounded-md border border-white/10 px-3 py-2"
-                >
-                  <div className="flex items-center gap-2">
-                    <p className="text-xs font-semibold text-slate-100">
-                      {entry.list.name}
-                    </p>
-                    {entry.list.is_default ? (
-                      <span className="rounded-full border border-white/10 px-2 py-0.5 text-[10px] text-slate-400">
-                        Default
-                      </span>
-                    ) : null}
-                  </div>
-                  {entry.tags.length ? (
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {entry.tags.map((tag) => (
-                        <span
-                          key={`${entry.list.id}:${tag}`}
-                          className="rounded-full border border-white/10 px-2 py-0.5 text-[11px] text-slate-200"
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="mt-2 text-xs text-slate-400">No list tags yet.</p>
-                  )}
-                </div>
-              ))}
-            </div>
-          ) : null}
+          <div className="mt-4">
+            <PlaceListTagsEditor entries={listEntries} tone="dark" />
+          </div>
         </section>
       </div>
     </main>

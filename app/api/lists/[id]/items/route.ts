@@ -1,11 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { distinctTagsFromItems, normalizeTagList } from '@/lib/lists/tags'
+import { distinctTagsFromItems, normalizeTag, normalizeTagList } from '@/lib/lists/tags'
 
 const LIST_FIELDS =
   'id, name, description, is_default, created_at, start_date, end_date, timezone'
 const ITEM_FIELDS =
-  'id, created_at, scheduled_date, scheduled_start_time, scheduled_end_time, scheduled_order, completed_at, tags, place:places(id, name, category, address, created_at, user_notes, user_tags)'
+  'id, created_at, scheduled_date, scheduled_start_time, scheduled_end_time, scheduled_order, completed_at, tags, place:places(id, name, category, address, created_at, user_notes)'
+
+const TYPE_TAG_BLOCKLIST = new Set([
+  'food',
+  'coffee',
+  'bar',
+  'bars',
+  'sights',
+  'sight',
+  'shop',
+  'shopping',
+  'activity',
+  'activities',
+])
 
 function parseIntParam(value: string | null, fallback: number) {
   if (!value) return fallback
@@ -154,12 +167,18 @@ export async function POST(
         .single()
 
       const raw = enrichment?.normalized_data as
-        | { tags?: unknown }
+        | { tags?: unknown; category?: unknown }
         | null
         | undefined
       const normalizedFromEnrichment = normalizeTagList(raw?.tags)
       if (normalizedFromEnrichment?.length) {
-        seedTags = normalizedFromEnrichment
+        const normalizedCategory =
+          typeof raw?.category === 'string' ? normalizeTag(raw.category) : null
+        seedTags = normalizedFromEnrichment.filter((tag) => {
+          if (TYPE_TAG_BLOCKLIST.has(tag)) return false
+          if (normalizedCategory && tag === normalizedCategory) return false
+          return true
+        })
       }
     }
 

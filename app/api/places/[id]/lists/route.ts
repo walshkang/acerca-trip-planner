@@ -16,7 +16,7 @@ export async function GET(
 
     const { data: place, error: placeError } = await supabase
       .from('places')
-      .select('id, user_tags')
+      .select('id')
       .eq('id', params.id)
       .eq('user_id', user.id)
       .single()
@@ -50,7 +50,6 @@ export async function GET(
     return NextResponse.json({
       list_ids: listIds,
       list_items: listItems,
-      user_tags: Array.isArray(place.user_tags) ? place.user_tags : [],
     })
   } catch (error: unknown) {
     return NextResponse.json(

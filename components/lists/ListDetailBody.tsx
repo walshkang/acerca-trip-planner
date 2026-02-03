@@ -24,7 +24,6 @@ export type PlaceSummary = {
   address: string | null
   created_at: string
   user_notes: string | null
-  user_tags: string[] | null
 }
 
 export type ListItemRow = {
@@ -232,9 +231,6 @@ export default function ListDetailBody({
   const bodyText = isDark ? 'text-slate-300' : 'text-gray-600'
   const mutedText = isDark ? 'text-slate-400' : 'text-gray-500'
   const chipClass = isDark ? 'border-white/10 text-slate-300' : 'border-gray-200 text-gray-500'
-  const userTagClass = isDark
-    ? 'border-white/10 text-slate-200'
-    : 'border-gray-200 text-gray-600'
   const typeInactiveClass = isDark
     ? 'border-white/20 text-slate-200 hover:border-white/40'
     : 'border-gray-300 text-gray-700'
@@ -472,23 +468,6 @@ export default function ListDetailBody({
                   onTagsUpdate={onTagsUpdate}
                   tone={tone}
                 />
-                {place.user_tags?.length ? (
-                  <div className="mt-2">
-                    <p className={`text-[11px] font-semibold ${mutedText}`}>
-                      Place tags
-                    </p>
-                    <div className="mt-1 flex flex-wrap gap-2">
-                      {place.user_tags.map((tag) => (
-                        <span
-                          key={`${place.id}-tag-${tag}`}
-                          className={`rounded-full border px-2 py-0.5 text-[10px] ${userTagClass}`}
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                ) : null}
               </div>
             )
           })}
