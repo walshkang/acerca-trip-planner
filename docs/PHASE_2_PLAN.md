@@ -193,6 +193,7 @@ Notes:
 - Add a minimal MapLibre style JSON for the spike; PMTiles integration is optional after base render.
 - Document the optional Playwright run with `NEXT_PUBLIC_MAP_PROVIDER=maplibre`.
 - Acceptance: MapLibre mode loads without Mapbox token; marker click opens drawer and updates `?place=`.
+- Status: Done (2026-02-03).
 
 ### Map Customization (planned)
 
@@ -202,6 +203,7 @@ Notes:
 - Toggle lives inside the right overlay (pointer-events-auto) and increases the measured inspector height by design.
 - Lazy-load GeoJSON on first toggle; cache after load to keep initial map boot fast.
 - Acceptance: marker click still opens the place drawer with transit enabled (Mapbox + MapLibre).
+- Status: Done (2026-02-03).
 
 #### Map Style Selection (map-only)
 - Map style changes do not affect the dark glass UI (map-only selection).
@@ -212,6 +214,7 @@ Notes:
 #### Neighborhood Boundaries (NYC)
 - Start as static GeoJSON under `public/map/overlays/` and render as runtime overlay layers.
 - Optional future slice: DB-backed ingestion if needed (separate schema + RLS).
+- Status: Planned.
 
 ## Sequencing (recommended)
 0. UI/UX Track A: apply Slate Glass overlays (Omnibox, inspector, list/placedrawers, pills) without changing layout invariants. (done)
@@ -220,9 +223,9 @@ Notes:
 3. Search location bias using map center + radius. (done)
 4. Default map view policy (active list → last place → saved viewport). (done)
 5. Place drawer URL state + route reconciliation (done).
-6. MapLibre feasibility spike (flag + renderer split + provider-agnostic bounds + minimal style).
-7. Transit overlay (NYC GeoJSON, runtime layers, toggle in right overlay).
-8. Map style selection (map-only dark style).
+6. MapLibre feasibility spike (flag + renderer split + provider-agnostic bounds + minimal style). (done)
+7. Transit overlay (NYC GeoJSON, runtime layers, toggle in right overlay). (done)
+8. Map style selection (map-only dark style). (done)
 9. Neighborhood boundaries (NYC GeoJSON, runtime layers).
 10. List add flow: local search + add with tags, list drawer create list. (done)
 11. Tagging UI + API updates (P2-E3) including add-time tag seeding. (done)

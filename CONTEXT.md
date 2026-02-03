@@ -9,7 +9,7 @@
 ## 🧠 Active Context
 - Current Phase: The Interactive Planner (Birthday Cake)
 - Active Epic: P2-E4 Map-First List Context (UI/UX polish)
-- Immediate Blocker: None. Next slice: NYC transit overlay (GeoJSON runtime layers), then optional PMTiles wiring + MapLibre style refinement.
+- Immediate Blocker: None. Next slice: NYC neighborhood boundaries overlay (GeoJSON runtime layer), then optional PMTiles wiring + MapLibre refinement.
 - Planned (Phase 2): P2-E3 List Workspace + Tags (per-place tags + multi-list add/remove).
 - Planned (Phase 2): P2-E4 Map-First List Context (drawer overlay, URL-driven place drawer, search bias, default view).
 
