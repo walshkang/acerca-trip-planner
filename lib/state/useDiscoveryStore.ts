@@ -13,6 +13,10 @@ export type DiscoverySearchResult = {
   place_id: string
   name: string | null
   address: string | null
+  lat?: number | null
+  lng?: number | null
+  neighborhood?: string | null
+  borough?: string | null
 }
 
 export type DiscoveryEnrichment = {

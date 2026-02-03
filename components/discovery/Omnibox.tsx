@@ -120,6 +120,12 @@ export default function Omnibox() {
                         {result.address}
                       </span>
                     ) : null}
+                    {result.neighborhood ? (
+                      <span className="text-[11px] text-slate-400">
+                        {result.neighborhood}
+                        {result.borough ? ` · ${result.borough}` : ''}
+                      </span>
+                    ) : null}
                   </button>
                 )
               })}

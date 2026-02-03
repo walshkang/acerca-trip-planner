@@ -5,6 +5,7 @@ import PlaceListMembershipEditor from '@/components/places/PlaceListMembershipEd
 import PlaceListTagsEditor from '@/components/places/PlaceListTagsEditor'
 import { getEnrichmentById } from '@/lib/server/places/getPlaceEnrichment'
 import { assertValidWikiCuratedData, type WikiCuratedData } from '@/lib/enrichment/wikiCurated'
+import { lookupNeighborhood } from '@/lib/geo/nycNeighborhoods'
 
 type NormalizedData = {
   category: string
@@ -49,7 +50,7 @@ export default async function PlaceDetailPage({
   const { data: place, error } = await supabase
     .from('places')
     .select(
-      'id, name, address, category, energy, user_notes, enrichment_id, created_at, updated_at'
+      'id, name, address, category, energy, user_notes, enrichment_id, created_at, updated_at, lat, lng'
     )
     .eq('id', params.id)
     .eq('user_id', user.id)
@@ -105,6 +106,10 @@ export default async function PlaceDetailPage({
   const summary = wikiCurated?.summary ?? fallbackSummary
   const thumbnailUrl = wikiCurated?.thumbnail_url ?? fallbackThumbnail
   const showWiki = place.category === 'Sights'
+  const neighborhood =
+    typeof place.lat === 'number' && typeof place.lng === 'number'
+      ? lookupNeighborhood(place.lat, place.lng)
+      : null
 
   return (
     <main className="min-h-screen bg-slate-950 px-6 py-8 text-slate-100">
@@ -116,6 +121,12 @@ export default async function PlaceDetailPage({
             </a>
             <h1 className="mt-2 text-2xl font-semibold">{place.name}</h1>
             <p className="mt-1 text-sm text-slate-300">{place.address}</p>
+            {neighborhood ? (
+              <p className="mt-1 text-xs text-slate-400">
+                {neighborhood.name}
+                {neighborhood.borough ? ` · ${neighborhood.borough}` : ''}
+              </p>
+            ) : null}
           </div>
 
           <form action="/auth/sign-out" method="post">

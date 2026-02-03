@@ -25,6 +25,12 @@ export interface GooglePlacesTextCandidate {
   place_id: string
   name?: string
   formatted_address?: string
+  geometry?: {
+    location?: {
+      lat: number
+      lng: number
+    }
+  }
   [key: string]: any
 }
 
@@ -401,7 +407,7 @@ export async function searchGooglePlaces(
   input: string,
   options?: { locationBias?: GooglePlacesLocationBias }
 ): Promise<GooglePlacesTextCandidate[]> {
-  const fields = ['place_id', 'name', 'formatted_address'].join(',')
+  const fields = ['place_id', 'name', 'formatted_address', 'geometry'].join(',')
   const { status, candidates, errorMessage } = await fetchFindPlaceCandidates(
     input,
     fields,

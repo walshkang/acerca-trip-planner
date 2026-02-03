@@ -9,6 +9,8 @@ export type PlaceDrawerSummary = {
   id: string
   name: string
   category: string
+  lat?: number | null
+  lng?: number | null
 }
 
 type Props = {
@@ -48,6 +50,13 @@ export default function PlaceDrawer({
   const [tagError, setTagError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [neighborhood, setNeighborhood] = useState<{
+    name: string
+    borough?: string | null
+  } | null>(null)
+  const [neighborhoodError, setNeighborhoodError] = useState<string | null>(
+    null
+  )
 
   const activeListItem = useMemo(() => {
     if (!activeListId) return null
@@ -108,11 +117,52 @@ export default function PlaceDrawer({
       setTagStatus('idle')
       setTagError(null)
       setError(null)
+      setNeighborhood(null)
+      setNeighborhoodError(null)
       return
     }
 
     fetchMembership()
   }, [fetchMembership, open, place, tagsRefreshKey])
+
+  useEffect(() => {
+    if (
+      !open ||
+      place?.lat == null ||
+      place?.lng == null ||
+      !Number.isFinite(place.lat) ||
+      !Number.isFinite(place.lng)
+    ) {
+      setNeighborhood(null)
+      setNeighborhoodError(null)
+      return
+    }
+    let cancelled = false
+    setNeighborhoodError(null)
+    fetch(`/api/neighborhoods/lookup?lat=${place.lat}&lng=${place.lng}`)
+      .then((res) => res.json())
+      .then((json) => {
+        if (cancelled) return
+        if (json?.neighborhood) {
+          setNeighborhood({
+            name: json.neighborhood,
+            borough: json.borough ?? null,
+          })
+        } else {
+          setNeighborhood(null)
+        }
+      })
+      .catch((err) => {
+        if (cancelled) return
+        setNeighborhood(null)
+        setNeighborhoodError(
+          err instanceof Error ? err.message : 'Neighborhood lookup failed'
+        )
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [open, place?.lat, place?.lng])
 
   if (!open || !place) return null
 
@@ -191,6 +241,15 @@ export default function PlaceDrawer({
         <div>
           <p className="text-[11px] uppercase tracking-wide text-slate-400">Place</p>
           <h2 className="text-sm font-semibold text-slate-100">{place.name}</h2>
+          {neighborhood ? (
+            <p className="text-[11px] text-slate-400">
+              {neighborhood.name}
+              {neighborhood.borough ? ` · ${neighborhood.borough}` : ''}
+            </p>
+          ) : null}
+          {neighborhoodError ? (
+            <p className="text-[11px] text-amber-300">{neighborhoodError}</p>
+          ) : null}
         </div>
         <button
           type="button"

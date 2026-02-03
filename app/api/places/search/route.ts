@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { searchGooglePlaces } from '@/lib/enrichment/sources'
+import { lookupNeighborhood } from '@/lib/geo/nycNeighborhoods'
 
 const DEFAULT_LIMIT = 6
 const MAX_LIMIT = 10
@@ -59,11 +60,24 @@ export async function GET(request: NextRequest) {
 
     const candidates = await searchGooglePlaces(query, locationBias)
 
-    const results = candidates.slice(0, limit).map((candidate) => ({
-      place_id: candidate.place_id,
-      name: candidate.name ?? null,
-      address: candidate.formatted_address ?? null,
-    }))
+    const results = candidates.slice(0, limit).map((candidate) => {
+      const lat = candidate.geometry?.location?.lat ?? null
+      const lng = candidate.geometry?.location?.lng ?? null
+      const neighborhood =
+        typeof lat === 'number' && typeof lng === 'number'
+          ? lookupNeighborhood(lat, lng)
+          : null
+
+      return {
+        place_id: candidate.place_id,
+        name: candidate.name ?? null,
+        address: candidate.formatted_address ?? null,
+        lat,
+        lng,
+        neighborhood: neighborhood?.name ?? null,
+        borough: neighborhood?.borough ?? null,
+      }
+    })
 
     return NextResponse.json({ query, results })
   } catch (error: unknown) {
