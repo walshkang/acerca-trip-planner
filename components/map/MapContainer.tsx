@@ -47,6 +47,9 @@ export default function MapContainer() {
   const [activeListItems, setActiveListItems] = useState<
     Array<{ id: string; list_id: string; place_id: string; tags: string[] }>
   >([])
+  const [activeListTypeFilters, setActiveListTypeFilters] = useState<
+    CategoryEnum[]
+  >([])
   const [focusedListPlaceId, setFocusedListPlaceId] = useState<string | null>(
     null
   )
@@ -127,6 +130,10 @@ export default function MapContainer() {
   const activeListPlaceIdSet = useMemo(
     () => new Set(activeListPlaceIds),
     [activeListPlaceIds]
+  )
+  const activeListTypeFilterSet = useMemo(
+    () => new Set(activeListTypeFilters),
+    [activeListTypeFilters]
   )
   const placeIdSet = useMemo(
     () => new Set(places.map((place) => place.id)),
@@ -492,6 +499,7 @@ export default function MapContainer() {
           if (id) setDrawerOpen(true)
         }}
         onPlaceIdsChange={handleActiveListPlaceIdsChange}
+        onActiveTypeFiltersChange={setActiveListTypeFilters}
         onActiveListItemsChange={handleActiveListItemsChange}
         focusedPlaceId={focusedListPlaceId}
         onPlaceSelect={(placeId) => {
@@ -566,8 +574,10 @@ export default function MapContainer() {
             <button
               type="button"
               className={`cursor-pointer transition-opacity ${
-                activeListPlaceIds.length &&
-                !activeListPlaceIdSet.has(place.id)
+                (activeListPlaceIds.length &&
+                  !activeListPlaceIdSet.has(place.id)) ||
+                (activeListTypeFilters.length &&
+                  !activeListTypeFilterSet.has(place.category))
                   ? 'opacity-30'
                   : 'opacity-100'
               }`}

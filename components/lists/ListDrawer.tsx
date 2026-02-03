@@ -18,6 +18,7 @@ type Props = {
   activeListId: string | null
   onActiveListChange: (id: string | null) => void
   onPlaceIdsChange: (placeIds: string[]) => void
+  onActiveTypeFiltersChange?: (types: CategoryEnum[]) => void
   onPlaceSelect: (placeId: string) => void
   onActiveListItemsChange?: (
     items: Array<{ id: string; list_id: string; place_id: string; tags: string[] }>
@@ -43,6 +44,7 @@ export default function ListDrawer({
   activeListId,
   onActiveListChange,
   onPlaceIdsChange,
+  onActiveTypeFiltersChange,
   onPlaceSelect,
   onActiveListItemsChange,
   focusedPlaceId = null,
@@ -180,6 +182,10 @@ export default function ListDrawer({
     setActiveTagFilters([])
     setActiveTypeFilters([])
   }, [activeListId])
+
+  useEffect(() => {
+    onActiveTypeFiltersChange?.(activeTypeFilters)
+  }, [activeTypeFilters, onActiveTypeFiltersChange])
 
   useEffect(() => {
     if (!items.length) {

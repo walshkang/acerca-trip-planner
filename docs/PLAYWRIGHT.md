@@ -37,6 +37,15 @@ Useful variants:
 - UI mode (interactive): `npm run test:e2e:ui`
 - Debug mode (step through): `npm run test:e2e:debug`
 
+## 3.5) Optional MapLibre run (feasibility)
+Set the provider flag before starting the app server (or in `.env.local`):
+
+```sh
+export NEXT_PUBLIC_MAP_PROVIDER=maplibre
+```
+
+Then run Playwright as usual. This keeps the default Mapbox path unchanged.
+
 ## 4) Common workflows
 ### Record a new flow quickly
 ```sh

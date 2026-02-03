@@ -168,12 +168,14 @@ Notes:
 - Increase result limit up to max 10 without extra API calls; larger result sets require Text Search (future).
  - Status: Done (2026-02-02).
 
-### Place Drawer + URL State (remaining)
-- Marker click should open a place drawer without leaving the map. (done)
-- Drawer state is driven from the URL (`/?place=<id>` or shallow `/places/[id]`) to preserve deep links.
+### Place Drawer + URL State (done)
+- Marker click opens the place drawer without leaving the map.
+- Drawer state is driven from the URL (`/?place=<id>`) to preserve deep links.
 - Closing the drawer clears the URL state and returns to the base map route.
-- Approve flow and list detail clicks should update URL state (no navigation away from the map).
-- `/places/[id]` remains valid for direct navigation and resolves to map + drawer (or redirects to map + `?place=`).
+- Back/Forward toggles drawer open/close via URL history.
+- Approve flow and list detail clicks update URL state (no navigation away from the map).
+- `/places/[id]` remains the full detail page (notes/tags + list membership).
+- Status: Done (2026-02-03).
 
 ### Default Map View Policy (done)
 - If `lastActiveListId` is set, fit bounds to that list’s places.
@@ -182,11 +184,15 @@ Notes:
 - Avoid global-scale fitBounds; prefer the active list or last place when clusters are far apart.
  - Status: Done (2026-02-02).
 
-### MapLibre Feasibility (note)
-- Current map uses `react-map-gl/mapbox` with a Mapbox style URL and hard-requires `NEXT_PUBLIC_MAPBOX_TOKEN`.
-- PMTiles assets are staged under `public/map`, but a MapLibre experiment likely requires swapping the map entrypoint
-  (for example `react-map-gl/maplibre`) and revisiting the token gating/early-return behavior.
-- Treat MapLibre as a feasibility slice; document the migration path before making map implementation changes.
+### MapLibre Feasibility (planned)
+- Feature-flag provider (`NEXT_PUBLIC_MAP_PROVIDER=mapbox|maplibre`, default mapbox).
+- Split renderers: `MapView.mapbox.tsx` and `MapView.maplibre.tsx`, both `forwardRef` to preserve `mapRef` behavior.
+- Move all Marker rendering (including GhostMarker) into the renderer to avoid mixed provider imports.
+- Make behavior layer provider-agnostic (remove `mapbox-gl` types; replace `LngLatBounds` + `distanceTo` usage).
+- Make token gating provider-aware: require `NEXT_PUBLIC_MAPBOX_TOKEN` only for Mapbox.
+- Add a minimal MapLibre style JSON for the spike; PMTiles integration is optional after base render.
+- Document the optional Playwright run with `NEXT_PUBLIC_MAP_PROVIDER=maplibre`.
+- Acceptance: MapLibre mode loads without Mapbox token; marker click opens drawer and updates `?place=`.
 
 ## Sequencing (recommended)
 0. UI/UX Track A: apply Slate Glass overlays (Omnibox, inspector, list/placedrawers, pills) without changing layout invariants. (done)
@@ -194,12 +200,13 @@ Notes:
 2. Map drawer overlay + active list selection state. (done)
 3. Search location bias using map center + radius. (done)
 4. Default map view policy (active list → last place → saved viewport). (done)
-5. Place drawer URL state + route reconciliation (remaining).
-6. List add flow: local search + add with tags, list drawer create list. (done)
-7. Tagging UI + API updates (P2-E3) including add-time tag seeding. (done)
-8. Map camera stability + overlay layering + sign-out placement. (done)
-9. Scheduling UI + API updates (P2-E1).
-10. Filter translation + query pipeline (P2-E2).
+5. Place drawer URL state + route reconciliation (done).
+6. MapLibre feasibility spike (flag + renderer split + provider-agnostic bounds + minimal style).
+7. List add flow: local search + add with tags, list drawer create list. (done)
+8. Tagging UI + API updates (P2-E3) including add-time tag seeding. (done)
+9. Map camera stability + overlay layering + sign-out placement. (done)
+10. Scheduling UI + API updates (P2-E1).
+11. Filter translation + query pipeline (P2-E2).
 
 ## Testing & Verification
 - Unit tests for filter schema validation and query builder.
@@ -207,8 +214,8 @@ Notes:
 - UI tests: drag-and-drop updates schedule; tag editing persists.
 - Manual smoke:
   - Open place drawer from marker → URL updates; close clears URL state.
-  - Direct `/places/[id]` opens map + drawer (or redirects to map + `?place=`).
   - Approve from Inspector stays on map and opens drawer via URL state.
   - Switch active list → map remains static on empty list, recenters on non-empty.
   - Search while map is in Hong Kong → results bias to that area.
   - Add/remove list membership → list item appears/disappears without errors.
+  - MapLibre mode (provider flag) loads without Mapbox token; marker click opens drawer and updates `?place=`.

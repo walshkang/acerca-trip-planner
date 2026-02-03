@@ -1,7 +1,7 @@
 {
   "project_name": "AI_Travel_Itinerary_Manager",
   "version": "2.2.0-phase2-defined",
-  "last_updated": "2026-02-02",
+  "last_updated": "2026-02-03",
   "development_principles": [
     "LLMs label and translate intent; deterministic systems retrieve and compute.",
     "Only approved pins are truth (Map is the interface).",
@@ -389,7 +389,8 @@
             "Map shell includes a non-blocking sign-out affordance. (done)",
             "Map marker click focuses the list row and opens the place drawer; list row click pans the map and opens the place drawer. (done)",
             "Focused list row + place drawer share a subtle glow outline for visual linkage. (done)",
-            "MapLibre pmtiles assets staged under public/map for future map style swaps. (done)"
+            "MapLibre pmtiles assets staged under public/map for future map style swaps. (done)",
+            "MapLibre feasibility spike: provider flag + renderer split + provider-agnostic bounds + minimal style (PMTiles optional). (planned)"
           ]
         }
       ]
