@@ -142,6 +142,74 @@ const buildTransitLineCasingLayer = (
   },
 })
 
+const buildNeighborhoodFillLayer = (
+  fillColor: string,
+  fillOpacity: number
+) => ({
+  id: 'neighborhood-boundaries-fill',
+  type: 'fill' as const,
+  source: 'neighborhood-boundaries',
+  paint: {
+    'fill-color': fillColor,
+    'fill-opacity': fillOpacity,
+  },
+})
+
+const buildNeighborhoodOutlineLayer = (
+  outlineColor: string,
+  outlineOpacity: number,
+  outlineWidth: number
+) => ({
+  id: 'neighborhood-boundaries-outline',
+  type: 'line' as const,
+  source: 'neighborhood-boundaries',
+  layout: {
+    'line-join': 'round' as const,
+    'line-cap': 'round' as const,
+  },
+  paint: {
+    'line-color': outlineColor,
+    'line-opacity': outlineOpacity,
+    'line-width': outlineWidth,
+  },
+})
+
+const buildNeighborhoodLabelLayer = (
+  minZoom: number,
+  labelColor: string,
+  labelOpacity: number,
+  haloColor: string,
+  haloWidth: number
+) => ({
+  id: 'neighborhood-boundaries-labels',
+  type: 'symbol' as const,
+  source: 'neighborhood-labels',
+  minzoom: minZoom,
+  layout: {
+    'text-field': ['coalesce', ['get', 'name'], ['get', 'ntaname']],
+    'text-size': [
+      'interpolate',
+      ['linear'],
+      ['zoom'],
+      minZoom,
+      10,
+      minZoom + 2,
+      12,
+      minZoom + 4,
+      14,
+    ],
+    'text-allow-overlap': false,
+    'text-ignore-placement': false,
+    'symbol-placement': 'point' as const,
+  },
+  paint: {
+    'text-color': labelColor,
+    'text-opacity': labelOpacity,
+    'text-halo-color': haloColor,
+    'text-halo-width': haloWidth,
+  },
+})
+
 const transitStationLayer = {
   id: 'transit-stations',
   type: 'circle' as const,
@@ -177,6 +245,21 @@ const MapViewMapbox = forwardRef<MapViewRef, MapViewProps>(function MapViewMapbo
     transitCasingWidth = 4,
     transitCasingColor = '#0f172a',
     transitCasingOpacity = 0.25,
+    showNeighborhoodBoundaries = false,
+    neighborhoodBoundariesUrl,
+    neighborhoodLabelsUrl,
+    neighborhoodBeforeId,
+    neighborhoodFillColor = '#64748b',
+    neighborhoodFillOpacity = 0.08,
+    neighborhoodOutlineColor = '#334155',
+    neighborhoodOutlineOpacity = 0.25,
+    neighborhoodOutlineWidth = 1.2,
+    showNeighborhoodLabels = false,
+    neighborhoodLabelMinZoom = 11.5,
+    neighborhoodLabelColor = '#334155',
+    neighborhoodLabelOpacity = 0.6,
+    neighborhoodLabelHaloColor = '#f8fafc',
+    neighborhoodLabelHaloWidth = 1.25,
     markerBackdropClassName = '',
     styleKey,
   },
@@ -185,16 +268,43 @@ const MapViewMapbox = forwardRef<MapViewRef, MapViewProps>(function MapViewMapbo
   const showStations = showTransit && showTransitStations
   const transitLines = useGeoJson(transitLinesUrl, showTransit)
   const transitStations = useGeoJson(transitStationsUrl, showStations)
+  const neighborhoodBoundaries = useGeoJson(
+    neighborhoodBoundariesUrl,
+    showNeighborhoodBoundaries
+  )
+  const neighborhoodLabels = useGeoJson(
+    neighborhoodLabelsUrl,
+    showNeighborhoodLabels
+  )
   const [styleReady, setStyleReady] = useState(false)
   const transitLinesKey = styleKey ? `transit-lines-${styleKey}` : 'transit-lines'
   const transitStationsKey = styleKey
     ? `transit-stations-${styleKey}`
     : 'transit-stations'
+  const neighborhoodKey = styleKey
+    ? `neighborhood-boundaries-${styleKey}`
+    : 'neighborhood-boundaries'
   const transitLineLayer = buildTransitLineLayer(transitLineWidth, transitLineOpacity)
   const transitLineCasingLayer = buildTransitLineCasingLayer(
     transitCasingColor,
     transitCasingWidth,
     transitCasingOpacity
+  )
+  const neighborhoodFillLayer = buildNeighborhoodFillLayer(
+    neighborhoodFillColor,
+    neighborhoodFillOpacity
+  )
+  const neighborhoodOutlineLayer = buildNeighborhoodOutlineLayer(
+    neighborhoodOutlineColor,
+    neighborhoodOutlineOpacity,
+    neighborhoodOutlineWidth
+  )
+  const neighborhoodLabelLayer = buildNeighborhoodLabelLayer(
+    neighborhoodLabelMinZoom,
+    neighborhoodLabelColor,
+    neighborhoodLabelOpacity,
+    neighborhoodLabelHaloColor,
+    neighborhoodLabelHaloWidth
   )
 
   useEffect(() => {
@@ -213,6 +323,39 @@ const MapViewMapbox = forwardRef<MapViewRef, MapViewProps>(function MapViewMapbo
       onLoad={() => setStyleReady(true)}
       onStyleData={() => setStyleReady(true)}
     >
+      {styleReady && showNeighborhoodBoundaries && neighborhoodBoundaries ? (
+        <Source
+          key={neighborhoodKey}
+          id="neighborhood-boundaries"
+          type="geojson"
+          data={neighborhoodBoundaries as any}
+        >
+          <Layer
+            key={`${neighborhoodKey}-fill`}
+            {...neighborhoodFillLayer}
+            beforeId={neighborhoodBeforeId}
+          />
+          <Layer
+            key={`${neighborhoodKey}-outline`}
+            {...neighborhoodOutlineLayer}
+            beforeId={neighborhoodBeforeId}
+          />
+        </Source>
+      ) : null}
+      {styleReady && showNeighborhoodLabels && neighborhoodLabels ? (
+        <Source
+          key={`${neighborhoodKey}-labels`}
+          id="neighborhood-labels"
+          type="geojson"
+          data={neighborhoodLabels as any}
+        >
+          <Layer
+            key={`${neighborhoodKey}-labels-layer`}
+            {...neighborhoodLabelLayer}
+            beforeId={neighborhoodBeforeId}
+          />
+        </Source>
+      ) : null}
       {styleReady && showTransit && transitLines ? (
         <Source
           key={transitLinesKey}

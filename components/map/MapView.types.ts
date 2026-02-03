@@ -37,6 +37,21 @@ export type MapViewProps = {
   transitCasingWidth?: number
   transitCasingColor?: string
   transitCasingOpacity?: number
+  showNeighborhoodBoundaries?: boolean
+  neighborhoodBoundariesUrl?: string
+  neighborhoodLabelsUrl?: string
+  neighborhoodBeforeId?: string
+  neighborhoodFillColor?: string
+  neighborhoodFillOpacity?: number
+  neighborhoodOutlineColor?: string
+  neighborhoodOutlineOpacity?: number
+  neighborhoodOutlineWidth?: number
+  showNeighborhoodLabels?: boolean
+  neighborhoodLabelMinZoom?: number
+  neighborhoodLabelColor?: string
+  neighborhoodLabelOpacity?: number
+  neighborhoodLabelHaloColor?: string
+  neighborhoodLabelHaloWidth?: number
   markerBackdropClassName?: string
   styleKey?: string
 }

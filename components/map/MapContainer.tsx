@@ -93,6 +93,8 @@ export default function MapContainer() {
   )
   const [showTransit, setShowTransit] = useState(false)
   const [showTransitStations, setShowTransitStations] = useState(false)
+  const [showNeighborhoodBoundaries, setShowNeighborhoodBoundaries] =
+    useState(false)
   const [mapStyleMode, setMapStyleMode] = useState<'light' | 'dark'>('light')
   const [inspectorHeight, setInspectorHeight] = useState(0)
   const [listTagRefreshKey, setListTagRefreshKey] = useState(0)
@@ -121,10 +123,29 @@ export default function MapContainer() {
   const transitCasingWidth = 4
   const transitCasingOpacity = mapStyleMode === 'dark' ? 0.35 : 0.25
   const transitCasingColor = mapStyleMode === 'dark' ? '#e2e8f0' : '#0f172a'
+  const neighborhoodFillColor =
+    mapStyleMode === 'dark' ? '#e2e8f0' : '#94a3b8'
+  const neighborhoodFillOpacity = mapStyleMode === 'dark' ? 0.08 : 0.04
+  const neighborhoodOutlineColor =
+    mapStyleMode === 'dark' ? '#e2e8f0' : '#94a3b8'
+  const neighborhoodOutlineOpacity = mapStyleMode === 'dark' ? 0.22 : 0.16
+  const neighborhoodOutlineWidth = 1
+  const neighborhoodLabelMinZoom = 11.5
+  const neighborhoodLabelColor =
+    mapStyleMode === 'dark' ? '#e2e8f0' : '#334155'
+  const neighborhoodLabelOpacity = mapStyleMode === 'dark' ? 0.7 : 0.6
+  const neighborhoodLabelHaloColor =
+    mapStyleMode === 'dark' ? '#0f172a' : '#f8fafc'
+  const neighborhoodLabelHaloWidth = 1.25
   const canRenderMap = isMapbox ? Boolean(mapboxToken) : true
   const transitLinesUrl = '/map/overlays/nyc_subway_lines.geojson'
   const transitStationsUrl = '/map/overlays/nyc_subway_stations.geojson'
+  const neighborhoodBoundariesUrl =
+    '/map/overlays/nyc_neighborhood_boundaries.geojson'
+  const neighborhoodLabelsUrl =
+    '/map/overlays/nyc_neighborhood_labels.geojson'
   const transitBeforeId = undefined
+  const neighborhoodBeforeId = transitBeforeId
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -638,6 +659,17 @@ export default function MapContainer() {
               />
               Stations
             </label>
+            <label className="mt-2 flex items-center gap-2 text-[11px] text-slate-200">
+              <input
+                type="checkbox"
+                className="accent-slate-200"
+                checked={showNeighborhoodBoundaries}
+                onChange={(event) =>
+                  setShowNeighborhoodBoundaries(event.target.checked)
+                }
+              />
+              Neighborhoods
+            </label>
             <div className="mt-3">
               <p className="text-[11px] font-semibold text-slate-200">
                 Base map
@@ -738,6 +770,21 @@ export default function MapContainer() {
         transitCasingWidth={transitCasingWidth}
         transitCasingColor={transitCasingColor}
         transitCasingOpacity={transitCasingOpacity}
+        showNeighborhoodBoundaries={showNeighborhoodBoundaries}
+        neighborhoodBoundariesUrl={neighborhoodBoundariesUrl}
+        neighborhoodLabelsUrl={neighborhoodLabelsUrl}
+        neighborhoodBeforeId={neighborhoodBeforeId}
+        neighborhoodFillColor={neighborhoodFillColor}
+        neighborhoodFillOpacity={neighborhoodFillOpacity}
+        neighborhoodOutlineColor={neighborhoodOutlineColor}
+        neighborhoodOutlineOpacity={neighborhoodOutlineOpacity}
+        neighborhoodOutlineWidth={neighborhoodOutlineWidth}
+        showNeighborhoodLabels={showNeighborhoodBoundaries}
+        neighborhoodLabelMinZoom={neighborhoodLabelMinZoom}
+        neighborhoodLabelColor={neighborhoodLabelColor}
+        neighborhoodLabelOpacity={neighborhoodLabelOpacity}
+        neighborhoodLabelHaloColor={neighborhoodLabelHaloColor}
+        neighborhoodLabelHaloWidth={neighborhoodLabelHaloWidth}
         markerBackdropClassName={markerBackdropClassName}
         styleKey={styleKey}
       />

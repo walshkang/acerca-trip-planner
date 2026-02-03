@@ -1,6 +1,7 @@
 {
   "version": 8,
   "name": "MapLibre Base",
+  "glyphs": "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
   "sources": {
     "osm": {
       "type": "raster",

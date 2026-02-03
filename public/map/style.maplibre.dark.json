@@ -1,6 +1,7 @@
 {
   "version": 8,
   "name": "MapLibre Dark (Label Sandwich)",
+  "glyphs": "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
   "sources": {
     "carto-dark-nolabels": {
       "type": "raster",

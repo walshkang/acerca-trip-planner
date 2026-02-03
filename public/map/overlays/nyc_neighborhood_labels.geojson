@@ -1,0 +1,4197 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BK0101",
+        "name": "Greenpoint",
+        "source": "nyc-nta-2020",
+        "borough": "Brooklyn"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.94723729810906,
+          40.728791743379745
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BK0102",
+        "name": "Williamsburg",
+        "source": "nyc-nta-2020",
+        "borough": "Brooklyn"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.96014572554091,
+          40.71539687373254
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BK0103",
+        "name": "South Williamsburg",
+        "source": "nyc-nta-2020",
+        "borough": "Brooklyn"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.95665873885517,
+          40.7032419153006
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BK0104",
+        "name": "East Williamsburg",
+        "source": "nyc-nta-2020",
+        "borough": "Brooklyn"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.93976753661872,
+          40.714442419064376
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BK0201",
+        "name": "Brooklyn Heights",
+        "source": "nyc-nta-2020",
+        "borough": "Brooklyn"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.99533859145299,
+          40.6955417736104
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BK0202",
+        "name": "Downtown Brooklyn-DUMBO-Boerum Hill",
+        "source": "nyc-nta-2020",
+        "borough": "Brooklyn"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.9858307537102,
+          40.694900168838224
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BK0203",
+        "name": "Fort Greene",
+        "source": "nyc-nta-2020",
+        "borough": "Brooklyn"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.9753891927582,
+          40.69012588525953
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BK0204",
+        "name": "Clinton Hill",
+        "source": "nyc-nta-2020",
+        "borough": "Brooklyn"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.9644860799842,
+          40.68610898612879
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BK0261",
+        "name": "Brooklyn Navy Yard",
+        "source": "nyc-nta-2020",
+        "borough": "Brooklyn"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.97166132009674,
+          40.70126341262726
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BK0301",
+        "name": "Bedford-Stuyvesant (West)",
+        "source": "nyc-nta-2020",
+        "borough": "Brooklyn"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.95099940109662,
+          40.68890842244596
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BK0302",
+        "name": "Bedford-Stuyvesant (East)",
+        "source": "nyc-nta-2020",
+        "borough": "Brooklyn"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.93179237062516,
+          40.686621399350194
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BK0401",
+        "name": "Bushwick (West)",
+        "source": "nyc-nta-2020",
+        "borough": "Brooklyn"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.92527064358869,
+          40.70099605610141
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BK0402",
+        "name": "Bushwick (East)",
+        "source": "nyc-nta-2020",
+        "borough": "Brooklyn"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.91296592953941,
+          40.691244882844984
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BK0471",
+        "name": "The Evergreens Cemetery",
+        "source": "nyc-nta-2020",
+        "borough": "Brooklyn"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.90114096062538,
+          40.68403731065512
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BK0501",
+        "name": "Cypress Hills",
+        "source": "nyc-nta-2020",
+        "borough": "Brooklyn"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.88205981026705,
+          40.68253452736583
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BK0502",
+        "name": "East New York (North)",
+        "source": "nyc-nta-2020",
+        "borough": "Brooklyn"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.89606366936255,
+          40.6727564484266
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BK0503",
+        "name": "East New York-New Lots",
+        "source": "nyc-nta-2020",
+        "borough": "Brooklyn"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.88804495814036,
+          40.6597277642377
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BK0504",
+        "name": "Spring Creek-Starrett City",
+        "source": "nyc-nta-2020",
+        "borough": "Brooklyn"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.88046115259631,
+          40.64966193289209
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BK0505",
+        "name": "East New York-City Line",
+        "source": "nyc-nta-2020",
+        "borough": "Brooklyn"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.86609840003545,
+          40.67054068838281
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BK0571",
+        "name": "Highland Park-Cypress Hills Cemeteries (South)",
+        "source": "nyc-nta-2020",
+        "borough": "Brooklyn"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.87770205840346,
+          40.68949490104765
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BK0601",
+        "name": "Carroll Gardens-Cobble Hill-Gowanus-Red Hook",
+        "source": "nyc-nta-2020",
+        "borough": "Brooklyn"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.99978438908934,
+          40.678558703446626
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BK0602",
+        "name": "Park Slope",
+        "source": "nyc-nta-2020",
+        "borough": "Brooklyn"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.97975946849336,
+          40.67183144346204
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BK0701",
+        "name": "Windsor Terrace-South Slope",
+        "source": "nyc-nta-2020",
+        "borough": "Brooklyn"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.98002500985659,
+          40.65604455417006
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BK0702",
+        "name": "Sunset Park (West)",
+        "source": "nyc-nta-2020",
+        "borough": "Brooklyn"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -74.01011366179627,
+          40.653470852372145
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BK0703",
+        "name": "Sunset Park (Central)",
+        "source": "nyc-nta-2020",
+        "borough": "Brooklyn"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -74.00787941517042,
+          40.64238970722865
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BK0771",
+        "name": "Green-Wood Cemetery",
+        "source": "nyc-nta-2020",
+        "borough": "Brooklyn"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.99122835658098,
+          40.651894381876716
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BK0801",
+        "name": "Prospect Heights",
+        "source": "nyc-nta-2020",
+        "borough": "Brooklyn"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.96757226486194,
+          40.67760451755341
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BK0802",
+        "name": "Crown Heights (North)",
+        "source": "nyc-nta-2020",
+        "borough": "Brooklyn"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.94189622293652,
+          40.67386378388156
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BK0891",
+        "name": "Lincoln Terrace Park",
+        "source": "nyc-nta-2020",
+        "borough": "Brooklyn"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.92681604979221,
+          40.666861109434194
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BK0901",
+        "name": "Crown Heights (South)",
+        "source": "nyc-nta-2020",
+        "borough": "Brooklyn"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.9581838503581,
+          40.667234865277955
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BK0902",
+        "name": "Prospect Lefferts Gardens-Wingate",
+        "source": "nyc-nta-2020",
+        "borough": "Brooklyn"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.94796185088065,
+          40.65975724147827
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BK1001",
+        "name": "Bay Ridge",
+        "source": "nyc-nta-2020",
+        "borough": "Brooklyn"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -74.02992712814904,
+          40.62667180504115
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BK1002",
+        "name": "Dyker Heights",
+        "source": "nyc-nta-2020",
+        "borough": "Brooklyn"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -74.01084496046326,
+          40.62396326315452
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BK1061",
+        "name": "Fort Hamilton",
+        "source": "nyc-nta-2020",
+        "borough": "Brooklyn"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -74.0293109161691,
+          40.60960043929907
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BK1091",
+        "name": "Dyker Beach Park",
+        "source": "nyc-nta-2020",
+        "borough": "Brooklyn"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -74.01893323182873,
+          40.61115170200161
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BK1101",
+        "name": "Bensonhurst",
+        "source": "nyc-nta-2020",
+        "borough": "Brooklyn"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.99326535631211,
+          40.61326484189577
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BK1102",
+        "name": "Bath Beach",
+        "source": "nyc-nta-2020",
+        "borough": "Brooklyn"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -74.00950910525786,
+          40.603978109014946
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BK1103",
+        "name": "Gravesend (West)",
+        "source": "nyc-nta-2020",
+        "borough": "Brooklyn"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.98573302017857,
+          40.599292558178206
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BK1201",
+        "name": "Sunset Park (East)-Borough Park (West)",
+        "source": "nyc-nta-2020",
+        "borough": "Brooklyn"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.99938763806323,
+          40.64082700939774
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BK1202",
+        "name": "Borough Park",
+        "source": "nyc-nta-2020",
+        "borough": "Brooklyn"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.98954498686784,
+          40.63293566540139
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BK1203",
+        "name": "Kensington",
+        "source": "nyc-nta-2020",
+        "borough": "Brooklyn"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.97605169768372,
+          40.64113580415987
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BK1204",
+        "name": "Mapleton-Midwood (West)",
+        "source": "nyc-nta-2020",
+        "borough": "Brooklyn"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.97331838912962,
+          40.61931855279154
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BK1301",
+        "name": "Gravesend (South)",
+        "source": "nyc-nta-2020",
+        "borough": "Brooklyn"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.98317993483022,
+          40.5886763215678
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BK1302",
+        "name": "Coney Island-Sea Gate",
+        "source": "nyc-nta-2020",
+        "borough": "Brooklyn"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.97524066009822,
+          40.5770872933759
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BK1303",
+        "name": "Brighton Beach",
+        "source": "nyc-nta-2020",
+        "borough": "Brooklyn"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.96309063134342,
+          40.57922998128402
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BK1391",
+        "name": "Calvert Vaux Park",
+        "source": "nyc-nta-2020",
+        "borough": "Brooklyn"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.99671452790125,
+          40.58438399571327
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BK1401",
+        "name": "Flatbush",
+        "source": "nyc-nta-2020",
+        "borough": "Brooklyn"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.95638923885254,
+          40.640666898352784
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BK1402",
+        "name": "Flatbush (West)-Ditmas Park-Parkville",
+        "source": "nyc-nta-2020",
+        "borough": "Brooklyn"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.96618994780744,
+          40.63652684902198
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BK1403",
+        "name": "Midwood",
+        "source": "nyc-nta-2020",
+        "borough": "Brooklyn"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.95599364316486,
+          40.62007426246676
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BK1501",
+        "name": "Gravesend (East)-Homecrest",
+        "source": "nyc-nta-2020",
+        "borough": "Brooklyn"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.96586902265501,
+          40.5990821214778
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BK1502",
+        "name": "Madison",
+        "source": "nyc-nta-2020",
+        "borough": "Brooklyn"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.94813554384604,
+          40.60491356835554
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BK1503",
+        "name": "Sheepshead Bay-Manhattan Beach-Gerritsen Beach",
+        "source": "nyc-nta-2020",
+        "borough": "Brooklyn"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.9392026100833,
+          40.58846716553593
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BK1601",
+        "name": "Ocean Hill",
+        "source": "nyc-nta-2020",
+        "borough": "Brooklyn"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.91139941648467,
+          40.677155290365846
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BK1602",
+        "name": "Brownsville",
+        "source": "nyc-nta-2020",
+        "borough": "Brooklyn"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.90952230468868,
+          40.66404694086443
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BK1701",
+        "name": "East Flatbush-Erasmus",
+        "source": "nyc-nta-2020",
+        "borough": "Brooklyn"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.95013844930321,
+          40.64855131057797
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BK1702",
+        "name": "East Flatbush-Farragut",
+        "source": "nyc-nta-2020",
+        "borough": "Brooklyn"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.9407447965442,
+          40.639446066765174
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BK1703",
+        "name": "East Flatbush-Rugby",
+        "source": "nyc-nta-2020",
+        "borough": "Brooklyn"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.92975291313682,
+          40.65154695620124
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BK1704",
+        "name": "East Flatbush-Remsen Village",
+        "source": "nyc-nta-2020",
+        "borough": "Brooklyn"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.91916907567203,
+          40.656216019760265
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BK1771",
+        "name": "Holy Cross Cemetery",
+        "source": "nyc-nta-2020",
+        "borough": "Brooklyn"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.94107454018462,
+          40.64711690179968
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BK1801",
+        "name": "Flatlands",
+        "source": "nyc-nta-2020",
+        "borough": "Brooklyn"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.93009714261645,
+          40.62627486734763
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BK1802",
+        "name": "Marine Park-Mill Basin-Bergen Beach",
+        "source": "nyc-nta-2020",
+        "borough": "Brooklyn"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.90198343160922,
+          40.61778690242811
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BK1803",
+        "name": "Canarsie",
+        "source": "nyc-nta-2020",
+        "borough": "Brooklyn"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.90146200313946,
+          40.63935281441376
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BK1891",
+        "name": "Marine Park-Plumb Island",
+        "source": "nyc-nta-2020",
+        "borough": "Brooklyn"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.9233442947225,
+          40.593133025851124
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BK1892",
+        "name": "McGuire Fields",
+        "source": "nyc-nta-2020",
+        "borough": "Brooklyn"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.8969572625471,
+          40.612379915799714
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BK1893",
+        "name": "Canarsie Park & Pier",
+        "source": "nyc-nta-2020",
+        "borough": "Brooklyn"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.89290607256338,
+          40.63102610919262
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BK5591",
+        "name": "Prospect Park",
+        "source": "nyc-nta-2020",
+        "borough": "Brooklyn"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.96892078990264,
+          40.66160198058773
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BK5691",
+        "name": "Barren Island-Floyd Bennett Field",
+        "source": "nyc-nta-2020",
+        "borough": "Brooklyn"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.891850889516,
+          40.59319185760162
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BK5692",
+        "name": "Jamaica Bay (West)",
+        "source": "nyc-nta-2020",
+        "borough": "Brooklyn"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.87169162900553,
+          40.62098345332182
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BK5693",
+        "name": "Shirley Chisholm State Park",
+        "source": "nyc-nta-2020",
+        "borough": "Brooklyn"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.86431897013757,
+          40.647043237023354
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BX0101",
+        "name": "Mott Haven-Port Morris",
+        "source": "nyc-nta-2020",
+        "borough": "Bronx"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.91724296508335,
+          40.80752467470478
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BX0102",
+        "name": "Melrose",
+        "source": "nyc-nta-2020",
+        "borough": "Bronx"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.9128502394767,
+          40.81825960904388
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BX0201",
+        "name": "Hunts Point",
+        "source": "nyc-nta-2020",
+        "borough": "Bronx"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.88560082835201,
+          40.81190233613442
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BX0202",
+        "name": "Longwood",
+        "source": "nyc-nta-2020",
+        "borough": "Bronx"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.8965596216717,
+          40.82096805281285
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BX0291",
+        "name": "North & South Brother Islands",
+        "source": "nyc-nta-2020",
+        "borough": "Bronx"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.8983383691386,
+          40.800756992780734
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BX0301",
+        "name": "Morrisania",
+        "source": "nyc-nta-2020",
+        "borough": "Bronx"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.90474194636164,
+          40.82729470382614
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BX0302",
+        "name": "Claremont Village-Claremont (East)",
+        "source": "nyc-nta-2020",
+        "borough": "Bronx"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.90353472105802,
+          40.83757628724058
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BX0303",
+        "name": "Crotona Park East",
+        "source": "nyc-nta-2020",
+        "borough": "Bronx"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.88869709797892,
+          40.832138619973556
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BX0391",
+        "name": "Crotona Park",
+        "source": "nyc-nta-2020",
+        "borough": "Bronx"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.89391168578048,
+          40.83893337648064
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BX0401",
+        "name": "Concourse-Concourse Village",
+        "source": "nyc-nta-2020",
+        "borough": "Bronx"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.92172434774983,
+          40.82674779655103
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BX0402",
+        "name": "Highbridge",
+        "source": "nyc-nta-2020",
+        "borough": "Bronx"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.9277627736761,
+          40.836857615981195
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BX0403",
+        "name": "Mount Eden-Claremont (West)",
+        "source": "nyc-nta-2020",
+        "borough": "Bronx"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.91442812907016,
+          40.840479739029355
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BX0491",
+        "name": "Yankee Stadium-Macombs Dam Park",
+        "source": "nyc-nta-2020",
+        "borough": "Bronx"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.92639027175512,
+          40.82998276410031
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BX0492",
+        "name": "Claremont Park",
+        "source": "nyc-nta-2020",
+        "borough": "Bronx"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.90750359387141,
+          40.84043069664626
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BX0501",
+        "name": "University Heights (South)-Morris Heights",
+        "source": "nyc-nta-2020",
+        "borough": "Bronx"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.9161241862241,
+          40.851852965801115
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BX0502",
+        "name": "Mount Hope",
+        "source": "nyc-nta-2020",
+        "borough": "Bronx"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.90441707436518,
+          40.84986535442616
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BX0503",
+        "name": "Fordham Heights",
+        "source": "nyc-nta-2020",
+        "borough": "Bronx"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.89912819927598,
+          40.85873316215797
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BX0601",
+        "name": "West Farms",
+        "source": "nyc-nta-2020",
+        "borough": "Bronx"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.87862830541185,
+          40.84125964208105
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BX0602",
+        "name": "Tremont",
+        "source": "nyc-nta-2020",
+        "borough": "Bronx"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.89175593204179,
+          40.846922987697276
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BX0603",
+        "name": "Belmont",
+        "source": "nyc-nta-2020",
+        "borough": "Bronx"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.88705263613859,
+          40.857607081115816
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BX0701",
+        "name": "University Heights (North)-Fordham",
+        "source": "nyc-nta-2020",
+        "borough": "Bronx"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.90459266269676,
+          40.86473308803155
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BX0702",
+        "name": "Bedford Park",
+        "source": "nyc-nta-2020",
+        "borough": "Bronx"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.89079046644179,
+          40.87356283396027
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BX0703",
+        "name": "Norwood",
+        "source": "nyc-nta-2020",
+        "borough": "Bronx"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.8786591183181,
+          40.876860253389154
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BX0801",
+        "name": "Kingsbridge Heights-Van Cortlandt Village",
+        "source": "nyc-nta-2020",
+        "borough": "Bronx"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.89908178304536,
+          40.87768007759875
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BX0802",
+        "name": "Kingsbridge-Marble Hill",
+        "source": "nyc-nta-2020",
+        "borough": "Bronx"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.90572975332837,
+          40.88083993825119
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BX0803",
+        "name": "Riverdale-Spuyten Duyvil",
+        "source": "nyc-nta-2020",
+        "borough": "Bronx"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.90878512631939,
+          40.895717431313365
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BX0901",
+        "name": "Soundview-Bruckner-Bronx River",
+        "source": "nyc-nta-2020",
+        "borough": "Bronx"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.87321841833057,
+          40.829661710256346
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BX0902",
+        "name": "Soundview-Clason Point",
+        "source": "nyc-nta-2020",
+        "borough": "Bronx"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.86031261540849,
+          40.81560477444097
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BX0903",
+        "name": "Castle Hill-Unionport",
+        "source": "nyc-nta-2020",
+        "borough": "Bronx"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.85046470038323,
+          40.82474226203511
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BX0904",
+        "name": "Parkchester",
+        "source": "nyc-nta-2020",
+        "borough": "Bronx"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.85798907497369,
+          40.83774658330104
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BX0991",
+        "name": "Soundview Park",
+        "source": "nyc-nta-2020",
+        "borough": "Bronx"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.87359314646498,
+          40.81733306003197
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BX1001",
+        "name": "Westchester Square",
+        "source": "nyc-nta-2020",
+        "borough": "Bronx"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.84635159596286,
+          40.839314632139846
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BX1002",
+        "name": "Throgs Neck-Schuylerville",
+        "source": "nyc-nta-2020",
+        "borough": "Bronx"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.82060390368558,
+          40.82552750505547
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BX1003",
+        "name": "Pelham Bay-Country Club-City Island",
+        "source": "nyc-nta-2020",
+        "borough": "Bronx"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.78665753538006,
+          40.8469443718316
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BX1004",
+        "name": "Co-op City",
+        "source": "nyc-nta-2020",
+        "borough": "Bronx"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.82534006154319,
+          40.8687589988061
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BX1071",
+        "name": "Hart Island",
+        "source": "nyc-nta-2020",
+        "borough": "Bronx"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.76915018803541,
+          40.85655058895507
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BX1091",
+        "name": "Ferry Point Park-St. Raymond Cemetery",
+        "source": "nyc-nta-2020",
+        "borough": "Bronx"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.8318021845798,
+          40.816689849107085
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BX1101",
+        "name": "Pelham Parkway-Van Nest",
+        "source": "nyc-nta-2020",
+        "borough": "Bronx"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.86496728568432,
+          40.84789744673659
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BX1102",
+        "name": "Morris Park",
+        "source": "nyc-nta-2020",
+        "borough": "Bronx"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.85168733185719,
+          40.85179267481803
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BX1103",
+        "name": "Pelham Gardens",
+        "source": "nyc-nta-2020",
+        "borough": "Bronx"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.85114232004925,
+          40.865747301377056
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BX1104",
+        "name": "Allerton",
+        "source": "nyc-nta-2020",
+        "borough": "Bronx"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.8642036082052,
+          40.86401454052511
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BX1161",
+        "name": "Hutchinson Metro Center",
+        "source": "nyc-nta-2020",
+        "borough": "Bronx"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.83871548212235,
+          40.84947616453455
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BX1201",
+        "name": "Williamsbridge-Olinville",
+        "source": "nyc-nta-2020",
+        "borough": "Bronx"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.86072451433976,
+          40.88101678511804
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BX1202",
+        "name": "Eastchester-Edenwald-Baychester",
+        "source": "nyc-nta-2020",
+        "borough": "Bronx"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.83656919526508,
+          40.88154188959951
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BX1203",
+        "name": "Wakefield-Woodlawn",
+        "source": "nyc-nta-2020",
+        "borough": "Bronx"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.85396640970944,
+          40.89797321760623
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BX1271",
+        "name": "Woodlawn Cemetery",
+        "source": "nyc-nta-2020",
+        "borough": "Bronx"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.87258171483559,
+          40.889537409396
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BX2691",
+        "name": "Van Cortlandt Park",
+        "source": "nyc-nta-2020",
+        "borough": "Bronx"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.88663136611096,
+          40.8970455809199
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BX2791",
+        "name": "Bronx Park",
+        "source": "nyc-nta-2020",
+        "borough": "Bronx"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.87611296319372,
+          40.84938283449031
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BX2891",
+        "name": "Pelham Bay Park",
+        "source": "nyc-nta-2020",
+        "borough": "Bronx"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.80795588082998,
+          40.86471703986385
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "MN0101",
+        "name": "Financial District-Battery Park City",
+        "source": "nyc-nta-2020",
+        "borough": "Manhattan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -74.01087276939562,
+          40.70859758870923
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "MN0102",
+        "name": "Tribeca-Civic Center",
+        "source": "nyc-nta-2020",
+        "borough": "Manhattan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -74.00723281843653,
+          40.717306186269425
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "MN0191",
+        "name": "The Battery-Governors Island-Ellis Island-Liberty Island",
+        "source": "nyc-nta-2020",
+        "borough": "Manhattan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -74.01907824071691,
+          40.688786818624564
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "MN0201",
+        "name": "SoHo-Little Italy-Hudson Square",
+        "source": "nyc-nta-2020",
+        "borough": "Manhattan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -74.00171899017738,
+          40.723535813233134
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "MN0202",
+        "name": "Greenwich Village",
+        "source": "nyc-nta-2020",
+        "borough": "Manhattan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.99568432125295,
+          40.73068073739141
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "MN0203",
+        "name": "West Village",
+        "source": "nyc-nta-2020",
+        "borough": "Manhattan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -74.00561531863374,
+          40.73538442120008
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "MN0301",
+        "name": "Chinatown-Two Bridges",
+        "source": "nyc-nta-2020",
+        "borough": "Manhattan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.99366347174957,
+          40.71285843070123
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "MN0302",
+        "name": "Lower East Side",
+        "source": "nyc-nta-2020",
+        "borough": "Manhattan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.98383901000578,
+          40.716967097682534
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "MN0303",
+        "name": "East Village",
+        "source": "nyc-nta-2020",
+        "borough": "Manhattan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.98212527137756,
+          40.72597207263376
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "MN0401",
+        "name": "Chelsea-Hudson Yards",
+        "source": "nyc-nta-2020",
+        "borough": "Manhattan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -74.00178335839102,
+          40.75001829862859
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "MN0402",
+        "name": "Hell's Kitchen",
+        "source": "nyc-nta-2020",
+        "borough": "Manhattan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.99239983242343,
+          40.76416892608445
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "MN0501",
+        "name": "Midtown South-Flatiron-Union Square",
+        "source": "nyc-nta-2020",
+        "borough": "Manhattan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.98897478602302,
+          40.74255903265696
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "MN0502",
+        "name": "Midtown-Times Square",
+        "source": "nyc-nta-2020",
+        "borough": "Manhattan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.98163223214843,
+          40.75781578499073
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "MN0601",
+        "name": "Stuyvesant Town-Peter Cooper Village",
+        "source": "nyc-nta-2020",
+        "borough": "Manhattan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.9765962088873,
+          40.731821761302555
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "MN0602",
+        "name": "Gramercy",
+        "source": "nyc-nta-2020",
+        "borough": "Manhattan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.98405332294541,
+          40.7368244226031
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "MN0603",
+        "name": "Murray Hill-Kips Bay",
+        "source": "nyc-nta-2020",
+        "borough": "Manhattan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.97596948875714,
+          40.74427006686902
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "MN0604",
+        "name": "East Midtown-Turtle Bay",
+        "source": "nyc-nta-2020",
+        "borough": "Manhattan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.96841998214381,
+          40.75651297819013
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "MN0661",
+        "name": "United Nations",
+        "source": "nyc-nta-2020",
+        "borough": "Manhattan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.96734270190845,
+          40.750374860305
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "MN0701",
+        "name": "Upper West Side-Lincoln Square",
+        "source": "nyc-nta-2020",
+        "borough": "Manhattan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.98469478552587,
+          40.77484779733362
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "MN0702",
+        "name": "Upper West Side (Central)",
+        "source": "nyc-nta-2020",
+        "borough": "Manhattan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.97593403037922,
+          40.78770333778134
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "MN0703",
+        "name": "Upper West Side-Manhattan Valley",
+        "source": "nyc-nta-2020",
+        "borough": "Manhattan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.9673062049251,
+          40.799246675924365
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "MN0801",
+        "name": "Upper East Side-Lenox Hill-Roosevelt Island",
+        "source": "nyc-nta-2020",
+        "borough": "Manhattan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.95723059614562,
+          40.76623381318257
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "MN0802",
+        "name": "Upper East Side-Carnegie Hill",
+        "source": "nyc-nta-2020",
+        "borough": "Manhattan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.96117328868539,
+          40.77473243027469
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "MN0803",
+        "name": "Upper East Side-Yorkville",
+        "source": "nyc-nta-2020",
+        "borough": "Manhattan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.94877174991477,
+          40.77729516352852
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "MN0901",
+        "name": "Morningside Heights",
+        "source": "nyc-nta-2020",
+        "borough": "Manhattan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.96176414316754,
+          40.809458419259336
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "MN0902",
+        "name": "Manhattanville-West Harlem",
+        "source": "nyc-nta-2020",
+        "borough": "Manhattan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.95405467157914,
+          40.81788022185301
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "MN0903",
+        "name": "Hamilton Heights-Sugar Hill",
+        "source": "nyc-nta-2020",
+        "borough": "Manhattan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.94846503705237,
+          40.82701995221688
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "MN1001",
+        "name": "Harlem (South)",
+        "source": "nyc-nta-2020",
+        "borough": "Manhattan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.95236142655133,
+          40.80415742670322
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "MN1002",
+        "name": "Harlem (North)",
+        "source": "nyc-nta-2020",
+        "borough": "Manhattan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.94296562889487,
+          40.816224623449244
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "MN1101",
+        "name": "East Harlem (South)",
+        "source": "nyc-nta-2020",
+        "borough": "Manhattan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.94804082971487,
+          40.79039268970088
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "MN1102",
+        "name": "East Harlem (North)",
+        "source": "nyc-nta-2020",
+        "borough": "Manhattan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.93744203560854,
+          40.801613337692196
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "MN1191",
+        "name": "Randall's Island",
+        "source": "nyc-nta-2020",
+        "borough": "Manhattan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.92459673179002,
+          40.791001346483675
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "MN1201",
+        "name": "Washington Heights (South)",
+        "source": "nyc-nta-2020",
+        "borough": "Manhattan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.94153600924606,
+          40.84090307864993
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "MN1202",
+        "name": "Washington Heights (North)",
+        "source": "nyc-nta-2020",
+        "borough": "Manhattan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.9334514167524,
+          40.856473078981985
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "MN1203",
+        "name": "Inwood",
+        "source": "nyc-nta-2020",
+        "borough": "Manhattan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.91994928431942,
+          40.86445948330586
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "MN1291",
+        "name": "Highbridge Park",
+        "source": "nyc-nta-2020",
+        "borough": "Manhattan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.93023045607671,
+          40.846598614483156
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "MN1292",
+        "name": "Inwood Hill Park",
+        "source": "nyc-nta-2020",
+        "borough": "Manhattan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.92676598049839,
+          40.87218145237877
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "MN6491",
+        "name": "Central Park",
+        "source": "nyc-nta-2020",
+        "borough": "Manhattan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.96555859763204,
+          40.78247334494139
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "QN0101",
+        "name": "Astoria (North)-Ditmars-Steinway",
+        "source": "nyc-nta-2020",
+        "borough": "Queens"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.9114377806639,
+          40.778401846448325
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "QN0102",
+        "name": "Old Astoria-Hallets Point",
+        "source": "nyc-nta-2020",
+        "borough": "Queens"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.93091977303345,
+          40.77129560281013
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "QN0103",
+        "name": "Astoria (Central)",
+        "source": "nyc-nta-2020",
+        "borough": "Queens"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.9230568607963,
+          40.76428410913714
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "QN0104",
+        "name": "Astoria (East)-Woodside (North)",
+        "source": "nyc-nta-2020",
+        "borough": "Queens"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.91031303261866,
+          40.759558161724996
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "QN0105",
+        "name": "Queensbridge-Ravenswood-Dutch Kills",
+        "source": "nyc-nta-2020",
+        "borough": "Queens"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.93941448198994,
+          40.75984595241687
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "QN0151",
+        "name": "Rikers Island",
+        "source": "nyc-nta-2020",
+        "borough": "Bronx"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.8861258812684,
+          40.792053576018745
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "QN0161",
+        "name": "Sunnyside Yards (North)",
+        "source": "nyc-nta-2020",
+        "borough": "Queens"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.91998379683751,
+          40.751913974997024
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "QN0171",
+        "name": "St. Michael's Cemetery",
+        "source": "nyc-nta-2020",
+        "borough": "Queens"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.89939864256924,
+          40.763987450518925
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "QN0191",
+        "name": "Astoria Park",
+        "source": "nyc-nta-2020",
+        "borough": "Queens"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.9230785081156,
+          40.778558211966725
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "QN0201",
+        "name": "Long Island City-Hunters Point",
+        "source": "nyc-nta-2020",
+        "borough": "Queens"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.9489087446309,
+          40.745379666532024
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "QN0202",
+        "name": "Sunnyside",
+        "source": "nyc-nta-2020",
+        "borough": "Queens"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.92782948909053,
+          40.73807716141694
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "QN0203",
+        "name": "Woodside",
+        "source": "nyc-nta-2020",
+        "borough": "Queens"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.90140997905912,
+          40.74310450523841
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "QN0261",
+        "name": "Sunnyside Yards (South)",
+        "source": "nyc-nta-2020",
+        "borough": "Queens"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.92818244359563,
+          40.74866558372833
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "QN0271",
+        "name": "Calvary & Mount Zion Cemeteries",
+        "source": "nyc-nta-2020",
+        "borough": "Queens"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.91154822019232,
+          40.73494010594807
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "QN0301",
+        "name": "Jackson Heights",
+        "source": "nyc-nta-2020",
+        "borough": "Queens"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.88634487840307,
+          40.75551883847175
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "QN0302",
+        "name": "East Elmhurst",
+        "source": "nyc-nta-2020",
+        "borough": "Queens"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.87118491866953,
+          40.764252362920146
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "QN0303",
+        "name": "North Corona",
+        "source": "nyc-nta-2020",
+        "borough": "Queens"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.86293086094909,
+          40.753811504641675
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "QN0401",
+        "name": "Elmhurst",
+        "source": "nyc-nta-2020",
+        "borough": "Queens"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.87911137008196,
+          40.7393995503679
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "QN0402",
+        "name": "Corona",
+        "source": "nyc-nta-2020",
+        "borough": "Queens"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.8592841859016,
+          40.743240990034685
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "QN0501",
+        "name": "Maspeth",
+        "source": "nyc-nta-2020",
+        "borough": "Queens"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.9051214311497,
+          40.72306184796884
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "QN0502",
+        "name": "Ridgewood",
+        "source": "nyc-nta-2020",
+        "borough": "Queens"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.90368876875071,
+          40.70567296032058
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "QN0503",
+        "name": "Glendale",
+        "source": "nyc-nta-2020",
+        "borough": "Queens"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.88931501385964,
+          40.702664585098866
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "QN0504",
+        "name": "Middle Village",
+        "source": "nyc-nta-2020",
+        "borough": "Queens"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.87812709686546,
+          40.719222225405076
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "QN0571",
+        "name": "Mount Olivet & All Faiths Cemeteries",
+        "source": "nyc-nta-2020",
+        "borough": "Queens"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.8947886255926,
+          40.718061004103
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "QN0572",
+        "name": "Middle Village Cemetery",
+        "source": "nyc-nta-2020",
+        "borough": "Queens"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.88341787289846,
+          40.70932427251902
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "QN0573",
+        "name": "St. John Cemetery",
+        "source": "nyc-nta-2020",
+        "borough": "Queens"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.86686717851231,
+          40.71475640493848
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "QN0574",
+        "name": "Highland Park-Cypress Hills Cemeteries (North)",
+        "source": "nyc-nta-2020",
+        "borough": "Queens"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.88540269395664,
+          40.69261492857005
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "QN0601",
+        "name": "Rego Park",
+        "source": "nyc-nta-2020",
+        "borough": "Queens"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.86574691187396,
+          40.723703408250266
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "QN0602",
+        "name": "Forest Hills",
+        "source": "nyc-nta-2020",
+        "borough": "Queens"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.8476777313072,
+          40.72145474788451
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "QN0701",
+        "name": "College Point",
+        "source": "nyc-nta-2020",
+        "borough": "Queens"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.84098078781335,
+          40.781984286382745
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "QN0702",
+        "name": "Whitestone-Beechhurst",
+        "source": "nyc-nta-2020",
+        "borough": "Queens"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.81088970741484,
+          40.788379405010645
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "QN0703",
+        "name": "Bay Terrace-Clearview",
+        "source": "nyc-nta-2020",
+        "borough": "Queens"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.78757874181841,
+          40.78186101923546
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "QN0704",
+        "name": "Murray Hill-Broadway Flushing",
+        "source": "nyc-nta-2020",
+        "borough": "Queens"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.81076943940748,
+          40.76887100105222
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "QN0705",
+        "name": "East Flushing",
+        "source": "nyc-nta-2020",
+        "borough": "Queens"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.8013472769473,
+          40.75377780120837
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "QN0706",
+        "name": "Queensboro Hill",
+        "source": "nyc-nta-2020",
+        "borough": "Queens"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.81968375069256,
+          40.74310082176984
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "QN0707",
+        "name": "Flushing-Willets Point",
+        "source": "nyc-nta-2020",
+        "borough": "Queens"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.83158372298551,
+          40.760213163091116
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "QN0761",
+        "name": "Fort Totten",
+        "source": "nyc-nta-2020",
+        "borough": "Queens"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.7767123969785,
+          40.79160682729133
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "QN0791",
+        "name": "Kissena Park",
+        "source": "nyc-nta-2020",
+        "borough": "Queens"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.81020707201144,
+          40.74603481145451
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "QN0801",
+        "name": "Kew Gardens Hills",
+        "source": "nyc-nta-2020",
+        "borough": "Queens"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.82183122290348,
+          40.72780228295697
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "QN0802",
+        "name": "Pomonok-Electchester-Hillcrest",
+        "source": "nyc-nta-2020",
+        "borough": "Queens"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.80342179224132,
+          40.72706732964732
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "QN0803",
+        "name": "Fresh Meadows-Utopia",
+        "source": "nyc-nta-2020",
+        "borough": "Queens"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.78738789334288,
+          40.734578038932696
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "QN0804",
+        "name": "Jamaica Estates-Holliswood",
+        "source": "nyc-nta-2020",
+        "borough": "Queens"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.78389526584385,
+          40.72045217561444
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "QN0805",
+        "name": "Jamaica Hills-Briarwood",
+        "source": "nyc-nta-2020",
+        "borough": "Queens"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.8170807393399,
+          40.71077076345261
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "QN0871",
+        "name": "Mount Hebron & Cedar Grove Cemeteries",
+        "source": "nyc-nta-2020",
+        "borough": "Queens"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.83135940515822,
+          40.73640548734019
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "QN0891",
+        "name": "Cunningham Park",
+        "source": "nyc-nta-2020",
+        "borough": "Queens"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.76740583814623,
+          40.73411811791627
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "QN0901",
+        "name": "Kew Gardens",
+        "source": "nyc-nta-2020",
+        "borough": "Queens"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.82875592032765,
+          40.708033615656674
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "QN0902",
+        "name": "Richmond Hill",
+        "source": "nyc-nta-2020",
+        "borough": "Queens"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.83276772381726,
+          40.697476629794636
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "QN0903",
+        "name": "South Richmond Hill",
+        "source": "nyc-nta-2020",
+        "borough": "Queens"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.82441583693459,
+          40.69098782131066
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "QN0904",
+        "name": "Ozone Park (North)",
+        "source": "nyc-nta-2020",
+        "borough": "Queens"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.848389130583,
+          40.68532281041435
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "QN0905",
+        "name": "Woodhaven",
+        "source": "nyc-nta-2020",
+        "borough": "Queens"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.85741214700636,
+          40.691475393326485
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "QN1001",
+        "name": "South Ozone Park",
+        "source": "nyc-nta-2020",
+        "borough": "Queens"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.81951957872056,
+          40.67619915132694
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "QN1002",
+        "name": "Ozone Park",
+        "source": "nyc-nta-2020",
+        "borough": "Queens"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.84701391196421,
+          40.67557049158214
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "QN1003",
+        "name": "Howard Beach-Lindenwood",
+        "source": "nyc-nta-2020",
+        "borough": "Queens"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.84478163015373,
+          40.661408799329905
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "QN1091",
+        "name": "Spring Creek Park",
+        "source": "nyc-nta-2020",
+        "borough": "Queens"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.84855361508676,
+          40.64978538783293
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "QN1101",
+        "name": "Auburndale",
+        "source": "nyc-nta-2020",
+        "borough": "Queens"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.78446668003086,
+          40.751153892489185
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "QN1102",
+        "name": "Bayside",
+        "source": "nyc-nta-2020",
+        "borough": "Queens"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.76759763561945,
+          40.7617617975369
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "QN1103",
+        "name": "Douglaston-Little Neck",
+        "source": "nyc-nta-2020",
+        "borough": "Queens"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.73444937364056,
+          40.76273944787816
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "QN1104",
+        "name": "Oakland Gardens-Hollis Hills",
+        "source": "nyc-nta-2020",
+        "borough": "Queens"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.75490146584022,
+          40.73916710218293
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "QN1191",
+        "name": "Alley Pond Park",
+        "source": "nyc-nta-2020",
+        "borough": "Queens"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.74647120811917,
+          40.75299639902104
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "QN1201",
+        "name": "Jamaica",
+        "source": "nyc-nta-2020",
+        "borough": "Queens"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.8047812441011,
+          40.70256792624745
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "QN1202",
+        "name": "South Jamaica",
+        "source": "nyc-nta-2020",
+        "borough": "Queens"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.79172967266629,
+          40.694306404598876
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "QN1203",
+        "name": "Baisley Park",
+        "source": "nyc-nta-2020",
+        "borough": "Queens"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.79360047709503,
+          40.678773734891514
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "QN1204",
+        "name": "Springfield Gardens (North)-Rochdale Village",
+        "source": "nyc-nta-2020",
+        "borough": "Queens"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.77288619274822,
+          40.675118716480895
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "QN1205",
+        "name": "St. Albans",
+        "source": "nyc-nta-2020",
+        "borough": "Queens"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.76318182824376,
+          40.691916004460936
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "QN1206",
+        "name": "Hollis",
+        "source": "nyc-nta-2020",
+        "borough": "Queens"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.7637970243434,
+          40.71198651084471
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "QN1301",
+        "name": "Glen Oaks-Floral Park-New Hyde Park",
+        "source": "nyc-nta-2020",
+        "borough": "Queens"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.71096164474484,
+          40.74595125452058
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "QN1302",
+        "name": "Bellerose",
+        "source": "nyc-nta-2020",
+        "borough": "Queens"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.72669159310242,
+          40.73549234539506
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "QN1303",
+        "name": "Queens Village",
+        "source": "nyc-nta-2020",
+        "borough": "Queens"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.74175470756882,
+          40.71608287999984
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "QN1304",
+        "name": "Cambria Heights",
+        "source": "nyc-nta-2020",
+        "borough": "Queens"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.73555293932608,
+          40.6943419509047
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "QN1305",
+        "name": "Laurelton",
+        "source": "nyc-nta-2020",
+        "borough": "Queens"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.74450468205757,
+          40.67591329730868
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "QN1306",
+        "name": "Springfield Gardens (South)-Brookville",
+        "source": "nyc-nta-2020",
+        "borough": "Queens"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.76148076707402,
+          40.660166675800006
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "QN1307",
+        "name": "Rosedale",
+        "source": "nyc-nta-2020",
+        "borough": "Queens"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.73565933133598,
+          40.65905005501004
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "QN1371",
+        "name": "Montefiore Cemetery",
+        "source": "nyc-nta-2020",
+        "borough": "Queens"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.74204489991132,
+          40.68580411804465
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "QN1401",
+        "name": "Far Rockaway-Bayswater",
+        "source": "nyc-nta-2020",
+        "borough": "Queens"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.75655250978114,
+          40.60169793529482
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "QN1402",
+        "name": "Rockaway Beach-Arverne-Edgemere",
+        "source": "nyc-nta-2020",
+        "borough": "Queens"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.79630639914237,
+          40.591567386265616
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "QN1403",
+        "name": "Breezy Point-Belle Harbor-Rockaway Park-Broad Channel",
+        "source": "nyc-nta-2020",
+        "borough": "Queens"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.84607924507175,
+          40.57721703283017
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "QN1491",
+        "name": "Rockaway Community Park",
+        "source": "nyc-nta-2020",
+        "borough": "Queens"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.78052189563361,
+          40.603377800783306
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "QN8081",
+        "name": "LaGuardia Airport",
+        "source": "nyc-nta-2020",
+        "borough": "Queens"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.87830009983197,
+          40.77488338337272
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "QN8191",
+        "name": "Flushing Meadows-Corona Park",
+        "source": "nyc-nta-2020",
+        "borough": "Queens"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.84012080394211,
+          40.735129714912524
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "QN8291",
+        "name": "Forest Park",
+        "source": "nyc-nta-2020",
+        "borough": "Queens"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.84893581175936,
+          40.70197732158178
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "QN8381",
+        "name": "John F. Kennedy International Airport",
+        "source": "nyc-nta-2020",
+        "borough": "Queens"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.78656924314485,
+          40.64697416556885
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "QN8491",
+        "name": "Jamaica Bay (East)",
+        "source": "nyc-nta-2020",
+        "borough": "Queens"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.79083336576883,
+          40.61552203208051
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "QN8492",
+        "name": "Jacob Riis Park-Fort Tilden-Breezy Point Tip",
+        "source": "nyc-nta-2020",
+        "borough": "Queens"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.90170459171424,
+          40.558946860853524
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "SI0101",
+        "name": "St. George-New Brighton",
+        "source": "nyc-nta-2020",
+        "borough": "Staten Island"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -74.08544313896348,
+          40.64219533592317
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "SI0102",
+        "name": "Tompkinsville-Stapleton-Clifton-Fox Hills",
+        "source": "nyc-nta-2020",
+        "borough": "Staten Island"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -74.07793660566261,
+          40.62322184423056
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "SI0103",
+        "name": "Rosebank-Shore Acres-Park Hill",
+        "source": "nyc-nta-2020",
+        "borough": "Staten Island"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -74.07276911032507,
+          40.61168564330358
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "SI0104",
+        "name": "West New Brighton-Silver Lake-Grymes Hill",
+        "source": "nyc-nta-2020",
+        "borough": "Staten Island"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -74.1013049129209,
+          40.62806625886564
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "SI0105",
+        "name": "Westerleigh-Castleton Corners",
+        "source": "nyc-nta-2020",
+        "borough": "Staten Island"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -74.12879645425274,
+          40.61700041498528
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "SI0106",
+        "name": "Port Richmond",
+        "source": "nyc-nta-2020",
+        "borough": "Staten Island"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -74.13869087174385,
+          40.63305147900812
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "SI0107",
+        "name": "Mariner's Harbor-Arlington-Graniteville",
+        "source": "nyc-nta-2020",
+        "borough": "Staten Island"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -74.16742858691383,
+          40.63123822293895
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "SI0191",
+        "name": "Snug Harbor",
+        "source": "nyc-nta-2020",
+        "borough": "Staten Island"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -74.10327228093242,
+          40.64259460313055
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "SI0201",
+        "name": "Grasmere-Arrochar-South Beach-Dongan Hills",
+        "source": "nyc-nta-2020",
+        "borough": "Staten Island"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -74.08127335765273,
+          40.59353983276919
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "SI0202",
+        "name": "New Dorp-Midland Beach",
+        "source": "nyc-nta-2020",
+        "borough": "Staten Island"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -74.11140585966317,
+          40.57244662814627
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "SI0203",
+        "name": "Todt Hill-Emerson Hill-Lighthouse Hill-Manor Heights",
+        "source": "nyc-nta-2020",
+        "borough": "Staten Island"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -74.12826577305326,
+          40.58965441576334
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "SI0204",
+        "name": "New Springville-Willowbrook-Bulls Head-Travis",
+        "source": "nyc-nta-2020",
+        "borough": "Staten Island"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -74.17545359556293,
+          40.603724717389326
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "SI0291",
+        "name": "Freshkills Park (North)",
+        "source": "nyc-nta-2020",
+        "borough": "Staten Island"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -74.17854077665983,
+          40.58285110883957
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "SI0301",
+        "name": "Oakwood-Richmondtown",
+        "source": "nyc-nta-2020",
+        "borough": "Staten Island"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -74.12259097480509,
+          40.561998360718185
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "SI0302",
+        "name": "Great Kills-Eltingville",
+        "source": "nyc-nta-2020",
+        "borough": "Staten Island"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -74.15623362695003,
+          40.549092786718646
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "SI0303",
+        "name": "Arden Heights-Rossville",
+        "source": "nyc-nta-2020",
+        "borough": "Staten Island"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -74.1969022142402,
+          40.552641541131656
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "SI0304",
+        "name": "Annadale-Huguenot-Prince's Bay-Woodrow",
+        "source": "nyc-nta-2020",
+        "borough": "Staten Island"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -74.19804140108852,
+          40.52839167686139
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "SI0305",
+        "name": "Tottenville-Charleston",
+        "source": "nyc-nta-2020",
+        "borough": "Staten Island"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -74.23064370670474,
+          40.52732499660732
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "SI0391",
+        "name": "Freshkills Park (South)",
+        "source": "nyc-nta-2020",
+        "borough": "Staten Island"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -74.20109804992546,
+          40.568021079481596
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "SI9561",
+        "name": "Fort Wadsworth",
+        "source": "nyc-nta-2020",
+        "borough": "Staten Island"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -74.05853349353035,
+          40.60151774631092
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "SI9591",
+        "name": "Hoffman & Swinburne Islands",
+        "source": "nyc-nta-2020",
+        "borough": "Staten Island"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -74.05391484425309,
+          40.57883260267796
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "SI9592",
+        "name": "Miller Field",
+        "source": "nyc-nta-2020",
+        "borough": "Staten Island"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -74.09671546913071,
+          40.56836878010398
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "SI9593",
+        "name": "Great Kills Park",
+        "source": "nyc-nta-2020",
+        "borough": "Staten Island"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -74.12834360043014,
+          40.545778793548344
+        ]
+      }
+    }
+  ]
+}
