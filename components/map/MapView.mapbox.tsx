@@ -120,6 +120,7 @@ const MapViewMapbox = forwardRef<MapViewRef, MapViewProps>(function MapViewMapbo
     showTransitStations = false,
     transitLinesUrl,
     transitStationsUrl,
+    transitBeforeId,
   },
   ref
 ) {
@@ -143,7 +144,10 @@ const MapViewMapbox = forwardRef<MapViewRef, MapViewProps>(function MapViewMapbo
           type="geojson"
           data={transitLines as any}
         >
-          <Layer {...transitLineLayer} />
+          <Layer
+            {...transitLineLayer}
+            beforeId={transitBeforeId}
+          />
         </Source>
       ) : null}
       {showStations && transitStations ? (
@@ -152,7 +156,10 @@ const MapViewMapbox = forwardRef<MapViewRef, MapViewProps>(function MapViewMapbo
           type="geojson"
           data={transitStations as any}
         >
-          <Layer {...transitStationLayer} />
+          <Layer
+            {...transitStationLayer}
+            beforeId={transitBeforeId}
+          />
         </Source>
       ) : null}
       {ghostLocation ? (

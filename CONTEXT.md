@@ -37,7 +37,7 @@
 - [x] Add right-overlay "Layers" toggle (pointer-events-auto) and accept drawer offset shift.
 - [x] Render transit overlays in `MapView.*` (non-interactive layers, lazy-load/cached).
 - [x] E2E: transit enabled does not block marker click → place drawer opens.
-- [ ] Map style selection: dark map style for Mapbox + MapLibre (map-only).
+- [x] Map style selection: dark map style for Mapbox + MapLibre (map-only).
 - [ ] Neighborhood boundaries: NYC GeoJSON overlay (runtime layer).
 
 ## 🗺️ Roadmap Visualization

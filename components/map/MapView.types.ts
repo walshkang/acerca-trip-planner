@@ -31,6 +31,7 @@ export type MapViewProps = {
   showTransitStations?: boolean
   transitLinesUrl?: string
   transitStationsUrl?: string
+  transitBeforeId?: string
 }
 
 export type MapViewRef = MapRef

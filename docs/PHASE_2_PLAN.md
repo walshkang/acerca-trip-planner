@@ -206,6 +206,8 @@ Notes:
 #### Map Style Selection (map-only)
 - Map style changes do not affect the dark glass UI (map-only selection).
 - Provide a dark style for Mapbox and a corresponding MapLibre style JSON.
+ - Use a MapLibre "label sandwich" (dark_nolabels → overlays → dark_only_labels) for cleaner overlays.
+ - Status: Done (2026-02-03).
 
 #### Neighborhood Boundaries (NYC)
 - Start as static GeoJSON under `public/map/overlays/` and render as runtime overlay layers.

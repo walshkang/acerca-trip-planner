@@ -120,6 +120,7 @@ const MapViewMaplibre = forwardRef<MapViewRef, MapViewProps>(
       showTransitStations = false,
       transitLinesUrl,
       transitStationsUrl,
+      transitBeforeId,
     },
     ref
   ) {
@@ -142,7 +143,10 @@ const MapViewMaplibre = forwardRef<MapViewRef, MapViewProps>(
             type="geojson"
             data={transitLines as any}
           >
-            <Layer {...transitLineLayer} />
+            <Layer
+              {...transitLineLayer}
+              beforeId={transitBeforeId}
+            />
           </Source>
         ) : null}
         {showStations && transitStations ? (
@@ -151,7 +155,10 @@ const MapViewMaplibre = forwardRef<MapViewRef, MapViewProps>(
             type="geojson"
             data={transitStations as any}
           >
-            <Layer {...transitStationLayer} />
+            <Layer
+              {...transitStationLayer}
+              beforeId={transitBeforeId}
+            />
           </Source>
         ) : null}
         {ghostLocation ? (

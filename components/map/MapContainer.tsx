@@ -93,6 +93,7 @@ export default function MapContainer() {
   )
   const [showTransit, setShowTransit] = useState(false)
   const [showTransitStations, setShowTransitStations] = useState(false)
+  const [mapStyleMode, setMapStyleMode] = useState<'light' | 'dark'>('light')
   const [inspectorHeight, setInspectorHeight] = useState(0)
   const [listTagRefreshKey, setListTagRefreshKey] = useState(0)
   const [placeTagRefreshKey, setPlaceTagRefreshKey] = useState(0)
@@ -100,16 +101,21 @@ export default function MapContainer() {
   const mapProvider =
     process.env.NEXT_PUBLIC_MAP_PROVIDER === 'maplibre' ? 'maplibre' : 'mapbox'
   const isMapbox = mapProvider === 'mapbox'
-  const mapStyle = useMemo(
-    () =>
-      isMapbox
-        ? 'mapbox://styles/mapbox/streets-v12'
-        : '/map/style.maplibre.json',
-    [isMapbox]
-  )
+  const mapStyle = useMemo(() => {
+    if (isMapbox) {
+      return mapStyleMode === 'dark'
+        ? 'mapbox://styles/mapbox/dark-v11'
+        : 'mapbox://styles/mapbox/streets-v12'
+    }
+    return mapStyleMode === 'dark'
+      ? '/map/style.maplibre.dark.json'
+      : '/map/style.maplibre.json'
+  }, [isMapbox, mapStyleMode])
   const canRenderMap = isMapbox ? Boolean(mapboxToken) : true
   const transitLinesUrl = '/map/overlays/nyc_subway_lines.geojson'
   const transitStationsUrl = '/map/overlays/nyc_subway_stations.geojson'
+  const transitBeforeId =
+    !isMapbox && mapStyleMode === 'dark' ? 'maplibre-dark-labels' : undefined
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -284,6 +290,19 @@ export default function MapContainer() {
       setActiveListId(stored)
     }
   }, [])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const stored = window.localStorage.getItem('acerca:mapStyleMode')
+    if (stored === 'light' || stored === 'dark') {
+      setMapStyleMode(stored)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    window.localStorage.setItem('acerca:mapStyleMode', mapStyleMode)
+  }, [mapStyleMode])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -610,6 +629,35 @@ export default function MapContainer() {
               />
               Stations
             </label>
+            <div className="mt-3">
+              <p className="text-[11px] font-semibold text-slate-200">
+                Base map
+              </p>
+              <div className="mt-1 flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setMapStyleMode('light')}
+                  className={`rounded-full border px-2 py-0.5 text-[10px] transition ${
+                    mapStyleMode === 'light'
+                      ? 'border-slate-100 bg-slate-100 text-slate-900'
+                      : 'border-white/10 text-slate-200 hover:border-white/30'
+                  }`}
+                >
+                  Light
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMapStyleMode('dark')}
+                  className={`rounded-full border px-2 py-0.5 text-[10px] transition ${
+                    mapStyleMode === 'dark'
+                      ? 'border-slate-100 bg-slate-100 text-slate-900'
+                      : 'border-white/10 text-slate-200 hover:border-white/30'
+                  }`}
+                >
+                  Dark
+                </button>
+              </div>
+            </div>
           </div>
         </div>
         <div className="pointer-events-auto">
@@ -675,6 +723,7 @@ export default function MapContainer() {
         showTransitStations={showTransitStations}
         transitLinesUrl={transitLinesUrl}
         transitStationsUrl={transitStationsUrl}
+        transitBeforeId={transitBeforeId}
       />
     </div>
   )

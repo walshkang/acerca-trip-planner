@@ -1,0 +1,34 @@
+{
+  "version": 8,
+  "name": "MapLibre Dark (Label Sandwich)",
+  "sources": {
+    "carto-dark-nolabels": {
+      "type": "raster",
+      "tiles": [
+        "https://basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png"
+      ],
+      "tileSize": 256,
+      "attribution": "© OpenStreetMap contributors © CARTO"
+    },
+    "carto-dark-labels": {
+      "type": "raster",
+      "tiles": [
+        "https://basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png"
+      ],
+      "tileSize": 256,
+      "attribution": "© OpenStreetMap contributors © CARTO"
+    }
+  },
+  "layers": [
+    {
+      "id": "maplibre-dark-base",
+      "type": "raster",
+      "source": "carto-dark-nolabels"
+    },
+    {
+      "id": "maplibre-dark-labels",
+      "type": "raster",
+      "source": "carto-dark-labels"
+    }
+  ]
+}
