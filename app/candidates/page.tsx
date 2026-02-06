@@ -32,7 +32,7 @@ export default async function CandidatesPage() {
     if (!candidateId) throw new Error('candidate_id is required')
     const placeId = await promotePlaceCandidate(candidateId)
     revalidatePath('/candidates')
-    nextRedirect(`/places/${placeId}`)
+    nextRedirect(`/?place=${placeId}`)
   }
 
   return (
@@ -63,4 +63,3 @@ export default async function CandidatesPage() {
     </main>
   )
 }
-

@@ -2,8 +2,13 @@
 
 import { type FormEvent, useCallback, useEffect, useMemo, useState } from 'react'
 import PlaceListMembershipEditor from '@/components/places/PlaceListMembershipEditor'
+import PlaceUserMetaForm from '@/components/places/PlaceUserMetaForm'
 import { normalizeTagList } from '@/lib/lists/tags'
 import { PLACE_FOCUS_GLOW } from '@/lib/ui/glow'
+import {
+  assertValidWikiCuratedData,
+  type WikiCuratedData,
+} from '@/lib/enrichment/wikiCurated'
 
 export type PlaceDrawerSummary = {
   id: string
@@ -30,6 +35,57 @@ type ListsResponse = {
   list_items?: Array<{ list_id: string; tags?: string[] | null }>
 }
 
+type PlaceDetailsResponse = {
+  place: {
+    id: string
+    name: string
+    address: string | null
+    category: string
+    energy: string | null
+    opening_hours: unknown | null
+    user_notes: string | null
+    user_tags: string[] | null
+    enrichment_id: string | null
+  }
+  enrichment:
+    | {
+        curated_data: unknown | null
+        normalized_data: unknown | null
+        raw_sources: {
+          wikipediaCurated: unknown | null
+          wikipediaSummary: unknown | null
+        }
+      }
+    | null
+  google:
+    | {
+        formatted_address?: string
+        formatted_phone_number?: string
+        website?: string
+        url?: string
+        opening_hours?: unknown
+      }
+    | null
+  error?: string
+}
+
+function safeWikiCurated(v: unknown): WikiCuratedData | null {
+  try {
+    assertValidWikiCuratedData(v)
+    return v as WikiCuratedData
+  } catch {
+    return null
+  }
+}
+
+function weekdayTextFromOpeningHours(v: unknown): string[] | null {
+  if (typeof v !== 'object' || v === null || Array.isArray(v)) return null
+  const oh = v as any
+  const wt = oh.weekday_text
+  if (!Array.isArray(wt) || wt.some((x: unknown) => typeof x !== 'string')) return null
+  return wt as string[]
+}
+
 export default function PlaceDrawer({
   open,
   place,
@@ -45,6 +101,10 @@ export default function PlaceDrawer({
   const [listItems, setListItems] = useState<
     Array<{ id: string; list_id: string; tags: string[] }>
   >([])
+  const [detailsOpen, setDetailsOpen] = useState(false)
+  const [detailsLoading, setDetailsLoading] = useState(false)
+  const [detailsError, setDetailsError] = useState<string | null>(null)
+  const [details, setDetails] = useState<PlaceDetailsResponse | null>(null)
   const [tagInput, setTagInput] = useState('')
   const [tagStatus, setTagStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>(
     'idle'
@@ -115,6 +175,10 @@ export default function PlaceDrawer({
     if (!open || !place) {
       setListIds([])
       setListItems([])
+      setDetailsOpen(false)
+      setDetailsLoading(false)
+      setDetailsError(null)
+      setDetails(null)
       setTagInput('')
       setTagStatus('idle')
       setTagError(null)
@@ -126,6 +190,13 @@ export default function PlaceDrawer({
 
     fetchMembership()
   }, [fetchMembership, open, place, tagsRefreshKey])
+
+  useEffect(() => {
+    setDetailsOpen(false)
+    setDetailsLoading(false)
+    setDetailsError(null)
+    setDetails(null)
+  }, [place?.id])
 
   useEffect(() => {
     if (
@@ -166,9 +237,47 @@ export default function PlaceDrawer({
     }
   }, [open, place?.lat, place?.lng])
 
+  const computedDetails = useMemo(() => {
+    const curated = safeWikiCurated(details?.enrichment?.curated_data ?? null)
+    const rawWikiSummary = details?.enrichment?.raw_sources?.wikipediaSummary as any
+    const fallbackSummary =
+      typeof rawWikiSummary?.summary === 'string' ? String(rawWikiSummary.summary) : null
+    const fallbackThumb =
+      typeof rawWikiSummary?.thumbnail_url === 'string'
+        ? String(rawWikiSummary.thumbnail_url)
+        : null
+
+    return {
+      wikiCurated: curated,
+      summary: curated?.summary ?? fallbackSummary,
+      thumbnailUrl: curated?.thumbnail_url ?? fallbackThumb,
+      weekdayText:
+        weekdayTextFromOpeningHours(details?.place?.opening_hours) ??
+        weekdayTextFromOpeningHours(details?.google?.opening_hours),
+    }
+  }, [details])
+
   if (!open || !place) return null
 
   const activeListTags = effectiveActiveListItem?.tags ?? []
+
+  async function fetchDetails() {
+    if (!place) return
+    setDetailsLoading(true)
+    setDetailsError(null)
+    try {
+      const res = await fetch(`/api/places/${place.id}/details`)
+      const json = (await res.json().catch(() => ({}))) as Partial<PlaceDetailsResponse>
+      if (!res.ok) {
+        throw new Error(String(json?.error || `HTTP ${res.status}`))
+      }
+      setDetails(json as PlaceDetailsResponse)
+    } catch (err: unknown) {
+      setDetailsError(err instanceof Error ? err.message : 'Request failed')
+    } finally {
+      setDetailsLoading(false)
+    }
+  }
 
   async function commitTags(nextTags: string[]) {
     if (!activeListId || !effectiveActiveListItem) return
@@ -277,14 +386,138 @@ export default function PlaceDrawer({
             <span className="rounded-full border border-white/10 px-2 py-0.5 text-[10px] text-slate-300">
               {place.category}
             </span>
-            <a
+            <button
+              type="button"
+              onClick={async () => {
+                setDetailsOpen((prev) => !prev)
+                if (!details && !detailsLoading) {
+                  await fetchDetails()
+                }
+              }}
               className="text-[11px] text-slate-300 underline"
-              href={`/places/${place.id}`}
             >
-              Open full details
-            </a>
+              {detailsOpen ? 'Hide details' : 'Show details'}
+            </button>
           </div>
         </div>
+
+        {detailsOpen ? (
+          <div className="space-y-3">
+            {detailsLoading ? (
+              <p className="text-xs text-slate-300">Loading details…</p>
+            ) : null}
+            {detailsError ? (
+              <p className="text-xs text-red-300">{detailsError}</p>
+            ) : null}
+
+            {details?.place?.address ? (
+              <div>
+                <p className="text-[11px] font-semibold text-slate-300">Address</p>
+                <p className="mt-1 text-xs text-slate-200">{details.place.address}</p>
+              </div>
+            ) : null}
+
+            {details?.place?.energy ? (
+              <div>
+                <p className="text-[11px] font-semibold text-slate-300">Energy</p>
+                <p className="mt-1 text-xs text-slate-200">{details.place.energy}</p>
+              </div>
+            ) : null}
+
+            {computedDetails.weekdayText?.length ? (
+              <div>
+                <p className="text-[11px] font-semibold text-slate-300">
+                  Opening hours
+                </p>
+                <ul className="mt-1 space-y-1 text-xs text-slate-200">
+                  {computedDetails.weekdayText.map((line) => (
+                    <li key={line}>{line}</li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+
+            {details?.google?.website || details?.google?.url ? (
+              <div>
+                <p className="text-[11px] font-semibold text-slate-300">Google</p>
+                <div className="mt-1 space-y-1 text-xs text-slate-200">
+                  {details.google.website ? (
+                    <p>
+                      Website:{' '}
+                      <a
+                        className="underline text-slate-200"
+                        href={details.google.website}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        {details.google.website}
+                      </a>
+                    </p>
+                  ) : null}
+                  {details.google.url ? (
+                    <p>
+                      Maps:{' '}
+                      <a
+                        className="underline text-slate-200"
+                        href={details.google.url}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        Open in Google Maps
+                      </a>
+                    </p>
+                  ) : null}
+                  {details.google.formatted_phone_number ? (
+                    <p>Phone: {details.google.formatted_phone_number}</p>
+                  ) : null}
+                </div>
+              </div>
+            ) : null}
+
+            {computedDetails.summary ||
+            computedDetails.thumbnailUrl ||
+            computedDetails.wikiCurated?.primary_fact_pairs?.length ? (
+              <div>
+                <p className="text-[11px] font-semibold text-slate-300">Wikipedia</p>
+                <div className="mt-2 flex gap-3">
+                  {computedDetails.thumbnailUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={computedDetails.thumbnailUrl}
+                      alt={computedDetails.wikiCurated?.wikipedia_title ?? place.name}
+                      className="h-14 w-14 shrink-0 rounded-md object-cover bg-slate-800/60"
+                    />
+                  ) : null}
+                  <div className="min-w-0 space-y-1">
+                    {computedDetails.wikiCurated?.wikipedia_title ? (
+                      <p className="text-[11px] text-slate-400">
+                        {computedDetails.wikiCurated.wikipedia_title}
+                        {computedDetails.wikiCurated.wikidata_qid
+                          ? ` · ${computedDetails.wikiCurated.wikidata_qid}`
+                          : ''}
+                      </p>
+                    ) : null}
+                    {computedDetails.summary ? (
+                      <p className="text-xs leading-5 text-slate-200">
+                        {computedDetails.summary}
+                      </p>
+                    ) : null}
+                  </div>
+                </div>
+              </div>
+            ) : null}
+
+            {details?.place?.id ? (
+              <div>
+                <PlaceUserMetaForm
+                  placeId={details.place.id}
+                  initialNotes={details.place.user_notes ?? null}
+                  tone="dark"
+                />
+              </div>
+            ) : null}
+          </div>
+        ) : null}
 
         {loading ? <p className="text-xs text-slate-300">Loading lists…</p> : null}
         {error ? <p className="text-xs text-red-300">{error}</p> : null}
