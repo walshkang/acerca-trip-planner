@@ -157,6 +157,9 @@ export default function MapContainer() {
   const isMobile = !isDesktop
   const ghostLocation = useDiscoveryStore((s) => s.ghostLocation)
   const previewCandidate = useDiscoveryStore((s) => s.previewCandidate)
+  const previewSelectedResultId = useDiscoveryStore((s) => s.selectedResultId)
+  const discoveryIsSubmitting = useDiscoveryStore((s) => s.isSubmitting)
+  const discoveryError = useDiscoveryStore((s) => s.error)
   const clearDiscovery = useDiscoveryStore((s) => s.clear)
   const setSearchBias = useDiscoveryStore((s) => s.setSearchBias)
   const mapRef = useRef<MapRef | null>(null)
@@ -311,7 +314,7 @@ export default function MapContainer() {
   const isPlaceDimmed = useCallback(
     (place: MapPlace) => {
       const dimmedByList =
-        !previewCandidate &&
+        !previewSelectedResultId &&
         activeListPlaceIds.length > 0 &&
         !activeListPlaceIdSet.has(place.id)
       const dimmedByType =
@@ -324,7 +327,7 @@ export default function MapContainer() {
       activeListPlaceIds.length,
       activeListTypeFilterSet,
       activeListTypeFilters.length,
-      previewCandidate,
+      previewSelectedResultId,
     ]
   )
 
@@ -376,14 +379,14 @@ export default function MapContainer() {
   }, [selectedPlaceId])
 
   useEffect(() => {
-    if (previewCandidate) {
+    if (previewCandidate || previewSelectedResultId) {
       setPanelMode('place')
     }
-  }, [previewCandidate])
+  }, [previewCandidate, previewSelectedResultId])
 
   useEffect(() => {
     const prev = prevPreviewIdRef.current
-    const current = previewCandidate?.id ?? null
+    const current = previewSelectedResultId ?? null
 
     if (!prev && current) {
       prePreviewStateRef.current = {
@@ -411,7 +414,7 @@ export default function MapContainer() {
     drawerOpen,
     focusedListPlaceId,
     panelMode,
-    previewCandidate?.id,
+    previewSelectedResultId,
     selectedPlaceId,
   ])
 
@@ -687,10 +690,14 @@ export default function MapContainer() {
   }
 
   const contextOpen =
-    (drawerOpen || Boolean(selectedPlaceId) || Boolean(previewCandidate)) &&
+    (drawerOpen ||
+      Boolean(selectedPlaceId) ||
+      Boolean(previewCandidate) ||
+      Boolean(previewSelectedResultId)) &&
     !(isMobile && toolsOpen)
 
-  const isPreviewing = Boolean(previewCandidate) && !selectedPlaceId
+  const isPreviewing = Boolean(previewSelectedResultId) && !selectedPlaceId
+  const isPreviewLoading = isPreviewing && discoveryIsSubmitting && !previewCandidate
   const panelTitle = isPreviewing
     ? 'Preview'
     : panelMode === 'place'
@@ -781,6 +788,36 @@ export default function MapContainer() {
               tagsRefreshKey={placeTagRefreshKey}
               onTagsUpdated={bumpListTagRefresh}
             />
+          </div>
+        ) : isPreviewLoading ? (
+          <div className="p-4">
+            <p className="text-sm font-medium text-slate-100">Loading preview…</p>
+            <p className="mt-1 text-xs text-slate-400">
+              Fetching details so you can decide whether to approve.
+            </p>
+            <button
+              type="button"
+              onClick={cancelPreview}
+              className="mt-3 glass-button"
+            >
+              Cancel
+            </button>
+          </div>
+        ) : isPreviewing && !previewCandidate ? (
+          <div className="p-4">
+            <p className="text-sm font-medium text-slate-100">
+              Preview unavailable
+            </p>
+            <p className="mt-1 text-xs text-slate-400">
+              {discoveryError || 'Could not load preview details.'}
+            </p>
+            <button
+              type="button"
+              onClick={cancelPreview}
+              className="mt-3 glass-button"
+            >
+              Back
+            </button>
           </div>
         ) : (
           <div className="p-3">

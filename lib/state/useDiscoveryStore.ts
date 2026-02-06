@@ -192,6 +192,7 @@ export const useDiscoveryStore = create<DiscoveryState>((set, get) => ({
     set({
       isSubmitting: true,
       error: null,
+      results: [],
       selectedResultId: result.place_id,
       candidate: null,
       previewCandidate: null,
