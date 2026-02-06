@@ -322,7 +322,7 @@ export default function ListDetailBody({
                     Place type
                   </p>
                   <p className={`text-[11px] ${mutedText}`}>
-                    A fixed category that sets this place's map icon.
+                    A fixed category that sets this place’s map icon.
                   </p>
                 </div>
                 {activeTypeFilters.length && onClearTypeFilters ? (

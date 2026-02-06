@@ -11,6 +11,9 @@ import Omnibox from '@/components/discovery/Omnibox'
 import InspectorCard from '@/components/discovery/InspectorCard'
 import ListDrawer from '@/components/lists/ListDrawer'
 import PlaceDrawer from '@/components/places/PlaceDrawer'
+import ContextPanel from '@/components/ui/ContextPanel'
+import ToolsSheet from '@/components/ui/ToolsSheet'
+import { useMediaQuery } from '@/components/ui/useMediaQuery'
 import { useDiscoveryStore } from '@/lib/state/useDiscoveryStore'
 import type { MapRef, ViewState, ViewStateChangeEvent } from 'react-map-gl'
 
@@ -80,6 +83,8 @@ export default function MapContainer() {
     null
   )
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const [panelMode, setPanelMode] = useState<'lists' | 'place'>('lists')
+  const [toolsOpen, setToolsOpen] = useState(false)
   const [activeListId, setActiveListId] = useState<string | null>(null)
   const [activeListPlaceIds, setActiveListPlaceIds] = useState<string[]>([])
   const [activeListItems, setActiveListItems] = useState<
@@ -96,7 +101,6 @@ export default function MapContainer() {
   const [showNeighborhoodBoundaries, setShowNeighborhoodBoundaries] =
     useState(false)
   const [mapStyleMode, setMapStyleMode] = useState<'light' | 'dark'>('light')
-  const [inspectorHeight, setInspectorHeight] = useState(0)
   const [listTagRefreshKey, setListTagRefreshKey] = useState(0)
   const [placeTagRefreshKey, setPlaceTagRefreshKey] = useState(0)
   const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN
@@ -149,11 +153,13 @@ export default function MapContainer() {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
+  const isDesktop = useMediaQuery('(min-width: 768px)')
+  const isMobile = !isDesktop
   const ghostLocation = useDiscoveryStore((s) => s.ghostLocation)
   const clearDiscovery = useDiscoveryStore((s) => s.clear)
   const setSearchBias = useDiscoveryStore((s) => s.setSearchBias)
   const mapRef = useRef<MapRef | null>(null)
-  const inspectorRef = useRef<HTMLDivElement | null>(null)
+  const didInitActiveList = useRef(false)
   const bumpListTagRefresh = useCallback(() => {
     setListTagRefreshKey((prev) => prev + 1)
   }, [])
@@ -212,6 +218,7 @@ export default function MapContainer() {
   const lastAddedPlaceKey = 'acerca:lastAddedPlaceId'
 
   const selectedPlaceId = searchParams.get('place')
+  const selectedListParam = searchParams.get('list')
   const setPlaceParam = useCallback(
     (nextId: string | null) => {
       const params = new URLSearchParams(searchParams.toString())
@@ -221,6 +228,22 @@ export default function MapContainer() {
         params.set('place', nextId)
       } else {
         params.delete('place')
+      }
+      const next = params.toString()
+      router.push(next ? `${pathname}?${next}` : pathname)
+    },
+    [pathname, router, searchParams]
+  )
+
+  const setListParam = useCallback(
+    (nextId: string | null) => {
+      const params = new URLSearchParams(searchParams.toString())
+      const current = params.get('list')
+      if (current === nextId) return
+      if (nextId) {
+        params.set('list', nextId)
+      } else {
+        params.delete('list')
       }
       const next = params.toString()
       router.push(next ? `${pathname}?${next}` : pathname)
@@ -314,12 +337,33 @@ export default function MapContainer() {
   }, [isMapbox, mapboxToken])
 
   useEffect(() => {
+    if (didInitActiveList.current) return
+    didInitActiveList.current = true
     if (typeof window === 'undefined') return
+    if (selectedListParam) {
+      setActiveListId(selectedListParam)
+      setDrawerOpen(true)
+      setPanelMode('lists')
+      return
+    }
     const stored = window.localStorage.getItem(lastActiveListKey)
     if (stored) {
       setActiveListId(stored)
     }
-  }, [])
+  }, [lastActiveListKey, selectedListParam])
+
+  useEffect(() => {
+    if (!selectedListParam) return
+    setActiveListId(selectedListParam)
+    setDrawerOpen(true)
+    setPanelMode('lists')
+  }, [selectedListParam])
+
+  useEffect(() => {
+    if (selectedPlaceId) {
+      setPanelMode('place')
+    }
+  }, [selectedPlaceId])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -511,24 +555,6 @@ export default function MapContainer() {
     updateSearchBiasFromMap()
   }, [loading, updateSearchBiasFromMap])
 
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-    const node = inspectorRef.current
-    if (!node) return
-    const update = () => {
-      const rect = node.getBoundingClientRect()
-      setInspectorHeight(rect.height || 0)
-    }
-    update()
-    if (typeof ResizeObserver === 'undefined') {
-      window.addEventListener('resize', update)
-      return () => window.removeEventListener('resize', update)
-    }
-    const observer = new ResizeObserver(update)
-    observer.observe(node)
-    return () => observer.disconnect()
-  }, [])
-
   const handleMapClick = useCallback(() => {
     clearDiscovery()
     if (selectedPlaceId) {
@@ -555,10 +581,12 @@ export default function MapContainer() {
         setDrawerOpen(true)
         setFocusedListPlaceId(placeId)
         setPlaceParam(placeId)
+        setPanelMode('place')
         return
       }
       setFocusedListPlaceId(null)
       setPlaceParam(placeId)
+      setPanelMode('place')
     },
     [activeListId, activeListPlaceIdSet, setPlaceParam]
   )
@@ -596,6 +624,9 @@ export default function MapContainer() {
     )
   }
 
+  const contextOpen =
+    (drawerOpen || Boolean(selectedPlaceId)) && !(isMobile && toolsOpen)
+
   return (
     <div className="w-full h-screen relative">
       <div
@@ -605,7 +636,10 @@ export default function MapContainer() {
         <div className="pointer-events-auto">
           <button
             type="button"
-            onClick={() => setDrawerOpen((prev) => !prev)}
+            onClick={() => {
+              setDrawerOpen((prev) => !prev)
+              setPanelMode('lists')
+            }}
             className="glass-button"
           >
             {drawerOpen ? 'Hide lists' : 'Lists'}
@@ -615,138 +649,249 @@ export default function MapContainer() {
       </div>
 
       <div
-        ref={inspectorRef}
-        className="absolute right-4 top-4 z-[80] pointer-events-none space-y-2"
+        className="absolute right-4 top-4 z-[80] pointer-events-none"
         data-testid="map-overlay-right"
       >
-        <form
-          action="/auth/sign-out"
-          method="post"
-          className="pointer-events-auto"
-        >
+        <div className="pointer-events-auto">
           <button
-            className="glass-button"
-            type="submit"
-          >
-            Sign out
-          </button>
-        </form>
-        <div className="pointer-events-auto">
-          <div className="glass-panel rounded-lg px-3 py-2 text-slate-100">
-            <p className="text-[11px] font-semibold text-slate-200">Layers</p>
-            <label className="mt-2 flex items-center gap-2 text-[11px] text-slate-200">
-              <input
-                type="checkbox"
-                className="accent-slate-200"
-                checked={showTransit}
-                onChange={(event) => {
-                  const next = event.target.checked
-                  setShowTransit(next)
-                  if (!next) {
-                    setShowTransitStations(false)
-                  }
-                }}
-              />
-              Transit lines
-            </label>
-            <label className="mt-1 flex items-center gap-2 text-[11px] text-slate-300">
-              <input
-                type="checkbox"
-                className="accent-slate-200"
-                checked={showTransitStations}
-                disabled={!showTransit}
-                onChange={(event) => setShowTransitStations(event.target.checked)}
-              />
-              Stations
-            </label>
-            <label className="mt-2 flex items-center gap-2 text-[11px] text-slate-200">
-              <input
-                type="checkbox"
-                className="accent-slate-200"
-                checked={showNeighborhoodBoundaries}
-                onChange={(event) =>
-                  setShowNeighborhoodBoundaries(event.target.checked)
-                }
-              />
-              Neighborhoods
-            </label>
-            <div className="mt-3">
-              <p className="text-[11px] font-semibold text-slate-200">
-                Base map
-              </p>
-              <div className="mt-1 flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => setMapStyleMode('light')}
-                  className={`rounded-full border px-2 py-0.5 text-[10px] transition ${
-                    mapStyleMode === 'light'
-                      ? 'border-slate-100 bg-slate-100 text-slate-900'
-                      : 'border-white/10 text-slate-200 hover:border-white/30'
-                  }`}
-                >
-                  Light
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setMapStyleMode('dark')}
-                  className={`rounded-full border px-2 py-0.5 text-[10px] transition ${
-                    mapStyleMode === 'dark'
-                      ? 'border-slate-100 bg-slate-100 text-slate-900'
-                      : 'border-white/10 text-slate-200 hover:border-white/30'
-                  }`}
-                >
-                  Dark
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div className="pointer-events-auto">
-          <InspectorCard
-            onCommitted={(placeId) => {
-              if (typeof window !== 'undefined') {
-                window.localStorage.setItem(lastAddedPlaceKey, placeId)
-              }
-              setPendingFocusPlaceId(placeId)
-              fetchPlaces()
-              setPlaceParam(placeId)
+            type="button"
+            onClick={() => {
+              setToolsOpen(true)
+              if (isMobile) setDrawerOpen(false)
             }}
-          />
+            className="glass-button"
+          >
+            Tools
+          </button>
         </div>
       </div>
 
-      <ListDrawer
-        open={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
-        activeListId={activeListId}
-        onActiveListChange={(id) => {
-          setActiveListId(id)
-          setActiveListPlaceIds([])
-          if (id) setDrawerOpen(true)
+      <ContextPanel
+        open={contextOpen}
+        title={panelMode === 'place' ? 'Place' : 'Lists'}
+        subtitle={
+          panelMode === 'place' ? 'Details and actions.' : 'Keep the map in view.'
+        }
+        onClose={() => {
+          setDrawerOpen(false)
+          setToolsOpen(false)
+          setPlaceParam(null)
         }}
-        onPlaceIdsChange={handleActiveListPlaceIdsChange}
-        onActiveTypeFiltersChange={setActiveListTypeFilters}
-        onActiveListItemsChange={handleActiveListItemsChange}
-        focusedPlaceId={focusedListPlaceId}
-        onPlaceSelect={(placeId) => {
-          setPendingFocusPlaceId(placeId)
-          setPlaceParam(placeId)
-          setFocusedListPlaceId(placeId)
-        }}
-        tagsRefreshKey={listTagRefreshKey}
-        onTagsUpdated={bumpPlaceTagRefresh}
+        left={
+          <ListDrawer
+            open={contextOpen}
+            variant="embedded"
+            onClose={() => setDrawerOpen(false)}
+            activeListId={activeListId}
+            onActiveListChange={(id) => {
+              setActiveListId(id)
+              setActiveListPlaceIds([])
+              setListParam(id)
+              if (id) setDrawerOpen(true)
+            }}
+            onPlaceIdsChange={handleActiveListPlaceIdsChange}
+            onActiveTypeFiltersChange={setActiveListTypeFilters}
+            onActiveListItemsChange={handleActiveListItemsChange}
+            focusedPlaceId={focusedListPlaceId}
+            onPlaceSelect={(placeId) => {
+              setPendingFocusPlaceId(placeId)
+              setPlaceParam(placeId)
+              setFocusedListPlaceId(placeId)
+              setPanelMode('place')
+            }}
+            tagsRefreshKey={listTagRefreshKey}
+            onTagsUpdated={bumpPlaceTagRefresh}
+          />
+        }
+        right={
+          selectedPlace ? (
+            <div className="p-3">
+              <PlaceDrawer
+                variant="embedded"
+                open={Boolean(selectedPlace)}
+                place={selectedPlace}
+                activeListId={activeListId}
+                activeListItemOverride={activeListItemOverride}
+                onClose={() => setPlaceParam(null)}
+                tagsRefreshKey={placeTagRefreshKey}
+                onTagsUpdated={bumpListTagRefresh}
+              />
+            </div>
+          ) : (
+            <div className="p-3">
+              <InspectorCard
+                onCommitted={(placeId) => {
+                  if (typeof window !== 'undefined') {
+                    window.localStorage.setItem(lastAddedPlaceKey, placeId)
+                  }
+                  setPendingFocusPlaceId(placeId)
+                  fetchPlaces()
+                  setPlaceParam(placeId)
+                  setPanelMode('place')
+                }}
+              />
+              <p className="mt-3 text-xs text-slate-400">
+                Select a pin to open a place.
+              </p>
+            </div>
+          )
+        }
+        mobileContent={
+          <div className="p-1">
+            <div className="flex items-center gap-2 px-2 py-2">
+              <button
+                type="button"
+                onClick={() => setPanelMode('lists')}
+                className={`rounded-full border px-3 py-1 text-xs transition ${
+                  panelMode === 'lists'
+                    ? 'border-slate-100 bg-slate-100 text-slate-900'
+                    : 'border-white/10 text-slate-200 hover:border-white/30'
+                }`}
+              >
+                Lists
+              </button>
+              <button
+                type="button"
+                onClick={() => setPanelMode('place')}
+                disabled={!selectedPlaceId}
+                className={`rounded-full border px-3 py-1 text-xs transition disabled:opacity-40 ${
+                  panelMode === 'place'
+                    ? 'border-slate-100 bg-slate-100 text-slate-900'
+                    : 'border-white/10 text-slate-200 hover:border-white/30'
+                }`}
+              >
+                Place
+              </button>
+            </div>
+
+            <div className="px-2 pb-2">
+              {panelMode === 'lists' ? (
+                <ListDrawer
+                  open={contextOpen}
+                  variant="embedded"
+                  onClose={() => setDrawerOpen(false)}
+                  activeListId={activeListId}
+                  onActiveListChange={(id) => {
+                    setActiveListId(id)
+                    setActiveListPlaceIds([])
+                    setListParam(id)
+                    if (id) setDrawerOpen(true)
+                  }}
+                  onPlaceIdsChange={handleActiveListPlaceIdsChange}
+                  onActiveTypeFiltersChange={setActiveListTypeFilters}
+                  onActiveListItemsChange={handleActiveListItemsChange}
+                  focusedPlaceId={focusedListPlaceId}
+                  onPlaceSelect={(placeId) => {
+                    setPendingFocusPlaceId(placeId)
+                    setPlaceParam(placeId)
+                    setFocusedListPlaceId(placeId)
+                    setPanelMode('place')
+                  }}
+                  tagsRefreshKey={listTagRefreshKey}
+                  onTagsUpdated={bumpPlaceTagRefresh}
+                />
+              ) : selectedPlace ? (
+                <PlaceDrawer
+                  variant="embedded"
+                  open={Boolean(selectedPlace)}
+                  place={selectedPlace}
+                  activeListId={activeListId}
+                  activeListItemOverride={activeListItemOverride}
+                  onClose={() => setPlaceParam(null)}
+                  tagsRefreshKey={placeTagRefreshKey}
+                  onTagsUpdated={bumpListTagRefresh}
+                />
+              ) : (
+                <InspectorCard
+                  onCommitted={(placeId) => {
+                    if (typeof window !== 'undefined') {
+                      window.localStorage.setItem(lastAddedPlaceKey, placeId)
+                    }
+                    setPendingFocusPlaceId(placeId)
+                    fetchPlaces()
+                    setPlaceParam(placeId)
+                    setPanelMode('place')
+                  }}
+                />
+              )}
+            </div>
+          </div>
+        }
       />
 
-      <PlaceDrawer
-        open={Boolean(selectedPlace)}
-        place={selectedPlace}
-        activeListId={activeListId}
-        activeListItemOverride={activeListItemOverride}
-        topOffset={inspectorHeight}
-        onClose={() => setPlaceParam(null)}
-        tagsRefreshKey={placeTagRefreshKey}
-        onTagsUpdated={bumpListTagRefresh}
-      />
+      <ToolsSheet open={toolsOpen} onClose={() => setToolsOpen(false)}>
+        <form action="/auth/sign-out" method="post">
+          <button className="glass-button" type="submit">
+            Sign out
+          </button>
+        </form>
+
+        <div className="mt-4">
+          <p className="text-[11px] font-semibold text-slate-200">Layers</p>
+          <label className="mt-2 flex items-center gap-2 text-[11px] text-slate-200">
+            <input
+              type="checkbox"
+              className="accent-slate-200"
+              checked={showTransit}
+              onChange={(event) => {
+                const next = event.target.checked
+                setShowTransit(next)
+                if (!next) {
+                  setShowTransitStations(false)
+                }
+              }}
+            />
+            Transit lines
+          </label>
+          <label className="mt-1 flex items-center gap-2 text-[11px] text-slate-300">
+            <input
+              type="checkbox"
+              className="accent-slate-200"
+              checked={showTransitStations}
+              disabled={!showTransit}
+              onChange={(event) => setShowTransitStations(event.target.checked)}
+            />
+            Stations
+          </label>
+          <label className="mt-2 flex items-center gap-2 text-[11px] text-slate-200">
+            <input
+              type="checkbox"
+              className="accent-slate-200"
+              checked={showNeighborhoodBoundaries}
+              onChange={(event) => setShowNeighborhoodBoundaries(event.target.checked)}
+            />
+            Neighborhoods
+          </label>
+        </div>
+
+        <div className="mt-4">
+          <p className="text-[11px] font-semibold text-slate-200">Base map</p>
+          <div className="mt-2 flex gap-2">
+            <button
+              type="button"
+              onClick={() => setMapStyleMode('light')}
+              className={`rounded-full border px-3 py-1 text-xs transition ${
+                mapStyleMode === 'light'
+                  ? 'border-slate-100 bg-slate-100 text-slate-900'
+                  : 'border-white/10 text-slate-200 hover:border-white/30'
+              }`}
+            >
+              Light
+            </button>
+            <button
+              type="button"
+              onClick={() => setMapStyleMode('dark')}
+              className={`rounded-full border px-3 py-1 text-xs transition ${
+                mapStyleMode === 'dark'
+                  ? 'border-slate-100 bg-slate-100 text-slate-900'
+                  : 'border-white/10 text-slate-200 hover:border-white/30'
+              }`}
+            >
+              Dark
+            </button>
+          </div>
+        </div>
+      </ToolsSheet>
 
       <MapView
         ref={mapRef}

@@ -22,6 +22,7 @@ type Props = {
   onClose: () => void
   tagsRefreshKey?: number
   onTagsUpdated?: () => void
+  variant?: 'floating' | 'embedded'
 }
 
 type ListsResponse = {
@@ -38,6 +39,7 @@ export default function PlaceDrawer({
   onClose,
   tagsRefreshKey,
   onTagsUpdated,
+  variant = 'floating',
 }: Props) {
   const [listIds, setListIds] = useState<string[]>([])
   const [listItems, setListItems] = useState<
@@ -229,12 +231,17 @@ export default function PlaceDrawer({
     await commitTags([])
   }
 
+  const isEmbedded = variant === 'embedded'
   const computedTop = Math.max(96, (topOffset ?? 0) + 16)
 
   return (
     <aside
-      className={`glass-panel absolute right-4 z-20 w-[min(360px,90vw)] max-h-[80vh] overflow-hidden rounded-xl text-slate-100 ${PLACE_FOCUS_GLOW}`}
-      style={{ top: `${computedTop}px` }}
+      className={
+        isEmbedded
+          ? `text-slate-100 ${PLACE_FOCUS_GLOW}`
+          : `glass-panel absolute right-4 z-20 w-[min(360px,90vw)] max-h-[80vh] overflow-hidden rounded-xl text-slate-100 ${PLACE_FOCUS_GLOW}`
+      }
+      style={isEmbedded ? undefined : { top: `${computedTop}px` }}
       data-testid="place-drawer"
     >
       <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
@@ -264,7 +271,7 @@ export default function PlaceDrawer({
         <div className="space-y-1">
           <p className="text-[11px] font-semibold text-slate-300">Place type</p>
           <p className="text-[11px] text-slate-400">
-            A fixed category that sets this place's map icon.
+            A fixed category that sets this place’s map icon.
           </p>
           <div className="flex items-center gap-2">
             <span className="rounded-full border border-white/10 px-2 py-0.5 text-[10px] text-slate-300">

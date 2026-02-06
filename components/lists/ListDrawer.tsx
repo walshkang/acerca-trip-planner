@@ -26,6 +26,7 @@ type Props = {
   focusedPlaceId?: string | null
   tagsRefreshKey?: number
   onTagsUpdated?: () => void
+  variant?: 'floating' | 'embedded'
 }
 
 type ListsResponse = {
@@ -50,6 +51,7 @@ export default function ListDrawer({
   focusedPlaceId = null,
   tagsRefreshKey,
   onTagsUpdated,
+  variant = 'floating',
 }: Props) {
   const [lists, setLists] = useState<ListSummary[]>([])
   const [listsLoading, setListsLoading] = useState(false)
@@ -290,9 +292,15 @@ export default function ListDrawer({
 
   if (!open) return null
 
+  const isEmbedded = variant === 'embedded'
+
   return (
     <aside
-      className="glass-panel absolute left-4 top-20 z-20 w-[min(360px,90vw)] max-h-[80vh] overflow-hidden rounded-xl text-slate-100"
+      className={
+        isEmbedded
+          ? 'text-slate-100'
+          : 'glass-panel absolute left-4 top-20 z-20 w-[min(360px,90vw)] max-h-[80vh] overflow-hidden rounded-xl text-slate-100'
+      }
       data-testid="list-drawer"
     >
       <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
@@ -301,20 +309,24 @@ export default function ListDrawer({
           <p className="text-xs text-slate-300">Keep the map in view.</p>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => onActiveListChange(null)}
-            className="text-xs text-slate-300 hover:text-slate-100"
-          >
-            Clear
-          </button>
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-xs text-slate-300 hover:text-slate-100"
-          >
-            Close
-          </button>
+          {isEmbedded ? null : (
+            <>
+              <button
+                type="button"
+                onClick={() => onActiveListChange(null)}
+                className="text-xs text-slate-300 hover:text-slate-100"
+              >
+                Clear
+              </button>
+              <button
+                type="button"
+                onClick={onClose}
+                className="text-xs text-slate-300 hover:text-slate-100"
+              >
+                Close
+              </button>
+            </>
+          )}
         </div>
       </div>
 
