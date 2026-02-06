@@ -362,8 +362,13 @@ export default function MapContainer() {
     const stored = window.localStorage.getItem(lastActiveListKey)
     if (stored) {
       setActiveListId(stored)
+      setDrawerOpen(true)
+      setPanelMode('lists')
+      if (selectedPlaceId) {
+        setFocusedListPlaceId(selectedPlaceId)
+      }
     }
-  }, [lastActiveListKey, selectedListParam])
+  }, [lastActiveListKey, selectedListParam, selectedPlaceId])
 
   useEffect(() => {
     if (!selectedListParam) return
