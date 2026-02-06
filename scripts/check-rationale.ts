@@ -1,3 +1,4 @@
+import { execFileSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 
@@ -7,22 +8,61 @@ const ROOT_DIR = process.cwd();
 const CONTEXT_PATH = path.join(ROOT_DIR, 'CONTEXT.md');
 const REPORTS_DIR = path.join(ROOT_DIR, 'docs', 'reports');
 
-function collectMarkdownFiles(dir: string): string[] {
-  if (!fs.existsSync(dir)) return [];
-
-  const entries = fs.readdirSync(dir, { withFileTypes: true });
-  const files: string[] = [];
-
-  for (const entry of entries) {
-    const fullPath = path.join(dir, entry.name);
-    if (entry.isDirectory()) {
-      files.push(...collectMarkdownFiles(fullPath));
-    } else if (entry.isFile() && entry.name.endsWith('.md')) {
-      files.push(fullPath);
-    }
+function safeExecGit(args: string[]): string | null {
+  try {
+    return execFileSync('git', args, {
+      encoding: 'utf8',
+      cwd: ROOT_DIR,
+      stdio: ['ignore', 'pipe', 'ignore'],
+    });
+  } catch {
+    return null;
   }
+}
 
-  return files;
+function parseNullSeparated(output: string | null): string[] {
+  if (!output) return [];
+  return output
+    .split('\0')
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+function getChangedPaths(): string[] {
+  const hasOriginMain =
+    safeExecGit(['rev-parse', '--verify', 'origin/main']) != null;
+
+  const base = hasOriginMain
+    ? safeExecGit(['merge-base', 'HEAD', 'origin/main'])?.trim() ?? null
+    : null;
+
+  const committedDiff = base
+    ? parseNullSeparated(
+        safeExecGit([
+          'diff',
+          '--name-only',
+          '--diff-filter=ACMR',
+          '-z',
+          `${base}...HEAD`,
+        ])
+      )
+    : [];
+
+  const stagedDiff = parseNullSeparated(
+    safeExecGit(['diff', '--name-only', '--diff-filter=ACMR', '--cached', '-z'])
+  );
+
+  const workingTreeDiff = parseNullSeparated(
+    safeExecGit(['diff', '--name-only', '--diff-filter=ACMR', '-z'])
+  );
+
+  const untracked = parseNullSeparated(
+    safeExecGit(['ls-files', '--others', '--exclude-standard', '-z'])
+  );
+
+  return Array.from(
+    new Set([...committedDiff, ...stagedDiff, ...workingTreeDiff, ...untracked])
+  );
 }
 
 function scanFile(filePath: string) {
@@ -58,7 +98,13 @@ const files: string[] = [];
 if (fs.existsSync(CONTEXT_PATH)) {
   files.push(CONTEXT_PATH);
 }
-files.push(...collectMarkdownFiles(REPORTS_DIR));
+
+const changedReportFiles = getChangedPaths()
+  .filter((p) => p.startsWith('docs/reports/') && p.endsWith('.md'))
+  .map((p) => path.join(ROOT_DIR, p))
+  .filter((p) => fs.existsSync(p) && fs.statSync(p).isFile());
+
+files.push(...changedReportFiles);
 
 const failures: { file: string; line: number; text: string }[] = [];
 
