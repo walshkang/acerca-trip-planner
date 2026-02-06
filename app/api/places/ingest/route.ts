@@ -198,6 +198,26 @@ export async function POST(request: NextRequest) {
       candidate,
       google_place_id: googlePlaces.place_id,
       location: { lat, lng },
+      google: {
+        website: googlePlaces.website ?? null,
+        url: googlePlaces.url ?? null,
+        types: Array.isArray(googlePlaces.types)
+          ? (googlePlaces.types.filter((t) => typeof t === 'string') as string[])
+          : null,
+        opening_hours: googlePlaces.opening_hours
+          ? {
+              open_now:
+                typeof (googlePlaces.opening_hours as any)?.open_now === 'boolean'
+                  ? (googlePlaces.opening_hours as any).open_now
+                  : null,
+              weekday_text: Array.isArray((googlePlaces.opening_hours as any)?.weekday_text)
+                ? ((googlePlaces.opening_hours as any).weekday_text.filter(
+                    (v: unknown) => typeof v === 'string'
+                  ) as string[])
+                : null,
+            }
+          : null,
+      },
       enrichment: {
         curatedData: enrichment.curatedData,
         normalizedData: enrichment.normalizedData,

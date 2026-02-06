@@ -15,6 +15,7 @@ import ContextPanel from '@/components/ui/ContextPanel'
 import ToolsSheet from '@/components/ui/ToolsSheet'
 import { useMediaQuery } from '@/components/ui/useMediaQuery'
 import { useDiscoveryStore } from '@/lib/state/useDiscoveryStore'
+import { derivePreviewMode } from '@/lib/ui/previewMode'
 import type { MapRef, ViewState, ViewStateChangeEvent } from 'react-map-gl'
 
 type Bounds = { sw: LatLng; ne: LatLng }
@@ -83,7 +84,7 @@ export default function MapContainer() {
     null
   )
   const [drawerOpen, setDrawerOpen] = useState(false)
-  const [panelMode, setPanelMode] = useState<'lists' | 'place'>('lists')
+  const [panelMode, setPanelMode] = useState<'lists' | 'details'>('lists')
   const [toolsOpen, setToolsOpen] = useState(false)
   const [activeListId, setActiveListId] = useState<string | null>(null)
   const [activeListPlaceIds, setActiveListPlaceIds] = useState<string[]>([])
@@ -122,6 +123,11 @@ export default function MapContainer() {
     mapStyleMode === 'dark'
       ? 'bg-slate-100/90 border border-white/70 shadow-[0_2px_6px_rgba(0,0,0,0.45)]'
       : 'bg-white/90 border border-slate-900/10 shadow-[0_2px_6px_rgba(15,23,42,0.15)]'
+  const markerFocusClassName =
+    mapStyleMode === 'dark'
+      ? 'ring-2 ring-sky-400/45 shadow-[0_0_16px_rgba(56,189,248,0.55),0_0_2px_rgba(15,23,42,0.25)]'
+      : 'ring-2 ring-sky-500/35 shadow-[0_0_14px_rgba(14,165,233,0.35),0_0_2px_rgba(15,23,42,0.15)]'
+  const ghostMarkerClassName = `flex h-8 w-8 items-center justify-center rounded-full ${markerBackdropClassName} ${markerFocusClassName}`
   const transitLineWidth = 2.5
   const transitLineOpacity = 0.75
   const transitCasingWidth = 4
@@ -164,10 +170,12 @@ export default function MapContainer() {
   const setSearchBias = useDiscoveryStore((s) => s.setSearchBias)
   const mapRef = useRef<MapRef | null>(null)
   const didInitActiveList = useRef(false)
+  const previewFlyToIdRef = useRef<string | null>(null)
   const prePreviewStateRef = useRef<{
     drawerOpen: boolean
-    panelMode: 'lists' | 'place'
+    panelMode: 'lists' | 'details'
     focusedListPlaceId: string | null
+    selectedPlaceId: string | null
   } | null>(null)
   const prevPreviewIdRef = useRef<string | null>(null)
   const bumpListTagRefresh = useCallback(() => {
@@ -307,9 +315,11 @@ export default function MapContainer() {
     [places, selectedPlaceId]
   )
   const isPlaceFocused = useCallback(
-    (place: MapPlace) =>
-      selectedPlaceId === place.id || focusedListPlaceId === place.id,
-    [focusedListPlaceId, selectedPlaceId]
+    (place: MapPlace) => {
+      if (previewSelectedResultId) return false
+      return selectedPlaceId === place.id || focusedListPlaceId === place.id
+    },
+    [focusedListPlaceId, previewSelectedResultId, selectedPlaceId]
   )
   const isPlaceDimmed = useCallback(
     (place: MapPlace) => {
@@ -379,13 +389,13 @@ export default function MapContainer() {
 
   useEffect(() => {
     if (selectedPlaceId) {
-      setPanelMode('place')
+      setPanelMode('details')
     }
   }, [selectedPlaceId])
 
   useEffect(() => {
     if (previewCandidate || previewSelectedResultId) {
-      setPanelMode('place')
+      setPanelMode('details')
     }
   }, [previewCandidate, previewSelectedResultId])
 
@@ -398,20 +408,27 @@ export default function MapContainer() {
         drawerOpen,
         panelMode,
         focusedListPlaceId,
+        selectedPlaceId,
       }
       setDrawerOpen(false)
       setFocusedListPlaceId(null)
-      setPanelMode('place')
+      setPanelMode('details')
     }
 
     if (prev && !current) {
       const saved = prePreviewStateRef.current
       prePreviewStateRef.current = null
-      if (!selectedPlaceId && saved?.drawerOpen) {
-        setDrawerOpen(true)
-        setPanelMode('lists')
-        setFocusedListPlaceId(saved.focusedListPlaceId ?? null)
+      if (!saved) {
+        prevPreviewIdRef.current = current
+        return
       }
+      if (selectedPlaceId && selectedPlaceId !== saved.selectedPlaceId) {
+        prevPreviewIdRef.current = current
+        return
+      }
+      setDrawerOpen(saved.drawerOpen)
+      setPanelMode(saved.panelMode)
+      setFocusedListPlaceId(saved.focusedListPlaceId ?? null)
     }
 
     prevPreviewIdRef.current = current
@@ -426,13 +443,19 @@ export default function MapContainer() {
   const cancelPreview = useCallback(() => {
     const saved = prePreviewStateRef.current
     prePreviewStateRef.current = null
-    setPlaceParam(null)
     clearDiscovery()
-    if (saved?.drawerOpen) {
-      setDrawerOpen(true)
-      setPanelMode('lists')
-      setFocusedListPlaceId(saved.focusedListPlaceId ?? null)
+    if (!saved) {
+      setPlaceParam(null)
+      return
     }
+    if (!saved.selectedPlaceId) {
+      setPlaceParam(null)
+    } else {
+      setPlaceParam(saved.selectedPlaceId)
+    }
+    setDrawerOpen(saved.drawerOpen)
+    setPanelMode(saved.panelMode)
+    setFocusedListPlaceId(saved.focusedListPlaceId ?? null)
   }, [clearDiscovery, setPlaceParam])
 
   useEffect(() => {
@@ -503,6 +526,24 @@ export default function MapContainer() {
     if (!canRenderMap) return
     fetchPlaces()
   }, [canRenderMap, fetchPlaces])
+
+  useEffect(() => {
+    if (!previewSelectedResultId) {
+      previewFlyToIdRef.current = null
+      return
+    }
+    if (!ghostLocation) return
+    if (previewFlyToIdRef.current === previewSelectedResultId) return
+    const map = mapRef.current
+    if (!map) return
+
+    previewFlyToIdRef.current = previewSelectedResultId
+    map.flyTo({
+      center: [ghostLocation.lng, ghostLocation.lat],
+      zoom: Math.max(map.getZoom(), 13.5),
+      duration: 900,
+    })
+  }, [ghostLocation, previewSelectedResultId])
 
   useEffect(() => {
     if (loading) return
@@ -651,12 +692,12 @@ export default function MapContainer() {
         setDrawerOpen(true)
         setFocusedListPlaceId(placeId)
         setPlaceParam(placeId)
-        setPanelMode('place')
+        setPanelMode('details')
         return
       }
       setFocusedListPlaceId(null)
       setPlaceParam(placeId)
-      setPanelMode('place')
+      setPanelMode('details')
     },
     [activeListId, activeListPlaceIdSet, setPlaceParam]
   )
@@ -701,18 +742,19 @@ export default function MapContainer() {
       Boolean(previewSelectedResultId)) &&
     !(isMobile && toolsOpen)
 
-  const isPreviewing = Boolean(previewSelectedResultId) && !selectedPlaceId
-  const isPreviewLoading = isPreviewing && discoveryIsSubmitting && !previewCandidate
-  const panelTitle = isPreviewing
-    ? 'Preview'
-    : panelMode === 'place'
-      ? 'Place'
-      : 'Lists'
+  const previewMode = derivePreviewMode({
+    previewSelectedResultId: previewSelectedResultId ?? null,
+    isSubmitting: discoveryIsSubmitting,
+    hasPreviewCandidate: Boolean(previewCandidate),
+  })
+  const isPreviewing = previewMode !== 'none'
+  const isPreviewLoading = previewMode === 'loading'
+  const panelTitle = 'Workspace'
   const panelSubtitle = isPreviewing
-    ? 'Approve, then optionally add to a list.'
-    : panelMode === 'place'
-      ? 'Details and actions.'
-      : 'Keep the map in view.'
+    ? 'Preview'
+    : panelMode === 'details'
+      ? 'Details'
+      : 'Lists'
 
   return (
     <div className="w-full h-screen relative">
@@ -774,27 +816,14 @@ export default function MapContainer() {
               setPendingFocusPlaceId(placeId)
               setPlaceParam(placeId)
               setFocusedListPlaceId(placeId)
-              setPanelMode('place')
+              setPanelMode('details')
             }}
             tagsRefreshKey={listTagRefreshKey}
             onTagsUpdated={bumpPlaceTagRefresh}
           />
         )
 
-        const placePane = selectedPlace ? (
-          <div className="p-3">
-            <PlaceDrawer
-              variant="embedded"
-              open={Boolean(selectedPlace)}
-              place={selectedPlace}
-              activeListId={activeListId}
-              activeListItemOverride={activeListItemOverride}
-              onClose={() => setPlaceParam(null)}
-              tagsRefreshKey={placeTagRefreshKey}
-              onTagsUpdated={bumpListTagRefresh}
-            />
-          </div>
-        ) : isPreviewLoading ? (
+        const placePane = isPreviewLoading ? (
           <div className="p-4">
             <p className="text-sm font-medium text-slate-100">Loading preview…</p>
             <p className="mt-1 text-xs text-slate-400">
@@ -808,7 +837,7 @@ export default function MapContainer() {
               Cancel
             </button>
           </div>
-        ) : isPreviewing && !previewCandidate ? (
+        ) : previewMode === 'error' ? (
           <div className="p-4">
             <p className="text-sm font-medium text-slate-100">
               Preview unavailable
@@ -822,7 +851,35 @@ export default function MapContainer() {
               className="mt-3 glass-button"
             >
               Back
-            </button>
+              </button>
+            </div>
+        ) : previewMode === 'ready' ? (
+          <div className="p-3">
+            <InspectorCard
+              onCommitted={(placeId) => {
+                if (typeof window !== 'undefined') {
+                  window.localStorage.setItem(lastAddedPlaceKey, placeId)
+                }
+                setPendingFocusPlaceId(placeId)
+                fetchPlaces()
+                setPlaceParam(placeId)
+                setPanelMode('details')
+              }}
+              onClose={cancelPreview}
+            />
+          </div>
+        ) : selectedPlace ? (
+          <div className="p-3">
+            <PlaceDrawer
+              variant="embedded"
+              open={Boolean(selectedPlace)}
+              place={selectedPlace}
+              activeListId={activeListId}
+              activeListItemOverride={activeListItemOverride}
+              onClose={() => setPlaceParam(null)}
+              tagsRefreshKey={placeTagRefreshKey}
+              onTagsUpdated={bumpListTagRefresh}
+            />
           </div>
         ) : (
           <div className="p-3">
@@ -834,7 +891,7 @@ export default function MapContainer() {
                 setPendingFocusPlaceId(placeId)
                 fetchPlaces()
                 setPlaceParam(placeId)
-                setPanelMode('place')
+                setPanelMode('details')
               }}
               onClose={cancelPreview}
             />
@@ -881,15 +938,15 @@ export default function MapContainer() {
               </button>
               <button
                 type="button"
-                onClick={() => setPanelMode('place')}
-                disabled={!selectedPlaceId && !previewCandidate}
+                onClick={() => setPanelMode('details')}
+                disabled={!selectedPlaceId && !previewCandidate && !previewSelectedResultId}
                 className={`rounded-full border px-3 py-1 text-xs transition disabled:opacity-40 ${
-                  panelMode === 'place'
+                  panelMode === 'details'
                     ? 'border-slate-100 bg-slate-100 text-slate-900'
                     : 'border-white/10 text-slate-200 hover:border-white/30'
                 }`}
               >
-                {previewCandidate && !selectedPlaceId ? 'Preview' : 'Place'}
+                Details
               </button>
             </div>
 
@@ -914,10 +971,53 @@ export default function MapContainer() {
                     setPendingFocusPlaceId(placeId)
                     setPlaceParam(placeId)
                     setFocusedListPlaceId(placeId)
-                    setPanelMode('place')
+                    setPanelMode('details')
                   }}
                   tagsRefreshKey={listTagRefreshKey}
                   onTagsUpdated={bumpPlaceTagRefresh}
+                />
+              ) : isPreviewLoading ? (
+                <div className="p-4">
+                  <p className="text-sm font-medium text-slate-100">Loading preview…</p>
+                  <p className="mt-1 text-xs text-slate-400">
+                    Fetching details so you can decide whether to approve.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={cancelPreview}
+                    className="mt-3 glass-button"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              ) : previewMode === 'error' ? (
+                <div className="p-4">
+                  <p className="text-sm font-medium text-slate-100">
+                    Preview unavailable
+                  </p>
+                  <p className="mt-1 text-xs text-slate-400">
+                    {discoveryError || 'Could not load preview details.'}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={cancelPreview}
+                    className="mt-3 glass-button"
+                  >
+                    Back
+                  </button>
+                </div>
+              ) : previewMode === 'ready' ? (
+                <InspectorCard
+                  onCommitted={(placeId) => {
+                    if (typeof window !== 'undefined') {
+                      window.localStorage.setItem(lastAddedPlaceKey, placeId)
+                    }
+                    setPendingFocusPlaceId(placeId)
+                    fetchPlaces()
+                    setPlaceParam(placeId)
+                    setPanelMode('details')
+                  }}
+                  onClose={cancelPreview}
                 />
               ) : selectedPlace ? (
                 <PlaceDrawer
@@ -939,7 +1039,7 @@ export default function MapContainer() {
                     setPendingFocusPlaceId(placeId)
                     fetchPlaces()
                     setPlaceParam(placeId)
-                    setPanelMode('place')
+                    setPanelMode('details')
                   }}
                   onClose={cancelPreview}
                 />
@@ -1037,6 +1137,8 @@ export default function MapContainer() {
         onPlaceClick={handlePlaceClick}
         isPlaceDimmed={isPlaceDimmed}
         isPlaceFocused={isPlaceFocused}
+        markerFocusClassName={markerFocusClassName}
+        ghostMarkerClassName={ghostMarkerClassName}
         showTransit={showTransit}
         showTransitStations={showTransitStations}
         transitLinesUrl={transitLinesUrl}

@@ -235,6 +235,8 @@ const MapViewMaplibre = forwardRef<MapViewRef, MapViewProps>(
       onPlaceClick,
       isPlaceDimmed,
       isPlaceFocused,
+      markerFocusClassName,
+      ghostMarkerClassName,
       showTransit = false,
       showTransitStations = false,
       transitLinesUrl,
@@ -403,7 +405,10 @@ const MapViewMaplibre = forwardRef<MapViewRef, MapViewProps>(
                 event.preventDefault()
                 event.stopPropagation()
               }}
-              className="h-8 w-8 rounded-full border-2 border-black/50 bg-white/50 shadow-sm"
+              className={
+                ghostMarkerClassName ??
+                'h-8 w-8 rounded-full border-2 border-black/50 bg-white/50 shadow-sm'
+              }
             />
           </Marker>
         ) : null}
@@ -438,7 +443,11 @@ const MapViewMaplibre = forwardRef<MapViewRef, MapViewProps>(
               >
                 <span
                   aria-hidden="true"
-                  className={`flex h-7 w-7 items-center justify-center rounded-full ${markerBackdropClassName} ${isFocusedMarker ? PLACE_FOCUS_GLOW : ''}`}
+                  className={`flex h-7 w-7 items-center justify-center rounded-full ${markerBackdropClassName} ${
+                    isFocusedMarker
+                      ? markerFocusClassName ?? PLACE_FOCUS_GLOW
+                      : ''
+                  }`}
                 >
                   <span className="text-[15px] leading-none">
                     {getCategoryEmoji(place.category)}

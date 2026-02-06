@@ -44,6 +44,8 @@ export default function InspectorCard(props: {
 }) {
   const candidate = useDiscoveryStore((s) => s.previewCandidate)
   const enrichment = useDiscoveryStore((s) => s.previewEnrichment)
+  const google = useDiscoveryStore((s) => s.previewGoogle)
+  const selectedResult = useDiscoveryStore((s) => s.selectedResult)
   const clear = useDiscoveryStore((s) => s.clear)
 
   const [isCommitting, setIsCommitting] = useState(false)
@@ -55,10 +57,12 @@ export default function InspectorCard(props: {
   const [newListName, setNewListName] = useState('')
   const [creatingList, setCreatingList] = useState(false)
   const [tagInput, setTagInput] = useState('')
+  const [showMoreDetails, setShowMoreDetails] = useState(false)
 
   useEffect(() => {
     if (!candidate) return
     setTagInput('')
+    setShowMoreDetails(false)
     let cancelled = false
     async function loadLists() {
       setListsLoading(true)
@@ -126,6 +130,12 @@ export default function InspectorCard(props: {
   const curated = safeWikiCurated(enrichment?.curatedData ?? null)
   const normalized = safeNormalized(enrichment?.normalizedData ?? null)
   const showWiki = normalized?.category === 'Sights'
+  const neighborhoodLabel = selectedResult?.neighborhood
+    ? `${selectedResult.neighborhood}${selectedResult.borough ? ` · ${selectedResult.borough}` : ''}`
+    : null
+  const googleTypes = google?.types?.length
+    ? google.types.map((t) => t.replaceAll('_', ' '))
+    : []
 
   async function commit() {
     setCommitError(null)
@@ -201,6 +211,11 @@ export default function InspectorCard(props: {
                 {candidate.address}
               </p>
             ) : null}
+            {neighborhoodLabel ? (
+              <p className="mt-1 truncate text-[11px] text-slate-400">
+                {neighborhoodLabel}
+              </p>
+            ) : null}
           </div>
           <button
             type="button"
@@ -210,6 +225,96 @@ export default function InspectorCard(props: {
             Close
           </button>
         </div>
+
+        {google?.website || google?.url || google?.opening_hours || googleTypes.length ? (
+          <div>
+            <button
+              type="button"
+              onClick={() => setShowMoreDetails((prev) => !prev)}
+              className="glass-button px-3 py-1 text-[11px]"
+            >
+              {showMoreDetails ? 'Hide details' : 'More details'}
+            </button>
+
+            {showMoreDetails ? (
+              <div className="mt-2 space-y-2 text-xs text-slate-200">
+                {google?.opening_hours ? (
+                  <div>
+                    <p className="text-[11px] font-semibold text-slate-200">
+                      Hours
+                    </p>
+                    <p className="mt-0.5 text-[11px] text-slate-300">
+                      {google.opening_hours.open_now === true
+                        ? 'Open now'
+                        : google.opening_hours.open_now === false
+                          ? 'Closed now'
+                          : 'Hours status unavailable'}
+                    </p>
+                    {google.opening_hours.weekday_text?.length ? (
+                      <ul className="mt-1 space-y-0.5 text-[11px] text-slate-300">
+                        {google.opening_hours.weekday_text
+                          .slice(0, 7)
+                          .map((row) => (
+                            <li key={row}>{row}</li>
+                          ))}
+                      </ul>
+                    ) : null}
+                  </div>
+                ) : null}
+
+                {googleTypes.length ? (
+                  <div>
+                    <p className="text-[11px] font-semibold text-slate-200">
+                      Google types
+                    </p>
+                    <div className="mt-1 flex flex-wrap gap-2">
+                      {googleTypes.slice(0, 12).map((t) => (
+                        <span
+                          key={t}
+                          className="rounded-full border border-white/10 px-2 py-0.5 text-[11px] text-slate-200"
+                        >
+                          {t}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+
+                {google?.website ? (
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[11px] font-semibold text-slate-200">
+                      Website
+                    </span>
+                    <a
+                      className="truncate text-[11px] text-slate-300 underline hover:text-slate-100"
+                      href={google.website}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      {google.website}
+                    </a>
+                  </div>
+                ) : null}
+
+                {google?.url ? (
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[11px] font-semibold text-slate-200">
+                      Google Maps
+                    </span>
+                    <a
+                      className="truncate text-[11px] text-slate-300 underline hover:text-slate-100"
+                      href={google.url}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Open
+                    </a>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
 
         {showWiki && (curated?.thumbnail_url || curated?.summary) ? (
           <div className="flex gap-3">

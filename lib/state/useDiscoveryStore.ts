@@ -19,6 +19,18 @@ export type DiscoverySearchResult = {
   borough?: string | null
 }
 
+export type DiscoveryGoogleDetails = {
+  website: string | null
+  url: string | null
+  types: string[] | null
+  opening_hours:
+    | {
+        open_now: boolean | null
+        weekday_text: string[] | null
+      }
+    | null
+}
+
 export type DiscoveryEnrichment = {
   curatedData: unknown | null
   normalizedData: unknown | null
@@ -36,12 +48,14 @@ type DiscoveryState = {
   isSubmitting: boolean
   error: string | null
   results: DiscoverySearchResult[]
+  selectedResult: DiscoverySearchResult | null
   selectedResultId: string | null
   candidate: DiscoveryCandidate | null
   previewCandidate: DiscoveryCandidate | null
   ghostLocation: LatLng | null
   enrichment: DiscoveryEnrichment | null
   previewEnrichment: DiscoveryEnrichment | null
+  previewGoogle: DiscoveryGoogleDetails | null
   searchBias: SearchBias | null
   setQuery: (v: string) => void
   setResults: (results: DiscoverySearchResult[]) => void
@@ -76,12 +90,14 @@ export const useDiscoveryStore = create<DiscoveryState>((set, get) => ({
   isSubmitting: false,
   error: null,
   results: [],
+  selectedResult: null,
   selectedResultId: null,
   candidate: null,
   previewCandidate: null,
   ghostLocation: null,
   enrichment: null,
   previewEnrichment: null,
+  previewGoogle: null,
   searchBias: null,
 
   setQuery: (v) => set({ query: v }),
@@ -103,12 +119,14 @@ export const useDiscoveryStore = create<DiscoveryState>((set, get) => ({
       isSubmitting: false,
       error: null,
       results: [],
+      selectedResult: null,
       selectedResultId: null,
       candidate: null,
       previewCandidate: null,
       ghostLocation: null,
       enrichment: null,
       previewEnrichment: null,
+      previewGoogle: null,
     }),
 
   submit: async () => {
@@ -119,16 +137,19 @@ export const useDiscoveryStore = create<DiscoveryState>((set, get) => ({
       isSubmitting: true,
       error: null,
       results: [],
+      selectedResult: null,
       selectedResultId: null,
       candidate: null,
       previewCandidate: null,
       ghostLocation: null,
       enrichment: null,
       previewEnrichment: null,
+      previewGoogle: null,
     })
 
     try {
       if (looksLikeGooglePlaceId(q) || looksLikeUrl(q)) {
+        set({ selectedResultId: q })
         const res = await fetch('/api/places/ingest', {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
@@ -148,12 +169,15 @@ export const useDiscoveryStore = create<DiscoveryState>((set, get) => ({
         const candidate = (json?.candidate ?? null) as DiscoveryCandidate | null
         const ghostLocation = (json?.location ?? null) as LatLng | null
         const enrichment = (json?.enrichment ?? null) as DiscoveryEnrichment | null
+        const previewGoogle =
+          (json?.google ?? null) as DiscoveryGoogleDetails | null
         set({
           candidate,
           ghostLocation,
           enrichment,
           previewCandidate: candidate,
           previewEnrichment: enrichment,
+          previewGoogle,
         })
         return
       }
@@ -193,12 +217,14 @@ export const useDiscoveryStore = create<DiscoveryState>((set, get) => ({
       isSubmitting: true,
       error: null,
       results: [],
+      selectedResult: result,
       selectedResultId: result.place_id,
       candidate: null,
       previewCandidate: null,
       ghostLocation: null,
       enrichment: null,
       previewEnrichment: null,
+      previewGoogle: null,
     })
 
     try {
@@ -221,12 +247,14 @@ export const useDiscoveryStore = create<DiscoveryState>((set, get) => ({
       const candidate = (json?.candidate ?? null) as DiscoveryCandidate | null
       const ghostLocation = (json?.location ?? null) as LatLng | null
       const enrichment = (json?.enrichment ?? null) as DiscoveryEnrichment | null
+      const previewGoogle = (json?.google ?? null) as DiscoveryGoogleDetails | null
       set({
         candidate,
         ghostLocation,
         enrichment,
         previewCandidate: candidate,
         previewEnrichment: enrichment,
+        previewGoogle,
       })
     } catch (e: unknown) {
       set({ error: e instanceof Error ? e.message : 'Request failed' })

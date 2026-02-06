@@ -27,6 +27,8 @@ export type MapViewProps = {
   onPlaceClick: (placeId: string) => void
   isPlaceDimmed: (place: MapPlace) => boolean
   isPlaceFocused: (place: MapPlace) => boolean
+  markerFocusClassName?: string
+  ghostMarkerClassName?: string
   showTransit?: boolean
   showTransitStations?: boolean
   transitLinesUrl?: string
