@@ -38,7 +38,10 @@ function safeNormalized(v: unknown): NormalizedData | null {
   return d as NormalizedData
 }
 
-export default function InspectorCard(props: { onCommitted?: (placeId: string) => void }) {
+export default function InspectorCard(props: {
+  onCommitted?: (placeId: string) => void
+  onClose?: () => void
+}) {
   const candidate = useDiscoveryStore((s) => s.previewCandidate)
   const enrichment = useDiscoveryStore((s) => s.previewEnrichment)
   const clear = useDiscoveryStore((s) => s.clear)
@@ -201,7 +204,7 @@ export default function InspectorCard(props: { onCommitted?: (placeId: string) =
           </div>
           <button
             type="button"
-            onClick={clear}
+            onClick={props.onClose ?? clear}
             className="glass-button px-2 py-1 text-[11px]"
           >
             Close

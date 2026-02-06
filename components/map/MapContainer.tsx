@@ -161,6 +161,12 @@ export default function MapContainer() {
   const setSearchBias = useDiscoveryStore((s) => s.setSearchBias)
   const mapRef = useRef<MapRef | null>(null)
   const didInitActiveList = useRef(false)
+  const prePreviewStateRef = useRef<{
+    drawerOpen: boolean
+    panelMode: 'lists' | 'place'
+    focusedListPlaceId: string | null
+  } | null>(null)
+  const prevPreviewIdRef = useRef<string | null>(null)
   const bumpListTagRefresh = useCallback(() => {
     setListTagRefreshKey((prev) => prev + 1)
   }, [])
@@ -372,10 +378,54 @@ export default function MapContainer() {
   useEffect(() => {
     if (previewCandidate) {
       setPanelMode('place')
-      setDrawerOpen(false)
-      setFocusedListPlaceId(null)
     }
   }, [previewCandidate])
+
+  useEffect(() => {
+    const prev = prevPreviewIdRef.current
+    const current = previewCandidate?.id ?? null
+
+    if (!prev && current) {
+      prePreviewStateRef.current = {
+        drawerOpen,
+        panelMode,
+        focusedListPlaceId,
+      }
+      setDrawerOpen(false)
+      setFocusedListPlaceId(null)
+      setPanelMode('place')
+    }
+
+    if (prev && !current) {
+      const saved = prePreviewStateRef.current
+      prePreviewStateRef.current = null
+      if (!selectedPlaceId && saved?.drawerOpen) {
+        setDrawerOpen(true)
+        setPanelMode('lists')
+        setFocusedListPlaceId(saved.focusedListPlaceId ?? null)
+      }
+    }
+
+    prevPreviewIdRef.current = current
+  }, [
+    drawerOpen,
+    focusedListPlaceId,
+    panelMode,
+    previewCandidate?.id,
+    selectedPlaceId,
+  ])
+
+  const cancelPreview = useCallback(() => {
+    const saved = prePreviewStateRef.current
+    prePreviewStateRef.current = null
+    setPlaceParam(null)
+    clearDiscovery()
+    if (saved?.drawerOpen) {
+      setDrawerOpen(true)
+      setPanelMode('lists')
+      setFocusedListPlaceId(saved.focusedListPlaceId ?? null)
+    }
+  }, [clearDiscovery, setPlaceParam])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -744,6 +794,7 @@ export default function MapContainer() {
                 setPlaceParam(placeId)
                 setPanelMode('place')
               }}
+              onClose={cancelPreview}
             />
             {previewCandidate ? null : (
               <p className="mt-3 text-xs text-slate-400">
@@ -761,8 +812,12 @@ export default function MapContainer() {
             desktopLayout={isPreviewing ? 'single' : 'split'}
             desktopContent={placePane}
             onClose={() => {
-              setDrawerOpen(false)
               setToolsOpen(false)
+              if (isPreviewing) {
+                cancelPreview()
+                return
+              }
+              setDrawerOpen(false)
               setPlaceParam(null)
               clearDiscovery()
             }}
@@ -844,6 +899,7 @@ export default function MapContainer() {
                     setPlaceParam(placeId)
                     setPanelMode('place')
                   }}
+                  onClose={cancelPreview}
                 />
               )}
             </div>
