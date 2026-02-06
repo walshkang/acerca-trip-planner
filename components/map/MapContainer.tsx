@@ -156,6 +156,7 @@ export default function MapContainer() {
   const isDesktop = useMediaQuery('(min-width: 768px)')
   const isMobile = !isDesktop
   const ghostLocation = useDiscoveryStore((s) => s.ghostLocation)
+  const previewCandidate = useDiscoveryStore((s) => s.previewCandidate)
   const clearDiscovery = useDiscoveryStore((s) => s.clear)
   const setSearchBias = useDiscoveryStore((s) => s.setSearchBias)
   const mapRef = useRef<MapRef | null>(null)
@@ -364,6 +365,12 @@ export default function MapContainer() {
       setPanelMode('place')
     }
   }, [selectedPlaceId])
+
+  useEffect(() => {
+    if (previewCandidate) {
+      setPanelMode('place')
+    }
+  }, [previewCandidate])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -625,7 +632,8 @@ export default function MapContainer() {
   }
 
   const contextOpen =
-    (drawerOpen || Boolean(selectedPlaceId)) && !(isMobile && toolsOpen)
+    (drawerOpen || Boolean(selectedPlaceId) || Boolean(previewCandidate)) &&
+    !(isMobile && toolsOpen)
 
   return (
     <div className="w-full h-screen relative">
@@ -676,6 +684,7 @@ export default function MapContainer() {
           setDrawerOpen(false)
           setToolsOpen(false)
           setPlaceParam(null)
+          clearDiscovery()
         }}
         left={
           <ListDrawer
@@ -753,7 +762,7 @@ export default function MapContainer() {
               <button
                 type="button"
                 onClick={() => setPanelMode('place')}
-                disabled={!selectedPlaceId}
+                disabled={!selectedPlaceId && !previewCandidate}
                 className={`rounded-full border px-3 py-1 text-xs transition disabled:opacity-40 ${
                   panelMode === 'place'
                     ? 'border-slate-100 bg-slate-100 text-slate-900'
