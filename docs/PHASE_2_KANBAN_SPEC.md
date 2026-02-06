@@ -54,6 +54,7 @@ Store slots as sentinel `scheduled_start_time` values:
 Rules:
 - If `scheduled_date` is NULL, `scheduled_start_time` must be NULL.
 - If `completed_at` is set, the item is in Done regardless of date/time (date/time may remain for history).
+- Guardrail (MVP): `scheduled_start_time` is a slot label encoding only. It must not be interpreted as a user-intended clock time.
 
 ---
 
@@ -77,7 +78,7 @@ Optional (later):
 
 ### Day buckets
 - If `lists.start_date` and `lists.end_date` exist, render inclusive day sections in list-local date strings.
-- If missing, show a small CTA: “Set trip dates to plan by day”; optionally render only Backlog + Done.
+- If missing, show a CTA: “Set trip dates to plan by day” and render only Backlog + Done (day scheduling is disabled until dates are set).
 
 ### Slots per day
 - Each day has three lanes: Morning / Afternoon / Evening.
@@ -100,7 +101,7 @@ Items are grouped by `place.category` and then ordered by:
 ## Drag-and-drop behaviors
 
 ### Supported moves
-- Backlog → (day, slot): schedules the item.
+- Backlog → (day, slot): schedules the item (requires trip dates; otherwise there are no day drop targets).
 - (day, slot) → (day, slot): reschedules and/or reorders.
 - Any → Done: marks completed.
 - Any → Backlog: clears scheduling and completion.
@@ -188,4 +189,3 @@ Server behavior:
 - Slot/type ordering is deterministic and stable after refresh.
 - Bars appear under Drinks.
 - No enrichment/user edits are overwritten by scheduling changes.
-

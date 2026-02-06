@@ -26,7 +26,7 @@ Spec: `docs/PHASE_2_KANBAN_SPEC.md` (slot planner UX + DnD rules + API contract)
   - `scheduled_date DATE` (NULL = Backlog)
   - `scheduled_start_time TIME` (MVP: slot sentinel = Morning/Afternoon/Evening)
   - `scheduled_end_time TIME` (optional; later for precise times)
-  - `scheduled_order DOUBLE PRECISION` (fractional ordering within a day)
+  - `scheduled_order DOUBLE PRECISION` (fractional ordering within a lane: scheduled_date + slot + category)
   - `completed_at TIMESTAMPTZ` (NULL = not Done)
   - `last_scheduled_at TIMESTAMPTZ`
   - `last_scheduled_by UUID` (auth.users)
