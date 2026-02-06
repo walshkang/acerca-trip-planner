@@ -70,10 +70,9 @@ export default function InspectorCard(props: { onCommitted?: (placeId: string) =
         const next = (json?.lists ?? []) as ListSummary[]
         if (cancelled) return
         setLists(next)
-        const defaultList = next.find((l) => l.is_default)
         setSelectedListId((prev) => {
           if (prev && next.some((l) => l.id === prev)) return prev
-          return defaultList?.id ?? next[0]?.id ?? null
+          return null
         })
       } catch (e: unknown) {
         if (!cancelled) {
@@ -130,6 +129,10 @@ export default function InspectorCard(props: { onCommitted?: (placeId: string) =
     setIsCommitting(true)
     try {
       const trimmedTags = tagInput.trim()
+      if (trimmedTags.length && !selectedListId) {
+        setCommitError('Choose a list to save list-item tags (or clear tags).')
+        return
+      }
       const res = await fetch('/api/places/promote', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
@@ -276,15 +279,13 @@ export default function InspectorCard(props: { onCommitted?: (placeId: string) =
           <select
             className="glass-input w-full px-2 py-2 text-xs"
             value={selectedListId ?? ''}
-            onChange={(e) => setSelectedListId(e.target.value)}
-            disabled={listsLoading || !lists.length}
+            onChange={(e) => setSelectedListId(e.target.value || null)}
+            disabled={listsLoading}
           >
             {listsLoading ? (
               <option value="">Loading…</option>
             ) : null}
-            {!listsLoading && !lists.length ? (
-              <option value="">No lists</option>
-            ) : null}
+            <option value="">No list</option>
             {lists.map((list) => (
               <option key={list.id} value={list.id}>
                 {list.name}
@@ -317,8 +318,14 @@ export default function InspectorCard(props: { onCommitted?: (placeId: string) =
               className="glass-input mt-1 w-full text-xs"
               value={tagInput}
               onChange={(e) => setTagInput(e.target.value)}
+              disabled={!selectedListId}
               placeholder="date-night, rooftop, kid-friendly"
             />
+            {!selectedListId ? (
+              <p className="mt-1 text-[11px] text-slate-400">
+                Tags apply to list items. Choose a list to enable tags.
+              </p>
+            ) : null}
           </div>
           {listsError ? (
             <p className="text-xs text-red-300">{listsError}</p>

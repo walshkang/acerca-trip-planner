@@ -8,8 +8,10 @@ type Props = {
   title: string
   subtitle?: string | null
   onClose: () => void
+  desktopLayout?: 'split' | 'single'
   left?: ReactNode
   right?: ReactNode
+  desktopContent?: ReactNode
   mobileContent?: ReactNode
 }
 
@@ -18,8 +20,10 @@ export default function ContextPanel({
   title,
   subtitle = null,
   onClose,
+  desktopLayout = 'split',
   left,
   right,
+  desktopContent,
   mobileContent,
 }: Props) {
   if (!open) return null
@@ -48,10 +52,16 @@ export default function ContextPanel({
           className="max-h-[80vh]"
           bodyClassName="max-h-[calc(80vh-52px)]"
         >
-          <div className="grid h-full grid-cols-2 divide-x divide-white/10">
-            <div className="min-h-0 overflow-auto">{left}</div>
-            <div className="min-h-0 overflow-auto">{right}</div>
-          </div>
+          {desktopLayout === 'single' ? (
+            <div className="h-full overflow-auto">
+              {desktopContent ?? right ?? left ?? null}
+            </div>
+          ) : (
+            <div className="grid h-full grid-cols-2 divide-x divide-white/10">
+              <div className="min-h-0 overflow-auto">{left}</div>
+              <div className="min-h-0 overflow-auto">{right}</div>
+            </div>
+          )}
         </OverlayPanel>
       </div>
     </>

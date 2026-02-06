@@ -305,7 +305,9 @@ export default function MapContainer() {
   const isPlaceDimmed = useCallback(
     (place: MapPlace) => {
       const dimmedByList =
-        activeListPlaceIds.length > 0 && !activeListPlaceIdSet.has(place.id)
+        !previewCandidate &&
+        activeListPlaceIds.length > 0 &&
+        !activeListPlaceIdSet.has(place.id)
       const dimmedByType =
         activeListTypeFilters.length > 0 &&
         !activeListTypeFilterSet.has(place.category)
@@ -316,6 +318,7 @@ export default function MapContainer() {
       activeListPlaceIds.length,
       activeListTypeFilterSet,
       activeListTypeFilters.length,
+      previewCandidate,
     ]
   )
 
@@ -369,6 +372,8 @@ export default function MapContainer() {
   useEffect(() => {
     if (previewCandidate) {
       setPanelMode('place')
+      setDrawerOpen(false)
+      setFocusedListPlaceId(null)
     }
   }, [previewCandidate])
 
@@ -635,6 +640,18 @@ export default function MapContainer() {
     (drawerOpen || Boolean(selectedPlaceId) || Boolean(previewCandidate)) &&
     !(isMobile && toolsOpen)
 
+  const isPreviewing = Boolean(previewCandidate) && !selectedPlaceId
+  const panelTitle = isPreviewing
+    ? 'Preview'
+    : panelMode === 'place'
+      ? 'Place'
+      : 'Lists'
+  const panelSubtitle = isPreviewing
+    ? 'Approve, then optionally add to a list.'
+    : panelMode === 'place'
+      ? 'Details and actions.'
+      : 'Keep the map in view.'
+
   return (
     <div className="w-full h-screen relative">
       <div
@@ -674,19 +691,8 @@ export default function MapContainer() {
         </div>
       </div>
 
-      <ContextPanel
-        open={contextOpen}
-        title={panelMode === 'place' ? 'Place' : 'Lists'}
-        subtitle={
-          panelMode === 'place' ? 'Details and actions.' : 'Keep the map in view.'
-        }
-        onClose={() => {
-          setDrawerOpen(false)
-          setToolsOpen(false)
-          setPlaceParam(null)
-          clearDiscovery()
-        }}
-        left={
+      {(() => {
+        const listPane = (
           <ListDrawer
             open={contextOpen}
             variant="embedded"
@@ -711,41 +717,58 @@ export default function MapContainer() {
             tagsRefreshKey={listTagRefreshKey}
             onTagsUpdated={bumpPlaceTagRefresh}
           />
-        }
-        right={
-          selectedPlace ? (
-            <div className="p-3">
-              <PlaceDrawer
-                variant="embedded"
-                open={Boolean(selectedPlace)}
-                place={selectedPlace}
-                activeListId={activeListId}
-                activeListItemOverride={activeListItemOverride}
-                onClose={() => setPlaceParam(null)}
-                tagsRefreshKey={placeTagRefreshKey}
-                onTagsUpdated={bumpListTagRefresh}
-              />
-            </div>
-          ) : (
-            <div className="p-3">
-              <InspectorCard
-                onCommitted={(placeId) => {
-                  if (typeof window !== 'undefined') {
-                    window.localStorage.setItem(lastAddedPlaceKey, placeId)
-                  }
-                  setPendingFocusPlaceId(placeId)
-                  fetchPlaces()
-                  setPlaceParam(placeId)
-                  setPanelMode('place')
-                }}
-              />
+        )
+
+        const placePane = selectedPlace ? (
+          <div className="p-3">
+            <PlaceDrawer
+              variant="embedded"
+              open={Boolean(selectedPlace)}
+              place={selectedPlace}
+              activeListId={activeListId}
+              activeListItemOverride={activeListItemOverride}
+              onClose={() => setPlaceParam(null)}
+              tagsRefreshKey={placeTagRefreshKey}
+              onTagsUpdated={bumpListTagRefresh}
+            />
+          </div>
+        ) : (
+          <div className="p-3">
+            <InspectorCard
+              onCommitted={(placeId) => {
+                if (typeof window !== 'undefined') {
+                  window.localStorage.setItem(lastAddedPlaceKey, placeId)
+                }
+                setPendingFocusPlaceId(placeId)
+                fetchPlaces()
+                setPlaceParam(placeId)
+                setPanelMode('place')
+              }}
+            />
+            {previewCandidate ? null : (
               <p className="mt-3 text-xs text-slate-400">
                 Select a pin to open a place.
               </p>
-            </div>
-          )
-        }
-        mobileContent={
+            )}
+          </div>
+        )
+
+        return (
+          <ContextPanel
+            open={contextOpen}
+            title={panelTitle}
+            subtitle={panelSubtitle}
+            desktopLayout={isPreviewing ? 'single' : 'split'}
+            desktopContent={placePane}
+            onClose={() => {
+              setDrawerOpen(false)
+              setToolsOpen(false)
+              setPlaceParam(null)
+              clearDiscovery()
+            }}
+            left={isPreviewing ? undefined : listPane}
+            right={placePane}
+            mobileContent={
           <div className="p-1">
             <div className="flex items-center gap-2 px-2 py-2">
               <button
@@ -769,7 +792,7 @@ export default function MapContainer() {
                     : 'border-white/10 text-slate-200 hover:border-white/30'
                 }`}
               >
-                Place
+                {previewCandidate && !selectedPlaceId ? 'Preview' : 'Place'}
               </button>
             </div>
 
@@ -825,8 +848,10 @@ export default function MapContainer() {
               )}
             </div>
           </div>
-        }
-      />
+            }
+          />
+        )
+      })()}
 
       <ToolsSheet open={toolsOpen} onClose={() => setToolsOpen(false)}>
         <form action="/auth/sign-out" method="post">
