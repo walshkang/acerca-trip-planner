@@ -19,12 +19,13 @@ This document decomposes Phase 2 into small, testable slices so implementation s
 ## Phase 2 Epics
 
 ### P2-E1 Stateful Planning (Kanban)
+Spec: `docs/PHASE_2_KANBAN_SPEC.md` (slot planner UX + DnD rules + API contract).
 
 #### Data Model (proposed)
 - `list_items`
   - `scheduled_date DATE` (NULL = Backlog)
-  - `scheduled_start_time TIME` (optional)
-  - `scheduled_end_time TIME` (optional)
+  - `scheduled_start_time TIME` (MVP: slot sentinel = Morning/Afternoon/Evening)
+  - `scheduled_end_time TIME` (optional; later for precise times)
   - `scheduled_order DOUBLE PRECISION` (fractional ordering within a day)
   - `completed_at TIMESTAMPTZ` (NULL = not Done)
   - `last_scheduled_at TIMESTAMPTZ`
@@ -49,19 +50,31 @@ Notes:
 - Optional RPC: `schedule_list_item` for transactional updates (server-side).
 
 #### UI
-- New list detail view `app/lists/[id]/page.tsx` with two panes:
-  - Left: scrollable list of places in the list.
-  - Right: Kanban day buckets (Backlog / Scheduled by date / Done).
-- Drag-and-drop between buckets updates scheduling fields only.
+- Planner view uses the existing map-first split layout (keep list visible while planning):
+  - Left pane: saved places (list_items) with search + filters.
+  - Right pane: day planner (Backlog + day buckets + Done).
+- Day buckets are split into 3 slots: Morning / Afternoon / Evening.
+- Within each slot, items render in a deterministic category order (fixed):
+  - Food → Coffee → Sights → Activity → Shop → Drinks
+- Drag-and-drop between slots/days updates scheduling fields only.
 - Map pins show scheduled vs unscheduled styling when a list is active.
 Notes:
 - If `lists.start_date` and `lists.end_date` exist, render those day columns using `lists.timezone`.
+- Slot encoding (MVP): store slot as a sentinel `scheduled_start_time` value:
+  - Morning = `09:00`, Afternoon = `14:00`, Evening = `19:00` (list-local; no timezone math required since it is a slot label).
+
+#### Taxonomy: Drinks (required for slot ordering)
+- Add `Drinks` to `category_enum` so bars are a first-class place type (icon + filters + deterministic grouping).
+- Deterministic mapping (fallback + LLM contract): Google types like `bar`, `night_club`, `wine_bar`, etc should normalize to `Drinks` (not `Food`).
+- Optional (later): versioned backfill to reclassify existing approved bar places without mutating frozen enrichment (schema_version bump + new enrichment rows).
 
 #### Acceptance Criteria
 - Moving an item between buckets only changes scheduling fields.
 - Backlog vs Scheduled derived from `scheduled_date` (NULL vs set).
 - Done derived from `completed_at` (set = Done).
 - Refresh restores server truth; optimistic updates reconcile cleanly.
+- Morning/Afternoon/Evening are derived from the slot sentinel; empty slot renders consistently.
+- Bars appear under `Drinks` when categorized as such; planner never uses freeform strings for type.
 
 ### P2-E2 Deterministic Filtering & Intent Translation
 

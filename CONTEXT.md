@@ -8,10 +8,19 @@
 
 ## 🧠 Active Context
 - Current Phase: The Interactive Planner (Birthday Cake)
-- Active Epic: P2-E4 Map-First List Context (UI/UX polish)
-- Immediate Blocker: None. Next slice: NYC neighborhood boundaries overlay (GeoJSON runtime layer), then optional PMTiles wiring + MapLibre refinement.
-- Planned (Phase 2): P2-E3 List Workspace + Tags (per-place tags + multi-list add/remove).
-- Planned (Phase 2): P2-E4 Map-First List Context (drawer overlay, URL-driven place drawer, search bias, default view).
+- Active Epic: P2-E1 Stateful Planning (Kanban) — Slot Planner (Morning/Afternoon/Evening)
+- Immediate Blocker: None. Next slice: add Planner mode to the map ContextPanel (keep list visible) + scheduling write API (`PATCH /api/lists/[id]/items/[itemId]`).
+- Planned (Phase 2): P2-E2 Deterministic Filtering & Intent Translation (filter JSON + deterministic query).
+- Planned (Phase 2): Map customization follow-ups (NYC neighborhood boundaries overlay; optional PMTiles wiring).
+
+## ✅ P2-E1 Remaining Plan (Tracking)
+- Spec: `docs/PHASE_2_KANBAN_SPEC.md`.
+- [ ] Decide slot encoding (MVP): sentinel `scheduled_start_time` values for Morning/Afternoon/Evening.
+- [ ] Add `Drinks` to `category_enum` + icon mapping + exhaustive tests; normalize bars → Drinks deterministically.
+- [ ] Implement scheduling write path: `PATCH /api/lists/[id]/items/[itemId]` (date/slot/order/completed_at only + audit fields).
+- [ ] Add Planner view in map ContextPanel (right pane), with day buckets + 3 slots per day.
+- [ ] Drag-and-drop: list → slot, slot → slot, reorder within slot; optimistic UI that reconciles on refresh.
+- [ ] E2E: Playwright coverage for schedule + reorder + Done/Backlog transitions.
 
 ## ✅ P2-E4 Remaining Plan (Tracking)
 - [x] Decide URL contract: `/?place=<id>` map drawer deep link; keep `/places/[id]` full detail page.
