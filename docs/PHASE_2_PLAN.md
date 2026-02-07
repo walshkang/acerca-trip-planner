@@ -19,7 +19,7 @@ This document decomposes Phase 2 into small, testable slices so implementation s
 ## Phase 2 Epics
 
 ### P2-E1 Stateful Planning (Kanban)
-Spec: `docs/PHASE_2_KANBAN_SPEC.md` (slot planner UX + DnD rules + API contract).
+Spec: `docs/PHASE_2_KANBAN_SPEC.md` (slot planner UX + move semantics + API contract).
 
 #### Data Model (proposed)
 - `list_items`
@@ -30,13 +30,13 @@ Spec: `docs/PHASE_2_KANBAN_SPEC.md` (slot planner UX + DnD rules + API contract)
   - `completed_at TIMESTAMPTZ` (NULL = not Done)
   - `last_scheduled_at TIMESTAMPTZ`
   - `last_scheduled_by UUID` (auth.users)
-  - `last_scheduled_source TEXT` (e.g., "drag", "quick_add", "api")
+  - `last_scheduled_source TEXT` (e.g., "drag", "tap_move", "quick_add", "api")
 - Indexes
   - `(list_id, scheduled_date, scheduled_order)`
   - `(list_id, completed_at)`
 - RLS: inherited via list ownership, same as current list_items policy.
 Notes:
-- Use fractional ordering to avoid reindexing large ranges on drag-and-drop.
+- Use fractional ordering to avoid reindexing large ranges during reorders.
 - Renormalize when gaps become too small.
 - If list-based scheduling is trip-oriented, add optional `lists.start_date`, `lists.end_date`, and `lists.timezone` to define day buckets.
 
@@ -50,13 +50,13 @@ Notes:
 - Optional RPC: `schedule_list_item` for transactional updates (server-side).
 
 #### UI
-- Planner view uses the existing map-first split layout (keep list visible while planning):
-  - Left pane: saved places (list_items) with search + filters.
-  - Right pane: day planner (Backlog + day buckets + Done).
+- Planner view uses the existing map-first Context Panel (keep list context close while planning):
+  - Desktop: split layout (Places left; Plan right).
+  - Mobile: single-pane bottom sheet with a `Places | Plan` toggle; Plan renders as a vertical agenda.
 - Day buckets are split into 3 slots: Morning / Afternoon / Evening.
 - Within each slot, items render in a deterministic category order (fixed):
   - Food → Coffee → Sights → Activity → Shop → Drinks
-- Drag-and-drop between slots/days updates scheduling fields only.
+- Moving items between buckets updates scheduling fields only (desktop DnD; mobile tap-to-move via `Move` picker).
 - Map pins show scheduled vs unscheduled styling when a list is active.
 Notes:
 - If `lists.start_date` and `lists.end_date` exist, render those day columns using `lists.timezone`.
@@ -75,6 +75,40 @@ Notes:
 - Refresh restores server truth; optimistic updates reconcile cleanly.
 - Morning/Afternoon/Evening are derived from the slot sentinel; empty slot renders consistently.
 - Bars appear under `Drinks` when categorized as such; planner never uses freeform strings for type.
+
+#### Execution Plan (first chunk: Mobile Planner MVP)
+Goal: ship a usable mobile planner that schedules list items without drag-and-drop.
+
+**Backend**
+- Add scheduling write path: `PATCH /api/lists/[id]/items/[itemId]`
+  - Auth + ownership validation.
+  - Accept `scheduled_date`, `slot`, `scheduled_order`, `completed`, optional `source`.
+  - Map `slot` → sentinel `scheduled_start_time` (`09:00`/`14:00`/`19:00`).
+  - Enforce “scheduling fields only” updates + audit fields (`last_scheduled_*`).
+  - Mobile uses `source="tap_move"` (desktop DnD uses `source="drag"`).
+- Add list trip-date write path: `PATCH /api/lists/[id]`
+  - Update `start_date`, `end_date`, `timezone` (IANA).
+  - Validate `start_date <= end_date` when both are set.
+
+**Mobile UI (Context Panel)**
+- Add a `Plan` mode to the mobile Context Panel switcher: `Places | Plan | Details`.
+- Plan renders as a vertical agenda: Backlog → (Day → Morning/Afternoon/Evening) → Done.
+- If trip dates are unset: show a CTA to set dates and render Backlog + Done only (no day drop targets).
+- Each item row exposes a `Move` affordance:
+  - Opens an in-panel destination picker (Backlog / Done / Day → Slot).
+  - Default insertion: append-to-end of the destination category group; no mobile reordering in v1.
+  - Optimistic update + saving state; on failure revert + factual error.
+- Animations: calm, subtle, and state-revealing (lift → slide → settle + destination highlight); respect `prefers-reduced-motion`.
+
+**Desktop (explicitly deferred in this chunk)**
+- Drag-and-drop and within-slot reordering UX.
+- Reorder insert-between-neighbors (fractional ordering) UI.
+
+**Testing + verification**
+- Unit: slot mapping helpers; planner bucketing/grouping + deterministic category ordering.
+- API: `PATCH` rejects unauthenticated + non-owned items; updates only scheduling fields (tags unaffected).
+- E2E: mobile `Move` schedules into a day+slot, persists after reload, and supports Done/Backlog moves.
+- Manual smoke: map remains interactive, no stacked drawers, and Back behavior is predictable.
 
 ### P2-E2 Deterministic Filtering & Intent Translation
 
@@ -249,7 +283,7 @@ Notes:
 ## Testing & Verification
 - Unit tests for filter schema validation and query builder.
 - API tests for scheduling and tag endpoints (ownership + validation).
-- UI tests: drag-and-drop updates schedule; tag editing persists.
+- UI tests: scheduling updates persist (desktop DnD; mobile Move picker); tag editing persists.
 - Manual smoke:
   - Open place drawer from marker → URL updates; close clears URL state.
   - Approve from Inspector stays on map and opens drawer via URL state.
