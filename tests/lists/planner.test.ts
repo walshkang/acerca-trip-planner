@@ -4,6 +4,7 @@ import {
   comparePlannerCategories,
   countIsoDatesInclusive,
   enumerateIsoDatesInclusive,
+  fractionalOrderBetween,
   parseIsoDateOnly,
   scheduledStartTimeFromSlot,
   slotFromScheduledStartTime,
@@ -64,5 +65,12 @@ describe('planner helpers', () => {
       'Shop',
       'Drinks',
     ])
+  })
+
+  it('computes fractional scheduled order between neighbors', () => {
+    expect(fractionalOrderBetween(2, 4)).toBe(3)
+    expect(fractionalOrderBetween(2, null)).toBe(3)
+    expect(fractionalOrderBetween(null, 2)).toBe(1)
+    expect(fractionalOrderBetween(null, null)).toBe(1)
   })
 })

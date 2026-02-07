@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { type DragEvent, useCallback, useEffect, useMemo, useState } from 'react'
 import { getCategoryIcon } from '@/lib/icons/mapping'
 import type { CategoryEnum } from '@/lib/types/enums'
 import type { ListItemRow, ListSummary } from '@/components/lists/ListDetailBody'
@@ -11,6 +11,7 @@ import {
   comparePlannerCategories,
   countIsoDatesInclusive,
   enumerateIsoDatesInclusive,
+  fractionalOrderBetween,
   scheduledStartTimeFromSlot,
   slotFromScheduledStartTime,
 } from '@/lib/lists/planner'
@@ -30,6 +31,8 @@ type MoveDestination =
   | { type: 'done' }
   | { type: 'slot'; date: string; slot: PlannerSlot }
 
+type ScheduleSource = 'tap_move' | 'drag'
+
 const MAX_TRIP_DAYS_RENDER = 21
 
 function sortByCreatedAtAsc(a: { created_at: string }, b: { created_at: string }) {
@@ -41,6 +44,10 @@ function sortByScheduledOrder(a: ListItemRow, b: ListItemRow) {
   const bo = typeof b.scheduled_order === 'number' ? b.scheduled_order : 0
   if (ao !== bo) return ao - bo
   return a.created_at.localeCompare(b.created_at)
+}
+
+function orderValue(row: ListItemRow) {
+  return typeof row.scheduled_order === 'number' ? row.scheduled_order : 0
 }
 
 function formatDayLabel(isoDate: string) {
@@ -62,6 +69,9 @@ export default function ListPlanner({ listId, onPlaceSelect }: Props) {
 
   const [moveItemId, setMoveItemId] = useState<string | null>(null)
   const [savingItemId, setSavingItemId] = useState<string | null>(null)
+  const [dragItemId, setDragItemId] = useState<string | null>(null)
+  const [dropTargetKey, setDropTargetKey] = useState<string | null>(null)
+  const [canDrag, setCanDrag] = useState(false)
 
   const tripRange = useMemo(() => {
     if (!list?.start_date || !list?.end_date) return null
@@ -220,10 +230,64 @@ export default function ListPlanner({ listId, onPlaceSelect }: Props) {
     return inRange
   }, [scheduledItemsByDate, tripRange])
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const media = window.matchMedia('(min-width: 1024px) and (pointer: fine)')
+    const apply = () => setCanDrag(media.matches)
+    apply()
+    media.addEventListener('change', apply)
+    return () => media.removeEventListener('change', apply)
+  }, [])
+
+  const nextOrderForSlotMove = useCallback(
+    (
+      item: ListItemRow,
+      targetDate: string,
+      targetSlot: PlannerSlot,
+      beforeItemId?: string
+    ) => {
+      const category = item.place?.category as CategoryEnum | undefined
+      if (!category) return 1
+
+      const group = items
+        .filter((row) => {
+          if (row.id === item.id) return false
+          if (!row.place || row.completed_at) return false
+          if (row.scheduled_date !== targetDate) return false
+          const rowSlot = slotFromScheduledStartTime(row.scheduled_start_time)
+          if (!rowSlot || rowSlot !== targetSlot) return false
+          return row.place.category === category
+        })
+        .slice()
+        .sort(sortByScheduledOrder)
+
+      if (beforeItemId) {
+        const idx = group.findIndex((row) => row.id === beforeItemId)
+        if (idx >= 0) {
+          const prev = idx > 0 ? orderValue(group[idx - 1]) : null
+          const next = orderValue(group[idx])
+          return fractionalOrderBetween(prev, next)
+        }
+      }
+
+      const last = group.length ? orderValue(group[group.length - 1]) : null
+      return fractionalOrderBetween(last, null)
+    },
+    [items]
+  )
+
   const scheduleItem = useCallback(
-    async (item: ListItemRow, destination: MoveDestination) => {
+    async (
+      item: ListItemRow,
+      destination: MoveDestination,
+      options?: {
+        source?: ScheduleSource
+        scheduledOrder?: number
+      }
+    ) => {
       if (!listId) return
       if (!item.place) return
+      const source = options?.source ?? 'tap_move'
 
       const currentSlot =
         item.scheduled_date && !item.completed_at
@@ -256,11 +320,11 @@ export default function ListPlanner({ listId, onPlaceSelect }: Props) {
             scheduled_date?: string | null
             slot?: PlannerSlot | null
             scheduled_order?: number
-            source: 'tap_move'
+            source: ScheduleSource
           }
         | {
             completed: boolean
-            source: 'tap_move'
+            source: ScheduleSource
           }
 
       if (destination.type === 'backlog') {
@@ -269,37 +333,24 @@ export default function ListPlanner({ listId, onPlaceSelect }: Props) {
           scheduled_date: null,
           slot: null,
           scheduled_order: 0,
-          source: 'tap_move',
+          source,
         }
       } else if (destination.type === 'done') {
-        payload = { completed: true, source: 'tap_move' }
+        payload = { completed: true, source }
       } else {
-        const category = item.place.category as CategoryEnum
         const targetDate = destination.date
         const targetSlot = destination.slot
-        const sentinel = scheduledStartTimeFromSlot(targetSlot)
-
-        let maxOrder = 0
-        for (const row of items) {
-          if (!row.place) continue
-          if (row.completed_at) continue
-          if (row.scheduled_date !== targetDate) continue
-          const rowSlot = slotFromScheduledStartTime(row.scheduled_start_time)
-          if (!rowSlot) continue
-          if (scheduledStartTimeFromSlot(rowSlot).slice(0, 5) !== sentinel.slice(0, 5))
-            continue
-          if (row.place.category !== category) continue
-          const orderValue =
-            typeof row.scheduled_order === 'number' ? row.scheduled_order : 0
-          maxOrder = Math.max(maxOrder, orderValue)
-        }
+        const nextOrder =
+          typeof options?.scheduledOrder === 'number'
+            ? options.scheduledOrder
+            : nextOrderForSlotMove(item, targetDate, targetSlot)
 
         payload = {
           completed: false,
           scheduled_date: targetDate,
           slot: targetSlot,
-          scheduled_order: maxOrder + 1,
-          source: 'tap_move',
+          scheduled_order: nextOrder,
+          source,
         }
       }
 
@@ -375,7 +426,84 @@ export default function ListPlanner({ listId, onPlaceSelect }: Props) {
         setSavingItemId(null)
       }
     },
-    [items, listId]
+    [items, listId, nextOrderForSlotMove]
+  )
+
+  const onDragStart = useCallback((itemId: string) => {
+    setDragItemId(itemId)
+    setMoveItemId(null)
+    setDropTargetKey(null)
+  }, [])
+
+  const onDragEnd = useCallback(() => {
+    setDragItemId(null)
+    setDropTargetKey(null)
+  }, [])
+
+  const onDragOverTarget = useCallback(
+    (event: DragEvent, key: string) => {
+      if (!canDrag || !dragItemId) return
+      event.preventDefault()
+      event.dataTransfer.dropEffect = 'move'
+      setDropTargetKey(key)
+    },
+    [canDrag, dragItemId]
+  )
+
+  const onDropBacklog = useCallback(
+    async (event: DragEvent) => {
+      if (!dragItemId) return
+      event.preventDefault()
+      const item = items.find((row) => row.id === dragItemId)
+      if (item) await scheduleItem(item, { type: 'backlog' }, { source: 'drag' })
+      setDropTargetKey(null)
+      setDragItemId(null)
+    },
+    [dragItemId, items, scheduleItem]
+  )
+
+  const onDropDone = useCallback(
+    async (event: DragEvent) => {
+      if (!dragItemId) return
+      event.preventDefault()
+      const item = items.find((row) => row.id === dragItemId)
+      if (item) await scheduleItem(item, { type: 'done' }, { source: 'drag' })
+      setDropTargetKey(null)
+      setDragItemId(null)
+    },
+    [dragItemId, items, scheduleItem]
+  )
+
+  const onDropSlot = useCallback(
+    async (
+      event: DragEvent,
+      date: string,
+      slot: PlannerSlot,
+      options?: { beforeItemId?: string; targetCategory?: CategoryEnum }
+    ) => {
+      if (!dragItemId) return
+      event.preventDefault()
+      const item = items.find((row) => row.id === dragItemId)
+      if (!item?.place) return
+
+      const draggedCategory = item.place.category
+      const canReorderInCategory =
+        !options?.targetCategory || options.targetCategory === draggedCategory
+      const beforeItemId = canReorderInCategory ? options?.beforeItemId : undefined
+      const scheduledOrder = nextOrderForSlotMove(item, date, slot, beforeItemId)
+
+      await scheduleItem(
+        item,
+        { type: 'slot', date, slot },
+        {
+          source: 'drag',
+          scheduledOrder,
+        }
+      )
+      setDropTargetKey(null)
+      setDragItemId(null)
+    },
+    [dragItemId, items, nextOrderForSlotMove, scheduleItem]
   )
 
   const saveTripDates = useCallback(async () => {
@@ -688,13 +816,22 @@ export default function ListPlanner({ listId, onPlaceSelect }: Props) {
             {backlogItems.length}
           </span>
         </div>
-        {backlogItems.length ? (
-          <div className="space-y-2">
-            {backlogItems.map((item) => {
+        <div
+          className={`space-y-2 rounded-md p-1 transition ${
+            dropTargetKey === 'backlog' ? 'bg-slate-100/10 ring-1 ring-slate-200/40' : ''
+          }`}
+          onDragOver={(event) => onDragOverTarget(event, 'backlog')}
+          onDrop={onDropBacklog}
+        >
+          {backlogItems.length ? (
+            backlogItems.map((item) => {
               const place = item.place!
               return (
                 <div
                   key={item.id}
+                  draggable={canDrag}
+                  onDragStart={() => onDragStart(item.id)}
+                  onDragEnd={onDragEnd}
                   className="rounded-lg border border-white/10 bg-white/5 px-3 py-2"
                 >
                   <div className="flex items-start justify-between gap-2">
@@ -727,11 +864,11 @@ export default function ListPlanner({ listId, onPlaceSelect }: Props) {
                   </div>
                 </div>
               )
-            })}
-          </div>
-        ) : (
-          <p className="text-[11px] text-slate-400">Nothing in backlog.</p>
-        )}
+            })
+          ) : (
+            <p className="text-[11px] text-slate-400">Nothing in backlog.</p>
+          )}
+        </div>
       </section>
 
       {tripRange ? (
@@ -780,9 +917,19 @@ export default function ListPlanner({ listId, onPlaceSelect }: Props) {
 
                   {PLANNER_SLOT_ORDER.map((slot) => {
                     const slotItems = (bySlot.get(slot) ?? []).slice()
+                    const slotDropKey = `slot:${date}:${slot}`
                     if (!slotItems.length) {
                       return (
-                        <div key={slot} className="space-y-1">
+                        <div
+                          key={slot}
+                          className={`space-y-1 rounded-md p-1 transition ${
+                            dropTargetKey === slotDropKey
+                              ? 'bg-slate-100/10 ring-1 ring-slate-200/40'
+                              : ''
+                          }`}
+                          onDragOver={(event) => onDragOverTarget(event, slotDropKey)}
+                          onDrop={(event) => onDropSlot(event, date, slot)}
+                        >
                           <p className="text-[11px] font-semibold text-slate-200">
                             {PLANNER_SLOT_LABEL[slot]}
                           </p>
@@ -807,7 +954,16 @@ export default function ListPlanner({ listId, onPlaceSelect }: Props) {
                     )
 
                     return (
-                      <div key={slot} className="space-y-2">
+                      <div
+                        key={slot}
+                        className={`space-y-2 rounded-md p-1 transition ${
+                          dropTargetKey === slotDropKey
+                            ? 'bg-slate-100/10 ring-1 ring-slate-200/40'
+                            : ''
+                        }`}
+                        onDragOver={(event) => onDragOverTarget(event, slotDropKey)}
+                        onDrop={(event) => onDropSlot(event, date, slot)}
+                      >
                         <p className="text-[11px] font-semibold text-slate-200">
                           {PLANNER_SLOT_LABEL[slot]}
                         </p>
@@ -835,7 +991,27 @@ export default function ListPlanner({ listId, onPlaceSelect }: Props) {
                                     return (
                                       <div
                                         key={item.id}
-                                        className="rounded-lg border border-white/10 bg-slate-900/35 px-3 py-2"
+                                        draggable={canDrag}
+                                        onDragStart={() => onDragStart(item.id)}
+                                        onDragEnd={onDragEnd}
+                                        onDragOver={(event) =>
+                                          onDragOverTarget(
+                                            event,
+                                            `item:${date}:${slot}:${category}:${item.id}`
+                                          )
+                                        }
+                                        onDrop={(event) =>
+                                          onDropSlot(event, date, slot, {
+                                            beforeItemId: item.id,
+                                            targetCategory: category,
+                                          })
+                                        }
+                                        className={`rounded-lg border px-3 py-2 transition ${
+                                          dropTargetKey ===
+                                          `item:${date}:${slot}:${category}:${item.id}`
+                                            ? 'border-slate-200/40 bg-slate-900/55'
+                                            : 'border-white/10 bg-slate-900/35'
+                                        }`}
                                       >
                                         <div className="flex items-start justify-between gap-2">
                                           <button
@@ -888,6 +1064,9 @@ export default function ListPlanner({ listId, onPlaceSelect }: Props) {
                   return (
                     <div
                       key={item.id}
+                      draggable={canDrag}
+                      onDragStart={() => onDragStart(item.id)}
+                      onDragEnd={onDragEnd}
                       className="rounded-lg border border-white/10 bg-slate-900/35 px-3 py-2"
                     >
                       <div className="flex items-start justify-between gap-2">
@@ -926,13 +1105,22 @@ export default function ListPlanner({ listId, onPlaceSelect }: Props) {
           <h3 className="text-xs font-semibold text-slate-200">Done</h3>
           <span className="text-[11px] text-slate-400">{doneItems.length}</span>
         </div>
-        {doneItems.length ? (
-          <div className="space-y-2">
-            {doneItems.map((item) => {
+        <div
+          className={`space-y-2 rounded-md p-1 transition ${
+            dropTargetKey === 'done' ? 'bg-slate-100/10 ring-1 ring-slate-200/40' : ''
+          }`}
+          onDragOver={(event) => onDragOverTarget(event, 'done')}
+          onDrop={onDropDone}
+        >
+          {doneItems.length ? (
+            doneItems.map((item) => {
               const place = item.place!
               return (
                 <div
                   key={item.id}
+                  draggable={canDrag}
+                  onDragStart={() => onDragStart(item.id)}
+                  onDragEnd={onDragEnd}
                   className="rounded-lg border border-white/10 bg-white/5 px-3 py-2"
                 >
                   <div className="flex items-start justify-between gap-2">
@@ -965,11 +1153,11 @@ export default function ListPlanner({ listId, onPlaceSelect }: Props) {
                   </div>
                 </div>
               )
-            })}
-          </div>
-        ) : (
-          <p className="text-[11px] text-slate-400">Nothing done yet.</p>
-        )}
+            })
+          ) : (
+            <p className="text-[11px] text-slate-400">Nothing done yet.</p>
+          )}
+        </div>
       </section>
 
       {error ? <p className="text-xs text-red-300">{error}</p> : null}

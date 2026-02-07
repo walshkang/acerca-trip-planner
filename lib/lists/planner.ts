@@ -57,6 +57,27 @@ export function comparePlannerCategories(a: CategoryEnum, b: CategoryEnum): numb
   return aRank - bRank
 }
 
+export function fractionalOrderBetween(
+  prevOrder: number | null,
+  nextOrder: number | null
+): number {
+  if (
+    typeof prevOrder === 'number' &&
+    Number.isFinite(prevOrder) &&
+    typeof nextOrder === 'number' &&
+    Number.isFinite(nextOrder)
+  ) {
+    return (prevOrder + nextOrder) / 2
+  }
+  if (typeof prevOrder === 'number' && Number.isFinite(prevOrder)) {
+    return prevOrder + 1
+  }
+  if (typeof nextOrder === 'number' && Number.isFinite(nextOrder)) {
+    return nextOrder - 1
+  }
+  return 1
+}
+
 export function parseIsoDateOnly(input: string): string | null {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(input)) return null
   const date = new Date(`${input}T00:00:00Z`)
