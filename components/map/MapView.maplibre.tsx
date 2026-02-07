@@ -413,50 +413,75 @@ const MapViewMaplibre = forwardRef<MapViewRef, MapViewProps>(
           </Marker>
         ) : null}
 
-        {places.map((place) => {
-          const isFocusedMarker = isPlaceFocused(place)
-          const isDimmedMarker = isPlaceDimmed(place)
-          return (
-            <Marker
-              key={place.id}
-              longitude={place.lng}
-              latitude={place.lat}
-            >
-              <button
-                type="button"
-                className={`cursor-pointer transition-opacity ${
-                  isDimmedMarker ? 'opacity-30' : 'opacity-100'
-                }`}
-                onClick={(event) => {
-                  event.preventDefault()
-                  event.stopPropagation()
-                  const native = event.nativeEvent as MouseEvent
-                  if (native?.stopImmediatePropagation) {
-                    native.stopImmediatePropagation()
-                  }
-                  if (native?.stopPropagation) {
-                    native.stopPropagation()
-                  }
-                  onPlaceClick(place.id)
+        {(() => {
+          const dimmedPlaces: typeof places = []
+          const activePlaces: typeof places = []
+          const focusedPlaces: typeof places = []
+
+          for (const place of places) {
+            if (isPlaceFocused(place)) {
+              focusedPlaces.push(place)
+            } else if (isPlaceDimmed(place)) {
+              dimmedPlaces.push(place)
+            } else {
+              activePlaces.push(place)
+            }
+          }
+
+          const orderedPlaces = [
+            ...dimmedPlaces,
+            ...activePlaces,
+            ...focusedPlaces,
+          ]
+
+          return orderedPlaces.map((place) => {
+            const isFocusedMarker = isPlaceFocused(place)
+            const isDimmedMarker = isPlaceDimmed(place)
+            return (
+              <Marker
+                key={place.id}
+                longitude={place.lng}
+                latitude={place.lat}
+                style={{
+                  zIndex: isFocusedMarker ? 30 : isDimmedMarker ? 10 : 20,
                 }}
-                aria-label={`Open ${place.name}`}
               >
-                <span
-                  aria-hidden="true"
-                  className={`flex h-7 w-7 items-center justify-center rounded-full ${markerBackdropClassName} ${
-                    isFocusedMarker
-                      ? markerFocusClassName ?? PLACE_FOCUS_GLOW
-                      : ''
+                <button
+                  type="button"
+                  className={`cursor-pointer transition-opacity ${
+                    isDimmedMarker ? 'opacity-30' : 'opacity-100'
                   }`}
+                  onClick={(event) => {
+                    event.preventDefault()
+                    event.stopPropagation()
+                    const native = event.nativeEvent as MouseEvent
+                    if (native?.stopImmediatePropagation) {
+                      native.stopImmediatePropagation()
+                    }
+                    if (native?.stopPropagation) {
+                      native.stopPropagation()
+                    }
+                    onPlaceClick(place.id)
+                  }}
+                  aria-label={`Open ${place.name}`}
                 >
-                  <span className="text-[15px] leading-none">
-                    {getCategoryEmoji(place.category)}
+                  <span
+                    aria-hidden="true"
+                    className={`flex h-7 w-7 items-center justify-center rounded-full ${markerBackdropClassName} ${
+                      isFocusedMarker
+                        ? markerFocusClassName ?? PLACE_FOCUS_GLOW
+                        : ''
+                    }`}
+                  >
+                    <span className="text-[15px] leading-none">
+                      {getCategoryEmoji(place.category)}
+                    </span>
                   </span>
-                </span>
-              </button>
-            </Marker>
-          )
-        })}
+                </button>
+              </Marker>
+            )
+          })
+        })()}
       </MapGL>
     )
   }

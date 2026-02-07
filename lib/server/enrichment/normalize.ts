@@ -168,7 +168,8 @@ async function normalizeWithOpenAI(
  * Checks if enrichment exists, otherwise creates new one
  */
 export async function normalizeEnrichment(
-  input: EnrichmentInput
+  input: EnrichmentInput,
+  options?: { forceDeterministic?: boolean }
 ): Promise<EnrichmentOutput> {
   const supabase = adminSupabase
   
@@ -196,7 +197,8 @@ export async function normalizeEnrichment(
     }
   }
   
-  const useLlm = Boolean(process.env.OPENAI_API_KEY)
+  const useLlm =
+    !options?.forceDeterministic && Boolean(process.env.OPENAI_API_KEY)
   const { normalizedData, model, promptVersion } = useLlm
     ? await normalizeWithOpenAI(input.rawSourceSnapshot)
     : {

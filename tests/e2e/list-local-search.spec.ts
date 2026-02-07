@@ -4,19 +4,19 @@ async function ensureSignedIn(page: Page) {
   const loadingText = page.getByText('Loading map...')
   await loadingText.waitFor({ state: 'detached' }).catch(() => null)
 
-  const signOut = page.getByRole('button', { name: 'Sign out' })
+  const toolsButton = page.getByRole('button', { name: 'Tools' })
   try {
-    await signOut.waitFor({ state: 'visible', timeout: 15000 })
+    await toolsButton.waitFor({ state: 'visible', timeout: 15000 })
     return
   } catch {
     const signIn = page.getByRole('link', { name: 'Sign in' })
     const isSignedOut = await signIn.isVisible().catch(() => false)
     if (isSignedOut) {
       throw new Error(
-        'Not signed in. Create playwright/.auth/user.json via: npx playwright codegen http://localhost:3000 --save-storage=playwright/.auth/user.json'
+        'Not signed in. Ensure PLAYWRIGHT_SEED_EMAIL / PLAYWRIGHT_SEED_PASSWORD are set (globalSetup writes playwright/.auth/user.json), or set PLAYWRIGHT_SKIP_AUTH_SETUP=1 and create storage state manually.'
       )
     }
-    throw new Error('Sign out button not visible. Map may still be loading.')
+    throw new Error('Tools button not visible. Map may still be loading.')
   }
 }
 
@@ -60,7 +60,8 @@ test('list detail local search adds approved places', async ({ page }) => {
   const results = page.getByTestId('local-search-results')
   await expect(results).toBeVisible()
   const resultCard = results
-    .locator('div', { has: results.getByText(seedB.place_name) })
+    .locator(':scope > div')
+    .filter({ hasText: seedB.place_name })
     .first()
   await expect(resultCard.getByText(seedB.place_name)).toBeVisible()
   await expect(resultCard.getByText('Approved')).toBeVisible()

@@ -5,19 +5,19 @@ async function ensureSignedIn(page: Page) {
   const loadingText = page.getByText('Loading map...')
   await loadingText.waitFor({ state: 'detached' }).catch(() => null)
 
-  const signOut = page.getByRole('button', { name: 'Sign out' })
+  const toolsButton = page.getByRole('button', { name: 'Tools' })
   try {
-    await signOut.waitFor({ state: 'visible', timeout: 15000 })
+    await toolsButton.waitFor({ state: 'visible', timeout: 15000 })
     return
   } catch {
     const signIn = page.getByRole('link', { name: 'Sign in' })
     const isSignedOut = await signIn.isVisible().catch(() => false)
     if (isSignedOut) {
       throw new Error(
-        'Not signed in. Create playwright/.auth/user.json via: npx playwright codegen http://localhost:3000 --save-storage=playwright/.auth/user.json'
+        'Not signed in. Ensure PLAYWRIGHT_SEED_EMAIL / PLAYWRIGHT_SEED_PASSWORD are set (globalSetup writes playwright/.auth/user.json), or set PLAYWRIGHT_SKIP_AUTH_SETUP=1 and create storage state manually.'
       )
     }
-    throw new Error('Sign out button not visible. Map may still be loading.')
+    throw new Error('Tools button not visible. Map may still be loading.')
   }
 }
 
@@ -73,7 +73,9 @@ test('place drawer opens and tags are editable for active list', async ({ page }
   const seed = await seedListWithPlace(page)
 
   await page.getByRole('button', { name: 'Lists' }).click()
-  const listDrawer = page.getByTestId('list-drawer')
+  const listDrawer = page
+    .locator('[data-testid="list-drawer"]:visible')
+    .first()
   await expect(listDrawer).toBeVisible()
 
   await listDrawer.getByRole('button', { name: seed.list.name }).click()
@@ -83,7 +85,9 @@ test('place drawer opens and tags are editable for active list', async ({ page }
   await expect(placeButton).toBeVisible()
   await placeButton.click()
 
-  const placeDrawer = page.getByTestId('place-drawer')
+  const placeDrawer = page
+    .locator('[data-testid="place-drawer"]:visible')
+    .first()
   await waitForPlaceDrawerReady(placeDrawer, seed.place_name)
 
   const membershipButton = placeDrawer.getByRole('button', {
@@ -122,7 +126,9 @@ test('place drawer stays below inspector overlay', async ({ page }) => {
   const seed = await seedListWithPlace(page)
 
   await page.getByRole('button', { name: 'Lists' }).click()
-  const listDrawer = page.getByTestId('list-drawer')
+  const listDrawer = page
+    .locator('[data-testid="list-drawer"]:visible')
+    .first()
   await expect(listDrawer).toBeVisible()
   await listDrawer.getByRole('button', { name: seed.list.name }).click()
   const placesSection = listDrawer.getByRole('heading', { name: 'Places' }).locator('..')
@@ -130,13 +136,20 @@ test('place drawer stays below inspector overlay', async ({ page }) => {
   await expect(placeButton).toBeVisible()
   await placeButton.click()
 
-  const placeDrawer = page.getByTestId('place-drawer')
+  const placeDrawer = page
+    .locator('[data-testid="place-drawer"]:visible')
+    .first()
   const rightOverlay = page.getByTestId('map-overlay-right')
 
   await waitForPlaceDrawerReady(placeDrawer, seed.place_name)
   await expect(rightOverlay).toBeVisible()
 
-  const placeBox = await placeDrawer.boundingBox()
+  const contextPanel = page
+    .locator('[data-testid="context-panel-desktop"]:visible')
+    .first()
+  await expect(contextPanel).toBeVisible()
+
+  const placeBox = await contextPanel.boundingBox()
   const overlayBox = await rightOverlay.boundingBox()
 
   expect(placeBox && overlayBox).toBeTruthy()
@@ -152,7 +165,9 @@ test('place drawer URL supports deep link and back/forward', async ({ page }) =>
   await page.goto(`/?place=${encodedPlaceId}`)
   await ensureSignedIn(page)
 
-  const placeDrawer = page.getByTestId('place-drawer')
+  const placeDrawer = page
+    .locator('[data-testid="place-drawer"]:visible')
+    .first()
   await waitForPlaceDrawerReady(placeDrawer, seed.place_name)
   await expect(page).toHaveURL(new RegExp(`[?&]place=${encodedPlaceId}`))
 
@@ -175,17 +190,34 @@ test('transit overlay does not block marker clicks', async ({ page }) => {
 
   const seed = await seedListWithPlace(page)
 
+  await page.getByRole('button', { name: 'Tools' }).click()
   const transitToggle = page.getByLabel('Transit lines')
   await transitToggle.check()
+  await page.getByRole('button', { name: 'Close' }).click()
 
   await page.getByRole('button', { name: 'Lists' }).click()
-  const listDrawer = page.getByTestId('list-drawer')
+  const listDrawer = page
+    .locator('[data-testid="list-drawer"]:visible')
+    .first()
   await expect(listDrawer).toBeVisible()
   await listDrawer.getByRole('button', { name: seed.list.name }).click()
 
+  const placesSection = listDrawer
+    .getByRole('heading', { name: 'Places' })
+    .locator('..')
+  await expect(
+    placesSection.getByRole('button', { name: seed.place_name })
+  ).toBeVisible()
+
+  await page.getByRole('button', { name: 'Hide lists' }).click()
+  await expect(listDrawer).toBeHidden()
+  await expect(page.getByRole('button', { name: 'Lists' })).toBeVisible()
+
   await page.getByRole('button', { name: `Open ${seed.place_name}` }).click()
 
-  const placeDrawer = page.getByTestId('place-drawer')
+  const placeDrawer = page
+    .locator('[data-testid="place-drawer"]:visible')
+    .first()
   await expect(placeDrawer).toBeVisible()
   await expect(
     placeDrawer.getByRole('heading', { name: seed.place_name })

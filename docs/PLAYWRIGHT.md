@@ -1,33 +1,46 @@
-# Playwright E2E (paused)
+# Playwright E2E (local workflow)
 
-Playwright is currently paused to avoid test data churn. The seeded endpoints
-and helper scripts have been removed. If we revisit Playwright, we can re-add
-the seeding flow and update these instructions.
+This repo uses Playwright for browser-level smoke checks.
 
 ## 1) Install browsers (one-time)
 ```sh
 npx playwright install
 ```
 
-## 2) Create an auth storage state (one-time, manual login)
-This records your authenticated session so tests can run headless.
+## 2) Configure auth + seed env (required)
+Playwright signs in as a dedicated seed user (email/password) and uses a guarded
+seed endpoint to create deterministic data for tests.
 
 ```sh
-npx playwright codegen http://localhost:3000 --save-storage=playwright/.auth/user.json
+export PLAYWRIGHT_SEED_TOKEN=local-playwright
+export PLAYWRIGHT_SEED_EMAIL=playwright@example.com
+export PLAYWRIGHT_SEED_PASSWORD=replace-with-a-strong-password
 ```
-- A browser opens. Log in normally.
-- Once you see the app, close the browser window.
-- The session is saved to `playwright/.auth/user.json`.
 
-Tip: If you want to re-auth, delete that file and run the command again.
+Also ensure the app server has `SUPABASE_SERVICE_ROLE_KEY` set (used for `/api/test/seed`).
+
+## 2.5) Create/verify the seed user (one-time)
+This uses the service role key to create (or confirm) the seed user and verifies
+that password sign-in works.
+
+```sh
+node scripts/ensure-playwright-seed-user.mjs
+```
 
 ## 3) Run tests
+In another terminal, ensure the app server is running at `PLAYWRIGHT_BASE_URL`
+(default `http://localhost:3000`):
+```sh
+npm run dev
+```
+
 ```sh
 npm run test:e2e
 ```
 
-Note: these tests are currently unmaintained and may fail until the seeding
-flow is restored.
+Notes:
+- The Playwright `globalSetup` writes auth storage state to `playwright/.auth/user.json` automatically.
+- To bypass auth setup (and use manual login state), set `PLAYWRIGHT_SKIP_AUTH_SETUP=1`.
 
 Useful variants:
 - UI mode (interactive): `npm run test:e2e:ui`

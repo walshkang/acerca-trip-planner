@@ -31,7 +31,10 @@ export default function ContextPanel({
   return (
     <>
       {/* Mobile bottom sheet (simple v1; button-driven) */}
-      <div className="fixed inset-x-0 bottom-0 z-[90] block md:hidden">
+      <div
+        className="fixed inset-x-0 bottom-0 z-[90] block md:hidden"
+        data-testid="context-panel-mobile"
+      >
         <OverlayPanel
           title={title}
           subtitle={subtitle}
@@ -44,7 +47,10 @@ export default function ContextPanel({
       </div>
 
       {/* Desktop docked panel (split view inside one container) */}
-      <div className="absolute right-4 top-20 z-[60] hidden w-[min(760px,92vw)] md:block">
+      <div
+        className="absolute right-4 top-20 z-[60] hidden w-[min(760px,92vw)] md:block"
+        data-testid="context-panel-desktop"
+      >
         <OverlayPanel
           title={title}
           subtitle={subtitle}
