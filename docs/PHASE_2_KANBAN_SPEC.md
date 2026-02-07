@@ -213,3 +213,21 @@ Server behavior:
 - Mobile: tap-to-move schedules into the correct day+slot (no stacked drawers).
 - Bars appear under Drinks.
 - No enrichment/user edits are overwritten by scheduling changes.
+
+---
+
+## Implementation chunks (recommended)
+
+### Chunk 1: Mobile Planner MVP (tap-to-move)
+- Mobile Context Panel adds `Plan` mode and renders a vertical agenda.
+- Move picker (tap-to-move) schedules items without drag-and-drop and persists via `PATCH /api/lists/[id]/items/[itemId]` with `source="tap_move"`.
+- Trip dates editor is reachable from the Plan CTA when day scheduling is disabled (writes `PATCH /api/lists/[id]`).
+
+### Chunk 2: Desktop Planner DnD + reorder
+- Desktop `Details | Plan` toggle in the Context Panel right pane.
+- Drag-and-drop between buckets + reorder within a bucket.
+- Fractional ordering algorithm drives `scheduled_order`; writes use `source="drag"`.
+
+### Chunk 3: Mobile polish (fast move + optional reorder)
+- Faster destination selection in Move picker (shortcuts + reduced taps).
+- Optional non-DnD reorder controls that preserve deterministic grouping and stable refresh.

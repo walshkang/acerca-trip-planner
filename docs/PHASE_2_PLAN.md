@@ -110,6 +110,42 @@ Goal: ship a usable mobile planner that schedules list items without drag-and-dr
 - E2E: mobile `Move` schedules into a day+slot, persists after reload, and supports Done/Backlog moves.
 - Manual smoke: map remains interactive, no stacked drawers, and Back behavior is predictable.
 
+#### Execution Plan (chunk 2: Desktop DnD + Reorder)
+Goal: make the planner fast on desktop with drag-and-drop + deterministic ordering.
+
+**UI**
+- Add `Details | Plan` toggle in the Context Panel right pane (list stays visible on the left).
+- Render the planner as a board:
+  - Backlog + Done lanes
+  - Day columns (bounded by `lists.start_date`/`end_date`)
+  - Within each day: 3 slot lanes (Morning/Afternoon/Evening) with deterministic category grouping.
+
+**DnD + ordering**
+- Implement drag between buckets + reorder within a bucket.
+- Compute `scheduled_order` via fractional insertion (between neighbors / start / end) and persist via the same `PATCH` route.
+- Set `last_scheduled_source="drag"` for DnD writes.
+- Guardrails: do not allow category changes; categories remain derived from `place.category`.
+
+**Testing + verification**
+- Unit: ordering helper (neighbors → new order), plus planner bucketing determinism.
+- E2E (desktop): drag Backlog → Day/Slot, drag reorder within slot, reload persists.
+
+#### Execution Plan (chunk 3: Mobile polish + optional reorder)
+Goal: reduce friction on mobile without introducing stacked drawers or fragile gestures.
+
+**Move UX**
+- Improve the Move picker with fast paths:
+  - “Today” shortcut (list-local date) when within the trip range.
+  - Quick actions: “Backlog”, “Done”.
+- Optional: add mobile reordering without DnD (e.g., “Move up/down” within a slot) while keeping deterministic ordering rules.
+
+**Trip dates UX**
+- Add a minimal trip dates editor reachable from the Plan CTA when dates are unset (writes `PATCH /api/lists/[id]`).
+
+**Quality**
+- Keep animations calm and state-revealing; respect `prefers-reduced-motion`.
+- Ensure no surprise camera moves and no stacked overlays.
+
 ### P2-E2 Deterministic Filtering & Intent Translation
 
 #### Filter JSON Schema (owned by server)
