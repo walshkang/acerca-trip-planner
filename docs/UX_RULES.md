@@ -66,6 +66,11 @@ Close in order:
 - Prefer adding `/?list=<id>` for list selection (deep linkable).
 - If both exist, show split view and highlight membership context.
 
+### Planner mode state (not URL-addressed)
+- Context Panel modes like `Plan` and ephemeral subviews like the `Move` picker are **in-memory UI state** (not URL-addressed in v1).
+- Switching modes (Lists/Plan/Details) should not create history entries; only user-driven updates to `?place=` / `?list=` should.
+- Back inside the Context Panel unwinds in this order: Move picker → Place details (clears `?place=`) → sheet snap points → base map route.
+
 ### Truth boundaries
 - Preview state is never treated as “saved” until approval succeeds.
 - User edits never overwrite frozen enrichment fields.

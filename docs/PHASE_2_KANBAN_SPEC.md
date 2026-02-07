@@ -72,13 +72,16 @@ Rules:
 - `Drinks` is a first-class place type (alcoholic, bars).
 - Bars must normalize to `Drinks` (not `Food`).
 
-### Plan
-- Add `Drinks` to DB `category_enum`.
-- Update icon mapping + exhaustive type lists (TypeScript).
-- Update deterministic fallback + LLM normalization contract so Google Place types like `bar` / `night_club` map to `Drinks`.
-
-Optional (later):
-- Versioned backfill: re-normalize existing bar places by schema_version bump and new enrichment rows (no mutation of frozen records).
+### Checklist (ship-safe)
+- DB: add `Drinks` to `category_enum`.
+- Types: run `npm run db:types` and commit regenerated types.
+- UI: update icon mapping + exhaustive category arrays/checks (TypeScript).
+- Normalization:
+  - Update deterministic fallback mapping so `bar` / `night_club` / `wine_bar` normalize to `Drinks` (currently `bar` maps to `Food`).
+  - Update the LLM normalization contract/tests to allow `Drinks` as a valid category.
+- Backfill policy:
+  - MVP: defer backfill (existing approved places may remain miscategorized until refreshed).
+  - Later: versioned backfill via `schema_version` bump + new enrichment rows (no mutation of frozen records).
 
 ---
 
@@ -119,16 +122,21 @@ Items are grouped by `place.category` and then ordered by:
   - Each item has a `Move` affordance that opens an in-panel destination picker (Day → Slot, or Backlog/Done).
   - No cross-lane drag on mobile v1; default insertion is append-to-end of the destination category group.
 
+### DnD constraints (desktop)
+- Categories are not reorderable; they remain grouped and rendered in a fixed order within each slot.
+- Reordering is only allowed **within the item’s own category group** (same day + slot + category bucket).
+- If a user drops “across” category boundaries (e.g., tries to place Coffee above Food), snap to the nearest valid position in the item’s category group (default: end of the group).
+
 ### Supported moves
 - Backlog → (day, slot): schedules the item (requires trip dates; otherwise day scheduling is disabled).
-- (day, slot) → (day, slot): reschedules and/or reorders.
+- (day, slot) → (day, slot): reschedules between days/slots; reordering is within the item’s category group only.
 - Any → Done: marks completed.
 - Any → Backlog: clears scheduling and completion.
 
 ### Category behavior
 - Category is derived from `place.category` (DB truth).
 - Users do not move items between categories; categories are deterministic groups.
-  - If a DnD implementation exposes category-scoped drop targets, ignore mismatched categories and treat it as a slot-level move (insert at end of the correct category group in that slot).
+  - The UI should not expose cross-category drop targets. If it does, treat mismatched targets as a slot-level move and insert at the end of the correct category group in that slot.
 
 ### Ordering algorithm (fractional)
 On insert/reorder within a bucket (same day + slot + category):

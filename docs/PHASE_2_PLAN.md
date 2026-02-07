@@ -154,6 +154,10 @@ Goal: reduce friction on mobile without introducing stacked drawers or fragile g
   - `tags[]` (list-scoped tags from P2-E3)
   - `open_now` (boolean)
   - `within_list_id` (scope to a list)
+- Boolean semantics (baseline; match existing list filters):
+  - OR within each array (`category[]`, `tags[]`, `energy[]`).
+  - AND across keys (e.g., `category[]` AND `tags[]` AND `open_now`).
+  - Category remains a strict enum (icons ↔ enums); tags remain list-scoped and do not compete with category.
 - Schema lives in `lib/filters/schema.ts` with runtime validation.
 
 #### Intent Translation
@@ -180,6 +184,7 @@ Note:
 - Filter JSON is the only LLM output; invalid schemas are rejected.
 - Filtering is reproducible across clients.
 - Open-now results are consistent with server time + stored timezone.
+- Server-side filters preserve the current UI semantics (no parallel filter language).
 
 ### P2-E3 List Workspace + Tags
 

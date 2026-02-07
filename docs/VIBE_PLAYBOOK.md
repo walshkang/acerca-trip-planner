@@ -19,6 +19,7 @@ A short, repeatable checklist for building in this repo.
 - Clear verification steps documented and run when possible.
 - Migrations applied and `npm run db:types` run if schema changed.
 - Decisions / Rationale and Next Steps are filled (no TODO placeholders).
+- Legacy learning reports may contain TODOs; any new/changed report must be fully filled (enforced by `scripts/check-rationale.ts`).
 
 ## Common Pitfalls
 - TODO rationale left blank in reports.
