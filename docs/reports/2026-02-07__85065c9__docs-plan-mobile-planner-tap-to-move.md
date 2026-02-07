@@ -1,7 +1,7 @@
 # Learning Report: docs: plan mobile planner tap-to-move
 
 - Date: 2026-02-07
-- Commit: 7b3d582e216fb16a79f611e6bf6e140f7c727146
+- Commit: 85065c9c7fd679af437c49b8cd1a0786418bc781
 - Author: Walsh Kang
 
 ## Summary
