@@ -28,6 +28,14 @@ This is a concrete, deterministic spec for the Phase 2 planner UI and the minima
   - `Details` keeps current place drawer / inspector behavior.
   - `Plan` shows the planner board for the currently active list.
 
+### Mobile (Bottom Sheet)
+- The `ContextPanel` is a bottom sheet on mobile (snap points + back behavior live in `docs/UX_RULES.md`).
+- Split view collapses to a single pane: the planner occupies the sheet body.
+- Use a mode toggle in the sheet chrome: `Places | Plan`.
+  - `Places`: list detail experience (search + filters).
+  - `Plan`: planner agenda (Backlog + day buckets + Done).
+- Selecting an item opens Place details as a subview inside the same sheet; Back returns to the prior mode.
+
 ### Secondary entry point (full page)
 - `/lists/[id]` can reuse the same planner component in a wider layout.
 
@@ -43,7 +51,7 @@ This is a concrete, deterministic spec for the Phase 2 planner UI and the minima
 - Audit:
   - `last_scheduled_at TIMESTAMPTZ`
   - `last_scheduled_by UUID`
-  - `last_scheduled_source TEXT` (use `"drag"` for DnD)
+  - `last_scheduled_source TEXT` (use `"drag"` for desktop DnD; `"tap_move"` for mobile Move picker)
 
 ### Slot encoding (MVP)
 Store slots as sentinel `scheduled_start_time` values:
@@ -79,9 +87,14 @@ Optional (later):
 ### Day buckets
 - If `lists.start_date` and `lists.end_date` exist, render inclusive day sections in list-local date strings.
 - If missing, show a CTA: “Set trip dates to plan by day” and render only Backlog + Done (day scheduling is disabled until dates are set).
+  - Trip dates are list-level fields; MVP write path: `PATCH /api/lists/[id]` (`start_date`, `end_date`, `timezone`).
 
 ### Slots per day
 - Each day has three lanes: Morning / Afternoon / Evening.
+
+### Mobile rendering (agenda, not a board)
+- Render vertically: Backlog → (Day → Morning/Afternoon/Evening) → Done.
+- Prefer collapsible day sections over horizontal scrolling on mobile.
 
 ### Type ordering inside each slot
 Render categories in a fixed order:
@@ -98,18 +111,24 @@ Items are grouped by `place.category` and then ordered by:
 
 ---
 
-## Drag-and-drop behaviors
+## Move behaviors (DnD on desktop, Tap-to-move on mobile)
+
+### Interaction model
+- **Desktop:** drag-and-drop between buckets (Backlog/Day+Slot/Done) and reorder within a bucket.
+- **Mobile (MVP):** tap-to-move only.
+  - Each item has a `Move` affordance that opens an in-panel destination picker (Day → Slot, or Backlog/Done).
+  - No cross-lane drag on mobile v1; default insertion is append-to-end of the destination category group.
 
 ### Supported moves
-- Backlog → (day, slot): schedules the item (requires trip dates; otherwise there are no day drop targets).
+- Backlog → (day, slot): schedules the item (requires trip dates; otherwise day scheduling is disabled).
 - (day, slot) → (day, slot): reschedules and/or reorders.
 - Any → Done: marks completed.
 - Any → Backlog: clears scheduling and completion.
 
 ### Category behavior
 - Category is derived from `place.category` (DB truth).
-- Users do not drag items between categories; categories are deterministic groups.
-  - If a drop target is category-scoped, ignore a mismatched category target and treat it as a slot-level drop (insert at end of the correct category group in that slot).
+- Users do not move items between categories; categories are deterministic groups.
+  - If a DnD implementation exposes category-scoped drop targets, ignore mismatched categories and treat it as a slot-level move (insert at end of the correct category group in that slot).
 
 ### Ordering algorithm (fractional)
 On insert/reorder within a bucket (same day + slot + category):
@@ -132,7 +151,7 @@ Request (MVP):
 - `slot`: `"morning" | "afternoon" | "evening" | null`
 - `scheduled_order`: `number | null`
 - `completed`: `boolean | null`
-- `source`: `"drag" | "quick_add" | "api"` (optional; default `"api"`)
+- `source`: `"drag" | "tap_move" | "quick_add" | "api"` (optional; default `"api"`)
 
 Server behavior:
 - Validate auth and ownership (item belongs to list; list belongs to user).
@@ -152,6 +171,7 @@ Server behavior:
 - Apply the move immediately in UI state.
 - Fire the PATCH.
 - On failure: revert the move and show an inline error.
+- Use calm, subtle motion to make the state change legible (lift → slide → settle + destination highlight), and respect `prefers-reduced-motion`.
 
 ### Refresh source of truth
 - After a successful move, either:
@@ -175,17 +195,21 @@ Server behavior:
 ### Playwright (E2E)
 - Seed list with items across categories including a bar (Drinks) and an Activity.
 - Open map → Lists → select list → Plan tab.
-- Drag from Backlog to Morning; reload; verify persisted.
-- Drag reorder within the same slot; verify persisted.
-- Drag to Done; verify state.
-- Drag back to Backlog; verify cleared date/slot/completed.
+- Desktop: drag from Backlog to Morning; reload; verify persisted.
+- Mobile: tap `Move` → choose day+slot; reload; verify persisted.
+- Desktop: drag reorder within the same slot; verify persisted.
+- Desktop: drag to Done; verify state.
+- Mobile: tap `Move` → Done; verify state.
+- Desktop: drag back to Backlog; verify cleared date/slot/completed.
+- Mobile: tap `Move` → Backlog; verify cleared date/slot/completed.
 
 ---
 
 ## Verification checklist (manual)
 - Planner accessible from map without navigating away.
-- Left list remains visible while planning.
-- Dragging schedules into the correct day+slot.
+- List context remains visible while planning (desktop split view; mobile via `Places | Plan`).
+- Scheduling moves land in the correct day+slot.
 - Slot/type ordering is deterministic and stable after refresh.
+- Mobile: tap-to-move schedules into the correct day+slot (no stacked drawers).
 - Bars appear under Drinks.
 - No enrichment/user edits are overwritten by scheduling changes.

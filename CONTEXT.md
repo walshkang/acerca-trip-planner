@@ -17,10 +17,14 @@
 - Spec: `docs/PHASE_2_KANBAN_SPEC.md`.
 - [ ] Decide slot encoding (MVP): sentinel `scheduled_start_time` values for Morning/Afternoon/Evening.
 - [ ] Add `Drinks` to `category_enum` + icon mapping + exhaustive tests; normalize bars → Drinks deterministically.
-- [ ] Implement scheduling write path: `PATCH /api/lists/[id]/items/[itemId]` (date/slot/order/completed_at only + audit fields).
-- [ ] Add Planner view in map ContextPanel (right pane), with day buckets + 3 slots per day.
-- [ ] Drag-and-drop: list → slot, slot → slot, reorder within slot; optimistic UI that reconciles on refresh.
-- [ ] E2E: Playwright coverage for schedule + reorder + Done/Backlog transitions.
+- [ ] Implement list trip date write path: `PATCH /api/lists/[id]` (`start_date`, `end_date`, `timezone`).
+- [ ] Implement scheduling write path: `PATCH /api/lists/[id]/items/[itemId]` (date/slot/order/completed_at only + audit fields; `source` includes `tap_move`).
+- [ ] Add Planner view in map ContextPanel:
+  - Desktop: right pane `Plan` mode (keeps list visible).
+  - Mobile: `Places | Plan | Details` with Plan as a vertical agenda.
+- [ ] Mobile MVP: tap-to-move via `Move` picker + optimistic UI + calm/clear motion.
+- [ ] Desktop follow-up: DnD schedule + reorder within slot.
+- [ ] E2E: Playwright coverage for schedule + Done/Backlog transitions (mobile Move picker first; desktop DnD follow-up).
 
 ## ✅ P2-E4 Remaining Plan (Tracking)
 - [x] Decide URL contract: `/?place=<id>` map drawer deep link; keep `/places/[id]` full detail page.

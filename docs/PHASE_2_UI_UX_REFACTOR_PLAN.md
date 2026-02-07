@@ -30,7 +30,7 @@ While preserving URL-deep-link semantics and keeping mobile ergonomics first-cla
 
 ### Primary overlay: Context Panel
 - The single bounded surface for “working context”.
-- Modes: **Lists**, **Place**, **Search** (Search may remain in Omnibox initially).
+- Modes: **Lists**, **Place**, **Search**, **Plan** (Search may remain in Omnibox initially).
 - **Split view** happens *inside* the panel:
   - Left: Lists context
   - Right: Place context (approved place or preview/approve flow)
@@ -41,6 +41,10 @@ While preserving URL-deep-link semantics and keeping mobile ergonomics first-cla
 ### Budget rules
 - **Mobile:** only one overlay open at a time (Context Panel OR Tools Sheet).
 - **Desktop:** Context Panel docked + optional Tools Sheet (never 3 persistent surfaces).
+
+### Mobile navigation (map-first)
+- Prefer a bottom tab bar (Explore/Search, Lists, Plan) that switches Context Panel mode while keeping the map visible.
+- Tabs are part of the map shell, not additional windows (details in `docs/UX_RULES.md`).
 
 ## URL + State Contract
 
@@ -67,6 +71,7 @@ While preserving URL-deep-link semantics and keeping mobile ergonomics first-cla
 ### Slice 2: Context Panel v1 around existing content
 - Desktop: mount a single bounded Context Panel container.
 - Mobile: bottom sheet states (button-driven is OK v1; drag later).
+- Mobile: a mode switcher row inside the sheet chrome (e.g., `Explore/Search`, `Lists`, `Plan`, `Details`) that swaps Context Panel content without stacking drawers.
 - Keep Omnibox where it is for now to avoid scope creep.
 
 ### Slice 3: Extract List and Place content
@@ -101,4 +106,3 @@ While preserving URL-deep-link semantics and keeping mobile ergonomics first-cla
 ## Decision Log (defaults)
 - Desktop dock side default: **right** (minimizes churn; aligns with existing “context” placement).
 - Playwright: treated as optional until deterministic seeding is restored.
-

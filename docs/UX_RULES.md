@@ -29,6 +29,13 @@ This document defines the **surface model** and **device rules** so the UI stays
 - Header is always visible; body scrolls independently.
 - Sheet must respect safe areas and on-screen keyboard.
 
+### Mobile navigation (Bottom Tabs)
+- Bottom tabs are part of the map shell (not additional windows).
+- Tabs switch the Context Panel **mode**, not the underlying “map route”.
+  - Suggested mapping: `Explore` (Search), `Lists`, `Plan` (Phase 2).
+- Switching tabs must not stack drawers; it should set a predictable sheet state (usually `peek` or `half`).
+- Tools remain a secondary overlay and must be mutually exclusive with the Context Panel on mobile.
+
 ### Back behavior (predictable)
 Close in order:
 1) Tools Sheet
@@ -86,4 +93,3 @@ Close in order:
 - Back/forward toggles `?place=` cleanly without weird intermediate states.
 - Ghost/preview visuals are unmistakable vs approved pins.
 - Tags and Type remain visually and verbally distinct.
-
