@@ -380,9 +380,6 @@ export default function InspectorCard(props: {
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <p className="text-xs font-medium text-slate-300">List</p>
-            <a className="text-xs underline text-slate-300" href="/lists">
-              Manage lists
-            </a>
           </div>
           <select
             className="glass-input w-full px-2 py-2 text-xs"

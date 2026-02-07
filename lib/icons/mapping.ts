@@ -6,6 +6,7 @@ export const CATEGORY_ICON_MAP: Record<CategoryEnum, string> = {
   Sights: '/icons/sights.svg',
   Shop: '/icons/shop.svg',
   Activity: '/icons/activity.svg',
+  Drinks: '/icons/drinks.svg',
 }
 
 export const CATEGORY_EMOJI_MAP: Record<CategoryEnum, string> = {
@@ -14,6 +15,7 @@ export const CATEGORY_EMOJI_MAP: Record<CategoryEnum, string> = {
   Sights: '🏛️',
   Shop: '🛍️',
   Activity: '🎯',
+  Drinks: '🍸',
 }
 
 // Build-time validation: ensure exhaustiveness

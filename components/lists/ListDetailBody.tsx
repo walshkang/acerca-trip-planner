@@ -279,12 +279,7 @@ export default function ListDetailBody({
         <div className={`rounded-lg border p-4 ${panelClass}`}>
           <div className="flex flex-wrap items-center gap-2">
             <h2 className={`text-lg font-semibold ${titleClass}`}>
-              <a
-                className="hover:underline"
-                href={`/lists/${list.id}`}
-              >
-                {list.name}
-              </a>
+              {list.name}
             </h2>
             {list.is_default ? (
               <span className={`rounded-full border px-2 py-0.5 text-[10px] ${chipClass}`}>

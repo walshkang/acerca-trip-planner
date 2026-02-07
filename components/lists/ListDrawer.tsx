@@ -377,12 +377,6 @@ export default function ListDrawer({
             )
           })}
         </div>
-        <a
-          className="text-[11px] text-slate-300 underline"
-          href="/lists"
-        >
-          Manage lists
-        </a>
       </div>
 
       <div className="max-h-[50vh] overflow-y-auto px-4 py-3">

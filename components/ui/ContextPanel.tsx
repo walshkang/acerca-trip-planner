@@ -50,7 +50,7 @@ export default function ContextPanel({
           subtitle={subtitle}
           onClose={onClose}
           className="max-h-[80vh]"
-          bodyClassName="max-h-[calc(80vh-52px)]"
+          bodyClassName="h-[calc(80vh-52px)]"
         >
           {desktopLayout === 'single' ? (
             <div className="h-full overflow-auto">

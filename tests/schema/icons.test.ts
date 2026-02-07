@@ -4,7 +4,14 @@ import { CATEGORY_ICON_MAP } from '@/lib/icons/mapping'
 
 describe('Icon mapping', () => {
   it('should have an icon for every CategoryEnum value', () => {
-    const categories: CategoryEnum[] = ['Food', 'Coffee', 'Sights', 'Shop', 'Activity']
+    const categories: CategoryEnum[] = [
+      'Food',
+      'Coffee',
+      'Sights',
+      'Shop',
+      'Activity',
+      'Drinks',
+    ]
     
     categories.forEach((category) => {
       expect(CATEGORY_ICON_MAP).toHaveProperty(category)

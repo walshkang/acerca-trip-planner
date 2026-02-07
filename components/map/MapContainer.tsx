@@ -10,6 +10,7 @@ import type { MapPlace, LatLng } from '@/components/map/MapView.types'
 import Omnibox from '@/components/discovery/Omnibox'
 import InspectorCard from '@/components/discovery/InspectorCard'
 import ListDrawer from '@/components/lists/ListDrawer'
+import ListPlanner from '@/components/lists/ListPlanner'
 import PlaceDrawer from '@/components/places/PlaceDrawer'
 import ContextPanel from '@/components/ui/ContextPanel'
 import ToolsSheet from '@/components/ui/ToolsSheet'
@@ -84,7 +85,9 @@ export default function MapContainer() {
     null
   )
   const [drawerOpen, setDrawerOpen] = useState(false)
-  const [panelMode, setPanelMode] = useState<'lists' | 'details'>('lists')
+  const [panelMode, setPanelMode] = useState<'lists' | 'plan' | 'details'>(
+    'lists'
+  )
   const [toolsOpen, setToolsOpen] = useState(false)
   const [activeListId, setActiveListId] = useState<string | null>(null)
   const [activeListPlaceIds, setActiveListPlaceIds] = useState<string[]>([])
@@ -171,9 +174,10 @@ export default function MapContainer() {
   const mapRef = useRef<MapRef | null>(null)
   const didInitActiveList = useRef(false)
   const previewFlyToIdRef = useRef<string | null>(null)
+  const panelModeBeforeDetailsRef = useRef<'lists' | 'plan'>('lists')
   const prePreviewStateRef = useRef<{
     drawerOpen: boolean
-    panelMode: 'lists' | 'details'
+    panelMode: 'lists' | 'plan' | 'details'
     focusedListPlaceId: string | null
     selectedPlaceId: string | null
   } | null>(null)
@@ -388,6 +392,12 @@ export default function MapContainer() {
   }, [selectedListParam])
 
   useEffect(() => {
+    if (panelMode === 'lists' || panelMode === 'plan') {
+      panelModeBeforeDetailsRef.current = panelMode
+    }
+  }, [panelMode])
+
+  useEffect(() => {
     if (selectedPlaceId) {
       setPanelMode('details')
     }
@@ -457,6 +467,11 @@ export default function MapContainer() {
     setPanelMode(saved.panelMode)
     setFocusedListPlaceId(saved.focusedListPlaceId ?? null)
   }, [clearDiscovery, setPlaceParam])
+
+  const closePlaceDetails = useCallback(() => {
+    setPlaceParam(null)
+    setPanelMode(panelModeBeforeDetailsRef.current)
+  }, [setPlaceParam])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -754,7 +769,9 @@ export default function MapContainer() {
     ? 'Preview'
     : panelMode === 'details'
       ? 'Details'
-      : 'Lists'
+      : panelMode === 'plan'
+        ? 'Plan'
+        : 'Lists'
 
   return (
     <div className="w-full h-screen relative">
@@ -812,14 +829,26 @@ export default function MapContainer() {
             onActiveTypeFiltersChange={setActiveListTypeFilters}
             onActiveListItemsChange={handleActiveListItemsChange}
             focusedPlaceId={focusedListPlaceId}
+              onPlaceSelect={(placeId) => {
+                setPendingFocusPlaceId(placeId)
+                setPlaceParam(placeId)
+                setFocusedListPlaceId(placeId)
+                setPanelMode('details')
+              }}
+              tagsRefreshKey={listTagRefreshKey}
+              onTagsUpdated={bumpPlaceTagRefresh}
+          />
+        )
+
+        const planPane = (
+          <ListPlanner
+            listId={activeListId}
             onPlaceSelect={(placeId) => {
               setPendingFocusPlaceId(placeId)
               setPlaceParam(placeId)
               setFocusedListPlaceId(placeId)
               setPanelMode('details')
             }}
-            tagsRefreshKey={listTagRefreshKey}
-            onTagsUpdated={bumpPlaceTagRefresh}
           />
         )
 
@@ -852,7 +881,7 @@ export default function MapContainer() {
             >
               Back
               </button>
-            </div>
+          </div>
         ) : previewMode === 'ready' ? (
           <div className="p-3">
             <InspectorCard
@@ -876,7 +905,7 @@ export default function MapContainer() {
               place={selectedPlace}
               activeListId={activeListId}
               activeListItemOverride={activeListItemOverride}
-              onClose={() => setPlaceParam(null)}
+              onClose={closePlaceDetails}
               tagsRefreshKey={placeTagRefreshKey}
               onTagsUpdated={bumpListTagRefresh}
             />
@@ -903,13 +932,50 @@ export default function MapContainer() {
           </div>
         )
 
+        const desktopRight = isPreviewing ? (
+          placePane
+        ) : (
+          <div>
+            <div className="sticky top-0 z-10 border-b border-white/10 bg-slate-900/70 px-3 py-2 backdrop-blur">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setPanelMode('details')}
+                  className={`rounded-full border px-3 py-1 text-xs transition ${
+                    panelMode === 'details'
+                      ? 'border-slate-100 bg-slate-100 text-slate-900'
+                      : 'border-white/10 text-slate-200 hover:border-white/30'
+                  }`}
+                >
+                  Details
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDrawerOpen(true)
+                    setPanelMode('plan')
+                  }}
+                  className={`rounded-full border px-3 py-1 text-xs transition ${
+                    panelMode === 'plan'
+                      ? 'border-slate-100 bg-slate-100 text-slate-900'
+                      : 'border-white/10 text-slate-200 hover:border-white/30'
+                  }`}
+                >
+                  Plan
+                </button>
+              </div>
+            </div>
+            {panelMode === 'plan' ? planPane : placePane}
+          </div>
+        )
+
         return (
           <ContextPanel
             open={contextOpen}
             title={panelTitle}
             subtitle={panelSubtitle}
             desktopLayout={isPreviewing ? 'single' : 'split'}
-            desktopContent={placePane}
+            desktopContent={desktopRight}
             onClose={() => {
               setToolsOpen(false)
               if (isPreviewing) {
@@ -921,7 +987,7 @@ export default function MapContainer() {
               clearDiscovery()
             }}
             left={isPreviewing ? undefined : listPane}
-            right={placePane}
+            right={desktopRight}
             mobileContent={
           <div className="p-1">
             <div className="flex items-center gap-2 px-2 py-2">
@@ -935,6 +1001,20 @@ export default function MapContainer() {
                 }`}
               >
                 Lists
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setDrawerOpen(true)
+                  setPanelMode('plan')
+                }}
+                className={`rounded-full border px-3 py-1 text-xs transition ${
+                  panelMode === 'plan'
+                    ? 'border-slate-100 bg-slate-100 text-slate-900'
+                    : 'border-white/10 text-slate-200 hover:border-white/30'
+                }`}
+              >
+                Plan
               </button>
               <button
                 type="button"
@@ -976,6 +1056,8 @@ export default function MapContainer() {
                   tagsRefreshKey={listTagRefreshKey}
                   onTagsUpdated={bumpPlaceTagRefresh}
                 />
+              ) : panelMode === 'plan' ? (
+                planPane
               ) : isPreviewLoading ? (
                 <div className="p-4">
                   <p className="text-sm font-medium text-slate-100">Loading preview…</p>
@@ -1026,7 +1108,7 @@ export default function MapContainer() {
                   place={selectedPlace}
                   activeListId={activeListId}
                   activeListItemOverride={activeListItemOverride}
-                  onClose={() => setPlaceParam(null)}
+                  onClose={closePlaceDetails}
                   tagsRefreshKey={placeTagRefreshKey}
                   onTagsUpdated={bumpListTagRefresh}
                 />

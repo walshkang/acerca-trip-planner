@@ -9,6 +9,7 @@ export const CATEGORY_ENUM_VALUES = [
   'Sights',
   'Shop',
   'Activity',
+  'Drinks',
 ] as const satisfies readonly CategoryEnum[]
 
 export const ENERGY_ENUM_VALUES = ['Low', 'Medium', 'High'] as const satisfies readonly EnergyEnum[]

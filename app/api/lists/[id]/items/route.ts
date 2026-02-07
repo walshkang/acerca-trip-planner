@@ -10,6 +10,8 @@ const ITEM_FIELDS =
 const TYPE_TAG_BLOCKLIST = new Set([
   'food',
   'coffee',
+  'drinks',
+  'drink',
   'bar',
   'bars',
   'sights',

@@ -75,10 +75,16 @@ function deterministicFallbackNormalize(
     has('restaurant') ||
     has('meal_takeaway') ||
     has('meal_delivery') ||
-    has('bakery') ||
-    has('bar')
+    has('bakery')
   )
     category = 'Food'
+  else if (
+    has('bar') ||
+    has('night_club') ||
+    has('wine_bar') ||
+    has('cocktail_bar')
+  )
+    category = 'Drinks'
   else if (
     has('tourist_attraction') ||
     has('museum') ||

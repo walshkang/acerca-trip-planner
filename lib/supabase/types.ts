@@ -1304,7 +1304,7 @@ export type Database = {
       }
     }
     Enums: {
-      category_enum: "Food" | "Coffee" | "Sights" | "Shop" | "Activity"
+      category_enum: "Food" | "Coffee" | "Sights" | "Shop" | "Activity" | "Drinks"
       energy_enum: "Low" | "Medium" | "High"
     }
     CompositeTypes: {
@@ -1441,7 +1441,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      category_enum: ["Food", "Coffee", "Sights", "Shop", "Activity"],
+      category_enum: ["Food", "Coffee", "Sights", "Shop", "Activity", "Drinks"],
       energy_enum: ["Low", "Medium", "High"],
     },
   },
