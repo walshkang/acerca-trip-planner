@@ -101,6 +101,7 @@ export default function Omnibox({ tone = 'dark' }: { tone?: 'light' | 'dark' }) 
       {results.length && dropdownStyle
         ? createPortal(
             <div
+              data-map-tone={!isDark ? 'light' : undefined}
               className="glass-panel overflow-hidden rounded-xl"
               style={{
                 position: 'fixed',

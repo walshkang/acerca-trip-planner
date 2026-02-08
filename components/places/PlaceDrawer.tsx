@@ -216,7 +216,17 @@ export default function PlaceDrawer({
     let cancelled = false
     setNeighborhoodError(null)
     fetch(`/api/neighborhoods/lookup?lat=${place.lat}&lng=${place.lng}`)
-      .then((res) => res.json())
+      .then(async (res) => {
+        const text = await res.text()
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`)
+        }
+        try {
+          return JSON.parse(text) as { neighborhood?: string; borough?: string }
+        } catch {
+          return null
+        }
+      })
       .then((json) => {
         if (cancelled) return
         if (json?.neighborhood) {

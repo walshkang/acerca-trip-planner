@@ -184,6 +184,30 @@ export async function PATCH(
       )
     }
 
+    // When trip dates change, move items outside the new range back to backlog
+    if (hasStart || hasEnd) {
+      const listData = list as { start_date: string | null; end_date: string | null }
+      const toBacklog = supabase
+        .from('list_items')
+        .update({
+          scheduled_date: null,
+          scheduled_start_time: null,
+          scheduled_order: 0,
+        })
+        .eq('list_id', params.id)
+        .is('completed_at', null)
+        .not('scheduled_date', 'is', null)
+
+      if (listData.start_date && listData.end_date) {
+        await toBacklog.or(
+          `scheduled_date.lt.${listData.start_date},scheduled_date.gt.${listData.end_date}`
+        )
+      } else {
+        // Dates cleared: move all scheduled (non-done) items to backlog
+        await toBacklog
+      }
+    }
+
     return NextResponse.json({ list })
   } catch (error: unknown) {
     return NextResponse.json(
