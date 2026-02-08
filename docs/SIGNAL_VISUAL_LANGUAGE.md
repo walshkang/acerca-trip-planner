@@ -3,6 +3,8 @@
 **Purpose**
 Define a consistent UI language for a **map-first planner** so the interface communicates *truth, focus, and state* without becoming a pile of floating windows—especially on mobile.
 
+Related: `docs/LIGHT_MODE_UI_SPEC.md` for light-mode color/chrome/motion details.
+
 ---
 
 ## 1) Core Thesis
@@ -29,6 +31,7 @@ Visuals should make it obvious:
 ### C. Calm, Glass, High Contrast
 - Glass surfaces are for overlays only; the map stays the visual anchor.
 - Text and controls must stay readable over both light and dark base maps.
+- In light mode, prefer warm-tinted glass (not opaque paper panels) so map context remains visible.
 
 ### D. Semantics > Decoration
 - Every visual flourish maps to meaning (focus, truth, preview, error).
@@ -46,6 +49,11 @@ Visuals should make it obvious:
 ### Dim
 **Meaning:** “not in the active set (filters/list scope), but still exists.”
 - Dim is for *scoping*, not for “disabled” or “broken.”
+
+### Disabled
+**Meaning:** “temporarily unavailable interaction.”
+- Disabled states are for unavailable actions, not filter/list scoping.
+- Disabled and dim must remain visually distinct.
 
 ### Ghost / Preview
 **Meaning:** “not yet approved; not truth.”
@@ -105,4 +113,4 @@ Visuals should make it obvious:
 - Don’t use the same visual treatment for preview and approved truth.
 - Don’t turn tags into a second taxonomy that competes with categories.
 - Don’t add “importance colors” without mapping them to a stable semantic meaning.
-
+- Don’t use focus-linkage blue as a generic primary-accent color.

@@ -27,16 +27,19 @@ type Props = {
   tagsRefreshKey?: number
   onTagsUpdated?: () => void
   variant?: 'floating' | 'embedded'
+  tone?: 'light' | 'dark'
 }
 
 type ListsResponse = {
   lists: ListSummary[]
+  error?: string
 }
 
 type ItemsResponse = {
   list: ListSummary
   items: ListItemRow[]
   distinct_tags?: string[]
+  error?: string
 }
 
 export default function ListDrawer({
@@ -52,6 +55,7 @@ export default function ListDrawer({
   tagsRefreshKey,
   onTagsUpdated,
   variant = 'floating',
+  tone = 'dark',
 }: Props) {
   const [lists, setLists] = useState<ListSummary[]>([])
   const [listsLoading, setListsLoading] = useState(false)
@@ -293,20 +297,38 @@ export default function ListDrawer({
   if (!open) return null
 
   const isEmbedded = variant === 'embedded'
+  const isDark = tone === 'dark'
+  const rootTextClass = isDark ? 'text-slate-100' : 'text-slate-900'
+  const borderClass = isDark ? 'border-white/10' : 'border-slate-300/60'
+  const titleClass = isDark ? 'text-slate-100' : 'text-slate-900'
+  const subtitleClass = isDark ? 'text-slate-300' : 'text-slate-600'
+  const actionClass = isDark
+    ? 'text-slate-300 hover:text-slate-100'
+    : 'text-slate-600 hover:text-slate-900'
+  const helperClass = isDark ? 'text-slate-300' : 'text-slate-600'
+  const errorClass = isDark ? 'text-red-300' : 'text-red-600'
+  const selectedChipClass = isDark
+    ? 'border-slate-100 bg-slate-100 text-slate-900'
+    : 'border-slate-900 bg-slate-900 text-slate-50'
+  const unselectedChipClass = isDark
+    ? 'border-white/10 text-slate-200 hover:border-white/30'
+    : 'border-slate-300 text-slate-700 hover:border-slate-500'
 
   return (
     <aside
       className={
         isEmbedded
-          ? 'text-slate-100'
-          : 'glass-panel absolute left-4 top-20 z-20 w-[min(360px,90vw)] max-h-[80vh] overflow-hidden rounded-xl text-slate-100'
+          ? rootTextClass
+          : `glass-panel absolute left-4 top-20 z-20 w-[min(360px,90vw)] max-h-[80vh] overflow-hidden rounded-xl ${rootTextClass}`
       }
       data-testid="list-drawer"
     >
-      <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
+      <div
+        className={`flex items-center justify-between border-b px-4 py-3 ${borderClass}`}
+      >
         <div>
-          <h2 className="text-sm font-semibold text-slate-100">Lists</h2>
-          <p className="text-xs text-slate-300">Keep the map in view.</p>
+          <h2 className={`text-sm font-semibold ${titleClass}`}>Lists</h2>
+          <p className={`text-xs ${subtitleClass}`}>Keep the map in view.</p>
         </div>
         <div className="flex items-center gap-2">
           {isEmbedded ? null : (
@@ -314,14 +336,14 @@ export default function ListDrawer({
               <button
                 type="button"
                 onClick={() => onActiveListChange(null)}
-                className="text-xs text-slate-300 hover:text-slate-100"
+                className={`text-xs ${actionClass}`}
               >
                 Clear
               </button>
               <button
                 type="button"
                 onClick={onClose}
-                className="text-xs text-slate-300 hover:text-slate-100"
+                className={`text-xs ${actionClass}`}
               >
                 Close
               </button>
@@ -330,7 +352,7 @@ export default function ListDrawer({
         </div>
       </div>
 
-      <div className="border-b border-white/10 px-4 py-3 space-y-2">
+      <div className={`border-b px-4 py-3 space-y-2 ${borderClass}`}>
         <div className="flex items-center gap-2">
           <input
             className="glass-input flex-1 text-xs"
@@ -348,13 +370,13 @@ export default function ListDrawer({
           </button>
         </div>
         {listsLoading ? (
-          <p className="text-xs text-slate-300">Loading lists…</p>
+          <p className={`text-xs ${helperClass}`}>Loading lists…</p>
         ) : null}
         {listsError ? (
-          <p className="text-xs text-red-300">{listsError}</p>
+          <p className={`text-xs ${errorClass}`}>{listsError}</p>
         ) : null}
         {!listsLoading && !lists.length ? (
-          <p className="text-xs text-slate-300">No lists yet.</p>
+          <p className={`text-xs ${helperClass}`}>No lists yet.</p>
         ) : null}
         <div className="flex flex-wrap gap-2">
           {lists.map((list) => {
@@ -368,8 +390,8 @@ export default function ListDrawer({
                 }
                 className={`rounded-full border px-3 py-1 text-xs transition ${
                   selected
-                    ? 'border-slate-100 bg-slate-100 text-slate-900'
-                    : 'border-white/10 text-slate-200 hover:border-white/30'
+                    ? selectedChipClass
+                    : unselectedChipClass
                 }`}
               >
                 {list.name}
@@ -403,7 +425,7 @@ export default function ListDrawer({
           onTagFilterToggle={handleTagToggle}
           onClearTagFilters={handleClearTagFilters}
           onTagsUpdate={handleTagsUpdate}
-          tone="dark"
+          tone={tone}
         />
       </div>
     </aside>

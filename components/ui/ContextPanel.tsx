@@ -8,6 +8,7 @@ type Props = {
   title: string
   subtitle?: string | null
   onClose: () => void
+  tone?: 'light' | 'dark'
   desktopLayout?: 'split' | 'single'
   left?: ReactNode
   right?: ReactNode
@@ -20,6 +21,7 @@ export default function ContextPanel({
   title,
   subtitle = null,
   onClose,
+  tone = 'dark',
   desktopLayout = 'split',
   left,
   right,
@@ -36,6 +38,7 @@ export default function ContextPanel({
           title={title}
           subtitle={subtitle}
           onClose={onClose}
+          tone={tone}
           className="mx-3 mb-3 max-h-[75dvh]"
           bodyClassName="max-h-[calc(75dvh-52px)] overflow-auto"
         >
@@ -49,6 +52,7 @@ export default function ContextPanel({
           title={title}
           subtitle={subtitle}
           onClose={onClose}
+          tone={tone}
           className="max-h-[80vh]"
           bodyClassName="h-[calc(80vh-52px)]"
         >

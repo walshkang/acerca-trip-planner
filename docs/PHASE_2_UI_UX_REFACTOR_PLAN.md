@@ -2,6 +2,7 @@
 
 - Date: 2026-02-06
 - Scope: Phase 2 map shell UI (overlays/drawers), not Kanban scheduling (P2-E1) or filter translation (P2-E2).
+- Related: `docs/UX_RULES.md`, `docs/SIGNAL_VISUAL_LANGUAGE.md`, `docs/LIGHT_MODE_UI_SPEC.md`
 
 ## Goal
 Replace the current multi-overlay/drawer stack with a strict surface model:
@@ -61,7 +62,7 @@ While preserving URL-deep-link semantics and keeping mobile ergonomics first-cla
 - User-driven open/close of Place and user-driven list selection should create history entries (`push`).
 - Auto-defaulting (localStorage fallback) should not (`replace`).
 
-## Implementation Slices (B → E)
+## Implementation Slices (B → F)
 
 ### Slice 1: Panel primitives (no behavior change)
 - Add Context Panel chrome component (header + body scroll contract).
@@ -87,6 +88,13 @@ While preserving URL-deep-link semantics and keeping mobile ergonomics first-cla
 - Replace Sign out + Layers + base map style UI with a single Tools entrypoint.
 - Enforce mutual exclusion with Context Panel on mobile.
 
+### Slice 6: Light-mode warm glass alignment (visual contract only)
+- Apply the `docs/LIGHT_MODE_UI_SPEC.md` semantic contract without changing the surface model.
+- Keep focus-linkage treatment scoped to marker + list row + details header.
+- Keep preview/ghost clearly distinct from approved truth.
+- Preserve layering contract: Map → Context Panel → Tools Sheet → transient toasts.
+- Keep readability high across both light and dark map styles.
+
 ## Testing Strategy (Playwright is paused)
 - Prefer unit/integration tests for pure logic (URL-state utilities, state transitions).
 - Manual smoke checklist for UI composition changes.
@@ -102,6 +110,8 @@ While preserving URL-deep-link semantics and keeping mobile ergonomics first-cla
 - `?place=` deep link works; Back/Forward toggles open/close cleanly.
 - Preview state is clearly not “saved” until approval succeeds.
 - Switching to an empty list does not move the map camera.
+- Focus linkage treatment is consistent across map/list/details.
+- Light-mode overlays remain readable over light and dark base maps.
 
 ## Decision Log (defaults)
 - Desktop dock side default: **right** (minimizes churn; aligns with existing “context” placement).

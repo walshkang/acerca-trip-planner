@@ -7,15 +7,23 @@ type Props = {
   open: boolean
   onClose: () => void
   children: ReactNode
+  tone?: 'light' | 'dark'
 }
 
-export default function ToolsSheet({ open, onClose, children }: Props) {
+export default function ToolsSheet({
+  open,
+  onClose,
+  children,
+  tone = 'dark',
+}: Props) {
   if (!open) return null
+
+  const backdropClass = tone === 'dark' ? 'bg-black/40' : 'bg-slate-900/20'
 
   return (
     <div className="fixed inset-0 z-[100]">
       <div
-        className="absolute inset-0 bg-black/40"
+        className={`absolute inset-0 ${backdropClass}`}
         onClick={onClose}
         aria-hidden
       />
@@ -24,6 +32,7 @@ export default function ToolsSheet({ open, onClose, children }: Props) {
           title="Tools"
           subtitle="Layers, base map, account."
           onClose={onClose}
+          tone={tone}
           className="mx-3 mb-3 md:mx-0 md:mb-0 max-h-[75dvh] md:max-h-[80vh]"
           bodyClassName="max-h-[calc(75dvh-52px)] md:max-h-[calc(80vh-52px)] overflow-auto px-4 py-3"
         >
@@ -33,4 +42,3 @@ export default function ToolsSheet({ open, onClose, children }: Props) {
     </div>
   )
 }
-

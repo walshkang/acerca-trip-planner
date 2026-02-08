@@ -105,6 +105,8 @@ export default function MapContainer() {
   const [showNeighborhoodBoundaries, setShowNeighborhoodBoundaries] =
     useState(false)
   const [mapStyleMode, setMapStyleMode] = useState<'light' | 'dark'>('light')
+  const uiTone: 'light' | 'dark' = mapStyleMode === 'dark' ? 'dark' : 'light'
+  const isDarkTone = uiTone === 'dark'
   const [listTagRefreshKey, setListTagRefreshKey] = useState(0)
   const [placeTagRefreshKey, setPlaceTagRefreshKey] = useState(0)
   const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN
@@ -772,9 +774,23 @@ export default function MapContainer() {
       : panelMode === 'plan'
         ? 'Plan'
         : 'Lists'
+  const panelHeadingClass = isDarkTone ? 'text-slate-100' : 'text-slate-900'
+  const panelMutedClass = isDarkTone ? 'text-slate-400' : 'text-slate-600'
+  const stickyHeaderClass = isDarkTone
+    ? 'border-white/10 bg-slate-900/70'
+    : 'border-slate-300/70 bg-white/70'
+  const toolsLabelClass = isDarkTone ? 'text-slate-200' : 'text-slate-800'
+  const toolsSecondaryClass = isDarkTone ? 'text-slate-300' : 'text-slate-700'
+  const toolsAccentClass = isDarkTone ? 'accent-slate-200' : 'accent-slate-700'
+  const mapStyleActiveChipClass = isDarkTone
+    ? 'border-slate-100 bg-slate-100 text-slate-900'
+    : 'border-slate-900 bg-slate-900 text-slate-50'
+  const mapStyleInactiveChipClass = isDarkTone
+    ? 'border-white/10 text-slate-200 hover:border-white/30'
+    : 'border-slate-300 text-slate-700 hover:border-slate-500'
 
   return (
-    <div className="w-full h-screen relative">
+    <div className="w-full h-screen relative" data-map-tone={uiTone}>
       <div
         className="absolute left-4 top-4 z-[70] pointer-events-none space-y-2"
         data-testid="map-overlay-left"
@@ -791,7 +807,7 @@ export default function MapContainer() {
             {drawerOpen ? 'Hide lists' : 'Lists'}
           </button>
         </div>
-        <Omnibox />
+        <Omnibox tone={uiTone} />
       </div>
 
       <div
@@ -817,6 +833,7 @@ export default function MapContainer() {
           <ListDrawer
             open={contextOpen}
             variant="embedded"
+            tone={uiTone}
             onClose={() => setDrawerOpen(false)}
             activeListId={activeListId}
             onActiveListChange={(id) => {
@@ -829,20 +846,21 @@ export default function MapContainer() {
             onActiveTypeFiltersChange={setActiveListTypeFilters}
             onActiveListItemsChange={handleActiveListItemsChange}
             focusedPlaceId={focusedListPlaceId}
-              onPlaceSelect={(placeId) => {
-                setPendingFocusPlaceId(placeId)
-                setPlaceParam(placeId)
-                setFocusedListPlaceId(placeId)
-                setPanelMode('details')
-              }}
-              tagsRefreshKey={listTagRefreshKey}
-              onTagsUpdated={bumpPlaceTagRefresh}
+            onPlaceSelect={(placeId) => {
+              setPendingFocusPlaceId(placeId)
+              setPlaceParam(placeId)
+              setFocusedListPlaceId(placeId)
+              setPanelMode('details')
+            }}
+            tagsRefreshKey={listTagRefreshKey}
+            onTagsUpdated={bumpPlaceTagRefresh}
           />
         )
 
         const planPane = (
           <ListPlanner
             listId={activeListId}
+            tone={uiTone}
             onPlaceSelect={(placeId) => {
               setPendingFocusPlaceId(placeId)
               setPlaceParam(placeId)
@@ -854,8 +872,8 @@ export default function MapContainer() {
 
         const placePane = isPreviewLoading ? (
           <div className="p-4">
-            <p className="text-sm font-medium text-slate-100">Loading preview…</p>
-            <p className="mt-1 text-xs text-slate-400">
+            <p className={`text-sm font-medium ${panelHeadingClass}`}>Loading preview…</p>
+            <p className={`mt-1 text-xs ${panelMutedClass}`}>
               Fetching details so you can decide whether to approve.
             </p>
             <button
@@ -868,10 +886,10 @@ export default function MapContainer() {
           </div>
         ) : previewMode === 'error' ? (
           <div className="p-4">
-            <p className="text-sm font-medium text-slate-100">
+            <p className={`text-sm font-medium ${panelHeadingClass}`}>
               Preview unavailable
             </p>
-            <p className="mt-1 text-xs text-slate-400">
+            <p className={`mt-1 text-xs ${panelMutedClass}`}>
               {discoveryError || 'Could not load preview details.'}
             </p>
             <button
@@ -880,11 +898,12 @@ export default function MapContainer() {
               className="mt-3 glass-button"
             >
               Back
-              </button>
+            </button>
           </div>
         ) : previewMode === 'ready' ? (
           <div className="p-3">
             <InspectorCard
+              tone={uiTone}
               onCommitted={(placeId) => {
                 if (typeof window !== 'undefined') {
                   window.localStorage.setItem(lastAddedPlaceKey, placeId)
@@ -905,6 +924,7 @@ export default function MapContainer() {
               place={selectedPlace}
               activeListId={activeListId}
               activeListItemOverride={activeListItemOverride}
+              tone={uiTone}
               onClose={closePlaceDetails}
               tagsRefreshKey={placeTagRefreshKey}
               onTagsUpdated={bumpListTagRefresh}
@@ -913,6 +933,7 @@ export default function MapContainer() {
         ) : (
           <div className="p-3">
             <InspectorCard
+              tone={uiTone}
               onCommitted={(placeId) => {
                 if (typeof window !== 'undefined') {
                   window.localStorage.setItem(lastAddedPlaceKey, placeId)
@@ -925,7 +946,7 @@ export default function MapContainer() {
               onClose={cancelPreview}
             />
             {previewCandidate ? null : (
-              <p className="mt-3 text-xs text-slate-400">
+              <p className={`mt-3 text-xs ${panelMutedClass}`}>
                 Select a pin to open a place.
               </p>
             )}
@@ -936,15 +957,15 @@ export default function MapContainer() {
           placePane
         ) : (
           <div>
-            <div className="sticky top-0 z-10 border-b border-white/10 bg-slate-900/70 px-3 py-2 backdrop-blur">
+            <div
+              className={`sticky top-0 z-10 border-b px-3 py-2 backdrop-blur ${stickyHeaderClass}`}
+            >
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() => setPanelMode('details')}
-                  className={`rounded-full border px-3 py-1 text-xs transition ${
-                    panelMode === 'details'
-                      ? 'border-slate-100 bg-slate-100 text-slate-900'
-                      : 'border-white/10 text-slate-200 hover:border-white/30'
+                  className={`glass-tab ${
+                    panelMode === 'details' ? 'glass-tab-active' : 'glass-tab-inactive'
                   }`}
                 >
                   Details
@@ -955,10 +976,8 @@ export default function MapContainer() {
                     setDrawerOpen(true)
                     setPanelMode('plan')
                   }}
-                  className={`rounded-full border px-3 py-1 text-xs transition ${
-                    panelMode === 'plan'
-                      ? 'border-slate-100 bg-slate-100 text-slate-900'
-                      : 'border-white/10 text-slate-200 hover:border-white/30'
+                  className={`glass-tab ${
+                    panelMode === 'plan' ? 'glass-tab-active' : 'glass-tab-inactive'
                   }`}
                 >
                   Plan
@@ -974,6 +993,7 @@ export default function MapContainer() {
             open={contextOpen}
             title={panelTitle}
             subtitle={panelSubtitle}
+            tone={uiTone}
             desktopLayout={isPreviewing ? 'single' : 'split'}
             desktopContent={desktopRight}
             onClose={() => {
@@ -994,10 +1014,8 @@ export default function MapContainer() {
               <button
                 type="button"
                 onClick={() => setPanelMode('lists')}
-                className={`rounded-full border px-3 py-1 text-xs transition ${
-                  panelMode === 'lists'
-                    ? 'border-slate-100 bg-slate-100 text-slate-900'
-                    : 'border-white/10 text-slate-200 hover:border-white/30'
+                className={`glass-tab ${
+                  panelMode === 'lists' ? 'glass-tab-active' : 'glass-tab-inactive'
                 }`}
               >
                 Lists
@@ -1008,10 +1026,8 @@ export default function MapContainer() {
                   setDrawerOpen(true)
                   setPanelMode('plan')
                 }}
-                className={`rounded-full border px-3 py-1 text-xs transition ${
-                  panelMode === 'plan'
-                    ? 'border-slate-100 bg-slate-100 text-slate-900'
-                    : 'border-white/10 text-slate-200 hover:border-white/30'
+                className={`glass-tab ${
+                  panelMode === 'plan' ? 'glass-tab-active' : 'glass-tab-inactive'
                 }`}
               >
                 Plan
@@ -1020,10 +1036,8 @@ export default function MapContainer() {
                 type="button"
                 onClick={() => setPanelMode('details')}
                 disabled={!selectedPlaceId && !previewCandidate && !previewSelectedResultId}
-                className={`rounded-full border px-3 py-1 text-xs transition disabled:opacity-40 ${
-                  panelMode === 'details'
-                    ? 'border-slate-100 bg-slate-100 text-slate-900'
-                    : 'border-white/10 text-slate-200 hover:border-white/30'
+                className={`glass-tab disabled:opacity-40 ${
+                  panelMode === 'details' ? 'glass-tab-active' : 'glass-tab-inactive'
                 }`}
               >
                 Details
@@ -1035,6 +1049,7 @@ export default function MapContainer() {
                 <ListDrawer
                   open={contextOpen}
                   variant="embedded"
+                  tone={uiTone}
                   onClose={() => setDrawerOpen(false)}
                   activeListId={activeListId}
                   onActiveListChange={(id) => {
@@ -1060,8 +1075,8 @@ export default function MapContainer() {
                 planPane
               ) : isPreviewLoading ? (
                 <div className="p-4">
-                  <p className="text-sm font-medium text-slate-100">Loading preview…</p>
-                  <p className="mt-1 text-xs text-slate-400">
+                  <p className={`text-sm font-medium ${panelHeadingClass}`}>Loading preview…</p>
+                  <p className={`mt-1 text-xs ${panelMutedClass}`}>
                     Fetching details so you can decide whether to approve.
                   </p>
                   <button
@@ -1074,10 +1089,10 @@ export default function MapContainer() {
                 </div>
               ) : previewMode === 'error' ? (
                 <div className="p-4">
-                  <p className="text-sm font-medium text-slate-100">
+                  <p className={`text-sm font-medium ${panelHeadingClass}`}>
                     Preview unavailable
                   </p>
-                  <p className="mt-1 text-xs text-slate-400">
+                  <p className={`mt-1 text-xs ${panelMutedClass}`}>
                     {discoveryError || 'Could not load preview details.'}
                   </p>
                   <button
@@ -1090,6 +1105,7 @@ export default function MapContainer() {
                 </div>
               ) : previewMode === 'ready' ? (
                 <InspectorCard
+                  tone={uiTone}
                   onCommitted={(placeId) => {
                     if (typeof window !== 'undefined') {
                       window.localStorage.setItem(lastAddedPlaceKey, placeId)
@@ -1108,12 +1124,14 @@ export default function MapContainer() {
                   place={selectedPlace}
                   activeListId={activeListId}
                   activeListItemOverride={activeListItemOverride}
+                  tone={uiTone}
                   onClose={closePlaceDetails}
                   tagsRefreshKey={placeTagRefreshKey}
                   onTagsUpdated={bumpListTagRefresh}
                 />
               ) : (
                 <InspectorCard
+                  tone={uiTone}
                   onCommitted={(placeId) => {
                     if (typeof window !== 'undefined') {
                       window.localStorage.setItem(lastAddedPlaceKey, placeId)
@@ -1133,7 +1151,7 @@ export default function MapContainer() {
         )
       })()}
 
-      <ToolsSheet open={toolsOpen} onClose={() => setToolsOpen(false)}>
+      <ToolsSheet open={toolsOpen} tone={uiTone} onClose={() => setToolsOpen(false)}>
         <form action="/auth/sign-out" method="post">
           <button className="glass-button" type="submit">
             Sign out
@@ -1141,11 +1159,11 @@ export default function MapContainer() {
         </form>
 
         <div className="mt-4">
-          <p className="text-[11px] font-semibold text-slate-200">Layers</p>
-          <label className="mt-2 flex items-center gap-2 text-[11px] text-slate-200">
+          <p className={`text-[11px] font-semibold ${toolsLabelClass}`}>Layers</p>
+          <label className={`mt-2 flex items-center gap-2 text-[11px] ${toolsLabelClass}`}>
             <input
               type="checkbox"
-              className="accent-slate-200"
+              className={toolsAccentClass}
               checked={showTransit}
               onChange={(event) => {
                 const next = event.target.checked
@@ -1157,20 +1175,20 @@ export default function MapContainer() {
             />
             Transit lines
           </label>
-          <label className="mt-1 flex items-center gap-2 text-[11px] text-slate-300">
+          <label className={`mt-1 flex items-center gap-2 text-[11px] ${toolsSecondaryClass}`}>
             <input
               type="checkbox"
-              className="accent-slate-200"
+              className={toolsAccentClass}
               checked={showTransitStations}
               disabled={!showTransit}
               onChange={(event) => setShowTransitStations(event.target.checked)}
             />
             Stations
           </label>
-          <label className="mt-2 flex items-center gap-2 text-[11px] text-slate-200">
+          <label className={`mt-2 flex items-center gap-2 text-[11px] ${toolsLabelClass}`}>
             <input
               type="checkbox"
-              className="accent-slate-200"
+              className={toolsAccentClass}
               checked={showNeighborhoodBoundaries}
               onChange={(event) => setShowNeighborhoodBoundaries(event.target.checked)}
             />
@@ -1179,15 +1197,15 @@ export default function MapContainer() {
         </div>
 
         <div className="mt-4">
-          <p className="text-[11px] font-semibold text-slate-200">Base map</p>
+          <p className={`text-[11px] font-semibold ${toolsLabelClass}`}>Base map</p>
           <div className="mt-2 flex gap-2">
             <button
               type="button"
               onClick={() => setMapStyleMode('light')}
               className={`rounded-full border px-3 py-1 text-xs transition ${
                 mapStyleMode === 'light'
-                  ? 'border-slate-100 bg-slate-100 text-slate-900'
-                  : 'border-white/10 text-slate-200 hover:border-white/30'
+                  ? mapStyleActiveChipClass
+                  : mapStyleInactiveChipClass
               }`}
             >
               Light
@@ -1197,8 +1215,8 @@ export default function MapContainer() {
               onClick={() => setMapStyleMode('dark')}
               className={`rounded-full border px-3 py-1 text-xs transition ${
                 mapStyleMode === 'dark'
-                  ? 'border-slate-100 bg-slate-100 text-slate-900'
-                  : 'border-white/10 text-slate-200 hover:border-white/30'
+                  ? mapStyleActiveChipClass
+                  : mapStyleInactiveChipClass
               }`}
             >
               Dark

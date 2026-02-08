@@ -19,6 +19,7 @@ import {
 type Props = {
   listId: string | null
   onPlaceSelect?: (placeId: string) => void
+  tone?: 'light' | 'dark'
 }
 
 type ItemsResponse = {
@@ -54,7 +55,12 @@ function formatDayLabel(isoDate: string) {
   return isoDate
 }
 
-export default function ListPlanner({ listId, onPlaceSelect }: Props) {
+export default function ListPlanner({
+  listId,
+  onPlaceSelect,
+  tone = 'dark',
+}: Props) {
+  const isDark = tone === 'dark'
   const [list, setList] = useState<ListSummary | null>(null)
   const [items, setItems] = useState<ListItemRow[]>([])
   const [loading, setLoading] = useState(false)
@@ -72,6 +78,10 @@ export default function ListPlanner({ listId, onPlaceSelect }: Props) {
   const [dragItemId, setDragItemId] = useState<string | null>(null)
   const [dropTargetKey, setDropTargetKey] = useState<string | null>(null)
   const [canDrag, setCanDrag] = useState(false)
+  const plannerToneClass = isDark ? '' : 'planner-light'
+  const dateInputClass = isDark
+    ? 'glass-input w-full text-xs [color-scheme:dark] [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:opacity-90'
+    : 'glass-input w-full text-xs [color-scheme:light]'
 
   const tripRange = useMemo(() => {
     if (!list?.start_date || !list?.end_date) return null
@@ -576,9 +586,11 @@ export default function ListPlanner({ listId, onPlaceSelect }: Props) {
 
   if (!listId) {
     return (
-      <div className="p-4">
-        <p className="text-sm font-medium text-slate-100">Plan</p>
-        <p className="mt-1 text-xs text-slate-300">
+      <div className={`p-4 ${plannerToneClass}`}>
+        <p className={`text-sm font-medium ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>
+          Plan
+        </p>
+        <p className={`mt-1 text-xs ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
           Select a list to start planning.
         </p>
       </div>
@@ -587,16 +599,18 @@ export default function ListPlanner({ listId, onPlaceSelect }: Props) {
 
   if (loading && !list) {
     return (
-      <div className="p-4">
-        <p className="text-xs text-slate-300">Loading plan…</p>
+      <div className={`p-4 ${plannerToneClass}`}>
+        <p className={`text-xs ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
+          Loading plan…
+        </p>
       </div>
     )
   }
 
   if (error && !list) {
     return (
-      <div className="p-4">
-        <p className="text-xs text-red-300">{error}</p>
+      <div className={`p-4 ${plannerToneClass}`}>
+        <p className={`text-xs ${isDark ? 'text-red-300' : 'text-red-600'}`}>{error}</p>
       </div>
     )
   }
@@ -610,7 +624,7 @@ export default function ListPlanner({ listId, onPlaceSelect }: Props) {
       moveDate >= (tripRange?.start ?? '9999-99-99') &&
       moveDate <= (tripRange?.end ?? '0000-00-00')
     return (
-      <div className="p-3" data-testid="planner-move-picker">
+      <div className={`p-3 ${plannerToneClass}`} data-testid="planner-move-picker">
         <div className="flex items-center justify-between gap-2">
           <button
             type="button"
@@ -659,7 +673,7 @@ export default function ListPlanner({ listId, onPlaceSelect }: Props) {
                     min={tripRange?.start ?? undefined}
                     max={tripRange?.end ?? undefined}
                     onChange={(e) => setMoveDate(e.target.value)}
-                    className="glass-input w-full text-xs [color-scheme:dark] [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:opacity-90"
+                    className={dateInputClass}
                     disabled={savingItemId === movingItem.id}
                   />
                 </label>
@@ -709,7 +723,7 @@ export default function ListPlanner({ listId, onPlaceSelect }: Props) {
   const scheduleDatesToRender = tripDates ?? scheduledDatesInRange
 
   return (
-    <div className="p-4 space-y-6" data-testid="list-planner">
+    <div className={`p-4 space-y-6 ${plannerToneClass}`} data-testid="list-planner">
       <div className="rounded-lg border border-white/10 bg-white/5 p-3">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
@@ -752,7 +766,7 @@ export default function ListPlanner({ listId, onPlaceSelect }: Props) {
                   type="date"
                   value={tripStart}
                   onChange={(e) => setTripStart(e.target.value)}
-                  className="glass-input w-full text-xs [color-scheme:dark] [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:opacity-90"
+                  className={dateInputClass}
                   disabled={savingTripDates}
                 />
               </label>
@@ -762,7 +776,7 @@ export default function ListPlanner({ listId, onPlaceSelect }: Props) {
                   type="date"
                   value={tripEnd}
                   onChange={(e) => setTripEnd(e.target.value)}
-                  className="glass-input w-full text-xs [color-scheme:dark] [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:opacity-90"
+                  className={dateInputClass}
                   disabled={savingTripDates}
                 />
               </label>

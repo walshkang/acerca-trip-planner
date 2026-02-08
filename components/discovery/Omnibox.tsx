@@ -4,7 +4,8 @@ import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useDiscoveryStore } from '@/lib/state/useDiscoveryStore'
 
-export default function Omnibox() {
+export default function Omnibox({ tone = 'dark' }: { tone?: 'light' | 'dark' }) {
+  const isDark = tone === 'dark'
   const query = useDiscoveryStore((s) => s.query)
   const setQuery = useDiscoveryStore((s) => s.setQuery)
   const submit = useDiscoveryStore((s) => s.submit)
@@ -52,7 +53,11 @@ export default function Omnibox() {
     <div className="pointer-events-auto" ref={anchorRef}>
       <div className="glass-panel flex items-center gap-2 rounded-full px-3 py-2">
         <input
-          className="w-[min(520px,70vw)] bg-transparent text-sm text-slate-100 outline-none placeholder:text-slate-400"
+          className={`w-[min(520px,70vw)] bg-transparent text-sm outline-none ${
+            isDark
+              ? 'text-slate-100 placeholder:text-slate-400'
+              : 'text-slate-900 placeholder:text-slate-500'
+          }`}
           value={query}
           onChange={(e) => {
             setQuery(e.target.value)
@@ -84,7 +89,11 @@ export default function Omnibox() {
           type="button"
           onClick={submit}
           disabled={isSubmitting}
-          className="glass-button px-4 py-1.5 text-slate-900 bg-slate-100/90 hover:bg-slate-100 disabled:opacity-50"
+          className={`glass-button px-4 py-1.5 disabled:opacity-50 ${
+            isDark
+              ? 'text-slate-900 bg-slate-100/90 hover:bg-slate-100'
+              : 'border-slate-900/75 bg-slate-900/90 text-slate-50 hover:bg-slate-900'
+          }`}
         >
           {isSubmitting ? 'Searching…' : 'Search'}
         </button>
@@ -108,20 +117,26 @@ export default function Omnibox() {
                     key={result.place_id}
                     type="button"
                     onClick={() => previewResult(result)}
-                    className={`flex w-full flex-col gap-1 px-4 py-2 text-left text-xs text-slate-100 hover:bg-white/5 ${
-                      isSelected ? 'bg-white/5' : ''
+                    className={`flex w-full flex-col gap-1 px-4 py-2 text-left text-xs ${
+                      isDark
+                        ? `text-slate-100 hover:bg-white/5 ${isSelected ? 'bg-white/5' : ''}`
+                        : `text-slate-900 hover:bg-slate-200/45 ${isSelected ? 'bg-slate-200/45' : ''}`
                     }`}
                   >
                     <span className="font-medium">
                       {result.name ?? 'Untitled place'}
                     </span>
                     {result.address ? (
-                      <span className="text-[11px] text-slate-300">
+                      <span
+                        className={`text-[11px] ${isDark ? 'text-slate-300' : 'text-slate-600'}`}
+                      >
                         {result.address}
                       </span>
                     ) : null}
                     {result.neighborhood ? (
-                      <span className="text-[11px] text-slate-400">
+                      <span
+                        className={`text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}
+                      >
                         {result.neighborhood}
                         {result.borough ? ` · ${result.borough}` : ''}
                       </span>
@@ -134,7 +149,13 @@ export default function Omnibox() {
           )
         : null}
       {error ? (
-        <div className="mt-2 rounded-md border border-red-500/40 bg-red-900/40 px-3 py-2 text-xs text-red-200 shadow-sm">
+        <div
+          className={`mt-2 rounded-md border px-3 py-2 text-xs shadow-sm ${
+            isDark
+              ? 'border-red-500/40 bg-red-900/40 text-red-200'
+              : 'border-red-400/60 bg-red-50/90 text-red-700'
+          }`}
+        >
           {error}
         </div>
       ) : null}

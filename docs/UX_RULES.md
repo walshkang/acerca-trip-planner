@@ -2,6 +2,8 @@
 
 This document defines the **surface model** and **device rules** so the UI stays simple as Phase 2 grows.
 
+Related: `docs/LIGHT_MODE_UI_SPEC.md` for light-mode semantic color/chrome/motion constraints.
+
 ---
 
 ## 1) Surface Model (Window Budget)
@@ -86,6 +88,12 @@ Close in order:
 ### Input locking (avoid interleavings)
 - Any server write (approve, tag edit, membership change) must show a saving state and avoid double-submit.
 
+### Visual semantics guardrails
+- Focus treatment is reserved for cross-surface linkage (marker + list row + details header), not generic emphasis.
+- Dim means “outside current scope but still exists”; disabled means “not currently actionable.”
+- Preview/ghost treatment must remain unmistakable vs approved truth.
+- Overlay text/controls must remain readable over both light and dark base map styles.
+
 ### Accessibility
 - Overlays must be keyboard navigable; close is reachable and labeled.
 - Focus management: opening an overlay moves focus into it; closing returns focus to the invoking control.
@@ -98,3 +106,6 @@ Close in order:
 - Back/forward toggles `?place=` cleanly without weird intermediate states.
 - Ghost/preview visuals are unmistakable vs approved pins.
 - Tags and Type remain visually and verbally distinct.
+- Focus linkage is consistent across marker, list row, and details header.
+- Selecting an empty list does not move the map camera.
+- Overlays stay readable on both light and dark map styles.

@@ -28,11 +28,13 @@ type Props = {
   tagsRefreshKey?: number
   onTagsUpdated?: () => void
   variant?: 'floating' | 'embedded'
+  tone?: 'light' | 'dark'
 }
 
 type ListsResponse = {
   list_ids: string[]
   list_items?: Array<{ list_id: string; tags?: string[] | null }>
+  error?: string
 }
 
 type PlaceDetailsResponse = {
@@ -96,6 +98,7 @@ export default function PlaceDrawer({
   tagsRefreshKey,
   onTagsUpdated,
   variant = 'floating',
+  tone = 'dark',
 }: Props) {
   const [listIds, setListIds] = useState<string[]>([])
   const [listItems, setListItems] = useState<
@@ -341,36 +344,62 @@ export default function PlaceDrawer({
   }
 
   const isEmbedded = variant === 'embedded'
+  const isDark = tone === 'dark'
   const computedTop = Math.max(96, (topOffset ?? 0) + 16)
+  const rootTextClass = isDark ? 'text-slate-100' : 'text-slate-900'
+  const borderClass = isDark ? 'border-white/10' : 'border-slate-300/60'
+  const kickerClass = isDark ? 'text-slate-400' : 'text-slate-500'
+  const titleClass = isDark ? 'text-slate-100' : 'text-slate-900'
+  const secondaryTextClass = isDark ? 'text-slate-400' : 'text-slate-500'
+  const bodyLabelClass = isDark ? 'text-slate-300' : 'text-slate-700'
+  const bodyMutedClass = isDark ? 'text-slate-400' : 'text-slate-500'
+  const bodyTextClass = isDark ? 'text-slate-200' : 'text-slate-800'
+  const actionClass = isDark
+    ? 'text-slate-300 hover:text-slate-100'
+    : 'text-slate-600 hover:text-slate-900'
+  const chipClass = isDark
+    ? 'border-white/10 text-slate-300'
+    : 'border-slate-300 text-slate-700'
+  const tagChipClass = isDark
+    ? 'border-white/10 text-slate-200'
+    : 'border-slate-300 text-slate-700'
+  const tagChipButtonClass = isDark
+    ? 'text-slate-400 hover:text-slate-200'
+    : 'text-slate-500 hover:text-slate-700'
+  const errorClass = isDark ? 'text-red-300' : 'text-red-600'
+  const warnClass = isDark ? 'text-amber-300' : 'text-amber-700'
+  const successClass = isDark ? 'text-emerald-300' : 'text-emerald-700'
 
   return (
     <aside
       className={
         isEmbedded
-          ? `text-slate-100 ${PLACE_FOCUS_GLOW}`
-          : `glass-panel absolute right-4 z-20 w-[min(360px,90vw)] max-h-[80vh] overflow-hidden rounded-xl text-slate-100 ${PLACE_FOCUS_GLOW}`
+          ? `${rootTextClass} ${PLACE_FOCUS_GLOW}`
+          : `glass-panel absolute right-4 z-20 w-[min(360px,90vw)] max-h-[80vh] overflow-hidden rounded-xl ${rootTextClass} ${PLACE_FOCUS_GLOW}`
       }
       style={isEmbedded ? undefined : { top: `${computedTop}px` }}
       data-testid="place-drawer"
     >
-      <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
+      <div
+        className={`flex items-center justify-between border-b px-4 py-3 ${borderClass}`}
+      >
         <div>
-          <p className="text-[11px] uppercase tracking-wide text-slate-400">Place</p>
-          <h2 className="text-sm font-semibold text-slate-100">{place.name}</h2>
+          <p className={`text-[11px] uppercase tracking-wide ${kickerClass}`}>Place</p>
+          <h2 className={`text-sm font-semibold ${titleClass}`}>{place.name}</h2>
           {neighborhood ? (
-            <p className="text-[11px] text-slate-400">
+            <p className={`text-[11px] ${secondaryTextClass}`}>
               {neighborhood.name}
               {neighborhood.borough ? ` · ${neighborhood.borough}` : ''}
             </p>
           ) : null}
           {neighborhoodError ? (
-            <p className="text-[11px] text-amber-300">{neighborhoodError}</p>
+            <p className={`text-[11px] ${warnClass}`}>{neighborhoodError}</p>
           ) : null}
         </div>
         <button
           type="button"
           onClick={onClose}
-          className="text-xs text-slate-300 hover:text-slate-100"
+          className={`text-xs ${actionClass}`}
         >
           Close
         </button>
@@ -378,12 +407,12 @@ export default function PlaceDrawer({
 
       <div className="space-y-4 px-4 py-3">
         <div className="space-y-1">
-          <p className="text-[11px] font-semibold text-slate-300">Place type</p>
-          <p className="text-[11px] text-slate-400">
+          <p className={`text-[11px] font-semibold ${bodyLabelClass}`}>Place type</p>
+          <p className={`text-[11px] ${bodyMutedClass}`}>
             A fixed category that sets this place’s map icon.
           </p>
           <div className="flex items-center gap-2">
-            <span className="rounded-full border border-white/10 px-2 py-0.5 text-[10px] text-slate-300">
+            <span className={`rounded-full border px-2 py-0.5 text-[10px] ${chipClass}`}>
               {place.category}
             </span>
             <button
@@ -394,7 +423,7 @@ export default function PlaceDrawer({
                   await fetchDetails()
                 }
               }}
-              className="text-[11px] text-slate-300 underline"
+              className={`text-[11px] underline ${actionClass}`}
             >
               {detailsOpen ? 'Hide details' : 'Show details'}
             </button>
@@ -404,32 +433,32 @@ export default function PlaceDrawer({
         {detailsOpen ? (
           <div className="space-y-3">
             {detailsLoading ? (
-              <p className="text-xs text-slate-300">Loading details…</p>
+              <p className={`text-xs ${bodyLabelClass}`}>Loading details…</p>
             ) : null}
             {detailsError ? (
-              <p className="text-xs text-red-300">{detailsError}</p>
+              <p className={`text-xs ${errorClass}`}>{detailsError}</p>
             ) : null}
 
             {details?.place?.address ? (
               <div>
-                <p className="text-[11px] font-semibold text-slate-300">Address</p>
-                <p className="mt-1 text-xs text-slate-200">{details.place.address}</p>
+                <p className={`text-[11px] font-semibold ${bodyLabelClass}`}>Address</p>
+                <p className={`mt-1 text-xs ${bodyTextClass}`}>{details.place.address}</p>
               </div>
             ) : null}
 
             {details?.place?.energy ? (
               <div>
-                <p className="text-[11px] font-semibold text-slate-300">Energy</p>
-                <p className="mt-1 text-xs text-slate-200">{details.place.energy}</p>
+                <p className={`text-[11px] font-semibold ${bodyLabelClass}`}>Energy</p>
+                <p className={`mt-1 text-xs ${bodyTextClass}`}>{details.place.energy}</p>
               </div>
             ) : null}
 
             {computedDetails.weekdayText?.length ? (
               <div>
-                <p className="text-[11px] font-semibold text-slate-300">
+                <p className={`text-[11px] font-semibold ${bodyLabelClass}`}>
                   Opening hours
                 </p>
-                <ul className="mt-1 space-y-1 text-xs text-slate-200">
+                <ul className={`mt-1 space-y-1 text-xs ${bodyTextClass}`}>
                   {computedDetails.weekdayText.map((line) => (
                     <li key={line}>{line}</li>
                   ))}
@@ -439,13 +468,13 @@ export default function PlaceDrawer({
 
             {details?.google?.website || details?.google?.url ? (
               <div>
-                <p className="text-[11px] font-semibold text-slate-300">Google</p>
-                <div className="mt-1 space-y-1 text-xs text-slate-200">
+                <p className={`text-[11px] font-semibold ${bodyLabelClass}`}>Google</p>
+                <div className={`mt-1 space-y-1 text-xs ${bodyTextClass}`}>
                   {details.google.website ? (
                     <p>
                       Website:{' '}
                       <a
-                        className="underline text-slate-200"
+                        className={`underline ${bodyTextClass}`}
                         href={details.google.website}
                         target="_blank"
                         rel="noreferrer"
@@ -458,7 +487,7 @@ export default function PlaceDrawer({
                     <p>
                       Maps:{' '}
                       <a
-                        className="underline text-slate-200"
+                        className={`underline ${bodyTextClass}`}
                         href={details.google.url}
                         target="_blank"
                         rel="noreferrer"
@@ -478,19 +507,21 @@ export default function PlaceDrawer({
             computedDetails.thumbnailUrl ||
             computedDetails.wikiCurated?.primary_fact_pairs?.length ? (
               <div>
-                <p className="text-[11px] font-semibold text-slate-300">Wikipedia</p>
+                <p className={`text-[11px] font-semibold ${bodyLabelClass}`}>Wikipedia</p>
                 <div className="mt-2 flex gap-3">
                   {computedDetails.thumbnailUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={computedDetails.thumbnailUrl}
                       alt={computedDetails.wikiCurated?.wikipedia_title ?? place.name}
-                      className="h-14 w-14 shrink-0 rounded-md object-cover bg-slate-800/60"
+                      className={`h-14 w-14 shrink-0 rounded-md object-cover ${
+                        isDark ? 'bg-slate-800/60' : 'bg-slate-200/80'
+                      }`}
                     />
                   ) : null}
                   <div className="min-w-0 space-y-1">
                     {computedDetails.wikiCurated?.wikipedia_title ? (
-                      <p className="text-[11px] text-slate-400">
+                      <p className={`text-[11px] ${bodyMutedClass}`}>
                         {computedDetails.wikiCurated.wikipedia_title}
                         {computedDetails.wikiCurated.wikidata_qid
                           ? ` · ${computedDetails.wikiCurated.wikidata_qid}`
@@ -498,7 +529,7 @@ export default function PlaceDrawer({
                       </p>
                     ) : null}
                     {computedDetails.summary ? (
-                      <p className="text-xs leading-5 text-slate-200">
+                      <p className={`text-xs leading-5 ${bodyTextClass}`}>
                         {computedDetails.summary}
                       </p>
                     ) : null}
@@ -512,19 +543,19 @@ export default function PlaceDrawer({
                 <PlaceUserMetaForm
                   placeId={details.place.id}
                   initialNotes={details.place.user_notes ?? null}
-                  tone="dark"
+                  tone={tone}
                 />
               </div>
             ) : null}
           </div>
         ) : null}
 
-        {loading ? <p className="text-xs text-slate-300">Loading lists…</p> : null}
-        {error ? <p className="text-xs text-red-300">{error}</p> : null}
+        {loading ? <p className={`text-xs ${bodyLabelClass}`}>Loading lists…</p> : null}
+        {error ? <p className={`text-xs ${errorClass}`}>{error}</p> : null}
 
         {effectiveActiveListItem ? (
           <div className="space-y-2">
-            <p className="text-[11px] font-semibold text-slate-300">
+            <p className={`text-[11px] font-semibold ${bodyLabelClass}`}>
               List tags
             </p>
             {activeListTags.length ? (
@@ -532,13 +563,13 @@ export default function PlaceDrawer({
                 {activeListTags.map((tag) => (
                   <span
                     key={`list-tag:${tag}`}
-                    className="inline-flex items-center gap-1 rounded-full border border-white/10 px-2 py-0.5 text-[10px] text-slate-200"
+                    className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] ${tagChipClass}`}
                   >
                     {tag}
                     <button
                       type="button"
                       onClick={() => handleRemoveTag(tag)}
-                      className="text-[10px] text-slate-400 hover:text-slate-200"
+                      className={`text-[10px] ${tagChipButtonClass}`}
                       aria-label={`Remove ${tag}`}
                     >
                       ×
@@ -548,13 +579,13 @@ export default function PlaceDrawer({
                 <button
                   type="button"
                   onClick={handleClearTags}
-                  className="text-[10px] text-slate-300 underline"
+                  className={`text-[10px] underline ${actionClass}`}
                 >
                   × Clear
                 </button>
               </div>
             ) : (
-              <p className="text-[11px] text-slate-400">No tags yet.</p>
+              <p className={`text-[11px] ${bodyMutedClass}`}>No tags yet.</p>
             )}
             <form onSubmit={handleAddTag} className="flex flex-wrap items-center gap-2">
               <input
@@ -576,14 +607,14 @@ export default function PlaceDrawer({
               </button>
             </form>
             {tagStatus === 'saved' ? (
-              <p className="text-[11px] text-emerald-300">Saved.</p>
+              <p className={`text-[11px] ${successClass}`}>Saved.</p>
             ) : null}
             {tagStatus === 'error' ? (
-              <p className="text-[11px] text-red-300">{tagError}</p>
+              <p className={`text-[11px] ${errorClass}`}>{tagError}</p>
             ) : null}
           </div>
         ) : activeListId ? (
-          <p className="text-[11px] text-slate-400">
+          <p className={`text-[11px] ${bodyMutedClass}`}>
             Add this place to the active list to edit list tags.
           </p>
         ) : null}
@@ -591,7 +622,7 @@ export default function PlaceDrawer({
         <PlaceListMembershipEditor
           placeId={place.id}
           initialSelectedIds={effectiveListIds}
-          tone="dark"
+          tone={tone}
           onMembershipChange={() => {
             fetchMembership()
           }}

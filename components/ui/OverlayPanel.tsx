@@ -10,6 +10,7 @@ type Props = {
   children: ReactNode
   className?: string
   bodyClassName?: string
+  tone?: 'light' | 'dark'
 }
 
 export default function OverlayPanel({
@@ -20,18 +21,30 @@ export default function OverlayPanel({
   children,
   className = '',
   bodyClassName = '',
+  tone = 'dark',
 }: Props) {
+  const isDark = tone === 'dark'
+  const rootTextClass = isDark ? 'text-slate-100' : 'text-slate-900'
+  const headerBorderClass = isDark ? 'border-white/10' : 'border-slate-300/60'
+  const titleClass = isDark ? 'text-slate-100' : 'text-slate-900'
+  const subtitleClass = isDark ? 'text-slate-300' : 'text-slate-600'
+  const closeClass = isDark
+    ? 'text-slate-300 hover:text-slate-100'
+    : 'text-slate-600 hover:text-slate-900'
+
   return (
     <section
-      className={`glass-panel overflow-hidden rounded-xl text-slate-100 ${className}`}
+      className={`glass-panel overflow-hidden rounded-xl ${rootTextClass} ${className}`}
     >
-      <header className="flex items-center justify-between border-b border-white/10 px-4 py-3">
+      <header
+        className={`flex items-center justify-between border-b px-4 py-3 ${headerBorderClass}`}
+      >
         <div className="min-w-0">
-          <h2 className="truncate text-sm font-semibold text-slate-100">
+          <h2 className={`truncate text-sm font-semibold ${titleClass}`}>
             {title}
           </h2>
           {subtitle ? (
-            <p className="mt-0.5 truncate text-xs text-slate-300">{subtitle}</p>
+            <p className={`mt-0.5 truncate text-xs ${subtitleClass}`}>{subtitle}</p>
           ) : null}
         </div>
         <div className="flex shrink-0 items-center gap-2">
@@ -40,7 +53,7 @@ export default function OverlayPanel({
             <button
               type="button"
               onClick={onClose}
-              className="text-xs text-slate-300 hover:text-slate-100"
+              className={`text-xs ${closeClass}`}
             >
               Close
             </button>
@@ -51,4 +64,3 @@ export default function OverlayPanel({
     </section>
   )
 }
-

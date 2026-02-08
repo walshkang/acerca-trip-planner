@@ -41,7 +41,9 @@ function safeNormalized(v: unknown): NormalizedData | null {
 export default function InspectorCard(props: {
   onCommitted?: (placeId: string) => void
   onClose?: () => void
+  tone?: 'light' | 'dark'
 }) {
+  const isDark = (props.tone ?? 'dark') === 'dark'
   const candidate = useDiscoveryStore((s) => s.previewCandidate)
   const enrichment = useDiscoveryStore((s) => s.previewEnrichment)
   const google = useDiscoveryStore((s) => s.previewGoogle)
@@ -195,7 +197,9 @@ export default function InspectorCard(props: {
 
   return (
     <div
-      className="glass-panel pointer-events-auto w-[min(420px,92vw)] rounded-lg text-slate-100"
+      className={`glass-panel pointer-events-auto w-[min(420px,92vw)] rounded-lg ${
+        isDark ? 'text-slate-100' : 'text-slate-900 inspector-light'
+      }`}
       onClick={(e) => e.stopPropagation()}
       role="dialog"
       aria-label="Candidate preview"
@@ -375,11 +379,17 @@ export default function InspectorCard(props: {
           </div>
         ) : null}
 
-        {commitError ? <p className="text-xs text-red-300">{commitError}</p> : null}
+        {commitError ? (
+          <p className={`text-xs ${isDark ? 'text-red-300' : 'text-red-600'}`}>
+            {commitError}
+          </p>
+        ) : null}
 
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <p className="text-xs font-medium text-slate-300">List</p>
+            <p className={`text-xs font-medium ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+              List
+            </p>
           </div>
           <select
             className="glass-input w-full px-2 py-2 text-xs"
@@ -427,13 +437,15 @@ export default function InspectorCard(props: {
               placeholder="date-night, rooftop, kid-friendly"
             />
             {!selectedListId ? (
-              <p className="mt-1 text-[11px] text-slate-400">
+              <p className={`mt-1 text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                 Tags apply to list items. Choose a list to enable tags.
               </p>
             ) : null}
           </div>
           {listsError ? (
-            <p className="text-xs text-red-300">{listsError}</p>
+            <p className={`text-xs ${isDark ? 'text-red-300' : 'text-red-600'}`}>
+              {listsError}
+            </p>
           ) : null}
         </div>
 
@@ -441,7 +453,11 @@ export default function InspectorCard(props: {
           type="button"
           onClick={commit}
           disabled={isCommitting}
-          className="w-full rounded-md bg-slate-100/90 px-3 py-2 text-sm text-slate-900 shadow-sm transition-colors hover:bg-slate-100 disabled:opacity-50"
+          className={`w-full rounded-md px-3 py-2 text-sm shadow-sm transition-colors disabled:opacity-50 ${
+            isDark
+              ? 'bg-slate-100/90 text-slate-900 hover:bg-slate-100'
+              : 'bg-slate-900/90 text-slate-50 hover:bg-slate-900'
+          }`}
         >
           {isCommitting ? 'Approving…' : 'Approve Pin'}
         </button>
