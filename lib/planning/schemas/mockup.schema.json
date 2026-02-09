@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://acerca.dev/schemas/mockup.schema.json",
+  "title": "Flowy Mockup",
+  "type": "object",
+  "required": ["states"],
+  "properties": {
+    "version": { "type": "string" },
+    "states": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "$ref": "#/$defs/component"
+      }
+    }
+  },
+  "$defs": {
+    "component": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["container", "button", "text", "input", "image"]
+        },
+        "style": {
+          "type": "object",
+          "additionalProperties": {
+            "type": ["string", "number", "boolean", "null"]
+          }
+        },
+        "content": { "type": "string" },
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/component"
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,82 @@
+{
+  "version": "1",
+  "nodes": [
+    {
+      "id": "start",
+      "label": "User changes planner filters",
+      "type": "start"
+    },
+    {
+      "id": "capture_input",
+      "label": "Client sends raw filter payload to server route",
+      "type": "process"
+    },
+    {
+      "id": "validate_schema",
+      "label": "Route validates payload against server-owned schema",
+      "type": "decision"
+    },
+    {
+      "id": "reject_400",
+      "label": "Return 400 invalid_filter_payload",
+      "type": "end"
+    },
+    {
+      "id": "normalize",
+      "label": "Normalize taxonomy aliases and planner slot encoding",
+      "type": "process"
+    },
+    {
+      "id": "compose_query",
+      "label": "Build deterministic query constraints",
+      "type": "process"
+    },
+    {
+      "id": "execute_query",
+      "label": "Fetch filtered rows from DB",
+      "type": "process"
+    },
+    {
+      "id": "return_200",
+      "label": "Return filtered response + canonical filter payload",
+      "type": "end"
+    }
+  ],
+  "edges": [
+    {
+      "from": "start",
+      "to": "capture_input",
+      "label": "Apply filter"
+    },
+    {
+      "from": "capture_input",
+      "to": "validate_schema",
+      "label": "POST/PATCH request"
+    },
+    {
+      "from": "validate_schema",
+      "to": "reject_400",
+      "label": "Invalid"
+    },
+    {
+      "from": "validate_schema",
+      "to": "normalize",
+      "label": "Valid"
+    },
+    {
+      "from": "normalize",
+      "to": "compose_query",
+      "label": "Canonicalized"
+    },
+    {
+      "from": "compose_query",
+      "to": "execute_query",
+      "label": "Constraints ready"
+    },
+    {
+      "from": "execute_query",
+      "to": "return_200",
+      "label": "Success"
+    }
+  ]
+}

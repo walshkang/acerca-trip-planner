@@ -1,0 +1,108 @@
+{
+  "version": "1",
+  "states": {
+    "default": {
+      "type": "container",
+      "style": {
+        "direction": "column",
+        "gap": 12,
+        "padding": 16,
+        "surface": "panel"
+      },
+      "children": [
+        {
+          "type": "text",
+          "content": "Filter Planner"
+        },
+        {
+          "type": "container",
+          "style": {
+            "direction": "row",
+            "gap": 8
+          },
+          "children": [
+            {
+              "type": "button",
+              "content": "Category"
+            },
+            {
+              "type": "button",
+              "content": "Tags"
+            },
+            {
+              "type": "button",
+              "content": "Date/Slot"
+            }
+          ]
+        },
+        {
+          "type": "container",
+          "style": {
+            "direction": "row",
+            "gap": 8,
+            "wrap": true
+          },
+          "children": [
+            {
+              "type": "text",
+              "content": "Chips show canonical filters only"
+            }
+          ]
+        },
+        {
+          "type": "button",
+          "content": "Apply"
+        }
+      ]
+    },
+    "loading": {
+      "type": "container",
+      "style": {
+        "direction": "column",
+        "padding": 16
+      },
+      "children": [
+        {
+          "type": "text",
+          "content": "Applying filters..."
+        }
+      ]
+    },
+    "error": {
+      "type": "container",
+      "style": {
+        "direction": "column",
+        "padding": 16,
+        "gap": 8
+      },
+      "children": [
+        {
+          "type": "text",
+          "content": "Invalid filter payload"
+        },
+        {
+          "type": "text",
+          "content": "Adjust filter selections and retry."
+        }
+      ]
+    },
+    "success": {
+      "type": "container",
+      "style": {
+        "direction": "column",
+        "padding": 16,
+        "gap": 8
+      },
+      "children": [
+        {
+          "type": "text",
+          "content": "Results updated"
+        },
+        {
+          "type": "text",
+          "content": "Using canonical server filters"
+        }
+      ]
+    }
+  }
+}
