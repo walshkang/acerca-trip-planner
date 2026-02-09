@@ -17,6 +17,7 @@ type ApiResponse = {
   list: ListSummary
   items: ListItemRow[]
   distinct_tags?: string[]
+  error?: string
 }
 
 type SearchResult = {

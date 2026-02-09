@@ -55,13 +55,36 @@ type ItemsResponse = {
   code?: string
   message?: string
   error?: string
-  fieldErrors?: ListFilterFieldErrors
+  fieldErrors?: unknown
   lastValidCanonicalFilters?: unknown
 }
 
 type FetchItemsOptions = {
   updateAppliedFilters?: boolean
   updateDraftFilters?: boolean
+}
+
+type QueryFiltersResponse = {
+  mode?: 'places' | 'list_items'
+  items?: ListItemRow[]
+  canonicalFilters?: unknown
+  code?: string
+  message?: string
+  error?: string
+  fieldErrors?: unknown
+  lastValidCanonicalFilters?: unknown
+}
+
+type TranslateFiltersResponse = {
+  canonicalFilters?: unknown
+  hasAny?: boolean
+  model?: string
+  promptVersion?: string
+  usedFallback?: boolean
+  code?: string
+  message?: string
+  error?: string
+  fieldErrors?: unknown
 }
 
 const CATEGORY_RANK = new Map(
@@ -101,6 +124,11 @@ function uniqueStrings(values: string[]): string[] {
   return Array.from(new Set(values))
 }
 
+function asStringList(value: unknown): string[] {
+  if (!Array.isArray(value)) return []
+  return value.filter((entry): entry is string => typeof entry === 'string')
+}
+
 function normalizeCanonicalFilters(
   input: unknown
 ): CanonicalListFilters {
@@ -109,17 +137,11 @@ function normalizeCanonicalFilters(
       ? (input as Record<string, unknown>)
       : {}
   const categories = uniqueStrings(
-    Array.isArray(source.categories)
-      ? source.categories.filter((value): value is string => typeof value === 'string')
-      : []
+    asStringList(source.categories ?? source.category)
   )
     .filter((value): value is CategoryEnum => isCategoryEnum(value))
 
-  const tags = uniqueStrings(
-    Array.isArray(source.tags)
-      ? source.tags.filter((value): value is string => typeof value === 'string')
-      : []
-  )
+  const tags = uniqueStrings(asStringList(source.tags))
 
   return {
     categories: sortCategories(categories),
@@ -129,6 +151,42 @@ function normalizeCanonicalFilters(
         ? source.scheduled_date
         : null,
     slot: isPlannerSlot(source.slot) ? source.slot : null,
+  }
+}
+
+function normalizeFilterFieldErrors(input: unknown): ListFilterFieldErrors | null {
+  if (typeof input !== 'object' || input === null || Array.isArray(input)) {
+    return null
+  }
+  const source = input as Record<string, unknown>
+  const next: ListFilterFieldErrors = {}
+  const payloadMessages = [
+    ...asStringList(source.payload),
+    ...asStringList(source.energy),
+    ...asStringList(source.open_now),
+    ...asStringList(source.within_list_id),
+  ]
+  const categoryMessages = [
+    ...asStringList(source.categories),
+    ...asStringList(source.category),
+  ]
+  const tagMessages = asStringList(source.tags)
+  const dateMessages = asStringList(source.scheduled_date)
+  const slotMessages = asStringList(source.slot)
+
+  if (payloadMessages.length) next.payload = payloadMessages
+  if (categoryMessages.length) next.categories = categoryMessages
+  if (tagMessages.length) next.tags = tagMessages
+  if (dateMessages.length) next.scheduled_date = dateMessages
+  if (slotMessages.length) next.slot = slotMessages
+
+  return Object.keys(next).length ? next : null
+}
+
+function buildServerFiltersFromDraft(filters: CanonicalListFilters) {
+  return {
+    category: filters.categories,
+    tags: filters.tags,
   }
 }
 
@@ -205,6 +263,12 @@ export default function ListDrawer({
   const [filterFieldErrors, setFilterFieldErrors] =
     useState<ListFilterFieldErrors | null>(null)
   const [filterErrorMessage, setFilterErrorMessage] = useState<string | null>(null)
+  const [filterIntent, setFilterIntent] = useState('')
+  const [translateErrorMessage, setTranslateErrorMessage] = useState<string | null>(
+    null
+  )
+  const [translateHint, setTranslateHint] = useState<string | null>(null)
+  const [translatingFilters, setTranslatingFilters] = useState(false)
   const [itemsLoading, setItemsLoading] = useState(false)
   const [itemsError, setItemsError] = useState<string | null>(null)
 
@@ -289,7 +353,7 @@ export default function ListDrawer({
           if (json?.code === 'invalid_filter_payload') {
             setFilterErrorMessage(responseMessage)
             setFilterFieldErrors(
-              json?.fieldErrors ?? {
+              normalizeFilterFieldErrors(json?.fieldErrors) ?? {
                 payload: [responseMessage],
               }
             )
@@ -321,6 +385,7 @@ export default function ListDrawer({
         setDistinctTypes(distinctTypesFromItems(nextItems))
         setFilterFieldErrors(null)
         setFilterErrorMessage(null)
+        setTranslateErrorMessage(null)
 
         if (updateAppliedFilters) {
           setAppliedFilters(canonicalFilters)
@@ -332,6 +397,77 @@ export default function ListDrawer({
         return true
       } catch (e: unknown) {
         const message = e instanceof Error ? e.message : 'Request failed'
+        setItemsError(message)
+        return false
+      } finally {
+        setItemsLoading(false)
+      }
+    },
+    []
+  )
+
+  const fetchItemsViaQuery = useCallback(
+    async (
+      listId: string,
+      filters: unknown,
+      options: FetchItemsOptions = {}
+    ) => {
+      const {
+        updateAppliedFilters = true,
+        updateDraftFilters = false,
+      } = options
+
+      setItemsLoading(true)
+      setItemsError(null)
+
+      try {
+        const res = await fetch('/api/filters/query', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({
+            list_id: listId,
+            filters,
+            limit: 200,
+          }),
+        })
+        const json = (await res.json().catch(() => ({}))) as Partial<QueryFiltersResponse>
+
+        if (!res.ok) {
+          const responseMessage = json?.message || json?.error || `HTTP ${res.status}`
+          setItemsError(responseMessage)
+          if (json?.code === 'invalid_filter_payload') {
+            setFilterErrorMessage(responseMessage)
+            setFilterFieldErrors(
+              normalizeFilterFieldErrors(json?.fieldErrors) ?? {
+                payload: [responseMessage],
+              }
+            )
+          } else {
+            setFilterErrorMessage(null)
+            setFilterFieldErrors(null)
+          }
+          return false
+        }
+
+        const nextItems = (json?.items ?? []) as ListItemRow[]
+        const canonicalFilters = normalizeCanonicalFilters(json?.canonicalFilters ?? {})
+        setItems(nextItems)
+        setDistinctTags(distinctTagsFromItems(nextItems))
+        setDistinctTypes(distinctTypesFromItems(nextItems))
+        setFilterFieldErrors(null)
+        setFilterErrorMessage(null)
+        setTranslateErrorMessage(null)
+
+        if (updateAppliedFilters) {
+          setAppliedFilters(canonicalFilters)
+        }
+        if (updateDraftFilters) {
+          setDraftFilters(canonicalFilters)
+        }
+
+        return true
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Request failed'
         setItemsError(message)
         return false
       } finally {
@@ -356,6 +492,9 @@ export default function ListDrawer({
       setDraftFilters(emptyCanonicalFilters())
       setFilterFieldErrors(null)
       setFilterErrorMessage(null)
+      setFilterIntent('')
+      setTranslateErrorMessage(null)
+      setTranslateHint(null)
       onPlaceIdsChange([])
       return
     }
@@ -363,6 +502,9 @@ export default function ListDrawer({
     const nextFilters = emptyCanonicalFilters()
     setFilterFieldErrors(null)
     setFilterErrorMessage(null)
+    setFilterIntent('')
+    setTranslateErrorMessage(null)
+    setTranslateHint(null)
     setAppliedFilters(nextFilters)
     setDraftFilters(nextFilters)
     void fetchItems(activeListId, nextFilters, {
@@ -450,6 +592,8 @@ export default function ListDrawer({
   }, [appliedFilters.categories, distinctTypes, draftFilters.categories])
 
   const handleTagToggle = useCallback((tag: string) => {
+    setTranslateErrorMessage(null)
+    setTranslateHint(null)
     setDraftFilters((prev) => {
       const nextTags = prev.tags.includes(tag)
         ? prev.tags.filter((value) => value !== tag)
@@ -462,6 +606,8 @@ export default function ListDrawer({
   }, [])
 
   const handleTypeToggle = useCallback((type: CategoryEnum) => {
+    setTranslateErrorMessage(null)
+    setTranslateHint(null)
     setDraftFilters((prev) => {
       const nextCategories = prev.categories.includes(type)
         ? prev.categories.filter((value) => value !== type)
@@ -476,6 +622,8 @@ export default function ListDrawer({
   }, [])
 
   const handleClearTagFilters = useCallback(() => {
+    setTranslateErrorMessage(null)
+    setTranslateHint(null)
     setDraftFilters((prev) => ({
       ...prev,
       tags: [],
@@ -483,6 +631,8 @@ export default function ListDrawer({
   }, [])
 
   const handleClearTypeFilters = useCallback(() => {
+    setTranslateErrorMessage(null)
+    setTranslateHint(null)
     setDraftFilters((prev) => ({
       ...prev,
       categories: [],
@@ -490,6 +640,8 @@ export default function ListDrawer({
   }, [])
 
   const handleClearAllFilters = useCallback(() => {
+    setTranslateErrorMessage(null)
+    setTranslateHint(null)
     setDraftFilters((prev) => ({
       ...prev,
       categories: [],
@@ -501,18 +653,89 @@ export default function ListDrawer({
 
   const handleApplyFilters = useCallback(async () => {
     if (!activeListId || !isFilterDirty) return
-    await fetchItems(activeListId, draftFilters, {
+    await fetchItemsViaQuery(activeListId, buildServerFiltersFromDraft(draftFilters), {
       updateAppliedFilters: true,
       updateDraftFilters: true,
     })
-  }, [activeListId, draftFilters, fetchItems, isFilterDirty])
+  }, [activeListId, draftFilters, fetchItemsViaQuery, isFilterDirty])
 
   const handleResetFilters = useCallback(() => {
     setDraftFilters(appliedFilters)
     setFilterFieldErrors(null)
     setFilterErrorMessage(null)
+    setTranslateErrorMessage(null)
+    setTranslateHint(null)
     setItemsError(null)
   }, [appliedFilters])
+
+  const handleTranslateIntent = useCallback(async () => {
+    if (!activeListId) return
+    const intent = filterIntent.trim()
+    if (!intent) return
+
+    setTranslatingFilters(true)
+    setTranslateErrorMessage(null)
+    setFilterErrorMessage(null)
+    setFilterFieldErrors(null)
+
+    try {
+      const translateRes = await fetch('/api/filters/translate', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          intent,
+          list_id: activeListId,
+        }),
+      })
+      const translateJson = (await translateRes
+        .json()
+        .catch(() => ({}))) as Partial<TranslateFiltersResponse>
+
+      if (!translateRes.ok) {
+        const message =
+          translateJson?.message || translateJson?.error || `HTTP ${translateRes.status}`
+        setTranslateErrorMessage(message)
+        if (translateJson?.code === 'invalid_filter_payload') {
+          setFilterErrorMessage(message)
+          setFilterFieldErrors(
+            normalizeFilterFieldErrors(translateJson?.fieldErrors) ?? {
+              payload: [message],
+            }
+          )
+        }
+        return
+      }
+
+      const applyOk = await fetchItemsViaQuery(
+        activeListId,
+        translateJson?.canonicalFilters ?? {},
+        {
+          updateAppliedFilters: true,
+          updateDraftFilters: true,
+        }
+      )
+      if (!applyOk) return
+
+      const usedFallback = translateJson?.usedFallback === true
+      const model =
+        typeof translateJson?.model === 'string' && translateJson.model.length
+          ? translateJson.model
+          : null
+      if (usedFallback) {
+        setTranslateHint('Interpreted with deterministic fallback rules.')
+      } else if (model) {
+        setTranslateHint(`Interpreted with ${model}.`)
+      } else {
+        setTranslateHint('Filters interpreted successfully.')
+      }
+    } catch (error: unknown) {
+      setTranslateErrorMessage(
+        error instanceof Error ? error.message : 'Request failed'
+      )
+    } finally {
+      setTranslatingFilters(false)
+    }
+  }, [activeListId, fetchItemsViaQuery, filterIntent])
 
   const handleTagsUpdate = useCallback(
     async (itemId: string, tags: string[]) => {
@@ -690,11 +913,26 @@ export default function ListDrawer({
           onApplyFilters={handleApplyFilters}
           onResetFilters={handleResetFilters}
           isFilterDirty={isFilterDirty}
-          isApplyingFilters={itemsLoading}
-          applyDisabled={!activeListId || !isFilterDirty || itemsLoading}
-          resetDisabled={!isFilterDirty || itemsLoading}
+          isApplyingFilters={itemsLoading || translatingFilters}
+          applyDisabled={
+            !activeListId || !isFilterDirty || itemsLoading || translatingFilters
+          }
+          resetDisabled={!isFilterDirty || itemsLoading || translatingFilters}
           filterFieldErrors={filterFieldErrors}
           filterErrorMessage={filterErrorMessage}
+          filterIntent={filterIntent}
+          onFilterIntentChange={(next) => {
+            setFilterIntent(next)
+            setTranslateErrorMessage(null)
+            setTranslateHint(null)
+          }}
+          onTranslateIntent={handleTranslateIntent}
+          isTranslatingIntent={translatingFilters}
+          translateIntentDisabled={
+            !activeListId || translatingFilters || !filterIntent.trim().length
+          }
+          translateIntentError={translateErrorMessage}
+          translateIntentHint={translateHint}
           onTagsUpdate={handleTagsUpdate}
           tone={tone}
         />

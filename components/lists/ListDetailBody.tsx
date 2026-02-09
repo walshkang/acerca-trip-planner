@@ -65,6 +65,13 @@ type Props = {
   resetDisabled?: boolean
   filterFieldErrors?: ListFilterFieldErrors | null
   filterErrorMessage?: string | null
+  filterIntent?: string
+  onFilterIntentChange?: (next: string) => void
+  onTranslateIntent?: () => void
+  isTranslatingIntent?: boolean
+  translateIntentDisabled?: boolean
+  translateIntentError?: string | null
+  translateIntentHint?: string | null
   onTagsUpdate?: (itemId: string, tags: string[]) => Promise<string[]>
   focusedPlaceId?: string | null
   tone?: 'light' | 'dark'
@@ -241,6 +248,13 @@ export default function ListDetailBody({
   resetDisabled = false,
   filterFieldErrors = null,
   filterErrorMessage = null,
+  filterIntent = '',
+  onFilterIntentChange,
+  onTranslateIntent,
+  isTranslatingIntent = false,
+  translateIntentDisabled = false,
+  translateIntentError = null,
+  translateIntentHint = null,
   onTagsUpdate,
   focusedPlaceId = null,
   tone = 'light',
@@ -275,6 +289,12 @@ export default function ListDetailBody({
   const actionSecondaryClass = isDark
     ? 'rounded-md border border-white/20 px-2 py-1 text-[11px] text-slate-200 disabled:opacity-50'
     : 'rounded-md border border-slate-300 px-2 py-1 text-[11px] text-slate-600 disabled:opacity-50'
+  const intentInputClass = isDark
+    ? 'glass-input flex-1 text-xs'
+    : 'flex-1 rounded-md border border-gray-200 px-2 py-1 text-xs text-gray-700'
+  const intentButtonClass = isDark
+    ? 'glass-button rounded-md px-2 py-1 text-[11px] disabled:opacity-60'
+    : 'rounded-md border border-slate-300 px-2 py-1 text-[11px] text-slate-700 disabled:opacity-60'
   const showFilters =
     availableTypes.length > 0 ||
     availableTags.length > 0 ||
@@ -428,6 +448,44 @@ export default function ListDetailBody({
                   ) : null}
                 </div>
               </div>
+
+              {onFilterIntentChange && onTranslateIntent ? (
+                <div className="space-y-2">
+                  <p className={`text-[11px] ${mutedText}`}>
+                    Describe filters in plain language.
+                  </p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <input
+                      type="text"
+                      value={filterIntent}
+                      onChange={(event) =>
+                        onFilterIntentChange(event.target.value)
+                      }
+                      placeholder="e.g., cozy coffee open now #date-night"
+                      className={intentInputClass}
+                      disabled={isTranslatingIntent}
+                    />
+                    <button
+                      type="button"
+                      onClick={onTranslateIntent}
+                      disabled={translateIntentDisabled}
+                      className={intentButtonClass}
+                    >
+                      {isTranslatingIntent ? 'Interpreting…' : 'Interpret'}
+                    </button>
+                  </div>
+                  {translateIntentError ? (
+                    <p className={`text-[11px] ${errorText}`}>
+                      {translateIntentError}
+                    </p>
+                  ) : null}
+                  {!translateIntentError && translateIntentHint ? (
+                    <p className={`text-[11px] ${mutedText}`}>
+                      {translateIntentHint}
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
 
               {selectedFilterChips.length ? (
                 <div className="flex flex-wrap items-center gap-2">
