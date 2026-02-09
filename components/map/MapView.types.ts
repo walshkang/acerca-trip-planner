@@ -16,6 +16,8 @@ export type LatLng = {
   lng: number
 }
 
+export type PlaceMarkerVariant = 'default' | 'backlog' | 'scheduled' | 'done'
+
 export type MapViewProps = {
   mapStyle: string
   mapboxAccessToken?: string
@@ -27,6 +29,7 @@ export type MapViewProps = {
   onPlaceClick: (placeId: string) => void
   isPlaceDimmed: (place: MapPlace) => boolean
   isPlaceFocused: (place: MapPlace) => boolean
+  getPlaceMarkerVariant?: (place: MapPlace) => PlaceMarkerVariant
   markerFocusClassName?: string
   ghostMarkerClassName?: string
   showTransit?: boolean

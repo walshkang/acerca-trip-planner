@@ -6,7 +6,11 @@ import { supabase } from '@/lib/supabase/client'
 import type { CategoryEnum } from '@/lib/types/enums'
 import MapViewMapbox from '@/components/map/MapView.mapbox'
 import MapViewMaplibre from '@/components/map/MapView.maplibre'
-import type { MapPlace, LatLng } from '@/components/map/MapView.types'
+import type {
+  MapPlace,
+  LatLng,
+  PlaceMarkerVariant,
+} from '@/components/map/MapView.types'
 import Omnibox from '@/components/discovery/Omnibox'
 import InspectorCard from '@/components/discovery/InspectorCard'
 import ListDrawer from '@/components/lists/ListDrawer'
@@ -76,6 +80,16 @@ type PlacesRow = {
   lng: number | null
 }
 
+type ActiveListItemState = {
+  id: string
+  list_id: string
+  place_id: string
+  tags: string[]
+  scheduled_date: string | null
+  scheduled_start_time: string | null
+  completed_at: string | null
+}
+
 export default function MapContainer() {
   const [places, setPlaces] = useState<MapPlace[]>([])
   const [loading, setLoading] = useState(true)
@@ -91,9 +105,9 @@ export default function MapContainer() {
   const [toolsOpen, setToolsOpen] = useState(false)
   const [activeListId, setActiveListId] = useState<string | null>(null)
   const [activeListPlaceIds, setActiveListPlaceIds] = useState<string[]>([])
-  const [activeListItems, setActiveListItems] = useState<
-    Array<{ id: string; list_id: string; place_id: string; tags: string[] }>
-  >([])
+  const [activeListItems, setActiveListItems] = useState<ActiveListItemState[]>(
+    []
+  )
   const [activeListTypeFilters, setActiveListTypeFilters] = useState<
     CategoryEnum[]
   >([])
@@ -109,6 +123,7 @@ export default function MapContainer() {
   const isDarkTone = uiTone === 'dark'
   const [listTagRefreshKey, setListTagRefreshKey] = useState(0)
   const [placeTagRefreshKey, setPlaceTagRefreshKey] = useState(0)
+  const [listItemsRefreshKey, setListItemsRefreshKey] = useState(0)
   const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN
   const mapProvider =
     process.env.NEXT_PUBLIC_MAP_PROVIDER === 'mapbox' ? 'mapbox' : 'maplibre'
@@ -190,6 +205,9 @@ export default function MapContainer() {
   const bumpPlaceTagRefresh = useCallback(() => {
     setPlaceTagRefreshKey((prev) => prev + 1)
   }, [])
+  const bumpListItemsRefresh = useCallback(() => {
+    setListItemsRefreshKey((prev) => prev + 1)
+  }, [])
   const handleActiveListPlaceIdsChange = useCallback((nextIds: string[]) => {
     setActiveListPlaceIds((prev) => {
       if (prev.length !== nextIds.length) return nextIds
@@ -200,14 +218,7 @@ export default function MapContainer() {
     })
   }, [])
   const handleActiveListItemsChange = useCallback(
-    (
-      items: Array<{
-        id: string
-        list_id: string
-        place_id: string
-        tags: string[]
-      }>
-    ) => {
+    (items: ActiveListItemState[]) => {
       setActiveListItems(items)
     },
     []
@@ -234,6 +245,9 @@ export default function MapContainer() {
       longitude: 0,
       latitude: 20,
       zoom: 1.5,
+      bearing: 0,
+      pitch: 0,
+      padding: { top: 0, bottom: 0, left: 0, right: 0 },
     }),
     []
   )
@@ -299,16 +313,9 @@ export default function MapContainer() {
     [activeListPlaceIdSet, activeListPlaceIds, places]
   )
   const activeListItemByPlaceId = useMemo(() => {
-    const listItemMap = new Map<
-      string,
-      { id: string; list_id: string; tags: string[] }
-    >()
+    const listItemMap = new Map<string, ActiveListItemState>()
     for (const item of activeListItems) {
-      listItemMap.set(item.place_id, {
-        id: item.id,
-        list_id: item.list_id,
-        tags: item.tags,
-      })
+      listItemMap.set(item.place_id, item)
     }
     return listItemMap
   }, [activeListItems])
@@ -345,6 +352,16 @@ export default function MapContainer() {
       activeListTypeFilters.length,
       previewSelectedResultId,
     ]
+  )
+  const getPlaceMarkerVariant = useCallback(
+    (place: MapPlace): PlaceMarkerVariant => {
+      const listItem = activeListItemByPlaceId.get(place.id)
+      if (!listItem) return 'default'
+      if (listItem.completed_at) return 'done'
+      if (listItem.scheduled_date) return 'scheduled'
+      return 'backlog'
+    },
+    [activeListItemByPlaceId]
   )
 
   useEffect(() => {
@@ -472,6 +489,7 @@ export default function MapContainer() {
 
   const closePlaceDetails = useCallback(() => {
     setPlaceParam(null)
+    setFocusedListPlaceId(null)
     setPanelMode(panelModeBeforeDetailsRef.current)
   }, [setPlaceParam])
 
@@ -685,6 +703,7 @@ export default function MapContainer() {
 
   const handleMapClick = useCallback(() => {
     clearDiscovery()
+    setFocusedListPlaceId(null)
     if (selectedPlaceId) {
       setPlaceParam(null)
     }
@@ -839,6 +858,7 @@ export default function MapContainer() {
             onActiveListChange={(id) => {
               setActiveListId(id)
               setActiveListPlaceIds([])
+              setActiveListItems([])
               setListParam(id)
               if (id) setDrawerOpen(true)
             }}
@@ -853,6 +873,7 @@ export default function MapContainer() {
               setPanelMode('details')
             }}
             tagsRefreshKey={listTagRefreshKey}
+            itemsRefreshKey={listItemsRefreshKey}
             onTagsUpdated={bumpPlaceTagRefresh}
           />
         )
@@ -861,6 +882,7 @@ export default function MapContainer() {
           <ListPlanner
             listId={activeListId}
             tone={uiTone}
+            onPlanMutated={bumpListItemsRefresh}
             onPlaceSelect={(placeId) => {
               setPendingFocusPlaceId(placeId)
               setPlaceParam(placeId)
@@ -1003,6 +1025,7 @@ export default function MapContainer() {
                 return
               }
               setDrawerOpen(false)
+              setFocusedListPlaceId(null)
               setPlaceParam(null)
               clearDiscovery()
             }}
@@ -1055,6 +1078,7 @@ export default function MapContainer() {
                   onActiveListChange={(id) => {
                     setActiveListId(id)
                     setActiveListPlaceIds([])
+                    setActiveListItems([])
                     setListParam(id)
                     if (id) setDrawerOpen(true)
                   }}
@@ -1069,6 +1093,7 @@ export default function MapContainer() {
                     setPanelMode('details')
                   }}
                   tagsRefreshKey={listTagRefreshKey}
+                  itemsRefreshKey={listItemsRefreshKey}
                   onTagsUpdated={bumpPlaceTagRefresh}
                 />
               ) : panelMode === 'plan' ? (
@@ -1237,6 +1262,7 @@ export default function MapContainer() {
         onPlaceClick={handlePlaceClick}
         isPlaceDimmed={isPlaceDimmed}
         isPlaceFocused={isPlaceFocused}
+        getPlaceMarkerVariant={getPlaceMarkerVariant}
         markerFocusClassName={markerFocusClassName}
         ghostMarkerClassName={ghostMarkerClassName}
         showTransit={showTransit}

@@ -1,0 +1,46 @@
+{
+  "states": {
+    "idle": {
+      "type": "container",
+      "style": { "padding": 16, "alignment": "start" },
+      "children": [
+        { "type": "text", "content": "Dev Progress Tracker (generated from roadmap.json)", "style": { "fontSize": 18 } },
+        { "type": "text", "content": "Active Phase: {{active_phase_label}}", "style": { "padding": 8 } },
+        { "type": "text", "content": "Active Epic: {{active_epic_label}}", "style": { "padding": 8 } },
+        { "type": "text", "content": "Task statuses use: completed | in_progress | planned", "style": { "padding": 8 } },
+        {
+          "type": "container",
+          "style": { "padding": 12, "alignment": "start" },
+          "children": [
+            { "type": "text", "content": "Gates", "style": { "fontSize": 14, "padding": 4 } },
+            { "type": "text", "content": "• Phase status correctness (prevents phase_1 fallback)", "style": { "padding": 2 } },
+            { "type": "text", "content": "• E2E strategy chosen (restore seeding or keep E2E paused)", "style": { "padding": 2 } },
+            { "type": "text", "content": "• Planner to map refresh contract exists (pins do not drift)", "style": { "padding": 2 } },
+            { "type": "text", "content": "• open_now deferred until timezone strategy exists", "style": { "padding": 2 } }
+          ]
+        }
+      ]
+    },
+    "generating": {
+      "type": "container",
+      "style": { "padding": 16, "alignment": "center" },
+      "children": [
+        { "type": "text", "content": "Refreshing CONTEXT.md...", "style": { "fontSize": 16 } }
+      ]
+    },
+    "success": {
+      "type": "container",
+      "style": { "padding": 16, "alignment": "center" },
+      "children": [
+        { "type": "text", "content": "Context refresh complete", "style": { "fontSize": 16 } }
+      ]
+    },
+    "error": {
+      "type": "container",
+      "style": { "padding": 16, "alignment": "center" },
+      "children": [
+        { "type": "text", "content": "Context refresh failed; check generator logs", "style": { "fontSize": 16 } }
+      ]
+    }
+  }
+}

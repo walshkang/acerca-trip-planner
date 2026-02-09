@@ -22,7 +22,14 @@ type Props = {
   open: boolean
   place: PlaceDrawerSummary | null
   activeListId?: string | null
-  activeListItemOverride?: { id: string; list_id: string; tags: string[] } | null
+  activeListItemOverride?: {
+    id: string
+    list_id: string
+    tags: string[]
+    scheduled_date?: string | null
+    scheduled_start_time?: string | null
+    completed_at?: string | null
+  } | null
   topOffset?: number
   onClose: () => void
   tagsRefreshKey?: number
@@ -115,6 +122,10 @@ export default function PlaceDrawer({
   const [tagError, setTagError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [removingFromActiveList, setRemovingFromActiveList] = useState(false)
+  const [removeFromActiveListError, setRemoveFromActiveListError] = useState<
+    string | null
+  >(null)
   const [neighborhood, setNeighborhood] = useState<{
     name: string
     borough?: string | null
@@ -186,6 +197,8 @@ export default function PlaceDrawer({
       setTagStatus('idle')
       setTagError(null)
       setError(null)
+      setRemovingFromActiveList(false)
+      setRemoveFromActiveListError(null)
       setNeighborhood(null)
       setNeighborhoodError(null)
       return
@@ -351,6 +364,30 @@ export default function PlaceDrawer({
 
   async function handleClearTags() {
     await commitTags([])
+  }
+
+  async function handleRemoveFromActiveList() {
+    if (!activeListId || !place) return
+    setRemovingFromActiveList(true)
+    setRemoveFromActiveListError(null)
+    try {
+      const res = await fetch(
+        `/api/lists/${activeListId}/items?place_id=${encodeURIComponent(place.id)}`,
+        { method: 'DELETE' }
+      )
+      const json = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        throw new Error(json?.error || `HTTP ${res.status}`)
+      }
+      await fetchMembership()
+      onTagsUpdated?.()
+    } catch (err: unknown) {
+      setRemoveFromActiveListError(
+        err instanceof Error ? err.message : 'Remove failed'
+      )
+    } finally {
+      setRemovingFromActiveList(false)
+    }
   }
 
   const isEmbedded = variant === 'embedded'
@@ -622,6 +659,23 @@ export default function PlaceDrawer({
             {tagStatus === 'error' ? (
               <p className={`text-[11px] ${errorClass}`}>{tagError}</p>
             ) : null}
+            <div className="pt-1">
+              <button
+                type="button"
+                onClick={handleRemoveFromActiveList}
+                disabled={removingFromActiveList}
+                className="glass-button rounded-md px-2 py-1 text-[11px] disabled:opacity-60"
+              >
+                {removingFromActiveList
+                  ? 'Removing…'
+                  : 'Remove from active list'}
+              </button>
+              {removeFromActiveListError ? (
+                <p className={`mt-1 text-[11px] ${errorClass}`}>
+                  {removeFromActiveListError}
+                </p>
+              ) : null}
+            </div>
           </div>
         ) : activeListId ? (
           <p className={`text-[11px] ${bodyMutedClass}`}>

@@ -19,12 +19,14 @@ import {
 type Props = {
   listId: string | null
   onPlaceSelect?: (placeId: string) => void
+  onPlanMutated?: () => void
   tone?: 'light' | 'dark'
 }
 
 type ItemsResponse = {
   list: ListSummary
   items: ListItemRow[]
+  error?: string
 }
 
 type MoveDestination =
@@ -58,6 +60,7 @@ function formatDayLabel(isoDate: string) {
 export default function ListPlanner({
   listId,
   onPlaceSelect,
+  onPlanMutated,
   tone = 'dark',
 }: Props) {
   const isDark = tone === 'dark'
@@ -428,6 +431,7 @@ export default function ListPlanner({
             )
           )
         }
+        onPlanMutated?.()
         setMoveItemId(null)
       } catch (err: unknown) {
         setItems(previousItems)
@@ -436,7 +440,7 @@ export default function ListPlanner({
         setSavingItemId(null)
       }
     },
-    [items, listId, nextOrderForSlotMove]
+    [items, listId, nextOrderForSlotMove, onPlanMutated]
   )
 
   const onDragStart = useCallback((itemId: string) => {
@@ -548,13 +552,14 @@ export default function ListPlanner({
       } else {
         await fetchPlan()
       }
+      onPlanMutated?.()
       setEditingTripDates(false)
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Save failed')
     } finally {
       setSavingTripDates(false)
     }
-  }, [fetchPlan, listId, tripEnd, tripStart, tripTimezone])
+  }, [fetchPlan, listId, onPlanMutated, tripEnd, tripStart, tripTimezone])
 
   const clearTripDates = useCallback(async () => {
     if (!listId) return
@@ -576,13 +581,14 @@ export default function ListPlanner({
       }
       const updated = json?.list as ListSummary | undefined
       setList(updated ?? null)
+      onPlanMutated?.()
       setEditingTripDates(false)
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Save failed')
     } finally {
       setSavingTripDates(false)
     }
-  }, [listId])
+  }, [listId, onPlanMutated])
 
   if (!listId) {
     return (

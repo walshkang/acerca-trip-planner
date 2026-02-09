@@ -21,10 +21,19 @@ type Props = {
   onActiveTypeFiltersChange?: (types: CategoryEnum[]) => void
   onPlaceSelect: (placeId: string) => void
   onActiveListItemsChange?: (
-    items: Array<{ id: string; list_id: string; place_id: string; tags: string[] }>
+    items: Array<{
+      id: string
+      list_id: string
+      place_id: string
+      tags: string[]
+      scheduled_date: string | null
+      scheduled_start_time: string | null
+      completed_at: string | null
+    }>
   ) => void
   focusedPlaceId?: string | null
   tagsRefreshKey?: number
+  itemsRefreshKey?: number
   onTagsUpdated?: () => void
   variant?: 'floating' | 'embedded'
   tone?: 'light' | 'dark'
@@ -53,6 +62,7 @@ export default function ListDrawer({
   onActiveListItemsChange,
   focusedPlaceId = null,
   tagsRefreshKey,
+  itemsRefreshKey,
   onTagsUpdated,
   variant = 'floating',
   tone = 'dark',
@@ -182,7 +192,7 @@ export default function ListDrawer({
     }
 
     fetchItems(activeListId)
-  }, [activeListId, fetchItems, onPlaceIdsChange, tagsRefreshKey])
+  }, [activeListId, fetchItems, itemsRefreshKey, onPlaceIdsChange, tagsRefreshKey])
 
   useEffect(() => {
     if (!open || !activeListId) return
@@ -220,8 +230,19 @@ export default function ListDrawer({
         list_id: activeListId,
         place_id: item.place?.id,
         tags: item.tags ?? [],
+        scheduled_date: item.scheduled_date ?? null,
+        scheduled_start_time: item.scheduled_start_time ?? null,
+        completed_at: item.completed_at ?? null,
       }))
-      .filter((item): item is { id: string; list_id: string; place_id: string; tags: string[] } =>
+      .filter((item): item is {
+        id: string
+        list_id: string
+        place_id: string
+        tags: string[]
+        scheduled_date: string | null
+        scheduled_start_time: string | null
+        completed_at: string | null
+      } =>
         Boolean(item.place_id)
       )
     onActiveListItemsChange?.(mapped)

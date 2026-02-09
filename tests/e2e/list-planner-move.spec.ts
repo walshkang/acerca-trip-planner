@@ -1,5 +1,7 @@
 import { test, expect, type Page } from '@playwright/test'
 
+test.skip(true, 'Playwright seeded E2E is temporarily descoped.')
+
 async function ensureSignedIn(page: Page) {
   const loadingText = page.getByText('Loading map...')
   await loadingText.waitFor({ state: 'detached' }).catch(() => null)
@@ -118,4 +120,3 @@ test('planner move picker schedules and completes list items', async ({ page }) 
   await expect(backlogSection.getByText(seed.place_name)).toBeVisible()
   await expect(doneSection.getByText('Nothing done yet.')).toBeVisible()
 })
-

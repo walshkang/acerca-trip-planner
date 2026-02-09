@@ -1,7 +1,7 @@
 {
   "project_name": "AI_Travel_Itinerary_Manager",
   "version": "2.2.0-phase2-defined",
-  "last_updated": "2026-02-03",
+  "last_updated": "2026-02-09",
   "development_principles": [
     "LLMs label and translate intent; deterministic systems retrieve and compute.",
     "Only approved pins are truth (Map is the interface).",
@@ -345,6 +345,61 @@
             "Optimistic scheduling reconciles conflicts on refresh; server remains source of truth.",
             "Lightweight scheduling audit fields (last_scheduled_at, last_scheduled_by/source).",
             "Visual distinction for scheduled vs unscheduled pins."
+          ],
+          "tasks": [
+            {
+              "id": "2.1",
+              "task": "Implement slot-only scheduling sentinels.",
+              "details": "Use deterministic scheduled_start_time sentinels for morning/afternoon/evening lanes.",
+              "status": "completed",
+              "notes": "Implemented in lib/lists/planner.ts with sentinel values 09:00/14:00/19:00 and slot parsing helpers."
+            },
+            {
+              "id": "2.2",
+              "task": "Add Drinks taxonomy end-to-end.",
+              "details": "Ensure category enum, icon mapping, and deterministic normalization map bar-like places to Drinks.",
+              "status": "completed",
+              "notes": "Implemented in lib/types/enums.ts, lib/icons/mapping.ts, and lib/server/enrichment/normalize.ts."
+            },
+            {
+              "id": "2.3",
+              "task": "Implement list trip-date write path.",
+              "details": "PATCH /api/lists/[id] validates date range/timezone and moves out-of-range scheduled items to backlog.",
+              "status": "completed",
+              "notes": "Implemented in app/api/lists/[id]/route.ts."
+            },
+            {
+              "id": "2.4",
+              "task": "Implement scheduling write path.",
+              "details": "PATCH /api/lists/[id]/items/[itemId] updates scheduled_date/slot/order/completed_at and audit fields.",
+              "status": "completed",
+              "notes": "Implemented in app/api/lists/[id]/items/[itemId]/route.ts."
+            },
+            {
+              "id": "2.5",
+              "task": "Ship planner UI in map context panel.",
+              "details": "Provide Places|Plan|Details flow with move picker, trip dates editing, and desktop drag/drop scheduling.",
+              "status": "completed",
+              "notes": "Implemented in components/map/MapContainer.tsx and components/lists/ListPlanner.tsx."
+            },
+            {
+              "id": "2.6",
+              "task": "Propagate scheduling state into map marker model and refresh contract.",
+              "details": "Map marker state must include scheduled_date/scheduled_start_time/completed_at and refresh when planner mutates schedule.",
+              "status": "completed"
+            },
+            {
+              "id": "2.7",
+              "task": "Render explicit marker variants for backlog/scheduled/done.",
+              "details": "Use deterministic map marker variants based on list item scheduling state while preserving focus/dim interactions.",
+              "status": "completed"
+            },
+            {
+              "id": "2.8",
+              "task": "Descope Playwright seeded acceptance for planner/map changes.",
+              "details": "Until seeding infra is restored, rely on unit/API checks and keep E2E suite intentionally skipped.",
+              "status": "completed"
+            }
           ]
         },
         {
@@ -357,6 +412,32 @@
             "Filter JSON supports compound AND/OR rules from day one.",
             "Open Now filtering uses server time converted to place timezone.",
             "Cheap timezone strategy: derive IANA timezone from lat/lng offline at ingest; fallback to trip timezone or stored utc_offset_minutes."
+          ],
+          "tasks": [
+            {
+              "id": "2.9",
+              "task": "Define server-owned filter JSON schema with runtime validation.",
+              "details": "Implement category/energy/tags/open_now/within_list_id validation and deterministic boolean semantics.",
+              "status": "in_progress"
+            },
+            {
+              "id": "2.10",
+              "task": "Implement intent translation endpoint.",
+              "details": "POST /api/filters/translate allows LLM output only as validated filter JSON.",
+              "status": "planned"
+            },
+            {
+              "id": "2.11",
+              "task": "Implement deterministic filter query endpoint.",
+              "details": "POST /api/filters/query executes deterministic DB filtering without LLM usage.",
+              "status": "planned"
+            },
+            {
+              "id": "2.12",
+              "task": "Defer open_now until timezone strategy is implemented.",
+              "details": "Implement timezone storage and deterministic conversion before shipping open_now filtering.",
+              "status": "planned"
+            }
           ]
         },
         {
@@ -400,7 +481,8 @@
             "Neighborhood boundaries (NYC GeoJSON) rendered as runtime overlays. (planned)"
           ]
         }
-      ]
+      ],
+      "status": "in_progress"
     },
     "phase_3": {
       "name": "The Intelligent Concierge (Wedding Cake)",

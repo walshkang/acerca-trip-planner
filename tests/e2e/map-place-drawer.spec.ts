@@ -1,6 +1,8 @@
 import { randomUUID } from 'crypto'
 import { test, expect, type Locator, type Page } from '@playwright/test'
 
+test.skip(true, 'Playwright seeded E2E is temporarily descoped.')
+
 async function ensureSignedIn(page: Page) {
   const loadingText = page.getByText('Loading map...')
   await loadingText.waitFor({ state: 'detached' }).catch(() => null)

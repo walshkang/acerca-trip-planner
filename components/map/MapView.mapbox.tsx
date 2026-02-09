@@ -235,6 +235,7 @@ const MapViewMapbox = forwardRef<MapViewRef, MapViewProps>(function MapViewMapbo
     onPlaceClick,
     isPlaceDimmed,
     isPlaceFocused,
+    getPlaceMarkerVariant,
     markerFocusClassName,
     ghostMarkerClassName,
     showTransit = false,
@@ -334,12 +335,12 @@ const MapViewMapbox = forwardRef<MapViewRef, MapViewProps>(function MapViewMapbo
         >
           <Layer
             key={`${neighborhoodKey}-fill`}
-            {...neighborhoodFillLayer}
+            {...(neighborhoodFillLayer as any)}
             beforeId={neighborhoodBeforeId}
           />
           <Layer
             key={`${neighborhoodKey}-outline`}
-            {...neighborhoodOutlineLayer}
+            {...(neighborhoodOutlineLayer as any)}
             beforeId={neighborhoodBeforeId}
           />
         </Source>
@@ -353,7 +354,7 @@ const MapViewMapbox = forwardRef<MapViewRef, MapViewProps>(function MapViewMapbo
         >
           <Layer
             key={`${neighborhoodKey}-labels-layer`}
-            {...neighborhoodLabelLayer}
+            {...(neighborhoodLabelLayer as any)}
             beforeId={neighborhoodBeforeId}
           />
         </Source>
@@ -367,12 +368,12 @@ const MapViewMapbox = forwardRef<MapViewRef, MapViewProps>(function MapViewMapbo
         >
           <Layer
             key={`${transitLinesKey}-casing`}
-            {...transitLineCasingLayer}
+            {...(transitLineCasingLayer as any)}
             beforeId={transitBeforeId}
           />
           <Layer
             key={`${transitLinesKey}-layer`}
-            {...transitLineLayer}
+            {...(transitLineLayer as any)}
             beforeId={transitBeforeId}
           />
         </Source>
@@ -386,7 +387,7 @@ const MapViewMapbox = forwardRef<MapViewRef, MapViewProps>(function MapViewMapbo
         >
           <Layer
             key={`${transitStationsKey}-layer`}
-            {...transitStationLayer}
+            {...(transitStationLayer as any)}
             beforeId={transitBeforeId}
           />
         </Source>
@@ -414,6 +415,16 @@ const MapViewMapbox = forwardRef<MapViewRef, MapViewProps>(function MapViewMapbo
       {places.map((place) => {
         const isFocusedMarker = isPlaceFocused(place)
         const isDimmedMarker = isPlaceDimmed(place)
+        const markerVariant = getPlaceMarkerVariant?.(place) ?? 'default'
+        const markerVariantClassName =
+          markerVariant === 'scheduled'
+            ? 'border-2 border-emerald-500/80'
+            : markerVariant === 'done'
+              ? 'opacity-60 grayscale'
+              : ''
+        const markerStateClassName = isFocusedMarker
+          ? markerFocusClassName ?? PLACE_FOCUS_GLOW
+          : markerVariantClassName
         return (
           <Marker
             key={place.id}
@@ -425,6 +436,7 @@ const MapViewMapbox = forwardRef<MapViewRef, MapViewProps>(function MapViewMapbo
               className={`cursor-pointer transition-opacity ${
                 isDimmedMarker ? 'opacity-30' : 'opacity-100'
               }`}
+              data-marker-variant={markerVariant}
               onClick={(event) => {
                 event.preventDefault()
                 event.stopPropagation()
@@ -442,9 +454,7 @@ const MapViewMapbox = forwardRef<MapViewRef, MapViewProps>(function MapViewMapbo
                 <span
                   aria-hidden="true"
                   className={`flex h-7 w-7 items-center justify-center rounded-full ${markerBackdropClassName} ${
-                    isFocusedMarker
-                      ? markerFocusClassName ?? PLACE_FOCUS_GLOW
-                      : ''
+                    markerStateClassName
                   }`}
                 >
                 <span className="text-[15px] leading-none">

@@ -4,6 +4,11 @@ Playwright is currently paused to avoid test data churn. The seeded endpoints
 and helper scripts have been removed. If we revisit Playwright, we can re-add
 the seeding flow and update these instructions.
 
+Status in repo:
+- `tests/e2e/*.spec.ts` are intentionally marked with `test.skip(...)`.
+- E2E is not a required acceptance gate while seeded fixtures remain descoped.
+- Use unit/API verification for Phase 2 changes until seeding is restored.
+
 ## 1) Install browsers (one-time)
 ```sh
 npx playwright install
