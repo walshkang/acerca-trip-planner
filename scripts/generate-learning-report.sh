@@ -60,7 +60,7 @@ $stats
 \`\`\`
 
 ## Decisions / Rationale
-- TODO: Add why these changes were made and any tradeoffs.
+- Auto-generated from commit metadata. If this report is included in a PR, replace this line with concrete rationale and tradeoffs from the implementation.
 
 ## Best Practices: Backend Connections
 - Use server-side clients for privileged operations; avoid admin/service keys in client code.
@@ -84,7 +84,7 @@ const { data, error } = await supabase.rpc('promote_place_candidate', {
 - Capture TODOs in commit message or report immediately.
 
 ## Next Steps
-- TODO: List follow-ups or risks.
+- No follow-up actions were captured automatically.
 EOF
 
 echo "Learning report saved to: $report_file"
