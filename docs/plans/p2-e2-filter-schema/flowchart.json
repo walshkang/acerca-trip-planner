@@ -8,7 +8,17 @@
     },
     {
       "id": "capture_input",
-      "label": "Client sends raw filter payload to server route",
+      "label": "Client updates draft filters and runs local validation",
+      "type": "process"
+    },
+    {
+      "id": "preview_count",
+      "label": "If valid, request debounced preview count",
+      "type": "process"
+    },
+    {
+      "id": "apply_intent",
+      "label": "User applies filters (or auto-apply on desktop)",
       "type": "process"
     },
     {
@@ -18,7 +28,7 @@
     },
     {
       "id": "reject_400",
-      "label": "Return 400 invalid_filter_payload",
+      "label": "Return 400 invalid_filter_payload + fieldErrors + lastValidCanonicalFilters",
       "type": "end"
     },
     {
@@ -37,6 +47,16 @@
       "type": "process"
     },
     {
+      "id": "empty_check",
+      "label": "Result rows empty?",
+      "type": "decision"
+    },
+    {
+      "id": "return_200_empty",
+      "label": "Return 200 empty results + canonical filter payload",
+      "type": "end"
+    },
+    {
       "id": "return_200",
       "label": "Return filtered response + canonical filter payload",
       "type": "end"
@@ -46,10 +66,25 @@
     {
       "from": "start",
       "to": "capture_input",
-      "label": "Apply filter"
+      "label": "Edit filter controls"
     },
     {
       "from": "capture_input",
+      "to": "preview_count",
+      "label": "Draft valid"
+    },
+    {
+      "from": "preview_count",
+      "to": "apply_intent",
+      "label": "Preview shown"
+    },
+    {
+      "from": "capture_input",
+      "to": "apply_intent",
+      "label": "Manual apply path"
+    },
+    {
+      "from": "apply_intent",
       "to": "validate_schema",
       "label": "POST/PATCH request"
     },
@@ -75,8 +110,18 @@
     },
     {
       "from": "execute_query",
-      "to": "return_200",
+      "to": "empty_check",
       "label": "Success"
+    },
+    {
+      "from": "empty_check",
+      "to": "return_200_empty",
+      "label": "Yes"
+    },
+    {
+      "from": "empty_check",
+      "to": "return_200",
+      "label": "No"
     }
   ]
 }

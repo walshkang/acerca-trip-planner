@@ -327,6 +327,37 @@ export default function MapContainer() {
     () => places.find((place) => place.id === selectedPlaceId) ?? null,
     [places, selectedPlaceId]
   )
+  const isContextPanelOpen =
+    (drawerOpen ||
+      Boolean(selectedPlaceId) ||
+      Boolean(previewCandidate) ||
+      Boolean(previewSelectedResultId)) &&
+    !(isMobile && toolsOpen)
+  const fitBoundsPadding = useMemo(() => {
+    const basePadding = { top: 80, bottom: 80, left: 80, right: 80 }
+    if (typeof window === 'undefined') return basePadding
+
+    if (isDesktop && isContextPanelOpen) {
+      const viewportWidth = window.innerWidth
+      // Match ContextPanel desktop container width: min(760px, 92vw), with right offset.
+      const panelWidth = Math.min(760, viewportWidth * 0.92)
+      return {
+        ...basePadding,
+        right: Math.round(panelWidth + 48),
+      }
+    }
+
+    if (isMobile && isContextPanelOpen) {
+      const viewportHeight = window.innerHeight
+      const sheetHeight = Math.min(Math.round(viewportHeight * 0.55), 420)
+      return {
+        ...basePadding,
+        bottom: Math.max(basePadding.bottom, sheetHeight),
+      }
+    }
+
+    return basePadding
+  }, [isContextPanelOpen, isDesktop, isMobile])
   const isPlaceFocused = useCallback(
     (place: MapPlace) => {
       if (previewSelectedResultId) return false
@@ -588,7 +619,10 @@ export default function MapContainer() {
     const fitPlaces = (selected: MapPlace[]) => {
       const bounds = boundsFromPlaces(selected)
       if (!bounds) return false
-      map.fitBounds(boundsToArray(bounds), { padding: 80, maxZoom: 14 })
+      map.fitBounds(boundsToArray(bounds), {
+        padding: fitBoundsPadding,
+        maxZoom: 14,
+      })
       return true
     }
 
@@ -642,7 +676,10 @@ export default function MapContainer() {
       if (bounds) {
         const { lngSpan, latSpan } = boundsSpan(bounds)
         if (lngSpan < 90 && latSpan < 45) {
-          map.fitBounds(boundsToArray(bounds), { padding: 80, maxZoom: 14 })
+          map.fitBounds(boundsToArray(bounds), {
+            padding: fitBoundsPadding,
+            maxZoom: 14,
+          })
           return
         }
       }
@@ -652,7 +689,14 @@ export default function MapContainer() {
       center: [defaultViewState.longitude, defaultViewState.latitude],
       zoom: defaultViewState.zoom,
     })
-  }, [activeListId, activeListPlaces, defaultViewState, loading, places])
+  }, [
+    activeListId,
+    activeListPlaces,
+    defaultViewState,
+    fitBoundsPadding,
+    loading,
+    places,
+  ])
 
   useEffect(() => {
     if (!selectedPlaceId) return
@@ -771,12 +815,7 @@ export default function MapContainer() {
     )
   }
 
-  const contextOpen =
-    (drawerOpen ||
-      Boolean(selectedPlaceId) ||
-      Boolean(previewCandidate) ||
-      Boolean(previewSelectedResultId)) &&
-    !(isMobile && toolsOpen)
+  const contextOpen = isContextPanelOpen
 
   const previewMode = derivePreviewMode({
     previewSelectedResultId: previewSelectedResultId ?? null,

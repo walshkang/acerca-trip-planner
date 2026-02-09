@@ -2,8 +2,9 @@
 
 import { type FormEvent, useEffect, useMemo, useState } from 'react'
 import { getCategoryIcon } from '@/lib/icons/mapping'
-import type { CategoryEnum } from '@/lib/types/enums'
+import type { ListFilterFieldErrors } from '@/lib/lists/filters'
 import { normalizeTagList } from '@/lib/lists/tags'
+import type { CategoryEnum } from '@/lib/types/enums'
 import { PLACE_FOCUS_GLOW } from '@/lib/ui/glow'
 
 export type ListSummary = {
@@ -47,12 +48,23 @@ type Props = {
   emptyLabel?: string
   availableTypes?: CategoryEnum[]
   activeTypeFilters?: CategoryEnum[]
+  appliedTypeFilters?: CategoryEnum[]
   onTypeFilterToggle?: (type: CategoryEnum) => void
   onClearTypeFilters?: () => void
   availableTags?: string[]
   activeTagFilters?: string[]
+  appliedTagFilters?: string[]
   onTagFilterToggle?: (tag: string) => void
   onClearTagFilters?: () => void
+  onClearAllFilters?: () => void
+  onApplyFilters?: () => void
+  onResetFilters?: () => void
+  isFilterDirty?: boolean
+  isApplyingFilters?: boolean
+  applyDisabled?: boolean
+  resetDisabled?: boolean
+  filterFieldErrors?: ListFilterFieldErrors | null
+  filterErrorMessage?: string | null
   onTagsUpdate?: (itemId: string, tags: string[]) => Promise<string[]>
   focusedPlaceId?: string | null
   tone?: 'light' | 'dark'
@@ -101,13 +113,14 @@ function TagEditor({ itemId, tags, onTagsUpdate, tone = 'light' }: TagEditorProp
     setTagInput('')
   }, [tags])
 
-  if (!onTagsUpdate) return null
+  const updateTags = onTagsUpdate
+  if (!updateTags) return null
 
-  async function commitTags(nextTags: string[]) {
+  const commitTags = async (nextTags: string[]) => {
     setStatus('saving')
     setError(null)
     try {
-      const updated = await onTagsUpdate(itemId, nextTags)
+      const updated = await updateTags(itemId, nextTags)
       setChipTags(updated)
       setTagInput('')
       setStatus('saved')
@@ -117,11 +130,11 @@ function TagEditor({ itemId, tags, onTagsUpdate, tone = 'light' }: TagEditorProp
     }
   }
 
-  function normalizeMergedTags(tagsToMerge: string[]) {
+  const normalizeMergedTags = (tagsToMerge: string[]) => {
     return normalizeTagList(tagsToMerge) ?? []
   }
 
-  async function handleAdd(event?: FormEvent) {
+  const handleAdd = async (event?: FormEvent) => {
     event?.preventDefault()
     const nextAdd = normalizeTagList(tagInput)
     if (!nextAdd || !nextAdd.length) return
@@ -129,12 +142,12 @@ function TagEditor({ itemId, tags, onTagsUpdate, tone = 'light' }: TagEditorProp
     await commitTags(merged)
   }
 
-  async function handleRemove(tag: string) {
+  const handleRemove = async (tag: string) => {
     const next = chipTags.filter((t) => t !== tag)
     await commitTags(next)
   }
 
-  async function handleClear() {
+  const handleClear = async () => {
     await commitTags([])
   }
 
@@ -211,12 +224,23 @@ export default function ListDetailBody({
   emptyLabel = 'No places in this list yet.',
   availableTypes = [],
   activeTypeFilters = [],
+  appliedTypeFilters = [],
   onTypeFilterToggle,
   onClearTypeFilters,
   availableTags = [],
   activeTagFilters = [],
+  appliedTagFilters = [],
   onTagFilterToggle,
   onClearTagFilters,
+  onClearAllFilters,
+  onApplyFilters,
+  onResetFilters,
+  isFilterDirty = false,
+  isApplyingFilters = false,
+  applyDisabled = false,
+  resetDisabled = false,
+  filterFieldErrors = null,
+  filterErrorMessage = null,
   onTagsUpdate,
   focusedPlaceId = null,
   tone = 'light',
@@ -245,15 +269,39 @@ export default function ListDetailBody({
     : 'border-gray-900 bg-gray-900 text-white'
   const rowBorder = isDark ? 'border-white/10' : 'border-gray-100'
   const errorText = isDark ? 'text-red-300' : 'text-red-600'
+  const actionPrimaryClass = isDark
+    ? 'glass-button rounded-md px-2 py-1 text-[11px] disabled:opacity-60'
+    : 'rounded-md border border-slate-300 px-2 py-1 text-[11px] text-slate-700 disabled:opacity-60'
+  const actionSecondaryClass = isDark
+    ? 'rounded-md border border-white/20 px-2 py-1 text-[11px] text-slate-200 disabled:opacity-50'
+    : 'rounded-md border border-slate-300 px-2 py-1 text-[11px] text-slate-600 disabled:opacity-50'
   const showFilters =
     availableTypes.length > 0 ||
     availableTags.length > 0 ||
     activeTypeFilters.length > 0 ||
     activeTagFilters.length > 0
   const isTypeFiltering = activeTypeFilters.length > 0
+  const hasAnyDraftFilters =
+    activeTypeFilters.length > 0 || activeTagFilters.length > 0
   const focusedRowClass = isDark
     ? `border-white/60 bg-white/5 animate-[pulse_1.2s_ease-in-out_1] ${PLACE_FOCUS_GLOW}`
     : `border-slate-200/80 bg-gray-50 animate-[pulse_1.2s_ease-in-out_1] ${PLACE_FOCUS_GLOW}`
+
+  const selectedFilterChips = useMemo(() => {
+    const chips: Array<{ kind: 'type' | 'tag'; label: string }> = []
+    for (const type of activeTypeFilters) {
+      chips.push({ kind: 'type', label: type })
+    }
+    for (const tag of activeTagFilters) {
+      chips.push({ kind: 'tag', label: tag })
+    }
+    return chips
+  }, [activeTagFilters, activeTypeFilters])
+
+  const categoryErrors = filterFieldErrors?.categories ?? []
+  const tagErrors = filterFieldErrors?.tags ?? []
+  const payloadErrors = filterFieldErrors?.payload ?? []
+  const filterSummaryError = filterErrorMessage ?? payloadErrors[0] ?? null
 
   useEffect(() => {
     if (!focusedPlaceId) return
@@ -308,8 +356,120 @@ export default function ListDetailBody({
           <p className={`text-xs ${mutedText}`}>{emptyLabel}</p>
         ) : null}
 
+        {!loading && !items.length && hasAnyDraftFilters ? (
+          <div className="flex flex-wrap items-center gap-2">
+            {activeTagFilters.length && onClearTagFilters ? (
+              <button
+                type="button"
+                className={actionSecondaryClass}
+                onClick={() => onClearTagFilters()}
+              >
+                Clear Tags
+              </button>
+            ) : null}
+            {activeTypeFilters.length && onClearTypeFilters ? (
+              <button
+                type="button"
+                className={actionSecondaryClass}
+                onClick={() => onClearTypeFilters()}
+              >
+                Clear Categories
+              </button>
+            ) : null}
+            {onResetFilters ? (
+              <button
+                type="button"
+                className={actionSecondaryClass}
+                onClick={onResetFilters}
+                disabled={resetDisabled}
+              >
+                Reset to Applied
+              </button>
+            ) : null}
+          </div>
+        ) : null}
+
         {showFilters ? (
           <div className="space-y-4">
+            <div className="rounded-md border border-white/10 p-3 space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <p className={`text-[11px] font-semibold ${bodyText}`}>Filters</p>
+                  <p className={`text-[11px] ${mutedText}`}>
+                    {isFilterDirty
+                      ? 'Draft filters pending apply.'
+                      : 'Using applied canonical filters.'}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  {onResetFilters ? (
+                    <button
+                      type="button"
+                      className={actionSecondaryClass}
+                      onClick={onResetFilters}
+                      disabled={resetDisabled}
+                    >
+                      Reset
+                    </button>
+                  ) : null}
+                  {onApplyFilters ? (
+                    <button
+                      type="button"
+                      className={actionPrimaryClass}
+                      onClick={onApplyFilters}
+                      disabled={applyDisabled}
+                    >
+                      {isApplyingFilters
+                        ? 'Applying…'
+                        : isFilterDirty
+                          ? 'Apply'
+                          : 'Applied'}
+                    </button>
+                  ) : null}
+                </div>
+              </div>
+
+              {selectedFilterChips.length ? (
+                <div className="flex flex-wrap items-center gap-2">
+                  {selectedFilterChips.map((chip) => (
+                    <button
+                      key={`${chip.kind}:${chip.label}`}
+                      type="button"
+                      onClick={() => {
+                        if (chip.kind === 'type') {
+                          onTypeFilterToggle?.(chip.label as CategoryEnum)
+                          return
+                        }
+                        onTagFilterToggle?.(chip.label)
+                      }}
+                      className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] ${
+                        chip.kind === 'type' ? typeActiveClass : tagActiveClass
+                      }`}
+                    >
+                      <span>{chip.label}</span>
+                      <span aria-hidden="true">×</span>
+                    </button>
+                  ))}
+                  {onClearAllFilters ? (
+                    <button
+                      type="button"
+                      className={`text-[11px] ${mutedText} underline`}
+                      onClick={onClearAllFilters}
+                    >
+                      Clear all
+                    </button>
+                  ) : null}
+                </div>
+              ) : null}
+
+              {filterSummaryError ? (
+                <p className={`text-[11px] ${errorText}`}>{filterSummaryError}</p>
+              ) : null}
+              {!filterSummaryError && appliedTypeFilters.length === 0 && appliedTagFilters.length === 0 ? (
+                <p className={`text-[11px] ${mutedText}`}>No applied filters.</p>
+              ) : null}
+            </div>
+
             <div className="space-y-2">
               <div className="flex items-start justify-between gap-2">
                 <div>
@@ -324,7 +484,7 @@ export default function ListDetailBody({
                   <button
                     type="button"
                     className={`text-[11px] ${mutedText} underline`}
-                    onClick={() => onClearTypeFilters?.()}
+                    onClick={() => onClearTypeFilters()}
                   >
                     Clear
                   </button>
@@ -361,6 +521,11 @@ export default function ListDetailBody({
                   No place types yet.
                 </p>
               )}
+              {categoryErrors.map((fieldError) => (
+                <p key={fieldError} className={`text-[11px] ${errorText}`}>
+                  {fieldError}
+                </p>
+              ))}
             </div>
 
             <div className="space-y-2">
@@ -377,7 +542,7 @@ export default function ListDetailBody({
                   <button
                     type="button"
                     className={`text-[11px] ${mutedText} underline`}
-                    onClick={() => onClearTagFilters?.()}
+                    onClick={() => onClearTagFilters()}
                   >
                     Clear
                   </button>
@@ -404,6 +569,11 @@ export default function ListDetailBody({
               ) : (
                 <p className={`text-[11px] ${mutedText}`}>No tags yet.</p>
               )}
+              {tagErrors.map((fieldError) => (
+                <p key={fieldError} className={`text-[11px] ${errorText}`}>
+                  {fieldError}
+                </p>
+              ))}
             </div>
           </div>
         ) : null}

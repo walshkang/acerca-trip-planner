@@ -1,15 +1,18 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import ListDetailBody, {
   ListItemRow,
   ListSummary,
 } from '@/components/lists/ListDetailBody'
-import type { CategoryEnum } from '@/lib/types/enums'
 import {
   distinctTypesFromItems,
-  matchesListFilters,
+  isCategoryEnum,
+  type CanonicalListFilters,
+  type ListFilterFieldErrors,
 } from '@/lib/lists/filters'
+import type { PlannerSlot } from '@/lib/lists/planner'
+import { CATEGORY_ENUM_VALUES, type CategoryEnum } from '@/lib/types/enums'
 import { distinctTagsFromItems } from '@/lib/lists/tags'
 
 type Props = {
@@ -48,7 +51,124 @@ type ItemsResponse = {
   list: ListSummary
   items: ListItemRow[]
   distinct_tags?: string[]
+  canonicalFilters?: unknown
+  code?: string
+  message?: string
   error?: string
+  fieldErrors?: ListFilterFieldErrors
+  lastValidCanonicalFilters?: unknown
+}
+
+type FetchItemsOptions = {
+  updateAppliedFilters?: boolean
+  updateDraftFilters?: boolean
+}
+
+const CATEGORY_RANK = new Map(
+  CATEGORY_ENUM_VALUES.map((value, index) => [value, index])
+)
+const SLOT_VALUES: readonly PlannerSlot[] = ['morning', 'afternoon', 'evening']
+
+function emptyCanonicalFilters(): CanonicalListFilters {
+  return {
+    categories: [],
+    tags: [],
+    scheduled_date: null,
+    slot: null,
+  }
+}
+
+function isPlannerSlot(value: unknown): value is PlannerSlot {
+  return (
+    typeof value === 'string' &&
+    SLOT_VALUES.includes(value as PlannerSlot)
+  )
+}
+
+function sortCategories(categories: CategoryEnum[]): CategoryEnum[] {
+  return categories.slice().sort((a, b) => {
+    const rankA = CATEGORY_RANK.get(a) ?? 999
+    const rankB = CATEGORY_RANK.get(b) ?? 999
+    return rankA - rankB
+  })
+}
+
+function sortTags(tags: string[]): string[] {
+  return tags.slice().sort((a, b) => a.localeCompare(b))
+}
+
+function uniqueStrings(values: string[]): string[] {
+  return Array.from(new Set(values))
+}
+
+function normalizeCanonicalFilters(
+  input: unknown
+): CanonicalListFilters {
+  const source =
+    typeof input === 'object' && input !== null
+      ? (input as Record<string, unknown>)
+      : {}
+  const categories = uniqueStrings(
+    Array.isArray(source.categories)
+      ? source.categories.filter((value): value is string => typeof value === 'string')
+      : []
+  )
+    .filter((value): value is CategoryEnum => isCategoryEnum(value))
+
+  const tags = uniqueStrings(
+    Array.isArray(source.tags)
+      ? source.tags.filter((value): value is string => typeof value === 'string')
+      : []
+  )
+
+  return {
+    categories: sortCategories(categories),
+    tags: sortTags(tags),
+    scheduled_date:
+      typeof source.scheduled_date === 'string' && source.scheduled_date.trim().length
+        ? source.scheduled_date
+        : null,
+    slot: isPlannerSlot(source.slot) ? source.slot : null,
+  }
+}
+
+function areStringArraysEqual(a: string[], b: string[]) {
+  if (a.length !== b.length) return false
+  for (let i = 0; i < a.length; i += 1) {
+    if (a[i] !== b[i]) return false
+  }
+  return true
+}
+
+function areFiltersEqual(a: CanonicalListFilters, b: CanonicalListFilters) {
+  return (
+    areStringArraysEqual(a.categories, b.categories) &&
+    areStringArraysEqual(a.tags, b.tags) &&
+    a.scheduled_date === b.scheduled_date &&
+    a.slot === b.slot
+  )
+}
+
+function buildItemsUrl(listId: string, filters: CanonicalListFilters): string {
+  const searchParams = new URLSearchParams({ limit: '200' })
+
+  for (const category of filters.categories) {
+    searchParams.append('categories', category)
+  }
+
+  for (const tag of filters.tags) {
+    searchParams.append('tags', tag)
+  }
+
+  if (filters.scheduled_date) {
+    searchParams.set('scheduled_date', filters.scheduled_date)
+  }
+
+  if (filters.slot) {
+    searchParams.set('slot', filters.slot)
+  }
+
+  return `/api/lists/${listId}/items?${searchParams.toString()}`
 }
 
 export default function ListDrawer({
@@ -75,11 +195,24 @@ export default function ListDrawer({
   const [activeList, setActiveList] = useState<ListSummary | null>(null)
   const [items, setItems] = useState<ListItemRow[]>([])
   const [distinctTags, setDistinctTags] = useState<string[]>([])
-  const [activeTagFilters, setActiveTagFilters] = useState<string[]>([])
   const [distinctTypes, setDistinctTypes] = useState<CategoryEnum[]>([])
-  const [activeTypeFilters, setActiveTypeFilters] = useState<CategoryEnum[]>([])
+  const [appliedFilters, setAppliedFilters] = useState<CanonicalListFilters>(
+    () => emptyCanonicalFilters()
+  )
+  const [draftFilters, setDraftFilters] = useState<CanonicalListFilters>(() =>
+    emptyCanonicalFilters()
+  )
+  const [filterFieldErrors, setFilterFieldErrors] =
+    useState<ListFilterFieldErrors | null>(null)
+  const [filterErrorMessage, setFilterErrorMessage] = useState<string | null>(null)
   const [itemsLoading, setItemsLoading] = useState(false)
   const [itemsError, setItemsError] = useState<string | null>(null)
+
+  const appliedFiltersRef = useRef(appliedFilters)
+
+  useEffect(() => {
+    appliedFiltersRef.current = appliedFilters
+  }, [appliedFilters])
 
   const selectedListIds = useMemo(() => {
     return activeListId ? new Set([activeListId]) : new Set<string>()
@@ -135,38 +268,72 @@ export default function ListDrawer({
   }, [fetchLists, newListName, onActiveListChange])
 
   const fetchItems = useCallback(
-    async (listId: string) => {
+    async (
+      listId: string,
+      filters: CanonicalListFilters,
+      options: FetchItemsOptions = {}
+    ) => {
+      const {
+        updateAppliedFilters = true,
+        updateDraftFilters = false,
+      } = options
       setItemsLoading(true)
       setItemsError(null)
       try {
-        const res = await fetch(`/api/lists/${listId}/items?limit=200`)
+        const url = buildItemsUrl(listId, filters)
+        const res = await fetch(url)
         const json = (await res.json().catch(() => ({}))) as Partial<ItemsResponse>
         if (!res.ok) {
-          setItemsError(json?.error || `HTTP ${res.status}`)
-          return
+          const responseMessage = json?.message || json?.error || `HTTP ${res.status}`
+          setItemsError(responseMessage)
+          if (json?.code === 'invalid_filter_payload') {
+            setFilterErrorMessage(responseMessage)
+            setFilterFieldErrors(
+              json?.fieldErrors ?? {
+                payload: [responseMessage],
+              }
+            )
+          } else {
+            setFilterErrorMessage(null)
+            setFilterFieldErrors(null)
+          }
+          return false
         }
+
+        const canonicalFilters = normalizeCanonicalFilters(
+          json?.canonicalFilters ?? filters
+        )
         const nextItems = (json?.items ?? []) as ListItemRow[]
+
         setActiveList((json?.list ?? null) as ListSummary | null)
         setItems(nextItems)
-        if (Array.isArray(json?.distinct_tags)) {
-          setDistinctTags(json.distinct_tags)
-          setActiveTagFilters((prev) =>
-            prev.filter((tag) => json.distinct_tags?.includes(tag))
-          )
-        } else {
-          const nextDistinct = distinctTagsFromItems(nextItems)
-          setDistinctTags(nextDistinct)
-          setActiveTagFilters((prev) =>
-            prev.filter((tag) => nextDistinct.includes(tag))
-          )
-        }
-        const nextDistinctTypes = distinctTypesFromItems(nextItems)
-        setDistinctTypes(nextDistinctTypes)
-        setActiveTypeFilters((prev) =>
-          prev.filter((type) => nextDistinctTypes.includes(type))
+        setDistinctTags(
+          Array.isArray(json?.distinct_tags)
+            ? sortTags(
+                uniqueStrings(
+                  json.distinct_tags.filter(
+                    (value): value is string => typeof value === 'string'
+                  )
+                )
+              )
+            : distinctTagsFromItems(nextItems)
         )
+        setDistinctTypes(distinctTypesFromItems(nextItems))
+        setFilterFieldErrors(null)
+        setFilterErrorMessage(null)
+
+        if (updateAppliedFilters) {
+          setAppliedFilters(canonicalFilters)
+        }
+        if (updateDraftFilters) {
+          setDraftFilters(canonicalFilters)
+        }
+
+        return true
       } catch (e: unknown) {
-        setItemsError(e instanceof Error ? e.message : 'Request failed')
+        const message = e instanceof Error ? e.message : 'Request failed'
+        setItemsError(message)
+        return false
       } finally {
         setItemsLoading(false)
       }
@@ -176,7 +343,7 @@ export default function ListDrawer({
 
   useEffect(() => {
     if (!open) return
-    fetchLists()
+    void fetchLists()
   }, [fetchLists, open])
 
   useEffect(() => {
@@ -184,29 +351,45 @@ export default function ListDrawer({
       setActiveList(null)
       setItems([])
       setDistinctTags([])
-      setActiveTagFilters([])
       setDistinctTypes([])
-      setActiveTypeFilters([])
+      setAppliedFilters(emptyCanonicalFilters())
+      setDraftFilters(emptyCanonicalFilters())
+      setFilterFieldErrors(null)
+      setFilterErrorMessage(null)
       onPlaceIdsChange([])
       return
     }
 
-    fetchItems(activeListId)
-  }, [activeListId, fetchItems, itemsRefreshKey, onPlaceIdsChange, tagsRefreshKey])
+    const nextFilters = emptyCanonicalFilters()
+    setFilterFieldErrors(null)
+    setFilterErrorMessage(null)
+    setAppliedFilters(nextFilters)
+    setDraftFilters(nextFilters)
+    void fetchItems(activeListId, nextFilters, {
+      updateAppliedFilters: true,
+      updateDraftFilters: true,
+    })
+  }, [activeListId, fetchItems, onPlaceIdsChange])
+
+  useEffect(() => {
+    if (!activeListId) return
+    void fetchItems(activeListId, appliedFiltersRef.current, {
+      updateAppliedFilters: true,
+      updateDraftFilters: false,
+    })
+  }, [activeListId, fetchItems, itemsRefreshKey, tagsRefreshKey])
 
   useEffect(() => {
     if (!open || !activeListId) return
-    fetchItems(activeListId)
+    void fetchItems(activeListId, appliedFiltersRef.current, {
+      updateAppliedFilters: true,
+      updateDraftFilters: false,
+    })
   }, [open, activeListId, fetchItems])
 
   useEffect(() => {
-    setActiveTagFilters([])
-    setActiveTypeFilters([])
-  }, [activeListId])
-
-  useEffect(() => {
-    onActiveTypeFiltersChange?.(activeTypeFilters)
-  }, [activeTypeFilters, onActiveTypeFiltersChange])
+    onActiveTypeFiltersChange?.(appliedFilters.categories)
+  }, [appliedFilters.categories, onActiveTypeFiltersChange])
 
   useEffect(() => {
     if (!items.length) {
@@ -248,32 +431,88 @@ export default function ListDrawer({
     onActiveListItemsChange?.(mapped)
   }, [activeListId, items, onActiveListItemsChange])
 
-  const filteredItems = useMemo(() => {
-    if (!activeTagFilters.length && !activeTypeFilters.length) return items
-    return items.filter((item) =>
-      matchesListFilters(item, activeTypeFilters, activeTagFilters)
-    )
-  }, [activeTagFilters, activeTypeFilters, items])
+  const isFilterDirty = useMemo(() => {
+    return !areFiltersEqual(draftFilters, appliedFilters)
+  }, [appliedFilters, draftFilters])
+
+  const availableTags = useMemo(
+    () => sortTags(uniqueStrings([...distinctTags, ...draftFilters.tags, ...appliedFilters.tags])),
+    [appliedFilters.tags, distinctTags, draftFilters.tags]
+  )
+
+  const availableTypes = useMemo(() => {
+    const merged = uniqueStrings([
+      ...distinctTypes,
+      ...draftFilters.categories,
+      ...appliedFilters.categories,
+    ]).filter((value): value is CategoryEnum => isCategoryEnum(value))
+    return sortCategories(merged)
+  }, [appliedFilters.categories, distinctTypes, draftFilters.categories])
 
   const handleTagToggle = useCallback((tag: string) => {
-    setActiveTagFilters((prev) =>
-      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
-    )
+    setDraftFilters((prev) => {
+      const nextTags = prev.tags.includes(tag)
+        ? prev.tags.filter((value) => value !== tag)
+        : [...prev.tags, tag]
+      return {
+        ...prev,
+        tags: sortTags(uniqueStrings(nextTags)),
+      }
+    })
   }, [])
 
   const handleTypeToggle = useCallback((type: CategoryEnum) => {
-    setActiveTypeFilters((prev) =>
-      prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]
-    )
+    setDraftFilters((prev) => {
+      const nextCategories = prev.categories.includes(type)
+        ? prev.categories.filter((value) => value !== type)
+        : [...prev.categories, type]
+      return {
+        ...prev,
+        categories: sortCategories(uniqueStrings(nextCategories).filter(
+          (value): value is CategoryEnum => isCategoryEnum(value)
+        )),
+      }
+    })
   }, [])
 
   const handleClearTagFilters = useCallback(() => {
-    setActiveTagFilters([])
+    setDraftFilters((prev) => ({
+      ...prev,
+      tags: [],
+    }))
   }, [])
 
   const handleClearTypeFilters = useCallback(() => {
-    setActiveTypeFilters([])
+    setDraftFilters((prev) => ({
+      ...prev,
+      categories: [],
+    }))
   }, [])
+
+  const handleClearAllFilters = useCallback(() => {
+    setDraftFilters((prev) => ({
+      ...prev,
+      categories: [],
+      tags: [],
+      scheduled_date: null,
+      slot: null,
+    }))
+  }, [])
+
+  const handleApplyFilters = useCallback(async () => {
+    if (!activeListId || !isFilterDirty) return
+    await fetchItems(activeListId, draftFilters, {
+      updateAppliedFilters: true,
+      updateDraftFilters: true,
+    })
+  }, [activeListId, draftFilters, fetchItems, isFilterDirty])
+
+  const handleResetFilters = useCallback(() => {
+    setDraftFilters(appliedFilters)
+    setFilterFieldErrors(null)
+    setFilterErrorMessage(null)
+    setItemsError(null)
+  }, [appliedFilters])
 
   const handleTagsUpdate = useCallback(
     async (itemId: string, tags: string[]) => {
@@ -302,17 +541,17 @@ export default function ListDrawer({
         const next = prev.map((item) =>
           item.id === itemId ? { ...item, tags: updatedTags } : item
         )
-        const nextDistinct = distinctTagsFromItems(next)
-        setDistinctTags(nextDistinct)
-        setActiveTagFilters((current) =>
-          current.filter((tag) => nextDistinct.includes(tag))
-        )
+        setDistinctTags(distinctTagsFromItems(next))
         return next
       })
       onTagsUpdated?.()
+      void fetchItems(activeListId, appliedFiltersRef.current, {
+        updateAppliedFilters: true,
+        updateDraftFilters: false,
+      })
       return updatedTags
     },
-    [activeListId, onTagsUpdated]
+    [activeListId, fetchItems, onTagsUpdated]
   )
 
   if (!open) return null
@@ -425,26 +664,37 @@ export default function ListDrawer({
       <div className="max-h-[50vh] overflow-y-auto px-4 py-3">
         <ListDetailBody
           list={activeList}
-          items={filteredItems}
+          items={items}
           loading={itemsLoading}
           error={itemsError}
           emptyLabel={
             activeList
-              ? activeTagFilters.length || activeTypeFilters.length
+              ? draftFilters.tags.length || draftFilters.categories.length
                 ? 'No places match these filters.'
                 : 'No places in this list yet.'
               : 'Select a list to see its places.'
           }
           onPlaceSelect={onPlaceSelect}
           focusedPlaceId={focusedPlaceId}
-          availableTypes={distinctTypes}
-          activeTypeFilters={activeTypeFilters}
+          availableTypes={availableTypes}
+          activeTypeFilters={draftFilters.categories}
+          appliedTypeFilters={appliedFilters.categories}
           onTypeFilterToggle={handleTypeToggle}
           onClearTypeFilters={handleClearTypeFilters}
-          availableTags={distinctTags}
-          activeTagFilters={activeTagFilters}
+          availableTags={availableTags}
+          activeTagFilters={draftFilters.tags}
+          appliedTagFilters={appliedFilters.tags}
           onTagFilterToggle={handleTagToggle}
           onClearTagFilters={handleClearTagFilters}
+          onClearAllFilters={handleClearAllFilters}
+          onApplyFilters={handleApplyFilters}
+          onResetFilters={handleResetFilters}
+          isFilterDirty={isFilterDirty}
+          isApplyingFilters={itemsLoading}
+          applyDisabled={!activeListId || !isFilterDirty || itemsLoading}
+          resetDisabled={!isFilterDirty || itemsLoading}
+          filterFieldErrors={filterFieldErrors}
+          filterErrorMessage={filterErrorMessage}
           onTagsUpdate={handleTagsUpdate}
           tone={tone}
         />

@@ -1,4 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
+import {
+  emptyCanonicalListFilters,
+  parseListFilterPayload,
+} from '@/lib/lists/filters'
+import { scheduledStartTimeFromSlot } from '@/lib/lists/planner'
 import { createClient } from '@/lib/supabase/server'
 import { distinctTagsFromItems, normalizeTag, normalizeTagList } from '@/lib/lists/tags'
 
@@ -26,6 +31,69 @@ function parseIntParam(value: string | null, fallback: number) {
   if (!value) return fallback
   const parsed = Number.parseInt(value, 10)
   return Number.isFinite(parsed) ? parsed : fallback
+}
+
+function buildTagOrFilter(tags: string[]): string | null {
+  if (!tags.length) return null
+  return tags.map((tag) => `tags.cs.{${tag}}`).join(',')
+}
+
+function collectParams(searchParams: URLSearchParams, keys: string[]): string[] {
+  const out: string[] = []
+  for (const key of keys) {
+    for (const value of searchParams.getAll(key)) {
+      out.push(value)
+    }
+  }
+  return out
+}
+
+function parseFiltersFromSearchParams(searchParams: URLSearchParams) {
+  const rawFilters = searchParams.get('filters')
+  if (typeof rawFilters === 'string') {
+    try {
+      const parsedJson = JSON.parse(rawFilters)
+      return parseListFilterPayload(parsedJson)
+    } catch {
+      return {
+        ok: false as const,
+        code: 'invalid_filter_payload' as const,
+        message: 'filters must be valid JSON',
+        fieldErrors: {
+          payload: ['filters must be valid JSON'],
+        },
+      }
+    }
+  }
+
+  const categories = collectParams(searchParams, [
+    'categories',
+    'category',
+    'types',
+    'type',
+  ])
+  const tags = collectParams(searchParams, ['tags', 'tag'])
+  const scheduled_date =
+    searchParams.get('scheduled_date') ?? searchParams.get('date')
+  const slot = searchParams.get('slot')
+
+  const hasFilterInput =
+    categories.length > 0 ||
+    tags.length > 0 ||
+    typeof scheduled_date === 'string' ||
+    typeof slot === 'string'
+
+  if (!hasFilterInput) {
+    return parseListFilterPayload(null)
+  }
+
+  const payload: Record<string, unknown> = {}
+  if (categories.length > 0) payload.categories = categories
+  if (tags.length > 0) payload.tags = tags
+  if (typeof scheduled_date === 'string') payload.scheduled_date = scheduled_date
+  if (typeof slot === 'string') payload.slot = slot
+
+  return parseListFilterPayload(payload)
 }
 
 export async function GET(
@@ -59,15 +127,79 @@ export async function GET(
     }
 
     const { searchParams } = new URL(request.url)
+    const parsedFilters = parseFiltersFromSearchParams(searchParams)
+    if (!parsedFilters.ok) {
+      return NextResponse.json(
+        {
+          code: parsedFilters.code,
+          message: parsedFilters.message,
+          fieldErrors: parsedFilters.fieldErrors,
+          lastValidCanonicalFilters: emptyCanonicalListFilters(),
+        },
+        { status: 400 }
+      )
+    }
+
     const rawLimit = parseIntParam(searchParams.get('limit'), 100)
     const rawOffset = parseIntParam(searchParams.get('offset'), 0)
     const limit = Math.min(Math.max(rawLimit, 1), 200)
     const offset = Math.max(rawOffset, 0)
 
-    const { data: items, error: itemsError } = await supabase
+    let categoryPlaceIds: string[] | null = null
+    if (parsedFilters.canonical.categories.length) {
+      const { data: categoryPlaces, error: categoryPlacesError } = await supabase
+        .from('places')
+        .select('id')
+        .eq('user_id', user.id)
+        .in('category', parsedFilters.canonical.categories)
+
+      if (categoryPlacesError) {
+        return NextResponse.json(
+          { error: categoryPlacesError.message },
+          { status: 500 }
+        )
+      }
+
+      categoryPlaceIds = (categoryPlaces ?? [])
+        .map((row) => row.id)
+        .filter((value): value is string => typeof value === 'string')
+
+      if (!categoryPlaceIds.length) {
+        return NextResponse.json({
+          list,
+          items: [],
+          distinct_tags: [],
+          canonicalFilters: parsedFilters.canonical,
+        })
+      }
+    }
+
+    let query = supabase
       .from('list_items')
       .select(ITEM_FIELDS)
       .eq('list_id', params.id)
+
+    if (categoryPlaceIds?.length) {
+      query = query.in('place_id', categoryPlaceIds)
+    }
+
+    if (parsedFilters.canonical.scheduled_date) {
+      query = query.eq('scheduled_date', parsedFilters.canonical.scheduled_date)
+    }
+
+    if (parsedFilters.canonical.slot) {
+      query = query.eq(
+        'scheduled_start_time',
+        scheduledStartTimeFromSlot(parsedFilters.canonical.slot)
+      )
+    }
+
+    const tagOrFilter = buildTagOrFilter(parsedFilters.canonical.tags)
+    if (tagOrFilter) {
+      query = query.or(tagOrFilter)
+    }
+
+    const { data: items, error: itemsError } = await query
       .order('completed_at', { ascending: true, nullsFirst: true })
       .order('scheduled_date', { ascending: true, nullsFirst: true })
       .order('scheduled_order', { ascending: true })
@@ -78,13 +210,19 @@ export async function GET(
       return NextResponse.json({ error: itemsError.message }, { status: 500 })
     }
 
-    const resolvedItems = (items ?? []) as Array<{ tags?: string[] | null }>
+    const resolvedItems = (items ?? []) as Array<{
+      tags?: string[] | null
+      place?: { category?: string | null } | null
+      scheduled_date?: string | null
+      scheduled_start_time?: string | null
+    }>
     const distinctTags = distinctTagsFromItems(resolvedItems)
 
     return NextResponse.json({
       list,
       items: resolvedItems,
       distinct_tags: distinctTags,
+      canonicalFilters: parsedFilters.canonical,
     })
   } catch (error: unknown) {
     return NextResponse.json(

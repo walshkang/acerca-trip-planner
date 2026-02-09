@@ -1,7 +1,7 @@
 {
   "version": "1",
   "states": {
-    "default": {
+    "idle_clean": {
       "type": "container",
       "style": {
         "direction": "column",
@@ -13,6 +13,10 @@
         {
           "type": "text",
           "content": "Filter Planner"
+        },
+        {
+          "type": "text",
+          "content": "Applied filters are canonical server filters"
         },
         {
           "type": "container",
@@ -37,6 +41,7 @@
         },
         {
           "type": "container",
+          "id": "chips",
           "style": {
             "direction": "row",
             "gap": 8,
@@ -45,13 +50,109 @@
           "children": [
             {
               "type": "text",
-              "content": "Chips show canonical filters only"
+              "content": "Chips are removable and keyboard-accessible"
             }
           ]
         },
         {
-          "type": "button",
-          "content": "Apply"
+          "type": "container",
+          "style": {
+            "direction": "row",
+            "gap": 8
+          },
+          "children": [
+            {
+              "type": "button",
+              "content": "Applied",
+              "disabled": true
+            },
+            {
+              "type": "button",
+              "content": "Reset",
+              "disabled": true
+            }
+          ]
+        }
+      ]
+    },
+    "idle_dirty_valid": {
+      "type": "container",
+      "style": {
+        "direction": "column",
+        "gap": 12,
+        "padding": 16,
+        "surface": "panel"
+      },
+      "children": [
+        {
+          "type": "text",
+          "content": "Filter Planner"
+        },
+        {
+          "type": "text",
+          "content": "Draft filters are valid"
+        },
+        {
+          "type": "text",
+          "content": "Preview: 24 matches"
+        },
+        {
+          "type": "container",
+          "style": {
+            "direction": "row",
+            "gap": 8
+          },
+          "children": [
+            {
+              "type": "button",
+              "content": "Apply (24)"
+            },
+            {
+              "type": "button",
+              "content": "Reset to Applied"
+            }
+          ]
+        }
+      ]
+    },
+    "idle_dirty_invalid": {
+      "type": "container",
+      "style": {
+        "direction": "column",
+        "gap": 12,
+        "padding": 16,
+        "surface": "panel"
+      },
+      "children": [
+        {
+          "type": "text",
+          "content": "Filter Planner"
+        },
+        {
+          "type": "text",
+          "content": "Draft filters are invalid"
+        },
+        {
+          "type": "text",
+          "content": "Date/Slot: invalid slot format"
+        },
+        {
+          "type": "container",
+          "style": {
+            "direction": "row",
+            "gap": 8
+          },
+          "children": [
+            {
+              "type": "button",
+              "content": "Fix filters",
+              "disabled": true
+            },
+            {
+              "type": "button",
+              "content": "Reset to Applied"
+            }
+          ]
         }
       ]
     },
@@ -65,6 +166,10 @@
         {
           "type": "text",
           "content": "Applying filters..."
+        },
+        {
+          "type": "text",
+          "content": "Previous results stay visible until response returns"
         }
       ]
     },
@@ -82,7 +187,51 @@
         },
         {
           "type": "text",
-          "content": "Adjust filter selections and retry."
+          "content": "Show field-level errors and keep last valid results"
+        },
+        {
+          "type": "text",
+          "content": "tags: Unknown tag alias"
+        },
+        {
+          "type": "text",
+          "content": "slot: Invalid planner slot"
+        }
+      ]
+    },
+    "empty_results": {
+      "type": "container",
+      "style": {
+        "direction": "column",
+        "padding": 16,
+        "gap": 8
+      },
+      "children": [
+        {
+          "type": "text",
+          "content": "No matches for current filters"
+        },
+        {
+          "type": "container",
+          "style": {
+            "direction": "row",
+            "gap": 8,
+            "wrap": true
+          },
+          "children": [
+            {
+              "type": "button",
+              "content": "Remove Date/Slot"
+            },
+            {
+              "type": "button",
+              "content": "Clear Tags"
+            },
+            {
+              "type": "button",
+              "content": "Clear Categories"
+            }
+          ]
         }
       ]
     },
@@ -101,6 +250,10 @@
         {
           "type": "text",
           "content": "Using canonical server filters"
+        },
+        {
+          "type": "text",
+          "content": "Draft and applied filters are now in sync"
         }
       ]
     }
