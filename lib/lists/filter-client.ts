@@ -1,23 +1,66 @@
 import {
   isCategoryEnum,
-  type CanonicalListFilters,
+  type CanonicalListFilters as BaseCanonicalListFilters,
   type ListFilterFieldErrors,
 } from '@/lib/lists/filters'
 import type { PlannerSlot } from '@/lib/lists/planner'
-import { CATEGORY_ENUM_VALUES, type CategoryEnum } from '@/lib/types/enums'
+import {
+  CATEGORY_ENUM_VALUES,
+  ENERGY_ENUM_VALUES,
+  type CategoryEnum,
+  type EnergyEnum,
+} from '@/lib/types/enums'
 
 const CATEGORY_RANK = new Map(
   CATEGORY_ENUM_VALUES.map((value, index) => [value, index])
 )
+const ENERGY_RANK = new Map(
+  ENERGY_ENUM_VALUES.map((value, index) => [value, index])
+)
 const SLOT_VALUES: readonly PlannerSlot[] = ['morning', 'afternoon', 'evening']
+
+export type CanonicalListFilters = BaseCanonicalListFilters & {
+  energy: EnergyEnum[]
+  open_now: boolean | null
+}
 
 function isPlannerSlot(value: unknown): value is PlannerSlot {
   return typeof value === 'string' && SLOT_VALUES.includes(value as PlannerSlot)
 }
 
+export function isEnergyEnum(value: unknown): value is EnergyEnum {
+  return (
+    typeof value === 'string' &&
+    ENERGY_ENUM_VALUES.includes(value as EnergyEnum)
+  )
+}
+
 function asStringList(value: unknown): string[] {
   if (!Array.isArray(value)) return []
   return value.filter((entry): entry is string => typeof entry === 'string')
+}
+
+function normalizeOpenNow(value: unknown): boolean | null {
+  if (typeof value === 'boolean') return value
+  if (typeof value !== 'string') return null
+  const normalized = value.trim().toLowerCase()
+  if (
+    normalized === 'true' ||
+    normalized === '1' ||
+    normalized === 'yes' ||
+    normalized === 'open'
+  ) {
+    return true
+  }
+  if (
+    normalized === 'false' ||
+    normalized === '0' ||
+    normalized === 'no' ||
+    normalized === 'closed'
+  ) {
+    return false
+  }
+  return null
 }
 
 export function emptyCanonicalFilters(): CanonicalListFilters {
@@ -26,6 +69,8 @@ export function emptyCanonicalFilters(): CanonicalListFilters {
     tags: [],
     scheduled_date: null,
     slot: null,
+    energy: [],
+    open_now: null,
   }
 }
 
@@ -33,6 +78,14 @@ export function sortCategories(categories: CategoryEnum[]): CategoryEnum[] {
   return categories.slice().sort((a, b) => {
     const rankA = CATEGORY_RANK.get(a) ?? 999
     const rankB = CATEGORY_RANK.get(b) ?? 999
+    return rankA - rankB
+  })
+}
+
+export function sortEnergy(energy: EnergyEnum[]): EnergyEnum[] {
+  return energy.slice().sort((a, b) => {
+    const rankA = ENERGY_RANK.get(a) ?? 999
+    const rankB = ENERGY_RANK.get(b) ?? 999
     return rankA - rankB
   })
 }
@@ -56,6 +109,9 @@ export function normalizeCanonicalFilters(input: unknown): CanonicalListFilters 
   ).filter((value): value is CategoryEnum => isCategoryEnum(value))
 
   const tags = uniqueStrings(asStringList(source.tags))
+  const energy = uniqueStrings(asStringList(source.energy ?? source.energies)).filter(
+    (value): value is EnergyEnum => isEnergyEnum(value)
+  )
 
   return {
     categories: sortCategories(categories),
@@ -66,6 +122,8 @@ export function normalizeCanonicalFilters(input: unknown): CanonicalListFilters 
         ? source.scheduled_date
         : null,
     slot: isPlannerSlot(source.slot) ? source.slot : null,
+    energy: sortEnergy(energy),
+    open_now: normalizeOpenNow(source.open_now),
   }
 }
 
@@ -104,10 +162,14 @@ export function normalizeFilterFieldErrors(
 export function buildServerFiltersFromDraft(filters: CanonicalListFilters): {
   category: CategoryEnum[]
   tags: string[]
+  energy: EnergyEnum[]
+  open_now: boolean | null
 } {
   return {
     category: filters.categories,
     tags: filters.tags,
+    energy: filters.energy,
+    open_now: filters.open_now,
   }
 }
 
@@ -126,7 +188,9 @@ export function areFiltersEqual(
   return (
     areStringArraysEqual(a.categories, b.categories) &&
     areStringArraysEqual(a.tags, b.tags) &&
+    areStringArraysEqual(a.energy, b.energy) &&
     a.scheduled_date === b.scheduled_date &&
-    a.slot === b.slot
+    a.slot === b.slot &&
+    a.open_now === b.open_now
   )
 }

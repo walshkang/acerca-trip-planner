@@ -9,18 +9,20 @@ import ListDetailBody, {
 import {
   distinctTypesFromItems,
   isCategoryEnum,
-  type CanonicalListFilters,
   type ListFilterFieldErrors,
 } from '@/lib/lists/filters'
 import { distinctTagsFromItems } from '@/lib/lists/tags'
-import type { CategoryEnum } from '@/lib/types/enums'
+import type { CategoryEnum, EnergyEnum } from '@/lib/types/enums'
 import {
   areFiltersEqual,
   buildServerFiltersFromDraft,
+  type CanonicalListFilters,
   emptyCanonicalFilters,
+  isEnergyEnum,
   normalizeCanonicalFilters,
   normalizeFilterFieldErrors,
   sortCategories,
+  sortEnergy,
   sortTags,
   uniqueStrings,
 } from '@/lib/lists/filter-client'
@@ -100,6 +102,8 @@ function hasAnyFilters(filters: CanonicalListFilters): boolean {
   return (
     filters.categories.length > 0 ||
     filters.tags.length > 0 ||
+    filters.energy.length > 0 ||
+    filters.open_now !== null ||
     filters.scheduled_date !== null ||
     filters.slot !== null
   )
@@ -464,6 +468,38 @@ export default function ListDetailPanel({ listId }: Props) {
     [applyFiltersImmediately]
   )
 
+  const handleEnergyToggle = useCallback(
+    (energy: EnergyEnum) => {
+      const current = appliedFiltersRef.current
+      const nextEnergy = current.energy.includes(energy)
+        ? current.energy.filter((value) => value !== energy)
+        : [...current.energy, energy]
+      const nextFilters: CanonicalListFilters = {
+        ...current,
+        energy: sortEnergy(
+          uniqueStrings(nextEnergy).filter((value): value is EnergyEnum =>
+            isEnergyEnum(value)
+          )
+        ),
+      }
+      void applyFiltersImmediately(nextFilters)
+    },
+    [applyFiltersImmediately]
+  )
+
+  const handleOpenNowFilterChange = useCallback(
+    (nextValue: boolean | null) => {
+      const current = appliedFiltersRef.current
+      if (current.open_now === nextValue) return
+      const nextFilters: CanonicalListFilters = {
+        ...current,
+        open_now: nextValue,
+      }
+      void applyFiltersImmediately(nextFilters)
+    },
+    [applyFiltersImmediately]
+  )
+
   const handleClearTagFilters = useCallback(() => {
     const current = appliedFiltersRef.current
     const nextFilters: CanonicalListFilters = {
@@ -490,6 +526,8 @@ export default function ListDetailPanel({ listId }: Props) {
       tags: [],
       scheduled_date: null,
       slot: null,
+      energy: [],
+      open_now: null,
     }
     void applyFiltersImmediately(nextFilters)
   }, [applyFiltersImmediately])
@@ -753,6 +791,8 @@ export default function ListDetailPanel({ listId }: Props) {
         emptyLabel={
           appliedFilters.tags.length ||
           appliedFilters.categories.length ||
+          appliedFilters.energy.length ||
+          appliedFilters.open_now !== null ||
           appliedFilters.scheduled_date ||
           appliedFilters.slot
             ? 'No places match these filters.'
@@ -770,6 +810,10 @@ export default function ListDetailPanel({ listId }: Props) {
         onTagFilterToggle={handleTagToggle}
         onClearTagFilters={handleClearTagFilters}
         onClearAllFilters={handleClearAllFilters}
+        activeEnergyFilters={appliedFilters.energy}
+        openNowFilter={appliedFilters.open_now}
+        onEnergyFilterToggle={handleEnergyToggle}
+        onSetOpenNowFilter={handleOpenNowFilterChange}
         onResetFilters={handleResetFilters}
         isFilterDirty={false}
         isApplyingFilters={loading || translatingFilters}

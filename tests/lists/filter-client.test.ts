@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import type { CanonicalListFilters } from '@/lib/lists/filters'
 import {
   areFiltersEqual,
   buildServerFiltersFromDraft,
+  type CanonicalListFilters,
   normalizeCanonicalFilters,
   normalizeFilterFieldErrors,
 } from '@/lib/lists/filter-client'
@@ -11,6 +11,8 @@ describe('normalizeCanonicalFilters', () => {
   it('normalizes and sorts canonical category and tag arrays', () => {
     const normalized = normalizeCanonicalFilters({
       category: ['Coffee', 'Food', 'Coffee', 'invalid-category'],
+      energy: ['High', 'Low', 'invalid-energy'],
+      open_now: 'yes',
       tags: ['beta', 'alpha', 'beta'],
       scheduled_date: '2026-02-09',
       slot: 'morning',
@@ -18,6 +20,8 @@ describe('normalizeCanonicalFilters', () => {
 
     expect(normalized).toEqual({
       categories: ['Food', 'Coffee'],
+      energy: ['Low', 'High'],
+      open_now: true,
       tags: ['alpha', 'beta'],
       scheduled_date: '2026-02-09',
       slot: 'morning',
@@ -27,6 +31,8 @@ describe('normalizeCanonicalFilters', () => {
   it('falls back to empty canonical filters for invalid shapes', () => {
     expect(normalizeCanonicalFilters(123)).toEqual({
       categories: [],
+      energy: [],
+      open_now: null,
       tags: [],
       scheduled_date: null,
       slot: null,
@@ -62,16 +68,20 @@ describe('normalizeFilterFieldErrors', () => {
 })
 
 describe('buildServerFiltersFromDraft', () => {
-  it('keeps only category and tag filters for query requests', () => {
+  it('keeps supported server filters for query requests', () => {
     expect(
       buildServerFiltersFromDraft({
         categories: ['Food'],
+        energy: ['Low'],
+        open_now: true,
         tags: ['date-night'],
         scheduled_date: '2026-02-09',
         slot: 'evening',
       })
     ).toEqual({
       category: ['Food'],
+      energy: ['Low'],
+      open_now: true,
       tags: ['date-night'],
     })
   })
@@ -81,6 +91,8 @@ describe('areFiltersEqual', () => {
   it('compares canonical filter objects', () => {
     const base: CanonicalListFilters = {
       categories: ['Food'],
+      energy: [],
+      open_now: null,
       tags: ['date-night'],
       scheduled_date: null,
       slot: null,
@@ -91,6 +103,12 @@ describe('areFiltersEqual', () => {
       areFiltersEqual(base, {
         ...base,
         tags: ['brunch'],
+      })
+    ).toBe(false)
+    expect(
+      areFiltersEqual(base, {
+        ...base,
+        open_now: true,
       })
     ).toBe(false)
   })

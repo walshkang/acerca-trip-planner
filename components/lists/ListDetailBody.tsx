@@ -4,7 +4,7 @@ import { type FormEvent, useEffect, useMemo, useState } from 'react'
 import { getCategoryIcon } from '@/lib/icons/mapping'
 import type { ListFilterFieldErrors } from '@/lib/lists/filters'
 import { normalizeTagList } from '@/lib/lists/tags'
-import type { CategoryEnum } from '@/lib/types/enums'
+import type { CategoryEnum, EnergyEnum } from '@/lib/types/enums'
 import { PLACE_FOCUS_GLOW } from '@/lib/ui/glow'
 
 export type ListSummary = {
@@ -56,6 +56,10 @@ type Props = {
   appliedTagFilters?: string[]
   onTagFilterToggle?: (tag: string) => void
   onClearTagFilters?: () => void
+  activeEnergyFilters?: EnergyEnum[]
+  openNowFilter?: boolean | null
+  onEnergyFilterToggle?: (energy: EnergyEnum) => void
+  onSetOpenNowFilter?: (value: boolean | null) => void
   onClearAllFilters?: () => void
   onApplyFilters?: () => void
   onResetFilters?: () => void
@@ -239,6 +243,10 @@ export default function ListDetailBody({
   appliedTagFilters = [],
   onTagFilterToggle,
   onClearTagFilters,
+  activeEnergyFilters = [],
+  openNowFilter = null,
+  onEnergyFilterToggle,
+  onSetOpenNowFilter,
   onClearAllFilters,
   onApplyFilters,
   onResetFilters,
@@ -299,24 +307,46 @@ export default function ListDetailBody({
     availableTypes.length > 0 ||
     availableTags.length > 0 ||
     activeTypeFilters.length > 0 ||
-    activeTagFilters.length > 0
+    activeTagFilters.length > 0 ||
+    activeEnergyFilters.length > 0 ||
+    openNowFilter !== null
   const isTypeFiltering = activeTypeFilters.length > 0
   const hasAnyDraftFilters =
-    activeTypeFilters.length > 0 || activeTagFilters.length > 0
+    activeTypeFilters.length > 0 ||
+    activeTagFilters.length > 0 ||
+    activeEnergyFilters.length > 0 ||
+    openNowFilter !== null
   const focusedRowClass = isDark
     ? `border-white/60 bg-white/5 animate-[pulse_1.2s_ease-in-out_1] ${PLACE_FOCUS_GLOW}`
     : `border-slate-200/80 bg-gray-50 animate-[pulse_1.2s_ease-in-out_1] ${PLACE_FOCUS_GLOW}`
 
   const selectedFilterChips = useMemo(() => {
-    const chips: Array<{ kind: 'type' | 'tag'; label: string }> = []
+    const chips: Array<{
+      kind: 'type' | 'tag' | 'energy' | 'open_now'
+      label: string
+      value?: EnergyEnum
+    }> = []
     for (const type of activeTypeFilters) {
       chips.push({ kind: 'type', label: type })
     }
     for (const tag of activeTagFilters) {
       chips.push({ kind: 'tag', label: tag })
     }
+    for (const energy of activeEnergyFilters) {
+      chips.push({
+        kind: 'energy',
+        label: `Energy: ${energy}`,
+        value: energy,
+      })
+    }
+    if (openNowFilter !== null) {
+      chips.push({
+        kind: 'open_now',
+        label: openNowFilter ? 'Open now' : 'Closed now',
+      })
+    }
     return chips
-  }, [activeTagFilters, activeTypeFilters])
+  }, [activeEnergyFilters, activeTagFilters, activeTypeFilters, openNowFilter])
 
   const categoryErrors = filterFieldErrors?.categories ?? []
   const tagErrors = filterFieldErrors?.tags ?? []
@@ -508,7 +538,17 @@ export default function ListDetailBody({
                           onTypeFilterToggle?.(chip.label as CategoryEnum)
                           return
                         }
-                        onTagFilterToggle?.(chip.label)
+                        if (chip.kind === 'tag') {
+                          onTagFilterToggle?.(chip.label)
+                          return
+                        }
+                        if (chip.kind === 'energy' && chip.value) {
+                          onEnergyFilterToggle?.(chip.value)
+                          return
+                        }
+                        if (chip.kind === 'open_now') {
+                          onSetOpenNowFilter?.(null)
+                        }
                       }}
                       className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] ${
                         chip.kind === 'type' ? typeActiveClass : tagActiveClass
@@ -533,7 +573,11 @@ export default function ListDetailBody({
               {filterSummaryError ? (
                 <p className={`text-[11px] ${errorText}`}>{filterSummaryError}</p>
               ) : null}
-              {!filterSummaryError && appliedTypeFilters.length === 0 && appliedTagFilters.length === 0 ? (
+              {!filterSummaryError &&
+              appliedTypeFilters.length === 0 &&
+              appliedTagFilters.length === 0 &&
+              activeEnergyFilters.length === 0 &&
+              openNowFilter === null ? (
                 <p className={`text-[11px] ${mutedText}`}>No applied filters.</p>
               ) : null}
             </div>

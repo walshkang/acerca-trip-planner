@@ -8,18 +8,20 @@ import ListDetailBody, {
 import {
   distinctTypesFromItems,
   isCategoryEnum,
-  type CanonicalListFilters,
   type ListFilterFieldErrors,
 } from '@/lib/lists/filters'
-import type { CategoryEnum } from '@/lib/types/enums'
+import type { CategoryEnum, EnergyEnum } from '@/lib/types/enums'
 import { distinctTagsFromItems } from '@/lib/lists/tags'
 import {
   areFiltersEqual,
   buildServerFiltersFromDraft,
+  type CanonicalListFilters,
   emptyCanonicalFilters,
+  isEnergyEnum,
   normalizeCanonicalFilters,
   normalizeFilterFieldErrors,
   sortCategories,
+  sortEnergy,
   sortTags,
   uniqueStrings,
 } from '@/lib/lists/filter-client'
@@ -116,6 +118,10 @@ function buildItemsUrl(listId: string, filters: CanonicalListFilters): string {
   }
 
   return `/api/lists/${listId}/items?${searchParams.toString()}`
+}
+
+function hasServerOnlyFilters(filters: CanonicalListFilters): boolean {
+  return filters.energy.length > 0 || filters.open_now !== null
 }
 
 export default function ListDrawer({
@@ -367,6 +373,22 @@ export default function ListDrawer({
     []
   )
 
+  const refreshAppliedItems = useCallback(async () => {
+    if (!activeListId) return
+    const current = appliedFiltersRef.current
+    if (hasServerOnlyFilters(current)) {
+      await fetchItemsViaQuery(activeListId, buildServerFiltersFromDraft(current), {
+        updateAppliedFilters: true,
+        updateDraftFilters: false,
+      })
+      return
+    }
+    await fetchItems(activeListId, current, {
+      updateAppliedFilters: true,
+      updateDraftFilters: false,
+    })
+  }, [activeListId, fetchItems, fetchItemsViaQuery])
+
   useEffect(() => {
     if (!open) return
     void fetchLists()
@@ -407,19 +429,13 @@ export default function ListDrawer({
 
   useEffect(() => {
     if (!activeListId) return
-    void fetchItems(activeListId, appliedFiltersRef.current, {
-      updateAppliedFilters: true,
-      updateDraftFilters: false,
-    })
-  }, [activeListId, fetchItems, itemsRefreshKey, tagsRefreshKey])
+    void refreshAppliedItems()
+  }, [activeListId, itemsRefreshKey, refreshAppliedItems, tagsRefreshKey])
 
   useEffect(() => {
     if (!open || !activeListId) return
-    void fetchItems(activeListId, appliedFiltersRef.current, {
-      updateAppliedFilters: true,
-      updateDraftFilters: false,
-    })
-  }, [open, activeListId, fetchItems])
+    void refreshAppliedItems()
+  }, [activeListId, open, refreshAppliedItems])
 
   useEffect(() => {
     onActiveTypeFiltersChange?.(appliedFilters.categories)
@@ -543,6 +559,38 @@ export default function ListDrawer({
     [applyFiltersImmediately]
   )
 
+  const handleEnergyToggle = useCallback(
+    (energy: EnergyEnum) => {
+      const current = appliedFiltersRef.current
+      const nextEnergy = current.energy.includes(energy)
+        ? current.energy.filter((value) => value !== energy)
+        : [...current.energy, energy]
+      const nextFilters: CanonicalListFilters = {
+        ...current,
+        energy: sortEnergy(
+          uniqueStrings(nextEnergy).filter((value): value is EnergyEnum =>
+            isEnergyEnum(value)
+          )
+        ),
+      }
+      void applyFiltersImmediately(nextFilters)
+    },
+    [applyFiltersImmediately]
+  )
+
+  const handleOpenNowFilterChange = useCallback(
+    (nextValue: boolean | null) => {
+      const current = appliedFiltersRef.current
+      if (current.open_now === nextValue) return
+      const nextFilters: CanonicalListFilters = {
+        ...current,
+        open_now: nextValue,
+      }
+      void applyFiltersImmediately(nextFilters)
+    },
+    [applyFiltersImmediately]
+  )
+
   const handleClearTagFilters = useCallback(() => {
     const current = appliedFiltersRef.current
     const nextFilters: CanonicalListFilters = {
@@ -569,6 +617,8 @@ export default function ListDrawer({
       tags: [],
       scheduled_date: null,
       slot: null,
+      energy: [],
+      open_now: null,
     }
     void applyFiltersImmediately(nextFilters)
   }, [applyFiltersImmediately])
@@ -698,13 +748,10 @@ export default function ListDrawer({
         return next
       })
       onTagsUpdated?.()
-      void fetchItems(activeListId, appliedFiltersRef.current, {
-        updateAppliedFilters: true,
-        updateDraftFilters: false,
-      })
+      void refreshAppliedItems()
       return updatedTags
     },
-    [activeListId, fetchItems, onTagsUpdated]
+    [activeListId, onTagsUpdated, refreshAppliedItems]
   )
 
   if (!open) return null
@@ -822,7 +869,10 @@ export default function ListDrawer({
           error={itemsError}
           emptyLabel={
             activeList
-              ? appliedFilters.tags.length || appliedFilters.categories.length
+              ? appliedFilters.tags.length ||
+                appliedFilters.categories.length ||
+                appliedFilters.energy.length ||
+                appliedFilters.open_now !== null
                 ? 'No places match these filters.'
                 : 'No places in this list yet.'
               : 'Select a list to see its places.'
@@ -840,6 +890,10 @@ export default function ListDrawer({
           onTagFilterToggle={handleTagToggle}
           onClearTagFilters={handleClearTagFilters}
           onClearAllFilters={handleClearAllFilters}
+          activeEnergyFilters={appliedFilters.energy}
+          openNowFilter={appliedFilters.open_now}
+          onEnergyFilterToggle={handleEnergyToggle}
+          onSetOpenNowFilter={handleOpenNowFilterChange}
           onResetFilters={handleResetFilters}
           isFilterDirty={false}
           isApplyingFilters={itemsLoading || translatingFilters}
