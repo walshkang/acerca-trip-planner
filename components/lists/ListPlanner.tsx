@@ -12,6 +12,7 @@ import {
   countIsoDatesInclusive,
   enumerateIsoDatesInclusive,
   fractionalOrderBetween,
+  isoDateInTimezone,
   scheduledStartTimeFromSlot,
   slotFromScheduledStartTime,
 } from '@/lib/lists/planner'
@@ -117,7 +118,7 @@ export default function ListPlanner({
       setMoveDate('')
       return
     }
-    const today = new Date().toISOString().slice(0, 10)
+    const today = isoDateInTimezone(list?.timezone ?? null)
     const withinRange = (value: string) =>
       value >= tripRange.start && value <= tripRange.end
     const preferred =
@@ -127,7 +128,7 @@ export default function ListPlanner({
           ? today
           : tripRange.start
     setMoveDate(preferred)
-  }, [moveItemId, movingItem, tripRange])
+  }, [list?.timezone, moveItemId, movingItem, tripRange])
 
   const fetchPlan = useCallback(async () => {
     if (!listId) {

@@ -77,6 +77,7 @@ type FetchItemsOptions = {
 
 type QueryFiltersResponse = {
   mode?: 'places' | 'list_items'
+  list?: ListSummary | null
   items?: ListItemRow[]
   canonicalFilters?: unknown
   code?: string
@@ -169,10 +170,46 @@ export default function ListDrawer({
   const [itemsError, setItemsError] = useState<string | null>(null)
 
   const appliedFiltersRef = useRef(appliedFilters)
+  const requestSequenceRef = useRef(0)
+  const activeRequestRef = useRef<{
+    requestId: number
+    controller: AbortController
+  } | null>(null)
 
   useEffect(() => {
     appliedFiltersRef.current = appliedFilters
   }, [appliedFilters])
+
+  const beginItemsRequest = useCallback(() => {
+    const requestId = requestSequenceRef.current + 1
+    requestSequenceRef.current = requestId
+    activeRequestRef.current?.controller.abort()
+    const controller = new AbortController()
+    activeRequestRef.current = { requestId, controller }
+    setItemsLoading(true)
+    setItemsError(null)
+    return { requestId, signal: controller.signal }
+  }, [])
+
+  const isStaleItemsRequest = useCallback(
+    (requestId: number, signal: AbortSignal) =>
+      signal.aborted || activeRequestRef.current?.requestId !== requestId,
+    []
+  )
+
+  const finishItemsRequest = useCallback((requestId: number) => {
+    if (activeRequestRef.current?.requestId !== requestId) return
+    activeRequestRef.current = null
+    setItemsLoading(false)
+  }, [])
+
+  useEffect(
+    () => () => {
+      activeRequestRef.current?.controller.abort()
+      activeRequestRef.current = null
+    },
+    []
+  )
 
   const selectedListIds = useMemo(() => {
     return activeListId ? new Set([activeListId]) : new Set<string>()
@@ -237,12 +274,12 @@ export default function ListDrawer({
         updateAppliedFilters = true,
         updateDraftFilters = false,
       } = options
-      setItemsLoading(true)
-      setItemsError(null)
+      const { requestId, signal } = beginItemsRequest()
       try {
         const url = buildItemsUrl(listId, filters)
-        const res = await fetch(url)
+        const res = await fetch(url, { signal })
         const json = (await res.json().catch(() => ({}))) as Partial<ItemsResponse>
+        if (isStaleItemsRequest(requestId, signal)) return false
         if (!res.ok) {
           const responseMessage = json?.message || json?.error || `HTTP ${res.status}`
           setItemsError(responseMessage)
@@ -292,14 +329,20 @@ export default function ListDrawer({
 
         return true
       } catch (e: unknown) {
+        if (
+          (e as { name?: string })?.name === 'AbortError' ||
+          isStaleItemsRequest(requestId, signal)
+        ) {
+          return false
+        }
         const message = e instanceof Error ? e.message : 'Request failed'
         setItemsError(message)
         return false
       } finally {
-        setItemsLoading(false)
+        finishItemsRequest(requestId)
       }
     },
-    []
+    [beginItemsRequest, finishItemsRequest, isStaleItemsRequest]
   )
 
   const fetchItemsViaQuery = useCallback(
@@ -313,8 +356,7 @@ export default function ListDrawer({
         updateDraftFilters = false,
       } = options
 
-      setItemsLoading(true)
-      setItemsError(null)
+      const { requestId, signal } = beginItemsRequest()
 
       try {
         const res = await fetch('/api/filters/query', {
@@ -325,8 +367,10 @@ export default function ListDrawer({
             filters,
             limit: 200,
           }),
+          signal,
         })
         const json = (await res.json().catch(() => ({}))) as Partial<QueryFiltersResponse>
+        if (isStaleItemsRequest(requestId, signal)) return false
 
         if (!res.ok) {
           const responseMessage = json?.message || json?.error || `HTTP ${res.status}`
@@ -347,6 +391,9 @@ export default function ListDrawer({
 
         const nextItems = (json?.items ?? []) as ListItemRow[]
         const canonicalFilters = normalizeCanonicalFilters(json?.canonicalFilters ?? {})
+        if (Object.prototype.hasOwnProperty.call(json, 'list')) {
+          setActiveList((json?.list ?? null) as ListSummary | null)
+        }
         setItems(nextItems)
         setDistinctTags(distinctTagsFromItems(nextItems))
         setDistinctTypes(distinctTypesFromItems(nextItems))
@@ -363,14 +410,20 @@ export default function ListDrawer({
 
         return true
       } catch (error: unknown) {
+        if (
+          (error as { name?: string })?.name === 'AbortError' ||
+          isStaleItemsRequest(requestId, signal)
+        ) {
+          return false
+        }
         const message = error instanceof Error ? error.message : 'Request failed'
         setItemsError(message)
         return false
       } finally {
-        setItemsLoading(false)
+        finishItemsRequest(requestId)
       }
     },
-    []
+    [beginItemsRequest, finishItemsRequest, isStaleItemsRequest]
   )
 
   const refreshAppliedItems = useCallback(async () => {
@@ -396,6 +449,9 @@ export default function ListDrawer({
 
   useEffect(() => {
     if (!activeListId) {
+      activeRequestRef.current?.controller.abort()
+      activeRequestRef.current = null
+      setItemsLoading(false)
       setActiveList(null)
       setItems([])
       setDistinctTags([])

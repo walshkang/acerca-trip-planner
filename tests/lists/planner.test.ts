@@ -5,6 +5,7 @@ import {
   countIsoDatesInclusive,
   enumerateIsoDatesInclusive,
   fractionalOrderBetween,
+  isoDateInTimezone,
   parseIsoDateOnly,
   scheduledStartTimeFromSlot,
   slotFromScheduledStartTime,
@@ -72,5 +73,18 @@ describe('planner helpers', () => {
     expect(fractionalOrderBetween(2, null)).toBe(3)
     expect(fractionalOrderBetween(null, 2)).toBe(1)
     expect(fractionalOrderBetween(null, null)).toBe(1)
+  })
+
+  it('derives ISO dates in the requested timezone', () => {
+    const reference = new Date('2026-02-10T02:30:00.000Z')
+
+    expect(isoDateInTimezone('UTC', reference)).toBe('2026-02-10')
+    expect(isoDateInTimezone('America/New_York', reference)).toBe('2026-02-09')
+    expect(isoDateInTimezone('Asia/Tokyo', reference)).toBe('2026-02-10')
+  })
+
+  it('falls back to UTC date when timezone is invalid', () => {
+    const reference = new Date('2026-02-10T02:30:00.000Z')
+    expect(isoDateInTimezone('Invalid/Timezone', reference)).toBe('2026-02-10')
   })
 })

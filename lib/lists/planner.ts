@@ -86,6 +86,35 @@ export function parseIsoDateOnly(input: string): string | null {
   return roundTrip === input ? input : null
 }
 
+export function isoDateInTimezone(
+  timezone: string | null | undefined,
+  referenceTime: Date = new Date()
+): string {
+  if (typeof timezone === 'string' && timezone.trim().length > 0) {
+    try {
+      const formatter = new Intl.DateTimeFormat('en-US', {
+        timeZone: timezone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      })
+      const parts = formatter.formatToParts(referenceTime)
+      const year = parts.find((part) => part.type === 'year')?.value
+      const month = parts.find((part) => part.type === 'month')?.value
+      const day = parts.find((part) => part.type === 'day')?.value
+      if (year && month && day) {
+        const formatted = `${year}-${month}-${day}`
+        const parsed = parseIsoDateOnly(formatted)
+        if (parsed) return parsed
+      }
+    } catch {
+      // Fall through to UTC date.
+    }
+  }
+
+  return referenceTime.toISOString().slice(0, 10)
+}
+
 export function countIsoDatesInclusive(start: string, end: string): number | null {
   const parsedStart = parseIsoDateOnly(start)
   const parsedEnd = parseIsoDateOnly(end)

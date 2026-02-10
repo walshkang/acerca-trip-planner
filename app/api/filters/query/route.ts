@@ -5,10 +5,13 @@ import {
   type CanonicalServerFilters,
   type ServerFilterFieldErrors,
 } from '@/lib/filters/schema'
+import { evaluateOpenNow } from '@/lib/filters/open-now'
 import { createClient } from '@/lib/supabase/server'
 
 const PLACE_FIELDS =
   'id, name, address, category, energy, opening_hours, created_at, user_notes, user_tags'
+const LIST_FIELDS =
+  'id, name, description, is_default, created_at, start_date, end_date, timezone'
 const LIST_ITEM_FIELDS =
   'id, list_id, place_id, created_at, scheduled_date, scheduled_start_time, scheduled_end_time, scheduled_order, completed_at, tags, place:places(id, name, address, category, energy, opening_hours, created_at, user_notes, user_tags)'
 const TOP_LEVEL_FILTER_KEYS = [
@@ -22,6 +25,15 @@ const TOP_LEVEL_FILTER_KEYS = [
   'open_now',
   'within_list_id',
 ] as const
+const OPEN_NOW_PREFILTER_LIMIT = 5000
+
+type PlaceWithOpeningHours = {
+  opening_hours?: unknown | null
+}
+
+type ListItemWithPlace = {
+  place?: PlaceWithOpeningHours | null
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -143,10 +155,44 @@ function parseRequestBody(input: unknown):
 }
 
 function hasPlaceLevelFilters(filters: CanonicalServerFilters): boolean {
+  return filters.category.length > 0 || filters.energy.length > 0
+}
+
+function matchesOpenNow(
+  place: PlaceWithOpeningHours | null | undefined,
+  expected: boolean,
+  referenceTime: Date,
+  fallbackTimezone: string | null
+): boolean {
   return (
-    filters.category.length > 0 ||
-    filters.energy.length > 0 ||
-    filters.open_now !== null
+    evaluateOpenNow({
+      openingHours: place?.opening_hours ?? null,
+      referenceTime,
+      fallbackTimezone,
+    }) === expected
+  )
+}
+
+function applyOpenNowToPlaces<T extends PlaceWithOpeningHours>(
+  places: T[],
+  filters: CanonicalServerFilters,
+  referenceTime: Date
+): T[] {
+  if (filters.open_now === null) return places
+  const expected = filters.open_now
+  return places.filter((place) => matchesOpenNow(place, expected, referenceTime, null))
+}
+
+function applyOpenNowToListItems<T extends ListItemWithPlace>(
+  items: T[],
+  filters: CanonicalServerFilters,
+  referenceTime: Date,
+  listTimezone: string | null
+): T[] {
+  if (filters.open_now === null) return items
+  const expected = filters.open_now
+  return items.filter((item) =>
+    matchesOpenNow(item.place ?? null, expected, referenceTime, listTimezone)
   )
 }
 
@@ -165,9 +211,6 @@ async function resolvePlaceIds(
   }
   if (filters.energy.length > 0) {
     query = query.in('energy', filters.energy)
-  }
-  if (filters.open_now !== null) {
-    query = query.contains('opening_hours', { open_now: filters.open_now })
   }
 
   const { data, error } = await query
@@ -207,11 +250,12 @@ export async function POST(request: Request) {
 
     const filters = parsedFilters.canonical
     const { limit, offset } = parsedBody
+    const referenceTime = new Date()
 
     if (filters.within_list_id) {
       const { data: list, error: listError } = await supabase
         .from('lists')
-        .select('id')
+        .select(LIST_FIELDS)
         .eq('id', filters.within_list_id)
         .single()
 
@@ -237,6 +281,7 @@ export async function POST(request: Request) {
       if (placeIds && placeIds.length === 0) {
         return NextResponse.json({
           mode: 'list_items',
+          list,
           canonicalFilters: filters,
           items: [],
           places: [],
@@ -262,16 +307,33 @@ export async function POST(request: Request) {
         .order('scheduled_date', { ascending: true, nullsFirst: true })
         .order('scheduled_order', { ascending: true })
         .order('created_at', { ascending: true })
-        .range(offset, offset + limit - 1)
+        .range(
+          filters.open_now === null ? offset : 0,
+          filters.open_now === null
+            ? offset + limit - 1
+            : OPEN_NOW_PREFILTER_LIMIT - 1
+        )
 
       if (itemsError) {
         return NextResponse.json({ error: itemsError.message }, { status: 500 })
       }
 
+      const filteredItems = applyOpenNowToListItems(
+        (items ?? []) as ListItemWithPlace[],
+        filters,
+        referenceTime,
+        list.timezone ?? null
+      )
+      const pagedItems =
+        filters.open_now === null
+          ? filteredItems
+          : filteredItems.slice(offset, offset + limit)
+
       return NextResponse.json({
         mode: 'list_items',
+        list,
         canonicalFilters: filters,
-        items: items ?? [],
+        items: pagedItems,
         places: [],
       })
     }
@@ -287,22 +349,35 @@ export async function POST(request: Request) {
     if (filters.energy.length > 0) {
       query = query.in('energy', filters.energy)
     }
-    if (filters.open_now !== null) {
-      query = query.contains('opening_hours', { open_now: filters.open_now })
-    }
 
     const { data: places, error: placesError } = await query
       .order('created_at', { ascending: true })
-      .range(offset, offset + limit - 1)
+      .range(
+        filters.open_now === null ? offset : 0,
+        filters.open_now === null
+          ? offset + limit - 1
+          : OPEN_NOW_PREFILTER_LIMIT - 1
+      )
 
     if (placesError) {
       return NextResponse.json({ error: placesError.message }, { status: 500 })
     }
 
+    const filteredPlaces = applyOpenNowToPlaces(
+      (places ?? []) as PlaceWithOpeningHours[],
+      filters,
+      referenceTime
+    )
+    const pagedPlaces =
+      filters.open_now === null
+        ? filteredPlaces
+        : filteredPlaces.slice(offset, offset + limit)
+
     return NextResponse.json({
       mode: 'places',
+      list: null,
       canonicalFilters: filters,
-      places: places ?? [],
+      places: pagedPlaces,
       items: [],
     })
   } catch (error: unknown) {

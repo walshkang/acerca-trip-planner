@@ -40,6 +40,7 @@ type ItemsResponse = {
 
 type QueryFiltersResponse = {
   mode?: 'places' | 'list_items'
+  list?: ListSummary | null
   items?: ListItemRow[]
   canonicalFilters?: unknown
   code?: string
@@ -153,10 +154,46 @@ export default function ListDetailPanel({ listId }: Props) {
   const [error, setError] = useState<string | null>(null)
 
   const appliedFiltersRef = useRef(appliedFilters)
+  const requestSequenceRef = useRef(0)
+  const activeRequestRef = useRef<{
+    requestId: number
+    controller: AbortController
+  } | null>(null)
 
   useEffect(() => {
     appliedFiltersRef.current = appliedFilters
   }, [appliedFilters])
+
+  const beginItemsRequest = useCallback(() => {
+    const requestId = requestSequenceRef.current + 1
+    requestSequenceRef.current = requestId
+    activeRequestRef.current?.controller.abort()
+    const controller = new AbortController()
+    activeRequestRef.current = { requestId, controller }
+    setLoading(true)
+    setError(null)
+    return { requestId, signal: controller.signal }
+  }, [])
+
+  const isStaleItemsRequest = useCallback(
+    (requestId: number, signal: AbortSignal) =>
+      signal.aborted || activeRequestRef.current?.requestId !== requestId,
+    []
+  )
+
+  const finishItemsRequest = useCallback((requestId: number) => {
+    if (activeRequestRef.current?.requestId !== requestId) return
+    activeRequestRef.current = null
+    setLoading(false)
+  }, [])
+
+  useEffect(
+    () => () => {
+      activeRequestRef.current?.controller.abort()
+      activeRequestRef.current = null
+    },
+    []
+  )
 
   const fetchItems = useCallback(
     async (
@@ -167,11 +204,11 @@ export default function ListDetailPanel({ listId }: Props) {
         updateAppliedFilters = true,
         updateDraftFilters = false,
       } = options
-      setLoading(true)
-      setError(null)
+      const { requestId, signal } = beginItemsRequest()
       try {
-        const res = await fetch(buildItemsUrl(listId, filters))
+        const res = await fetch(buildItemsUrl(listId, filters), { signal })
         const json = (await res.json().catch(() => ({}))) as Partial<ItemsResponse>
+        if (isStaleItemsRequest(requestId, signal)) return false
         if (!res.ok) {
           const responseMessage = json?.message || json?.error || `HTTP ${res.status}`
           setError(responseMessage)
@@ -224,14 +261,20 @@ export default function ListDetailPanel({ listId }: Props) {
 
         return true
       } catch (e: unknown) {
+        if (
+          (e as { name?: string })?.name === 'AbortError' ||
+          isStaleItemsRequest(requestId, signal)
+        ) {
+          return false
+        }
         const message = e instanceof Error ? e.message : 'Request failed'
         setError(message)
         return false
       } finally {
-        setLoading(false)
+        finishItemsRequest(requestId)
       }
     },
-    [listId]
+    [beginItemsRequest, finishItemsRequest, isStaleItemsRequest, listId]
   )
 
   const fetchItemsViaQuery = useCallback(
@@ -244,8 +287,7 @@ export default function ListDetailPanel({ listId }: Props) {
         updateDraftFilters = false,
       } = options
 
-      setLoading(true)
-      setError(null)
+      const { requestId, signal } = beginItemsRequest()
 
       try {
         const res = await fetch('/api/filters/query', {
@@ -256,8 +298,10 @@ export default function ListDetailPanel({ listId }: Props) {
             filters,
             limit: 200,
           }),
+          signal,
         })
         const json = (await res.json().catch(() => ({}))) as Partial<QueryFiltersResponse>
+        if (isStaleItemsRequest(requestId, signal)) return false
 
         if (!res.ok) {
           const responseMessage = json?.message || json?.error || `HTTP ${res.status}`
@@ -278,6 +322,9 @@ export default function ListDetailPanel({ listId }: Props) {
 
         const nextItems = (json?.items ?? []) as ListItemRow[]
         const canonicalFilters = normalizeCanonicalFilters(json?.canonicalFilters ?? {})
+        if (Object.prototype.hasOwnProperty.call(json, 'list')) {
+          setList((json?.list ?? null) as ListSummary | null)
+        }
         setItems(nextItems)
         setDistinctTags(distinctTagsFromItems(nextItems))
         setDistinctTypes(distinctTypesFromItems(nextItems))
@@ -294,14 +341,20 @@ export default function ListDetailPanel({ listId }: Props) {
 
         return true
       } catch (e: unknown) {
+        if (
+          (e as { name?: string })?.name === 'AbortError' ||
+          isStaleItemsRequest(requestId, signal)
+        ) {
+          return false
+        }
         const message = e instanceof Error ? e.message : 'Request failed'
         setError(message)
         return false
       } finally {
-        setLoading(false)
+        finishItemsRequest(requestId)
       }
     },
-    [listId]
+    [beginItemsRequest, finishItemsRequest, isStaleItemsRequest, listId]
   )
 
   const refreshAppliedItems = useCallback(async () => {
@@ -320,6 +373,9 @@ export default function ListDetailPanel({ listId }: Props) {
   }, [fetchItems, fetchItemsViaQuery])
 
   useEffect(() => {
+    activeRequestRef.current?.controller.abort()
+    activeRequestRef.current = null
+    setLoading(false)
     const nextFilters = emptyCanonicalFilters()
     setList(null)
     setItems([])
