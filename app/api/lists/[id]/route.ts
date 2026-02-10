@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { countIsoDatesInclusive, parseIsoDateOnly } from '@/lib/lists/planner'
-
-const LIST_FIELDS =
-  'id, name, description, is_default, created_at, start_date, end_date, timezone'
+import { parseIsoDateOnly } from '@/lib/lists/planner'
 
 function hasOwn(obj: unknown, key: string) {
   return Boolean(obj) && Object.prototype.hasOwnProperty.call(obj, key)
@@ -24,6 +21,39 @@ function isValidIanaTimezone(timezone: string): boolean {
   }
 }
 
+type PatchListTripDatesRpcError = {
+  code?: string | null
+  message?: string | null
+}
+
+function mapPatchListTripDatesRpcError(error: PatchListTripDatesRpcError): {
+  status: number
+  message: string
+} {
+  const code = error.code ?? ''
+  const message = error.message ?? ''
+
+  if (code === 'P0002' || message === 'List not found') {
+    return { status: 404, message: 'List not found' }
+  }
+
+  if (code === '42501' || message === 'Unauthorized') {
+    return { status: 401, message: 'Unauthorized' }
+  }
+
+  if (code === '22023') {
+    return {
+      status: 400,
+      message: message || 'Invalid list trip-date update payload',
+    }
+  }
+
+  return {
+    status: 500,
+    message: message || 'Failed to update list',
+  }
+}
+
 export async function PATCH(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -37,10 +67,21 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const body = (await request.json().catch(() => ({}))) as Record<
-      string,
-      unknown
-    >
+    let parsedBody: unknown
+    try {
+      parsedBody = await request.json()
+    } catch {
+      return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
+    }
+
+    if (!parsedBody || typeof parsedBody !== 'object' || Array.isArray(parsedBody)) {
+      return NextResponse.json(
+        { error: 'Request body must be a JSON object' },
+        { status: 400 }
+      )
+    }
+
+    const body = parsedBody as Record<string, unknown>
 
     const hasStart = hasOwn(body, 'start_date')
     const hasEnd = hasOwn(body, 'end_date')
@@ -52,8 +93,6 @@ export async function PATCH(
         { status: 400 }
       )
     }
-
-    const updates: Record<string, unknown> = {}
 
     let startDate: string | null | undefined
     if (hasStart) {
@@ -73,7 +112,6 @@ export async function PATCH(
           )
         }
       }
-      updates.start_date = startDate
     }
 
     let endDate: string | null | undefined
@@ -94,61 +132,12 @@ export async function PATCH(
           )
         }
       }
-      updates.end_date = endDate
     }
 
-    if (hasStart || hasEnd) {
-      const { data: existing, error: fetchError } = await supabase
-        .from('lists')
-        .select('id, start_date, end_date')
-        .eq('id', params.id)
-        .single()
-
-      if (fetchError || !existing) {
-        if (fetchError?.code === 'PGRST116') {
-          return NextResponse.json({ error: 'List not found' }, { status: 404 })
-        }
-        return NextResponse.json(
-          { error: fetchError?.message || 'Failed to load list' },
-          { status: 500 }
-        )
-      }
-
-      const existingRange = existing as {
-        start_date: string | null
-        end_date: string | null
-      }
-      const finalStart = hasStart ? startDate ?? null : existingRange.start_date
-      const finalEnd = hasEnd ? endDate ?? null : existingRange.end_date
-
-      if (finalStart && finalEnd && finalStart > finalEnd) {
-        return NextResponse.json(
-          { error: 'start_date must be on or before end_date' },
-          { status: 400 }
-        )
-      }
-
-      if (finalStart && finalEnd) {
-        const maxTripDays = 60
-        const count = countIsoDatesInclusive(finalStart, finalEnd)
-        if (!count) {
-          return NextResponse.json(
-            { error: 'Invalid trip date range' },
-            { status: 400 }
-          )
-        }
-        if (count > maxTripDays) {
-          return NextResponse.json(
-            { error: `Trip range too long (${count} days). Max is ${maxTripDays} days.` },
-            { status: 400 }
-          )
-        }
-      }
-    }
-
+    let timezone: string | null | undefined
     if (hasTimezone) {
       if (body.timezone === null) {
-        updates.timezone = null
+        timezone = null
       } else {
         const tz = normalizeTimezone(body.timezone)
         if (!tz) {
@@ -163,49 +152,33 @@ export async function PATCH(
             { status: 400 }
           )
         }
-        updates.timezone = tz
+        timezone = tz
       }
     }
 
+    const maxTripDays = 60
     const { data: list, error } = await supabase
-      .from('lists')
-      .update(updates)
-      .eq('id', params.id)
-      .select(LIST_FIELDS)
+      .rpc('patch_list_trip_dates', {
+        p_list_id: params.id,
+        p_has_start_date: hasStart,
+        p_start_date: hasStart ? (startDate ?? null) : null,
+        p_has_end_date: hasEnd,
+        p_end_date: hasEnd ? (endDate ?? null) : null,
+        p_has_timezone: hasTimezone,
+        p_timezone: hasTimezone ? (timezone ?? null) : null,
+        p_max_trip_days: maxTripDays,
+      })
       .single()
 
     if (error || !list) {
-      if (error?.code === 'PGRST116') {
-        return NextResponse.json({ error: 'List not found' }, { status: 404 })
-      }
+      const mapped = mapPatchListTripDatesRpcError({
+        code: error?.code,
+        message: error?.message,
+      })
       return NextResponse.json(
-        { error: error?.message || 'Failed to update list' },
-        { status: 500 }
+        { error: mapped.message },
+        { status: mapped.status }
       )
-    }
-
-    // When trip dates change, move items outside the new range back to backlog
-    if (hasStart || hasEnd) {
-      const listData = list as { start_date: string | null; end_date: string | null }
-      const toBacklog = supabase
-        .from('list_items')
-        .update({
-          scheduled_date: null,
-          scheduled_start_time: null,
-          scheduled_order: 0,
-        })
-        .eq('list_id', params.id)
-        .is('completed_at', null)
-        .not('scheduled_date', 'is', null)
-
-      if (listData.start_date && listData.end_date) {
-        await toBacklog.or(
-          `scheduled_date.lt.${listData.start_date},scheduled_date.gt.${listData.end_date}`
-        )
-      } else {
-        // Dates cleared: move all scheduled (non-done) items to backlog
-        await toBacklog
-      }
     }
 
     return NextResponse.json({ list })
