@@ -422,6 +422,16 @@ export default function ListDetailBody({
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
+                  {onClearAllFilters ? (
+                    <button
+                      type="button"
+                      className={actionSecondaryClass}
+                      onClick={onClearAllFilters}
+                      disabled={!hasAnyDraftFilters || isApplyingFilters}
+                    >
+                      Reset
+                    </button>
+                  ) : null}
                   {onResetFilters ? (
                     <button
                       type="button"
@@ -429,7 +439,7 @@ export default function ListDetailBody({
                       onClick={onResetFilters}
                       disabled={resetDisabled}
                     >
-                      Reset
+                      Undo
                     </button>
                   ) : null}
                   {onApplyFilters ? (

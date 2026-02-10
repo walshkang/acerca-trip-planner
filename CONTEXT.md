@@ -9,7 +9,8 @@
 ## 🧠 Active Context
 - Current Phase: The Interactive Planner (Birthday Cake)
 - Active Epic: Deterministic Filtering & Intent Translation
-- Immediate Blocker: Task 2.9 – Define server-owned filter JSON schema with runtime validation.
+- Immediate Blocker: Task 2.12 – Ship timezone strategy required for deterministic `open_now` filtering.
+- Recently Completed: Tasks 2.9-2.11 (server-owned filter schema, intent translate endpoint, deterministic query endpoint) including full-page `ListDetailPanel` intent-control parity.
 
 ## ✅ P2-E1 Remaining Plan (Tracking)
 - Spec: `docs/PHASE_2_KANBAN_SPEC.md`.
@@ -81,6 +82,10 @@ gantt
 - User edits never overwrite frozen AI enrichment.
 
 ## 📝 Implementation Memory
+- 2026-02-09 – feat: wire deterministic intent controls into full-page list detail
+    - Reused shared filter-client helpers for canonical draft/applied state and field-error normalization.
+    - Added `/api/filters/translate` + `/api/filters/query` intent flow to `ListDetailPanel` to match `ListDrawer`.
+    - Added unit coverage for shared client filter helpers (`tests/lists/filter-client.test.ts`).
 - 2026-02-08 – fix: trip date changes, place drawer errors, omnibox light mode
     - Move items outside trip range to backlog when dates change (PATCH lists) - Fix neighborhood lookup JSON parse error on non-JSON responses - Apply light mode styling to Omnibox search results dropdown Co-authored-by: Cursor <cursoragent@cursor.com>
 - 2026-02-08 – learning report

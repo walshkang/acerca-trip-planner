@@ -11,9 +11,18 @@ import {
   type CanonicalListFilters,
   type ListFilterFieldErrors,
 } from '@/lib/lists/filters'
-import type { PlannerSlot } from '@/lib/lists/planner'
-import { CATEGORY_ENUM_VALUES, type CategoryEnum } from '@/lib/types/enums'
+import type { CategoryEnum } from '@/lib/types/enums'
 import { distinctTagsFromItems } from '@/lib/lists/tags'
+import {
+  areFiltersEqual,
+  buildServerFiltersFromDraft,
+  emptyCanonicalFilters,
+  normalizeCanonicalFilters,
+  normalizeFilterFieldErrors,
+  sortCategories,
+  sortTags,
+  uniqueStrings,
+} from '@/lib/lists/filter-client'
 
 type Props = {
   open: boolean
@@ -87,126 +96,6 @@ type TranslateFiltersResponse = {
   fieldErrors?: unknown
 }
 
-const CATEGORY_RANK = new Map(
-  CATEGORY_ENUM_VALUES.map((value, index) => [value, index])
-)
-const SLOT_VALUES: readonly PlannerSlot[] = ['morning', 'afternoon', 'evening']
-
-function emptyCanonicalFilters(): CanonicalListFilters {
-  return {
-    categories: [],
-    tags: [],
-    scheduled_date: null,
-    slot: null,
-  }
-}
-
-function isPlannerSlot(value: unknown): value is PlannerSlot {
-  return (
-    typeof value === 'string' &&
-    SLOT_VALUES.includes(value as PlannerSlot)
-  )
-}
-
-function sortCategories(categories: CategoryEnum[]): CategoryEnum[] {
-  return categories.slice().sort((a, b) => {
-    const rankA = CATEGORY_RANK.get(a) ?? 999
-    const rankB = CATEGORY_RANK.get(b) ?? 999
-    return rankA - rankB
-  })
-}
-
-function sortTags(tags: string[]): string[] {
-  return tags.slice().sort((a, b) => a.localeCompare(b))
-}
-
-function uniqueStrings(values: string[]): string[] {
-  return Array.from(new Set(values))
-}
-
-function asStringList(value: unknown): string[] {
-  if (!Array.isArray(value)) return []
-  return value.filter((entry): entry is string => typeof entry === 'string')
-}
-
-function normalizeCanonicalFilters(
-  input: unknown
-): CanonicalListFilters {
-  const source =
-    typeof input === 'object' && input !== null
-      ? (input as Record<string, unknown>)
-      : {}
-  const categories = uniqueStrings(
-    asStringList(source.categories ?? source.category)
-  )
-    .filter((value): value is CategoryEnum => isCategoryEnum(value))
-
-  const tags = uniqueStrings(asStringList(source.tags))
-
-  return {
-    categories: sortCategories(categories),
-    tags: sortTags(tags),
-    scheduled_date:
-      typeof source.scheduled_date === 'string' && source.scheduled_date.trim().length
-        ? source.scheduled_date
-        : null,
-    slot: isPlannerSlot(source.slot) ? source.slot : null,
-  }
-}
-
-function normalizeFilterFieldErrors(input: unknown): ListFilterFieldErrors | null {
-  if (typeof input !== 'object' || input === null || Array.isArray(input)) {
-    return null
-  }
-  const source = input as Record<string, unknown>
-  const next: ListFilterFieldErrors = {}
-  const payloadMessages = [
-    ...asStringList(source.payload),
-    ...asStringList(source.energy),
-    ...asStringList(source.open_now),
-    ...asStringList(source.within_list_id),
-  ]
-  const categoryMessages = [
-    ...asStringList(source.categories),
-    ...asStringList(source.category),
-  ]
-  const tagMessages = asStringList(source.tags)
-  const dateMessages = asStringList(source.scheduled_date)
-  const slotMessages = asStringList(source.slot)
-
-  if (payloadMessages.length) next.payload = payloadMessages
-  if (categoryMessages.length) next.categories = categoryMessages
-  if (tagMessages.length) next.tags = tagMessages
-  if (dateMessages.length) next.scheduled_date = dateMessages
-  if (slotMessages.length) next.slot = slotMessages
-
-  return Object.keys(next).length ? next : null
-}
-
-function buildServerFiltersFromDraft(filters: CanonicalListFilters) {
-  return {
-    category: filters.categories,
-    tags: filters.tags,
-  }
-}
-
-function areStringArraysEqual(a: string[], b: string[]) {
-  if (a.length !== b.length) return false
-  for (let i = 0; i < a.length; i += 1) {
-    if (a[i] !== b[i]) return false
-  }
-  return true
-}
-
-function areFiltersEqual(a: CanonicalListFilters, b: CanonicalListFilters) {
-  return (
-    areStringArraysEqual(a.categories, b.categories) &&
-    areStringArraysEqual(a.tags, b.tags) &&
-    a.scheduled_date === b.scheduled_date &&
-    a.slot === b.slot
-  )
-}
-
 function buildItemsUrl(listId: string, filters: CanonicalListFilters): string {
   const searchParams = new URLSearchParams({ limit: '200' })
 
@@ -260,6 +149,7 @@ export default function ListDrawer({
   const [draftFilters, setDraftFilters] = useState<CanonicalListFilters>(() =>
     emptyCanonicalFilters()
   )
+  const [undoFilters, setUndoFilters] = useState<CanonicalListFilters | null>(null)
   const [filterFieldErrors, setFilterFieldErrors] =
     useState<ListFilterFieldErrors | null>(null)
   const [filterErrorMessage, setFilterErrorMessage] = useState<string | null>(null)
@@ -490,6 +380,7 @@ export default function ListDrawer({
       setDistinctTypes([])
       setAppliedFilters(emptyCanonicalFilters())
       setDraftFilters(emptyCanonicalFilters())
+      setUndoFilters(null)
       setFilterFieldErrors(null)
       setFilterErrorMessage(null)
       setFilterIntent('')
@@ -507,6 +398,7 @@ export default function ListDrawer({
     setTranslateHint(null)
     setAppliedFilters(nextFilters)
     setDraftFilters(nextFilters)
+    setUndoFilters(null)
     void fetchItems(activeListId, nextFilters, {
       updateAppliedFilters: true,
       updateDraftFilters: true,
@@ -573,12 +465,11 @@ export default function ListDrawer({
     onActiveListItemsChange?.(mapped)
   }, [activeListId, items, onActiveListItemsChange])
 
-  const isFilterDirty = useMemo(() => {
-    return !areFiltersEqual(draftFilters, appliedFilters)
-  }, [appliedFilters, draftFilters])
-
   const availableTags = useMemo(
-    () => sortTags(uniqueStrings([...distinctTags, ...draftFilters.tags, ...appliedFilters.tags])),
+    () =>
+      sortTags(
+        uniqueStrings([...distinctTags, ...draftFilters.tags, ...appliedFilters.tags])
+      ),
     [appliedFilters.tags, distinctTags, draftFilters.tags]
   )
 
@@ -591,82 +482,119 @@ export default function ListDrawer({
     return sortCategories(merged)
   }, [appliedFilters.categories, distinctTypes, draftFilters.categories])
 
-  const handleTagToggle = useCallback((tag: string) => {
-    setTranslateErrorMessage(null)
-    setTranslateHint(null)
-    setDraftFilters((prev) => {
-      const nextTags = prev.tags.includes(tag)
-        ? prev.tags.filter((value) => value !== tag)
-        : [...prev.tags, tag]
-      return {
-        ...prev,
+  const applyFiltersImmediately = useCallback(
+    async (nextFilters: CanonicalListFilters) => {
+      if (!activeListId) return
+      const previous = appliedFiltersRef.current
+      if (areFiltersEqual(nextFilters, previous)) return
+
+      setTranslateErrorMessage(null)
+      setTranslateHint(null)
+      setFilterFieldErrors(null)
+      setFilterErrorMessage(null)
+      setItemsError(null)
+
+      const ok = await fetchItemsViaQuery(
+        activeListId,
+        buildServerFiltersFromDraft(nextFilters),
+        {
+          updateAppliedFilters: true,
+          updateDraftFilters: true,
+        }
+      )
+      if (ok) {
+        setUndoFilters(previous)
+      }
+    },
+    [activeListId, fetchItemsViaQuery]
+  )
+
+  const handleTagToggle = useCallback(
+    (tag: string) => {
+      const current = appliedFiltersRef.current
+      const nextTags = current.tags.includes(tag)
+        ? current.tags.filter((value) => value !== tag)
+        : [...current.tags, tag]
+      const nextFilters: CanonicalListFilters = {
+        ...current,
         tags: sortTags(uniqueStrings(nextTags)),
       }
-    })
-  }, [])
+      void applyFiltersImmediately(nextFilters)
+    },
+    [applyFiltersImmediately]
+  )
 
-  const handleTypeToggle = useCallback((type: CategoryEnum) => {
-    setTranslateErrorMessage(null)
-    setTranslateHint(null)
-    setDraftFilters((prev) => {
-      const nextCategories = prev.categories.includes(type)
-        ? prev.categories.filter((value) => value !== type)
-        : [...prev.categories, type]
-      return {
-        ...prev,
-        categories: sortCategories(uniqueStrings(nextCategories).filter(
-          (value): value is CategoryEnum => isCategoryEnum(value)
-        )),
+  const handleTypeToggle = useCallback(
+    (type: CategoryEnum) => {
+      const current = appliedFiltersRef.current
+      const nextCategories = current.categories.includes(type)
+        ? current.categories.filter((value) => value !== type)
+        : [...current.categories, type]
+      const nextFilters: CanonicalListFilters = {
+        ...current,
+        categories: sortCategories(
+          uniqueStrings(nextCategories).filter((value): value is CategoryEnum =>
+            isCategoryEnum(value)
+          )
+        ),
       }
-    })
-  }, [])
+      void applyFiltersImmediately(nextFilters)
+    },
+    [applyFiltersImmediately]
+  )
 
   const handleClearTagFilters = useCallback(() => {
-    setTranslateErrorMessage(null)
-    setTranslateHint(null)
-    setDraftFilters((prev) => ({
-      ...prev,
+    const current = appliedFiltersRef.current
+    const nextFilters: CanonicalListFilters = {
+      ...current,
       tags: [],
-    }))
-  }, [])
+    }
+    void applyFiltersImmediately(nextFilters)
+  }, [applyFiltersImmediately])
 
   const handleClearTypeFilters = useCallback(() => {
-    setTranslateErrorMessage(null)
-    setTranslateHint(null)
-    setDraftFilters((prev) => ({
-      ...prev,
+    const current = appliedFiltersRef.current
+    const nextFilters: CanonicalListFilters = {
+      ...current,
       categories: [],
-    }))
-  }, [])
+    }
+    void applyFiltersImmediately(nextFilters)
+  }, [applyFiltersImmediately])
 
   const handleClearAllFilters = useCallback(() => {
-    setTranslateErrorMessage(null)
-    setTranslateHint(null)
-    setDraftFilters((prev) => ({
-      ...prev,
+    const current = appliedFiltersRef.current
+    const nextFilters: CanonicalListFilters = {
+      ...current,
       categories: [],
       tags: [],
       scheduled_date: null,
       slot: null,
-    }))
-  }, [])
+    }
+    void applyFiltersImmediately(nextFilters)
+  }, [applyFiltersImmediately])
 
-  const handleApplyFilters = useCallback(async () => {
-    if (!activeListId || !isFilterDirty) return
-    await fetchItemsViaQuery(activeListId, buildServerFiltersFromDraft(draftFilters), {
-      updateAppliedFilters: true,
-      updateDraftFilters: true,
-    })
-  }, [activeListId, draftFilters, fetchItemsViaQuery, isFilterDirty])
-
-  const handleResetFilters = useCallback(() => {
-    setDraftFilters(appliedFilters)
-    setFilterFieldErrors(null)
-    setFilterErrorMessage(null)
+  const handleResetFilters = useCallback(async () => {
+    if (!activeListId || !undoFilters) return
+    const target = undoFilters
+    const current = appliedFiltersRef.current
     setTranslateErrorMessage(null)
     setTranslateHint(null)
+    setFilterFieldErrors(null)
+    setFilterErrorMessage(null)
     setItemsError(null)
-  }, [appliedFilters])
+
+    const ok = await fetchItemsViaQuery(
+      activeListId,
+      buildServerFiltersFromDraft(target),
+      {
+        updateAppliedFilters: true,
+        updateDraftFilters: true,
+      }
+    )
+    if (ok) {
+      setUndoFilters(current)
+    }
+  }, [activeListId, fetchItemsViaQuery, undoFilters])
 
   const handleTranslateIntent = useCallback(async () => {
     if (!activeListId) return
@@ -706,6 +634,7 @@ export default function ListDrawer({
         return
       }
 
+      const previous = appliedFiltersRef.current
       const applyOk = await fetchItemsViaQuery(
         activeListId,
         translateJson?.canonicalFilters ?? {},
@@ -715,6 +644,7 @@ export default function ListDrawer({
         }
       )
       if (!applyOk) return
+      setUndoFilters(previous)
 
       const usedFallback = translateJson?.usedFallback === true
       const model =
@@ -892,7 +822,7 @@ export default function ListDrawer({
           error={itemsError}
           emptyLabel={
             activeList
-              ? draftFilters.tags.length || draftFilters.categories.length
+              ? appliedFilters.tags.length || appliedFilters.categories.length
                 ? 'No places match these filters.'
                 : 'No places in this list yet.'
               : 'Select a list to see its places.'
@@ -900,24 +830,20 @@ export default function ListDrawer({
           onPlaceSelect={onPlaceSelect}
           focusedPlaceId={focusedPlaceId}
           availableTypes={availableTypes}
-          activeTypeFilters={draftFilters.categories}
+          activeTypeFilters={appliedFilters.categories}
           appliedTypeFilters={appliedFilters.categories}
           onTypeFilterToggle={handleTypeToggle}
           onClearTypeFilters={handleClearTypeFilters}
           availableTags={availableTags}
-          activeTagFilters={draftFilters.tags}
+          activeTagFilters={appliedFilters.tags}
           appliedTagFilters={appliedFilters.tags}
           onTagFilterToggle={handleTagToggle}
           onClearTagFilters={handleClearTagFilters}
           onClearAllFilters={handleClearAllFilters}
-          onApplyFilters={handleApplyFilters}
           onResetFilters={handleResetFilters}
-          isFilterDirty={isFilterDirty}
+          isFilterDirty={false}
           isApplyingFilters={itemsLoading || translatingFilters}
-          applyDisabled={
-            !activeListId || !isFilterDirty || itemsLoading || translatingFilters
-          }
-          resetDisabled={!isFilterDirty || itemsLoading || translatingFilters}
+          resetDisabled={!undoFilters || itemsLoading || translatingFilters}
           filterFieldErrors={filterFieldErrors}
           filterErrorMessage={filterErrorMessage}
           filterIntent={filterIntent}

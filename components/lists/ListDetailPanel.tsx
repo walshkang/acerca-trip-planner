@@ -1,23 +1,61 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import ListDetailBody, {
   ListItemRow,
   ListSummary,
 } from '@/components/lists/ListDetailBody'
-import type { CategoryEnum } from '@/lib/types/enums'
 import {
   distinctTypesFromItems,
-  matchesListFilters,
+  isCategoryEnum,
+  type CanonicalListFilters,
+  type ListFilterFieldErrors,
 } from '@/lib/lists/filters'
 import { distinctTagsFromItems } from '@/lib/lists/tags'
+import type { CategoryEnum } from '@/lib/types/enums'
+import {
+  areFiltersEqual,
+  buildServerFiltersFromDraft,
+  emptyCanonicalFilters,
+  normalizeCanonicalFilters,
+  normalizeFilterFieldErrors,
+  sortCategories,
+  sortTags,
+  uniqueStrings,
+} from '@/lib/lists/filter-client'
 
-type ApiResponse = {
-  list: ListSummary
-  items: ListItemRow[]
+type ItemsResponse = {
+  list?: ListSummary | null
+  items?: ListItemRow[]
   distinct_tags?: string[]
+  canonicalFilters?: unknown
+  code?: string
+  message?: string
   error?: string
+  fieldErrors?: unknown
+}
+
+type QueryFiltersResponse = {
+  mode?: 'places' | 'list_items'
+  items?: ListItemRow[]
+  canonicalFilters?: unknown
+  code?: string
+  message?: string
+  error?: string
+  fieldErrors?: unknown
+}
+
+type TranslateFiltersResponse = {
+  canonicalFilters?: unknown
+  hasAny?: boolean
+  model?: string
+  promptVersion?: string
+  usedFallback?: boolean
+  code?: string
+  message?: string
+  error?: string
+  fieldErrors?: unknown
 }
 
 type SearchResult = {
@@ -27,8 +65,50 @@ type SearchResult = {
   display_address: string | null
 }
 
+type FetchItemsOptions = {
+  updateAppliedFilters?: boolean
+  updateDraftFilters?: boolean
+}
+
 type Props = {
   listId: string
+}
+
+function buildItemsUrl(listId: string, filters: CanonicalListFilters): string {
+  const searchParams = new URLSearchParams({ limit: '200' })
+
+  for (const category of filters.categories) {
+    searchParams.append('categories', category)
+  }
+
+  for (const tag of filters.tags) {
+    searchParams.append('tags', tag)
+  }
+
+  if (filters.scheduled_date) {
+    searchParams.set('scheduled_date', filters.scheduled_date)
+  }
+
+  if (filters.slot) {
+    searchParams.set('slot', filters.slot)
+  }
+
+  return `/api/lists/${listId}/items?${searchParams.toString()}`
+}
+
+function hasAnyFilters(filters: CanonicalListFilters): boolean {
+  return (
+    filters.categories.length > 0 ||
+    filters.tags.length > 0 ||
+    filters.scheduled_date !== null ||
+    filters.slot !== null
+  )
+}
+
+function placeIdsFromItems(items: ListItemRow[]): string[] {
+  return items
+    .map((item) => item.place?.id)
+    .filter((id): id is string => Boolean(id))
 }
 
 export default function ListDetailPanel({ listId }: Props) {
@@ -36,9 +116,26 @@ export default function ListDetailPanel({ listId }: Props) {
   const [list, setList] = useState<ListSummary | null>(null)
   const [items, setItems] = useState<ListItemRow[]>([])
   const [distinctTags, setDistinctTags] = useState<string[]>([])
-  const [activeTagFilters, setActiveTagFilters] = useState<string[]>([])
   const [distinctTypes, setDistinctTypes] = useState<CategoryEnum[]>([])
-  const [activeTypeFilters, setActiveTypeFilters] = useState<CategoryEnum[]>([])
+  const [allPlaceIds, setAllPlaceIds] = useState<string[]>([])
+  const [appliedFilters, setAppliedFilters] = useState<CanonicalListFilters>(() =>
+    emptyCanonicalFilters()
+  )
+  const [draftFilters, setDraftFilters] = useState<CanonicalListFilters>(() =>
+    emptyCanonicalFilters()
+  )
+  const [undoFilters, setUndoFilters] = useState<CanonicalListFilters | null>(null)
+  const [filterFieldErrors, setFilterFieldErrors] =
+    useState<ListFilterFieldErrors | null>(null)
+  const [filterErrorMessage, setFilterErrorMessage] = useState<string | null>(
+    null
+  )
+  const [filterIntent, setFilterIntent] = useState('')
+  const [translateErrorMessage, setTranslateErrorMessage] = useState<string | null>(
+    null
+  )
+  const [translateHint, setTranslateHint] = useState<string | null>(null)
+  const [translatingFilters, setTranslatingFilters] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<SearchResult[]>([])
   const [searchLoading, setSearchLoading] = useState(false)
@@ -51,68 +148,200 @@ export default function ListDetailPanel({ listId }: Props) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const reconcileTagFilters = useCallback((nextItems: ListItemRow[]) => {
-    const nextDistinct = distinctTagsFromItems(nextItems)
-    setDistinctTags(nextDistinct)
-    setActiveTagFilters((prev) =>
-      prev.filter((tag) => nextDistinct.includes(tag))
-    )
-  }, [])
+  const appliedFiltersRef = useRef(appliedFilters)
 
-  const reconcileTypeFilters = useCallback((nextItems: ListItemRow[]) => {
-    const nextDistinct = distinctTypesFromItems(nextItems)
-    setDistinctTypes(nextDistinct)
-    setActiveTypeFilters((prev) =>
-      prev.filter((type) => nextDistinct.includes(type))
-    )
-  }, [])
+  useEffect(() => {
+    appliedFiltersRef.current = appliedFilters
+  }, [appliedFilters])
 
-  const fetchItems = useCallback(async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      const res = await fetch(`/api/lists/${listId}/items?limit=200`)
-      const json = (await res.json().catch(() => ({}))) as Partial<ApiResponse>
-      if (!res.ok) {
-        setError(json?.error || `HTTP ${res.status}`)
-        return
-      }
-      if (json?.list) {
-        setList(json.list)
-      }
-      const nextItems = (json?.items ?? []) as ListItemRow[]
-      setItems(nextItems)
-      if (Array.isArray(json?.distinct_tags)) {
-        setDistinctTags(json.distinct_tags)
-        setActiveTagFilters((prev) =>
-          prev.filter((tag) => json.distinct_tags?.includes(tag))
+  const fetchItems = useCallback(
+    async (
+      filters: CanonicalListFilters,
+      options: FetchItemsOptions = {}
+    ): Promise<boolean> => {
+      const {
+        updateAppliedFilters = true,
+        updateDraftFilters = false,
+      } = options
+      setLoading(true)
+      setError(null)
+      try {
+        const res = await fetch(buildItemsUrl(listId, filters))
+        const json = (await res.json().catch(() => ({}))) as Partial<ItemsResponse>
+        if (!res.ok) {
+          const responseMessage = json?.message || json?.error || `HTTP ${res.status}`
+          setError(responseMessage)
+          if (json?.code === 'invalid_filter_payload') {
+            setFilterErrorMessage(responseMessage)
+            setFilterFieldErrors(
+              normalizeFilterFieldErrors(json?.fieldErrors) ?? {
+                payload: [responseMessage],
+              }
+            )
+          } else {
+            setFilterErrorMessage(null)
+            setFilterFieldErrors(null)
+          }
+          return false
+        }
+
+        const canonicalFilters = normalizeCanonicalFilters(
+          json?.canonicalFilters ?? filters
         )
-      } else {
-        reconcileTagFilters(nextItems)
+        const nextItems = (json?.items ?? []) as ListItemRow[]
+
+        setList((json?.list ?? null) as ListSummary | null)
+        setItems(nextItems)
+        setDistinctTags(
+          Array.isArray(json?.distinct_tags)
+            ? sortTags(
+                uniqueStrings(
+                  json.distinct_tags.filter(
+                    (value): value is string => typeof value === 'string'
+                  )
+                )
+              )
+            : distinctTagsFromItems(nextItems)
+        )
+        setDistinctTypes(distinctTypesFromItems(nextItems))
+        if (!hasAnyFilters(canonicalFilters)) {
+          setAllPlaceIds(placeIdsFromItems(nextItems))
+        }
+        setFilterFieldErrors(null)
+        setFilterErrorMessage(null)
+        setTranslateErrorMessage(null)
+
+        if (updateAppliedFilters) {
+          setAppliedFilters(canonicalFilters)
+        }
+        if (updateDraftFilters) {
+          setDraftFilters(canonicalFilters)
+        }
+
+        return true
+      } catch (e: unknown) {
+        const message = e instanceof Error ? e.message : 'Request failed'
+        setError(message)
+        return false
+      } finally {
+        setLoading(false)
       }
-      reconcileTypeFilters(nextItems)
-    } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Request failed')
-    } finally {
-      setLoading(false)
+    },
+    [listId]
+  )
+
+  const fetchItemsViaQuery = useCallback(
+    async (
+      filters: unknown,
+      options: FetchItemsOptions = {}
+    ): Promise<boolean> => {
+      const {
+        updateAppliedFilters = true,
+        updateDraftFilters = false,
+      } = options
+
+      setLoading(true)
+      setError(null)
+
+      try {
+        const res = await fetch('/api/filters/query', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({
+            list_id: listId,
+            filters,
+            limit: 200,
+          }),
+        })
+        const json = (await res.json().catch(() => ({}))) as Partial<QueryFiltersResponse>
+
+        if (!res.ok) {
+          const responseMessage = json?.message || json?.error || `HTTP ${res.status}`
+          setError(responseMessage)
+          if (json?.code === 'invalid_filter_payload') {
+            setFilterErrorMessage(responseMessage)
+            setFilterFieldErrors(
+              normalizeFilterFieldErrors(json?.fieldErrors) ?? {
+                payload: [responseMessage],
+              }
+            )
+          } else {
+            setFilterErrorMessage(null)
+            setFilterFieldErrors(null)
+          }
+          return false
+        }
+
+        const nextItems = (json?.items ?? []) as ListItemRow[]
+        const canonicalFilters = normalizeCanonicalFilters(json?.canonicalFilters ?? {})
+        setItems(nextItems)
+        setDistinctTags(distinctTagsFromItems(nextItems))
+        setDistinctTypes(distinctTypesFromItems(nextItems))
+        setFilterFieldErrors(null)
+        setFilterErrorMessage(null)
+        setTranslateErrorMessage(null)
+
+        if (updateAppliedFilters) {
+          setAppliedFilters(canonicalFilters)
+        }
+        if (updateDraftFilters) {
+          setDraftFilters(canonicalFilters)
+        }
+
+        return true
+      } catch (e: unknown) {
+        const message = e instanceof Error ? e.message : 'Request failed'
+        setError(message)
+        return false
+      } finally {
+        setLoading(false)
+      }
+    },
+    [listId]
+  )
+
+  const refreshAppliedItems = useCallback(async () => {
+    const currentFilters = appliedFiltersRef.current
+    if (hasAnyFilters(currentFilters)) {
+      await fetchItemsViaQuery(buildServerFiltersFromDraft(currentFilters), {
+        updateAppliedFilters: true,
+        updateDraftFilters: false,
+      })
+      return
     }
-  }, [listId, reconcileTagFilters, reconcileTypeFilters])
+    await fetchItems(currentFilters, {
+      updateAppliedFilters: true,
+      updateDraftFilters: false,
+    })
+  }, [fetchItems, fetchItemsViaQuery])
 
   useEffect(() => {
-    fetchItems()
-  }, [fetchItems])
-
-  useEffect(() => {
-    setActiveTagFilters([])
+    const nextFilters = emptyCanonicalFilters()
+    setList(null)
+    setItems([])
     setDistinctTags([])
-    setActiveTypeFilters([])
     setDistinctTypes([])
+    setAllPlaceIds([])
+    setAppliedFilters(nextFilters)
+    setDraftFilters(nextFilters)
+    setUndoFilters(null)
+    setFilterFieldErrors(null)
+    setFilterErrorMessage(null)
+    setFilterIntent('')
+    setTranslateErrorMessage(null)
+    setTranslateHint(null)
     setSearchQuery('')
     setSearchResults([])
+    setSearchLoading(false)
     setSearchError(null)
     setSearchTagInputs({})
     setAddedResultIds(new Set())
-  }, [listId])
+
+    void fetchItems(nextFilters, {
+      updateAppliedFilters: true,
+      updateDraftFilters: true,
+    })
+  }, [fetchItems, listId])
 
   useEffect(() => {
     const trimmed = searchQuery.trim()
@@ -158,32 +387,198 @@ export default function ListDetailPanel({ listId }: Props) {
     }
   }, [searchQuery])
 
-  const filteredItems = useMemo(() => {
-    if (!activeTagFilters.length && !activeTypeFilters.length) return items
-    return items.filter((item) =>
-      matchesListFilters(item, activeTypeFilters, activeTagFilters)
-    )
-  }, [activeTagFilters, activeTypeFilters, items])
+  const availableTags = useMemo(
+    () =>
+      sortTags(
+        uniqueStrings([...distinctTags, ...draftFilters.tags, ...appliedFilters.tags])
+      ),
+    [appliedFilters.tags, distinctTags, draftFilters.tags]
+  )
+
+  const availableTypes = useMemo(() => {
+    const merged = uniqueStrings([
+      ...distinctTypes,
+      ...draftFilters.categories,
+      ...appliedFilters.categories,
+    ]).filter((value): value is CategoryEnum => isCategoryEnum(value))
+    return sortCategories(merged)
+  }, [appliedFilters.categories, distinctTypes, draftFilters.categories])
 
   const existingPlaceIds = useMemo(() => {
-    return new Set(
-      items
-        .map((item) => item.place?.id)
-        .filter((id): id is string => Boolean(id))
-    )
-  }, [items])
+    return new Set([...allPlaceIds, ...placeIdsFromItems(items)])
+  }, [allPlaceIds, items])
 
-  const handleTagToggle = useCallback((tag: string) => {
-    setActiveTagFilters((prev) =>
-      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
-    )
-  }, [])
+  const applyFiltersImmediately = useCallback(
+    async (nextFilters: CanonicalListFilters) => {
+      const previous = appliedFiltersRef.current
+      if (areFiltersEqual(nextFilters, previous)) return
 
-  const handleTypeToggle = useCallback((type: CategoryEnum) => {
-    setActiveTypeFilters((prev) =>
-      prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]
-    )
-  }, [])
+      setTranslateErrorMessage(null)
+      setTranslateHint(null)
+      setFilterFieldErrors(null)
+      setFilterErrorMessage(null)
+      setError(null)
+
+      const ok = await fetchItemsViaQuery(buildServerFiltersFromDraft(nextFilters), {
+        updateAppliedFilters: true,
+        updateDraftFilters: true,
+      })
+      if (ok) {
+        setUndoFilters(previous)
+      }
+    },
+    [fetchItemsViaQuery]
+  )
+
+  const handleTagToggle = useCallback(
+    (tag: string) => {
+      const current = appliedFiltersRef.current
+      const nextTags = current.tags.includes(tag)
+        ? current.tags.filter((value) => value !== tag)
+        : [...current.tags, tag]
+      const nextFilters: CanonicalListFilters = {
+        ...current,
+        tags: sortTags(uniqueStrings(nextTags)),
+      }
+      void applyFiltersImmediately(nextFilters)
+    },
+    [applyFiltersImmediately]
+  )
+
+  const handleTypeToggle = useCallback(
+    (type: CategoryEnum) => {
+      const current = appliedFiltersRef.current
+      const nextCategories = current.categories.includes(type)
+        ? current.categories.filter((value) => value !== type)
+        : [...current.categories, type]
+      const nextFilters: CanonicalListFilters = {
+        ...current,
+        categories: sortCategories(
+          uniqueStrings(nextCategories).filter((value): value is CategoryEnum =>
+            isCategoryEnum(value)
+          )
+        ),
+      }
+      void applyFiltersImmediately(nextFilters)
+    },
+    [applyFiltersImmediately]
+  )
+
+  const handleClearTagFilters = useCallback(() => {
+    const current = appliedFiltersRef.current
+    const nextFilters: CanonicalListFilters = {
+      ...current,
+      tags: [],
+    }
+    void applyFiltersImmediately(nextFilters)
+  }, [applyFiltersImmediately])
+
+  const handleClearTypeFilters = useCallback(() => {
+    const current = appliedFiltersRef.current
+    const nextFilters: CanonicalListFilters = {
+      ...current,
+      categories: [],
+    }
+    void applyFiltersImmediately(nextFilters)
+  }, [applyFiltersImmediately])
+
+  const handleClearAllFilters = useCallback(() => {
+    const current = appliedFiltersRef.current
+    const nextFilters: CanonicalListFilters = {
+      ...current,
+      categories: [],
+      tags: [],
+      scheduled_date: null,
+      slot: null,
+    }
+    void applyFiltersImmediately(nextFilters)
+  }, [applyFiltersImmediately])
+
+  const handleResetFilters = useCallback(async () => {
+    if (!undoFilters) return
+    const target = undoFilters
+    const current = appliedFiltersRef.current
+    setTranslateErrorMessage(null)
+    setTranslateHint(null)
+    setFilterFieldErrors(null)
+    setFilterErrorMessage(null)
+    setError(null)
+
+    const ok = await fetchItemsViaQuery(buildServerFiltersFromDraft(target), {
+      updateAppliedFilters: true,
+      updateDraftFilters: true,
+    })
+    if (ok) {
+      setUndoFilters(current)
+    }
+  }, [fetchItemsViaQuery, undoFilters])
+
+  const handleTranslateIntent = useCallback(async () => {
+    const intent = filterIntent.trim()
+    if (!intent) return
+
+    setTranslatingFilters(true)
+    setTranslateErrorMessage(null)
+    setFilterErrorMessage(null)
+    setFilterFieldErrors(null)
+
+    try {
+      const translateRes = await fetch('/api/filters/translate', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          intent,
+          list_id: listId,
+        }),
+      })
+      const translateJson = (await translateRes
+        .json()
+        .catch(() => ({}))) as Partial<TranslateFiltersResponse>
+
+      if (!translateRes.ok) {
+        const message =
+          translateJson?.message || translateJson?.error || `HTTP ${translateRes.status}`
+        setTranslateErrorMessage(message)
+        if (translateJson?.code === 'invalid_filter_payload') {
+          setFilterErrorMessage(message)
+          setFilterFieldErrors(
+            normalizeFilterFieldErrors(translateJson?.fieldErrors) ?? {
+              payload: [message],
+            }
+          )
+        }
+        return
+      }
+
+      const previous = appliedFiltersRef.current
+      const applyOk = await fetchItemsViaQuery(
+        translateJson?.canonicalFilters ?? {},
+        {
+          updateAppliedFilters: true,
+          updateDraftFilters: true,
+        }
+      )
+      if (!applyOk) return
+      setUndoFilters(previous)
+
+      const usedFallback = translateJson?.usedFallback === true
+      const model =
+        typeof translateJson?.model === 'string' && translateJson.model.length
+          ? translateJson.model
+          : null
+      if (usedFallback) {
+        setTranslateHint('Interpreted with deterministic fallback rules.')
+      } else if (model) {
+        setTranslateHint(`Interpreted with ${model}.`)
+      } else {
+        setTranslateHint('Filters interpreted successfully.')
+      }
+    } catch (e: unknown) {
+      setTranslateErrorMessage(e instanceof Error ? e.message : 'Request failed')
+    } finally {
+      setTranslatingFilters(false)
+    }
+  }, [fetchItemsViaQuery, filterIntent, listId])
 
   const handleSearchTagChange = useCallback((placeId: string, value: string) => {
     setSearchTagInputs((prev) => ({ ...prev, [placeId]: value }))
@@ -214,23 +609,18 @@ export default function ListDetailPanel({ listId }: Props) {
         }
         setSearchTagInputs((prev) => ({ ...prev, [placeId]: '' }))
         setAddedResultIds((prev) => new Set(prev).add(placeId))
-        await fetchItems()
+        setAllPlaceIds((prev) =>
+          prev.includes(placeId) ? prev : [...prev, placeId]
+        )
+        await refreshAppliedItems()
       } catch (err: unknown) {
         setSearchError(err instanceof Error ? err.message : 'Request failed')
       } finally {
         setAddingPlaceId(null)
       }
     },
-    [addingPlaceId, fetchItems, listId, searchTagInputs]
+    [addingPlaceId, listId, refreshAppliedItems, searchTagInputs]
   )
-
-  const handleClearTagFilters = useCallback(() => {
-    setActiveTagFilters([])
-  }, [])
-
-  const handleClearTypeFilters = useCallback(() => {
-    setActiveTypeFilters([])
-  }, [])
 
   const handlePlaceSelect = useCallback(
     (placeId: string) => {
@@ -260,12 +650,13 @@ export default function ListDetailPanel({ listId }: Props) {
         const next = prev.map((item) =>
           item.id === itemId ? { ...item, tags: updatedTags } : item
         )
-        reconcileTagFilters(next)
+        setDistinctTags(distinctTagsFromItems(next))
         return next
       })
+      void refreshAppliedItems()
       return updatedTags
     },
-    [listId, reconcileTagFilters]
+    [listId, refreshAppliedItems]
   )
 
   return (
@@ -286,7 +677,7 @@ export default function ListDetailPanel({ listId }: Props) {
           onChange={(e) => setSearchQuery(e.target.value)}
         />
         {searchLoading ? (
-          <p className="text-xs text-gray-500">Searching…</p>
+          <p className="text-xs text-gray-500">Searching...</p>
         ) : null}
         {searchError ? (
           <p className="text-xs text-red-600">{searchError}</p>
@@ -343,7 +734,7 @@ export default function ListDetailPanel({ listId }: Props) {
                       {inList
                         ? 'Added'
                         : addingPlaceId === result.id
-                          ? 'Adding…'
+                          ? 'Adding...'
                           : 'Add'}
                     </button>
                   </div>
@@ -356,23 +747,46 @@ export default function ListDetailPanel({ listId }: Props) {
 
       <ListDetailBody
         list={list}
-        items={filteredItems}
+        items={items}
         loading={loading}
         error={error}
         emptyLabel={
-          activeTagFilters.length || activeTypeFilters.length
+          appliedFilters.tags.length ||
+          appliedFilters.categories.length ||
+          appliedFilters.scheduled_date ||
+          appliedFilters.slot
             ? 'No places match these filters.'
             : 'No places in this list yet.'
         }
         onPlaceSelect={handlePlaceSelect}
-        availableTypes={distinctTypes}
-        activeTypeFilters={activeTypeFilters}
+        availableTypes={availableTypes}
+        activeTypeFilters={appliedFilters.categories}
+        appliedTypeFilters={appliedFilters.categories}
         onTypeFilterToggle={handleTypeToggle}
         onClearTypeFilters={handleClearTypeFilters}
-        availableTags={distinctTags}
-        activeTagFilters={activeTagFilters}
+        availableTags={availableTags}
+        activeTagFilters={appliedFilters.tags}
+        appliedTagFilters={appliedFilters.tags}
         onTagFilterToggle={handleTagToggle}
         onClearTagFilters={handleClearTagFilters}
+        onClearAllFilters={handleClearAllFilters}
+        onResetFilters={handleResetFilters}
+        isFilterDirty={false}
+        isApplyingFilters={loading || translatingFilters}
+        resetDisabled={!undoFilters || loading || translatingFilters}
+        filterFieldErrors={filterFieldErrors}
+        filterErrorMessage={filterErrorMessage}
+        filterIntent={filterIntent}
+        onFilterIntentChange={(next) => {
+          setFilterIntent(next)
+          setTranslateErrorMessage(null)
+          setTranslateHint(null)
+        }}
+        onTranslateIntent={handleTranslateIntent}
+        isTranslatingIntent={translatingFilters}
+        translateIntentDisabled={translatingFilters || !filterIntent.trim().length}
+        translateIntentError={translateErrorMessage}
+        translateIntentHint={translateHint}
         onTagsUpdate={handleTagsUpdate}
       />
     </div>
