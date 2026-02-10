@@ -10,6 +10,7 @@ import {
   fetchWikidataLabels,
 } from '@/lib/enrichment/sources'
 import { normalizeEnrichment } from '@/lib/server/enrichment/normalize'
+import { linkCandidateEnrichment } from '@/lib/server/enrichment/linkCandidateEnrichment'
 import { extractPrimaryWikidataFactPairs } from '@/lib/enrichment/curation'
 import {
   WIKI_CURATED_VERSION,
@@ -189,13 +190,18 @@ export async function POST(request: NextRequest) {
       schemaVersion,
     })
 
-    await supabase
-      .from('place_candidates')
-      .update({ enrichment_id: enrichment.id, status: 'enriched' })
-      .eq('id', candidate.id)
+    await linkCandidateEnrichment({
+      candidateId: candidate.id,
+      userId: user.id,
+      enrichmentId: enrichment.id,
+    })
 
     return NextResponse.json({
-      candidate,
+      candidate: {
+        ...candidate,
+        enrichment_id: enrichment.id,
+        status: 'enriched',
+      },
       google_place_id: googlePlaces.place_id,
       location: { lat, lng },
       google: {

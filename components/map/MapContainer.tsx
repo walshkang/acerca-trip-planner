@@ -11,6 +11,7 @@ import type {
   LatLng,
   PlaceMarkerVariant,
 } from '@/components/map/MapView.types'
+import { useCategoryIconOverrides } from '@/lib/icons/useCategoryIconOverrides'
 import Omnibox from '@/components/discovery/Omnibox'
 import InspectorCard from '@/components/discovery/InspectorCard'
 import ListDrawer from '@/components/lists/ListDrawer'
@@ -124,6 +125,7 @@ export default function MapContainer() {
   const [listTagRefreshKey, setListTagRefreshKey] = useState(0)
   const [placeTagRefreshKey, setPlaceTagRefreshKey] = useState(0)
   const [listItemsRefreshKey, setListItemsRefreshKey] = useState(0)
+  const { resolveCategoryEmoji } = useCategoryIconOverrides(activeListId)
   const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN
   const mapProvider =
     process.env.NEXT_PUBLIC_MAP_PROVIDER === 'mapbox' ? 'mapbox' : 'maplibre'
@@ -141,12 +143,12 @@ export default function MapContainer() {
   const styleKey = `${mapProvider}-${mapStyleMode}`
   const markerBackdropClassName =
     mapStyleMode === 'dark'
-      ? 'bg-slate-100/90 border border-white/70 shadow-[0_2px_6px_rgba(0,0,0,0.45)]'
-      : 'bg-white/90 border border-slate-900/10 shadow-[0_2px_6px_rgba(15,23,42,0.15)]'
+      ? 'bg-slate-100/95 border-2 border-slate-900/20 shadow-[0_8px_20px_rgba(2,6,23,0.5)]'
+      : 'bg-white/95 border-2 border-slate-900/20 shadow-[0_8px_20px_rgba(15,23,42,0.2)]'
   const markerFocusClassName =
     mapStyleMode === 'dark'
-      ? 'ring-2 ring-sky-400/45 shadow-[0_0_16px_rgba(56,189,248,0.55),0_0_2px_rgba(15,23,42,0.25)]'
-      : 'ring-2 ring-sky-500/35 shadow-[0_0_14px_rgba(14,165,233,0.35),0_0_2px_rgba(15,23,42,0.15)]'
+      ? 'ring-2 ring-sky-300/70 shadow-[0_0_20px_rgba(56,189,248,0.65),0_0_2px_rgba(15,23,42,0.25)]'
+      : 'ring-2 ring-sky-500/55 shadow-[0_0_18px_rgba(14,165,233,0.48),0_0_2px_rgba(15,23,42,0.15)]'
   const ghostMarkerClassName = `flex h-8 w-8 items-center justify-center rounded-full ${markerBackdropClassName} ${markerFocusClassName}`
   const transitLineWidth = 2.5
   const transitLineOpacity = 0.75
@@ -333,6 +335,7 @@ export default function MapContainer() {
       Boolean(previewCandidate) ||
       Boolean(previewSelectedResultId)) &&
     !(isMobile && toolsOpen)
+  const mobilePanelHeightRatio = 0.75
   const fitBoundsPadding = useMemo(() => {
     const basePadding = { top: 80, bottom: 80, left: 80, right: 80 }
     if (typeof window === 'undefined') return basePadding
@@ -349,15 +352,16 @@ export default function MapContainer() {
 
     if (isMobile && isContextPanelOpen) {
       const viewportHeight = window.innerHeight
-      const sheetHeight = Math.min(Math.round(viewportHeight * 0.55), 420)
+      const sheetHeight = Math.round(viewportHeight * mobilePanelHeightRatio)
       return {
         ...basePadding,
-        bottom: Math.max(basePadding.bottom, sheetHeight),
+        // Keep fit bounds inside the visible map window above the mobile sheet.
+        bottom: Math.max(basePadding.bottom, sheetHeight + 16),
       }
     }
 
     return basePadding
-  }, [isContextPanelOpen, isDesktop, isMobile])
+  }, [isContextPanelOpen, isDesktop, isMobile, mobilePanelHeightRatio])
   const isPlaceFocused = useCallback(
     (place: MapPlace) => {
       if (previewSelectedResultId) return false
@@ -1071,145 +1075,155 @@ export default function MapContainer() {
             left={isPreviewing ? undefined : listPane}
             right={desktopRight}
             mobileContent={
-          <div className="p-1">
-            <div className="flex items-center gap-2 px-2 py-2">
-              <button
-                type="button"
-                onClick={() => setPanelMode('lists')}
-                className={`glass-tab ${
-                  panelMode === 'lists' ? 'glass-tab-active' : 'glass-tab-inactive'
-                }`}
-              >
-                Lists
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setDrawerOpen(true)
-                  setPanelMode('plan')
-                }}
-                className={`glass-tab ${
-                  panelMode === 'plan' ? 'glass-tab-active' : 'glass-tab-inactive'
-                }`}
-              >
-                Plan
-              </button>
-              <button
-                type="button"
-                onClick={() => setPanelMode('details')}
-                disabled={!selectedPlaceId && !previewCandidate && !previewSelectedResultId}
-                className={`glass-tab disabled:opacity-40 ${
-                  panelMode === 'details' ? 'glass-tab-active' : 'glass-tab-inactive'
-                }`}
-              >
-                Details
-              </button>
-            </div>
+              <div className="flex h-full min-h-0 flex-col">
+                <div className="min-h-0 flex-1 overflow-y-auto px-2 pt-2">
+                  {panelMode === 'lists' ? (
+                    <ListDrawer
+                      open={contextOpen}
+                      variant="embedded"
+                      tone={uiTone}
+                      onClose={() => setDrawerOpen(false)}
+                      activeListId={activeListId}
+                      onActiveListChange={(id) => {
+                        setActiveListId(id)
+                        setActiveListPlaceIds([])
+                        setActiveListItems([])
+                        setListParam(id)
+                        if (id) setDrawerOpen(true)
+                      }}
+                      onPlaceIdsChange={handleActiveListPlaceIdsChange}
+                      onActiveTypeFiltersChange={setActiveListTypeFilters}
+                      onActiveListItemsChange={handleActiveListItemsChange}
+                      focusedPlaceId={focusedListPlaceId}
+                      onPlaceSelect={(placeId) => {
+                        setPendingFocusPlaceId(placeId)
+                        setPlaceParam(placeId)
+                        setFocusedListPlaceId(placeId)
+                        setPanelMode('details')
+                      }}
+                      tagsRefreshKey={listTagRefreshKey}
+                      itemsRefreshKey={listItemsRefreshKey}
+                      onTagsUpdated={bumpPlaceTagRefresh}
+                    />
+                  ) : panelMode === 'plan' ? (
+                    planPane
+                  ) : isPreviewLoading ? (
+                    <div className="p-4">
+                      <p className={`text-sm font-medium ${panelHeadingClass}`}>
+                        Loading preview…
+                      </p>
+                      <p className={`mt-1 text-xs ${panelMutedClass}`}>
+                        Fetching details so you can decide whether to approve.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={cancelPreview}
+                        className="mt-3 glass-button"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  ) : previewMode === 'error' ? (
+                    <div className="p-4">
+                      <p className={`text-sm font-medium ${panelHeadingClass}`}>
+                        Preview unavailable
+                      </p>
+                      <p className={`mt-1 text-xs ${panelMutedClass}`}>
+                        {discoveryError || 'Could not load preview details.'}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={cancelPreview}
+                        className="mt-3 glass-button"
+                      >
+                        Back
+                      </button>
+                    </div>
+                  ) : previewMode === 'ready' ? (
+                    <InspectorCard
+                      tone={uiTone}
+                      onCommitted={(placeId) => {
+                        if (typeof window !== 'undefined') {
+                          window.localStorage.setItem(lastAddedPlaceKey, placeId)
+                        }
+                        setPendingFocusPlaceId(placeId)
+                        fetchPlaces()
+                        setPlaceParam(placeId)
+                        setPanelMode('details')
+                      }}
+                      onClose={cancelPreview}
+                    />
+                  ) : selectedPlace ? (
+                    <PlaceDrawer
+                      variant="embedded"
+                      open={Boolean(selectedPlace)}
+                      place={selectedPlace}
+                      activeListId={activeListId}
+                      activeListItemOverride={activeListItemOverride}
+                      tone={uiTone}
+                      onClose={closePlaceDetails}
+                      tagsRefreshKey={placeTagRefreshKey}
+                      onTagsUpdated={bumpListTagRefresh}
+                    />
+                  ) : (
+                    <InspectorCard
+                      tone={uiTone}
+                      onCommitted={(placeId) => {
+                        if (typeof window !== 'undefined') {
+                          window.localStorage.setItem(lastAddedPlaceKey, placeId)
+                        }
+                        setPendingFocusPlaceId(placeId)
+                        fetchPlaces()
+                        setPlaceParam(placeId)
+                        setPanelMode('details')
+                      }}
+                      onClose={cancelPreview}
+                    />
+                  )}
+                </div>
 
-            <div className="px-2 pb-2">
-              {panelMode === 'lists' ? (
-                <ListDrawer
-                  open={contextOpen}
-                  variant="embedded"
-                  tone={uiTone}
-                  onClose={() => setDrawerOpen(false)}
-                  activeListId={activeListId}
-                  onActiveListChange={(id) => {
-                    setActiveListId(id)
-                    setActiveListPlaceIds([])
-                    setActiveListItems([])
-                    setListParam(id)
-                    if (id) setDrawerOpen(true)
-                  }}
-                  onPlaceIdsChange={handleActiveListPlaceIdsChange}
-                  onActiveTypeFiltersChange={setActiveListTypeFilters}
-                  onActiveListItemsChange={handleActiveListItemsChange}
-                  focusedPlaceId={focusedListPlaceId}
-                  onPlaceSelect={(placeId) => {
-                    setPendingFocusPlaceId(placeId)
-                    setPlaceParam(placeId)
-                    setFocusedListPlaceId(placeId)
-                    setPanelMode('details')
-                  }}
-                  tagsRefreshKey={listTagRefreshKey}
-                  itemsRefreshKey={listItemsRefreshKey}
-                  onTagsUpdated={bumpPlaceTagRefresh}
-                />
-              ) : panelMode === 'plan' ? (
-                planPane
-              ) : isPreviewLoading ? (
-                <div className="p-4">
-                  <p className={`text-sm font-medium ${panelHeadingClass}`}>Loading preview…</p>
-                  <p className={`mt-1 text-xs ${panelMutedClass}`}>
-                    Fetching details so you can decide whether to approve.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={cancelPreview}
-                    className="mt-3 glass-button"
-                  >
-                    Cancel
-                  </button>
+                <div
+                  className={`shrink-0 border-t px-2 py-2 ${
+                    isDarkTone
+                      ? 'border-white/10 bg-slate-900/65'
+                      : 'border-slate-300/70 bg-white/80'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setPanelMode('lists')}
+                      className={`glass-tab ${
+                        panelMode === 'lists' ? 'glass-tab-active' : 'glass-tab-inactive'
+                      }`}
+                    >
+                      Lists
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDrawerOpen(true)
+                        setPanelMode('plan')
+                      }}
+                      className={`glass-tab ${
+                        panelMode === 'plan' ? 'glass-tab-active' : 'glass-tab-inactive'
+                      }`}
+                    >
+                      Plan
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPanelMode('details')}
+                      disabled={!selectedPlaceId && !previewCandidate && !previewSelectedResultId}
+                      className={`glass-tab disabled:opacity-40 ${
+                        panelMode === 'details' ? 'glass-tab-active' : 'glass-tab-inactive'
+                      }`}
+                    >
+                      Details
+                    </button>
+                  </div>
                 </div>
-              ) : previewMode === 'error' ? (
-                <div className="p-4">
-                  <p className={`text-sm font-medium ${panelHeadingClass}`}>
-                    Preview unavailable
-                  </p>
-                  <p className={`mt-1 text-xs ${panelMutedClass}`}>
-                    {discoveryError || 'Could not load preview details.'}
-                  </p>
-                  <button
-                    type="button"
-                    onClick={cancelPreview}
-                    className="mt-3 glass-button"
-                  >
-                    Back
-                  </button>
-                </div>
-              ) : previewMode === 'ready' ? (
-                <InspectorCard
-                  tone={uiTone}
-                  onCommitted={(placeId) => {
-                    if (typeof window !== 'undefined') {
-                      window.localStorage.setItem(lastAddedPlaceKey, placeId)
-                    }
-                    setPendingFocusPlaceId(placeId)
-                    fetchPlaces()
-                    setPlaceParam(placeId)
-                    setPanelMode('details')
-                  }}
-                  onClose={cancelPreview}
-                />
-              ) : selectedPlace ? (
-                <PlaceDrawer
-                  variant="embedded"
-                  open={Boolean(selectedPlace)}
-                  place={selectedPlace}
-                  activeListId={activeListId}
-                  activeListItemOverride={activeListItemOverride}
-                  tone={uiTone}
-                  onClose={closePlaceDetails}
-                  tagsRefreshKey={placeTagRefreshKey}
-                  onTagsUpdated={bumpListTagRefresh}
-                />
-              ) : (
-                <InspectorCard
-                  tone={uiTone}
-                  onCommitted={(placeId) => {
-                    if (typeof window !== 'undefined') {
-                      window.localStorage.setItem(lastAddedPlaceKey, placeId)
-                    }
-                    setPendingFocusPlaceId(placeId)
-                    fetchPlaces()
-                    setPlaceParam(placeId)
-                    setPanelMode('details')
-                  }}
-                  onClose={cancelPreview}
-                />
-              )}
-            </div>
-          </div>
+              </div>
             }
           />
         )
@@ -1302,6 +1316,7 @@ export default function MapContainer() {
         isPlaceDimmed={isPlaceDimmed}
         isPlaceFocused={isPlaceFocused}
         getPlaceMarkerVariant={getPlaceMarkerVariant}
+        resolveCategoryEmoji={resolveCategoryEmoji}
         markerFocusClassName={markerFocusClassName}
         ghostMarkerClassName={ghostMarkerClassName}
         showTransit={showTransit}

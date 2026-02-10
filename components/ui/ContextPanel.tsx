@@ -39,8 +39,8 @@ export default function ContextPanel({
           subtitle={subtitle}
           onClose={onClose}
           tone={tone}
-          className="mx-3 mb-3 max-h-[75dvh]"
-          bodyClassName="max-h-[calc(75dvh-52px)] overflow-auto"
+          className="mx-3 mb-3 h-[75dvh] max-h-[75dvh]"
+          bodyClassName="h-[calc(75dvh-52px)] min-h-0"
         >
           {mobileContent}
         </OverlayPanel>

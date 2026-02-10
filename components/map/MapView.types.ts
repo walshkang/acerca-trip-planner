@@ -30,6 +30,7 @@ export type MapViewProps = {
   isPlaceDimmed: (place: MapPlace) => boolean
   isPlaceFocused: (place: MapPlace) => boolean
   getPlaceMarkerVariant?: (place: MapPlace) => PlaceMarkerVariant
+  resolveCategoryEmoji?: (category: CategoryEnum) => string
   markerFocusClassName?: string
   ghostMarkerClassName?: string
   showTransit?: boolean

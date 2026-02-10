@@ -236,6 +236,7 @@ const MapViewMapbox = forwardRef<MapViewRef, MapViewProps>(function MapViewMapbo
     isPlaceDimmed,
     isPlaceFocused,
     getPlaceMarkerVariant,
+    resolveCategoryEmoji,
     markerFocusClassName,
     ghostMarkerClassName,
     showTransit = false,
@@ -433,7 +434,7 @@ const MapViewMapbox = forwardRef<MapViewRef, MapViewProps>(function MapViewMapbo
           >
             <button
               type="button"
-              className={`cursor-pointer transition-opacity ${
+              className={`cursor-pointer transition-all duration-150 hover:scale-105 ${
                 isDimmedMarker ? 'opacity-30' : 'opacity-100'
               }`}
               data-marker-variant={markerVariant}
@@ -451,14 +452,15 @@ const MapViewMapbox = forwardRef<MapViewRef, MapViewProps>(function MapViewMapbo
               }}
               aria-label={`Open ${place.name}`}
             >
-                <span
-                  aria-hidden="true"
-                  className={`flex h-7 w-7 items-center justify-center rounded-full ${markerBackdropClassName} ${
-                    markerStateClassName
-                  }`}
-                >
-                <span className="text-[15px] leading-none">
-                  {getCategoryEmoji(place.category)}
+              <span
+                aria-hidden="true"
+                className={`flex h-8 w-8 items-center justify-center rounded-full ${markerBackdropClassName} ${
+                  markerStateClassName
+                }`}
+              >
+                <span className="text-[16px] leading-none">
+                  {resolveCategoryEmoji?.(place.category) ??
+                    getCategoryEmoji(place.category)}
                 </span>
               </span>
             </button>

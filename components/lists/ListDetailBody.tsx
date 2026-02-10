@@ -1,10 +1,16 @@
 'use client'
 
 import { type FormEvent, useEffect, useMemo, useState } from 'react'
-import { getCategoryIcon } from '@/lib/icons/mapping'
+import EmojiPicker from '@/components/ui/EmojiPicker'
+import { useCategoryIconOverrides } from '@/lib/icons/useCategoryIconOverrides'
 import type { ListFilterFieldErrors } from '@/lib/lists/filters'
 import { normalizeTagList } from '@/lib/lists/tags'
-import type { CategoryEnum, EnergyEnum } from '@/lib/types/enums'
+import {
+  CATEGORY_ENUM_VALUES,
+  type CategoryEnum,
+  type EnergyEnum,
+} from '@/lib/types/enums'
+import { CATEGORY_ICON_CHOICES } from '@/lib/icons/preferences'
 import { PLACE_FOCUS_GLOW } from '@/lib/ui/glow'
 
 export type ListSummary = {
@@ -267,6 +273,15 @@ export default function ListDetailBody({
   focusedPlaceId = null,
   tone = 'light',
 }: Props) {
+  const {
+    categoryIconOverrides,
+    setCategoryIcon,
+    resetCategoryIcons,
+    resolveCategoryEmoji,
+  } = useCategoryIconOverrides(list?.id ?? null)
+  const [iconEditorOpen, setIconEditorOpen] = useState(false)
+  const [pickerCategory, setPickerCategory] =
+    useState<CategoryEnum | null>(null)
   const rangeLabel = useMemo(
     () => (list ? formatDateRange(list) : null),
     [list]
@@ -319,6 +334,13 @@ export default function ListDetailBody({
   const focusedRowClass = isDark
     ? `border-white/60 bg-white/5 animate-[pulse_1.2s_ease-in-out_1] ${PLACE_FOCUS_GLOW}`
     : `border-slate-200/80 bg-gray-50 animate-[pulse_1.2s_ease-in-out_1] ${PLACE_FOCUS_GLOW}`
+  const iconEditorPanelClass = isDark
+    ? 'mt-3 space-y-2 rounded-md border border-white/10 bg-white/5 p-3'
+    : 'mt-3 space-y-2 rounded-md border border-slate-200 bg-slate-50/80 p-3'
+  const iconActionClass = isDark
+    ? 'rounded-md border border-white/20 px-2 py-1 text-[11px] text-slate-200 hover:border-white/35'
+    : 'rounded-md border border-slate-300 px-2 py-1 text-[11px] text-slate-700 hover:border-slate-500'
+  const hasCustomListIcons = Object.keys(categoryIconOverrides).length > 0
 
   const selectedFilterChips = useMemo(() => {
     const chips: Array<{
@@ -363,6 +385,23 @@ export default function ListDetailBody({
     }
   }, [focusedPlaceId, items.length])
 
+  useEffect(() => {
+    setIconEditorOpen(false)
+    setPickerCategory(null)
+  }, [list?.id])
+
+  const beginIconEdit = (category: CategoryEnum) => {
+    setIconEditorOpen(true)
+    setPickerCategory(category)
+  }
+
+  const clearListIcon = (category: CategoryEnum) => {
+    setCategoryIcon(category, null)
+    if (pickerCategory === category) {
+      setPickerCategory(null)
+    }
+  }
+
   if (loading && !list) {
     return <p className={`text-sm ${mutedText}`}>Loading list…</p>
   }
@@ -396,6 +435,86 @@ export default function ListDetailBody({
               Timezone: {list.timezone}
             </p>
           ) : null}
+          <div className={iconEditorPanelClass}>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className={`text-[11px] font-semibold ${bodyText}`}>
+                Type icons (this list)
+              </p>
+              <div className="flex items-center gap-2">
+                {hasCustomListIcons ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      resetCategoryIcons()
+                      setPickerCategory(null)
+                    }}
+                    className={`text-[11px] underline ${mutedText}`}
+                  >
+                    Reset list
+                  </button>
+                ) : null}
+                <button
+                  type="button"
+                  onClick={() => setIconEditorOpen((prev) => !prev)}
+                  className={iconActionClass}
+                >
+                  {iconEditorOpen ? 'Hide' : 'Customize'}
+                </button>
+              </div>
+            </div>
+            <p className={`text-[11px] ${mutedText}`}>
+              Click Change to open emoji input for each category.
+            </p>
+            {iconEditorOpen ? (
+              <div className="space-y-2">
+                {CATEGORY_ENUM_VALUES.map((category) => {
+                  const isPicking = pickerCategory === category
+                  const hasOverride = Boolean(categoryIconOverrides[category])
+                  return (
+                    <div
+                      key={`icon-${list.id}-${category}`}
+                      className={`rounded-md border px-2 py-2 ${
+                        isPicking
+                          ? isDark
+                            ? 'border-sky-300/60 bg-sky-500/10'
+                            : 'border-sky-400/60 bg-sky-100/80'
+                          : isDark
+                          ? 'border-white/10 bg-slate-900/30'
+                          : 'border-slate-200 bg-white/70'
+                      }`}
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="inline-flex items-center gap-1.5 text-xs">
+                          <span aria-hidden className="text-base leading-none">
+                            {resolveCategoryEmoji(category)}
+                          </span>
+                          <span className={titleClass}>{category}</span>
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => beginIconEdit(category)}
+                            className={iconActionClass}
+                          >
+                            {isPicking ? 'Picking…' : 'Change'}
+                          </button>
+                          {hasOverride ? (
+                            <button
+                              type="button"
+                              onClick={() => clearListIcon(category)}
+                              className={`text-[11px] underline ${mutedText}`}
+                            >
+                              Default
+                            </button>
+                          ) : null}
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            ) : null}
+          </div>
         </div>
       ) : null}
 
@@ -617,12 +736,9 @@ export default function ListDetailBody({
                           isTypeFiltering && !active ? 'opacity-50' : 'opacity-100'
                         }`}
                       >
-                        <img
-                          src={getCategoryIcon(type)}
-                          alt=""
-                          aria-hidden="true"
-                          className="h-3 w-3"
-                        />
+                        <span aria-hidden className="text-[13px] leading-none">
+                          {resolveCategoryEmoji(type)}
+                        </span>
                         <span>{type}</span>
                       </button>
                     )
@@ -752,6 +868,26 @@ export default function ListDetailBody({
 
         {error ? <p className={`text-xs ${errorText}`}>{error}</p> : null}
       </div>
+
+      <EmojiPicker
+        open={Boolean(iconEditorOpen && pickerCategory)}
+        title={
+          pickerCategory
+            ? `Choose icon for ${pickerCategory}`
+            : 'Choose icon'
+        }
+        suggestedEmojis={
+          pickerCategory ? CATEGORY_ICON_CHOICES[pickerCategory] : []
+        }
+        includeCatalog={false}
+        restrictToOptions={false}
+        onClose={() => setPickerCategory(null)}
+        onSelect={(emoji) => {
+          if (!pickerCategory) return
+          setCategoryIcon(pickerCategory, emoji)
+          setPickerCategory(null)
+        }}
+      />
     </section>
   )
 }

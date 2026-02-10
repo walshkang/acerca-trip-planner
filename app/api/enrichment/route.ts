@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { normalizeEnrichment } from '@/lib/server/enrichment/normalize'
 import { createClient } from '@/lib/supabase/server'
+import { linkCandidateEnrichment } from '@/lib/server/enrichment/linkCandidateEnrichment'
 import {
   fetchWikidataData,
   fetchWikidataLabels,
@@ -125,13 +126,11 @@ export async function POST(request: NextRequest) {
     })
     
     // Update candidate with enrichment_id
-    await supabase
-      .from('place_candidates')
-      .update({
-        enrichment_id: enrichment.id,
-        status: 'enriched',
-      })
-      .eq('id', candidate_id)
+    await linkCandidateEnrichment({
+      candidateId: String(candidate_id),
+      userId: user.id,
+      enrichmentId: enrichment.id,
+    })
     
     return NextResponse.json({
       enrichment: {

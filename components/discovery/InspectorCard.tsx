@@ -148,16 +148,49 @@ export default function InspectorCard(props: {
         setCommitError('Choose a list to save list-item tags (or clear tags).')
         return
       }
-      const res = await fetch('/api/places/promote', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          candidate_id: candidateId,
-          list_id: selectedListId ?? null,
-          tags: trimmedTags.length ? trimmedTags : undefined,
-        }),
-      })
-      const json = await res.json().catch(() => ({}))
+      const promotePayload = {
+        candidate_id: candidateId,
+        list_id: selectedListId ?? null,
+        tags: trimmedTags.length ? trimmedTags : undefined,
+      }
+      const promoteOnce = async () => {
+        const response = await fetch('/api/places/promote', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(promotePayload),
+        })
+        const body = await response.json().catch(() => ({}))
+        return { response, body }
+      }
+
+      let promoteAttempt = await promoteOnce()
+      const promoteError =
+        typeof promoteAttempt.body?.error === 'string'
+          ? promoteAttempt.body.error
+          : ''
+
+      if (
+        !promoteAttempt.response.ok &&
+        promoteError.includes('Candidate must be enriched before promotion')
+      ) {
+        const enrichRes = await fetch('/api/enrichment', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({
+            candidate_id: candidateId,
+            schema_version: 2,
+          }),
+        })
+        const enrichJson = await enrichRes.json().catch(() => ({}))
+        if (!enrichRes.ok) {
+          setCommitError(enrichJson?.error || `HTTP ${enrichRes.status}`)
+          return
+        }
+
+        promoteAttempt = await promoteOnce()
+      }
+
+      const { response: res, body: json } = promoteAttempt
       if (!res.ok) {
         setCommitError(json?.error || `HTTP ${res.status}`)
         return

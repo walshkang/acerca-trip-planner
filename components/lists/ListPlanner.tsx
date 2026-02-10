@@ -1,7 +1,7 @@
 'use client'
 
 import { type DragEvent, useCallback, useEffect, useMemo, useState } from 'react'
-import { getCategoryIcon } from '@/lib/icons/mapping'
+import { useCategoryIconOverrides } from '@/lib/icons/useCategoryIconOverrides'
 import type { CategoryEnum } from '@/lib/types/enums'
 import type { ListItemRow, ListSummary } from '@/components/lists/ListDetailBody'
 import {
@@ -65,6 +65,7 @@ export default function ListPlanner({
   tone = 'dark',
 }: Props) {
   const isDark = tone === 'dark'
+  const { resolveCategoryEmoji } = useCategoryIconOverrides(listId)
   const [list, setList] = useState<ListSummary | null>(null)
   const [items, setItems] = useState<ListItemRow[]>([])
   const [loading, setLoading] = useState(false)
@@ -865,12 +866,9 @@ export default function ListPlanner({
                         {place.name}
                       </p>
                       <p className="mt-0.5 inline-flex items-center gap-1 text-[11px] text-slate-300">
-                        <img
-                          src={getCategoryIcon(place.category)}
-                          alt=""
-                          aria-hidden="true"
-                          className="h-3 w-3"
-                        />
+                        <span aria-hidden className="text-[13px] leading-none">
+                          {resolveCategoryEmoji(place.category)}
+                        </span>
                         <span>{place.category}</span>
                       </p>
                     </button>
@@ -998,12 +996,9 @@ export default function ListPlanner({
                             return (
                               <div key={`${date}-${slot}-${category}`} className="space-y-2">
                                 <p className="text-[11px] text-slate-300 inline-flex items-center gap-1">
-                                  <img
-                                    src={getCategoryIcon(category)}
-                                    alt=""
-                                    aria-hidden="true"
-                                    className="h-3 w-3"
-                                  />
+                                  <span aria-hidden className="text-[13px] leading-none">
+                                    {resolveCategoryEmoji(category)}
+                                  </span>
                                   <span>{category}</span>
                                 </p>
                                 <div className="space-y-2">
@@ -1154,12 +1149,9 @@ export default function ListPlanner({
                         {place.name}
                       </p>
                       <p className="mt-0.5 inline-flex items-center gap-1 text-[11px] text-slate-300">
-                        <img
-                          src={getCategoryIcon(place.category)}
-                          alt=""
-                          aria-hidden="true"
-                          className="h-3 w-3"
-                        />
+                        <span aria-hidden className="text-[13px] leading-none">
+                          {resolveCategoryEmoji(place.category)}
+                        </span>
                         <span>{place.category}</span>
                       </p>
                     </button>
