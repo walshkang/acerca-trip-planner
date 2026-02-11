@@ -56,6 +56,21 @@ Useful variants:
 - UI mode (interactive): `npm run test:e2e:ui`
 - Debug mode (step through): `npm run test:e2e:debug`
 
+## 3.25) Manual CI run (workflow_dispatch)
+Manual seeded E2E can be run via GitHub Actions workflow:
+- Workflow: `.github/workflows/playwright-seeded.yml`
+- Trigger: `workflow_dispatch` only
+
+Required repository secrets:
+- `PLAYWRIGHT_SEED_TOKEN`: token accepted by `/api/test/seed`
+- `PLAYWRIGHT_STORAGE_STATE_JSON`: full JSON content of a valid Playwright storage state
+  (equivalent to local `playwright/.auth/user.json`)
+
+Notes:
+- Workflow runs with `NEXT_PUBLIC_MAP_PROVIDER=maplibre` to avoid map token coupling.
+- Workflow writes `playwright/.auth/user.json` from secret JSON, starts a local Next server, and runs `npm run test:e2e`.
+- Playwright report, test results, and server logs are uploaded as artifacts.
+
 ## 3.5) Optional Mapbox run (compat)
 Set the provider flag before starting the app server (or in `.env.local`):
 
@@ -82,3 +97,4 @@ npx playwright show-trace test-results/.../trace.zip
 - Tests live in `tests/e2e/`.
 - Storage state is ignored by git (`playwright/.auth/`).
 - Seeded specs share helpers in `tests/e2e/seeded-helpers.ts` (env guards, API auth probe, seed helpers, and resilient visible test-id locators).
+- Seeded specs now call guarded cleanup (`DELETE /api/test/seed`) in `finally` blocks to remove seeded lists/places created during test runs.

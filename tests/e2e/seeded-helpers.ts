@@ -64,6 +64,48 @@ export async function seedListWithPlace(page: Page): Promise<SeededListWithPlace
   return json as SeededListWithPlace
 }
 
+export async function cleanupSeededData(
+  page: Page,
+  seeds: Array<SeededListWithPlace | null | undefined>
+) {
+  const seedToken = process.env.PLAYWRIGHT_SEED_TOKEN
+  if (!seedToken) {
+    throw new Error('PLAYWRIGHT_SEED_TOKEN is not set for Playwright cleanup.')
+  }
+
+  const listIds = Array.from(
+    new Set(
+      seeds
+        .map((seed) => seed?.list.id)
+        .filter((id): id is string => typeof id === 'string' && id.length > 0)
+    )
+  )
+  const placeIds = Array.from(
+    new Set(
+      seeds
+        .map((seed) => seed?.place_id)
+        .filter((id): id is string => typeof id === 'string' && id.length > 0)
+    )
+  )
+
+  if (listIds.length === 0 && placeIds.length === 0) return
+
+  const res = await page.request.delete('/api/test/seed', {
+    headers: {
+      'x-seed-token': seedToken,
+      'content-type': 'application/json',
+    },
+    data: {
+      list_ids: listIds,
+      place_ids: placeIds,
+    },
+  })
+
+  if (!res.ok()) {
+    throw new Error(`Cleanup failed (${res.status()}): ${await responseBody(res)}`)
+  }
+}
+
 export async function addPlaceToList(
   page: Page,
   listId: string,

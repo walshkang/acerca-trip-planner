@@ -1,0 +1,84 @@
+name: Seeded Playwright (Manual)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  seeded-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      PLAYWRIGHT_BASE_URL: http://127.0.0.1:3010
+      NEXT_PUBLIC_MAP_PROVIDER: maplibre
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Validate seeded E2E secrets
+        env:
+          PLAYWRIGHT_SEED_TOKEN: ${{ secrets.PLAYWRIGHT_SEED_TOKEN }}
+          PLAYWRIGHT_STORAGE_STATE_JSON: ${{ secrets.PLAYWRIGHT_STORAGE_STATE_JSON }}
+        run: |
+          set -euo pipefail
+          if [ -z "${PLAYWRIGHT_SEED_TOKEN:-}" ]; then
+            echo "::error::Missing PLAYWRIGHT_SEED_TOKEN secret."
+            exit 1
+          fi
+          if [ -z "${PLAYWRIGHT_STORAGE_STATE_JSON:-}" ]; then
+            echo "::error::Missing PLAYWRIGHT_STORAGE_STATE_JSON secret."
+            exit 1
+          fi
+
+      - name: Write Playwright auth storage state
+        env:
+          PLAYWRIGHT_STORAGE_STATE_JSON: ${{ secrets.PLAYWRIGHT_STORAGE_STATE_JSON }}
+        run: |
+          set -euo pipefail
+          mkdir -p playwright/.auth
+          printf '%s' "$PLAYWRIGHT_STORAGE_STATE_JSON" > playwright/.auth/user.json
+          node -e "JSON.parse(require('fs').readFileSync('playwright/.auth/user.json','utf8'))"
+
+      - name: Run seeded Playwright suite
+        env:
+          PLAYWRIGHT_SEED_TOKEN: ${{ secrets.PLAYWRIGHT_SEED_TOKEN }}
+        run: |
+          set -euo pipefail
+          npm run dev -- -H 127.0.0.1 -p 3010 >/tmp/acerca-next-e2e.log 2>&1 &
+          DEV_PID=$!
+          trap 'kill "$DEV_PID" >/dev/null 2>&1 || true; wait "$DEV_PID" >/dev/null 2>&1 || true' EXIT
+
+          for i in {1..90}; do
+            if curl -sf "$PLAYWRIGHT_BASE_URL/" >/dev/null; then
+              break
+            fi
+            sleep 1
+          done
+
+          if ! curl -sf "$PLAYWRIGHT_BASE_URL/" >/dev/null; then
+            echo "::error::Next.js dev server did not start in time."
+            tail -n 100 /tmp/acerca-next-e2e.log || true
+            exit 1
+          fi
+
+          npm run test:e2e
+
+      - name: Upload Playwright artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: seeded-playwright-artifacts
+          path: |
+            playwright-report
+            test-results
+            /tmp/acerca-next-e2e.log
+          if-no-files-found: ignore

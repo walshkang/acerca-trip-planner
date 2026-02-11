@@ -8,6 +8,9 @@ Reference: `AGENTS.md` and `docs/VIBE_PLAYBOOK.md`.
 
 ## Verification
 - [ ] Commands run (with expected output):
+- [ ] `npm run check`
+- [ ] `npm test -- --run` (for behavior changes)
+- [ ] `npm run test:e2e` (required when changing planner move flows, list filtering/search, place drawer behavior, or map/list URL semantics)
 
 ## Data / Schema
 - [ ] No DB changes

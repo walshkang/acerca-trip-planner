@@ -9,7 +9,7 @@
 ## 🧠 Active Context
 - Current Phase: The Interactive Planner (Birthday Cake)
 - Active Epic: Deterministic Filtering & Intent Translation (stabilization)
-- Immediate Blocker: Expand restored seeded Playwright coverage beyond planner move (remaining seeded specs are still paused).
+- Immediate Blocker: Expand seeded Playwright coverage beyond the current restored 8-test baseline (especially desktop DnD scheduling/reorder persistence).
 - Recently Completed: Tasks 2.9-2.12 (filter schema, translate endpoint, deterministic query endpoint, and deterministic `open_now` timezone fallback + telemetry) including full-page `ListDetailPanel` intent-control parity.
 
 ## ✅ P2-E1 Remaining Plan (Tracking)
