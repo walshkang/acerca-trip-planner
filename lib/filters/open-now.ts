@@ -15,6 +15,19 @@ type EvaluateOpenNowInput = {
   fallbackTimezone?: string | null
 }
 
+export type OpenNowResolutionSource =
+  | 'place_timezone'
+  | 'list_timezone'
+  | 'utc_offset'
+  | 'utc_fallback'
+  | 'open_now_boolean'
+  | 'unresolved'
+
+export type EvaluateOpenNowResult = {
+  openNow: boolean | null
+  resolutionSource: OpenNowResolutionSource
+}
+
 const WEEKDAY_TO_INDEX: Record<string, number> = {
   Sun: 0,
   Mon: 1,
@@ -217,32 +230,64 @@ function isOpenAtWeekMinute(periods: OpeningPeriod[], weekMinute: number): boole
 
 export function evaluateOpenNow({
   openingHours,
+  referenceTime,
+  fallbackTimezone,
+}: EvaluateOpenNowInput): boolean | null {
+  return evaluateOpenNowWithResolution({
+    openingHours,
+    referenceTime,
+    fallbackTimezone,
+  }).openNow
+}
+
+export function evaluateOpenNowWithResolution({
+  openingHours,
   referenceTime = new Date(),
   fallbackTimezone = null,
-}: EvaluateOpenNowInput): boolean | null {
+}: EvaluateOpenNowInput): EvaluateOpenNowResult {
   const openingHoursRecord = asRecord(openingHours)
-  if (!openingHoursRecord) return null
+  if (!openingHoursRecord) {
+    return {
+      openNow: null,
+      resolutionSource: 'unresolved',
+    }
+  }
 
   const periods = parseOpeningPeriods(openingHoursRecord)
   if (!periods.length) {
-    return fallbackBooleanOpenNow(openingHoursRecord)
+    const openNow = fallbackBooleanOpenNow(openingHoursRecord)
+    return {
+      openNow,
+      resolutionSource: openNow === null ? 'unresolved' : 'open_now_boolean',
+    }
   }
 
   const timezoneCandidate = extractTimezone(openingHoursRecord)
-  const timezone =
-    timezoneCandidate ??
-    (typeof fallbackTimezone === 'string' && isValidIanaTimezone(fallbackTimezone)
+  const listTimezoneCandidate =
+    typeof fallbackTimezone === 'string' && isValidIanaTimezone(fallbackTimezone)
       ? fallbackTimezone
-      : null)
+      : null
 
   let weekMinute: number | null = null
-  if (timezone) {
-    weekMinute = weekMinuteFromTimezone(referenceTime, timezone)
+  let resolutionSource: OpenNowResolutionSource = 'unresolved'
+
+  if (timezoneCandidate) {
+    weekMinute = weekMinuteFromTimezone(referenceTime, timezoneCandidate)
+    if (weekMinute !== null) {
+      resolutionSource = 'place_timezone'
+    }
+  }
+  if (weekMinute === null && listTimezoneCandidate) {
+    weekMinute = weekMinuteFromTimezone(referenceTime, listTimezoneCandidate)
+    if (weekMinute !== null) {
+      resolutionSource = 'list_timezone'
+    }
   }
   if (weekMinute === null) {
     const offsetMinutes = extractUtcOffsetMinutes(openingHoursRecord)
     if (offsetMinutes !== null) {
       weekMinute = weekMinuteFromUtcOffset(referenceTime, offsetMinutes)
+      resolutionSource = 'utc_offset'
     }
   }
   if (weekMinute === null) {
@@ -250,10 +295,20 @@ export function evaluateOpenNow({
       referenceTime,
       DETERMINISTIC_FALLBACK_TIMEZONE
     )
+    if (weekMinute !== null) {
+      resolutionSource = 'utc_fallback'
+    }
   }
   if (weekMinute === null) {
-    return fallbackBooleanOpenNow(openingHoursRecord)
+    const openNow = fallbackBooleanOpenNow(openingHoursRecord)
+    return {
+      openNow,
+      resolutionSource: openNow === null ? 'unresolved' : 'open_now_boolean',
+    }
   }
 
-  return isOpenAtWeekMinute(periods, weekMinute)
+  return {
+    openNow: isOpenAtWeekMinute(periods, weekMinute),
+    resolutionSource,
+  }
 }

@@ -5,7 +5,11 @@ import {
   type CanonicalServerFilters,
   type ServerFilterFieldErrors,
 } from '@/lib/filters/schema'
-import { evaluateOpenNow } from '@/lib/filters/open-now'
+import {
+  evaluateOpenNowWithResolution,
+  type OpenNowResolutionSource,
+} from '@/lib/filters/open-now'
+import { recordOpenNowUtcFallbackTelemetry } from '@/lib/server/filters/open-now-telemetry'
 import { createClient } from '@/lib/supabase/server'
 
 const PLACE_FIELDS =
@@ -33,6 +37,16 @@ type PlaceWithOpeningHours = {
 
 type ListItemWithPlace = {
   place?: PlaceWithOpeningHours | null
+}
+
+type OpenNowFilterStats = {
+  evaluatedCount: number
+  utcFallbackCount: number
+}
+
+type OpenNowFilterResult<T> = {
+  rows: T[]
+  stats: OpenNowFilterStats
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -158,29 +172,58 @@ function hasPlaceLevelFilters(filters: CanonicalServerFilters): boolean {
   return filters.category.length > 0 || filters.energy.length > 0
 }
 
-function matchesOpenNow(
+function createOpenNowFilterStats(): OpenNowFilterStats {
+  return {
+    evaluatedCount: 0,
+    utcFallbackCount: 0,
+  }
+}
+
+function evaluateOpenNowMatch(
   place: PlaceWithOpeningHours | null | undefined,
   expected: boolean,
   referenceTime: Date,
   fallbackTimezone: string | null
-): boolean {
-  return (
-    evaluateOpenNow({
-      openingHours: place?.opening_hours ?? null,
-      referenceTime,
-      fallbackTimezone,
-    }) === expected
-  )
+): { matches: boolean; resolutionSource: OpenNowResolutionSource } {
+  const result = evaluateOpenNowWithResolution({
+    openingHours: place?.opening_hours ?? null,
+    referenceTime,
+    fallbackTimezone,
+  })
+  return {
+    matches: result.openNow === expected,
+    resolutionSource: result.resolutionSource,
+  }
 }
 
 function applyOpenNowToPlaces<T extends PlaceWithOpeningHours>(
   places: T[],
   filters: CanonicalServerFilters,
   referenceTime: Date
-): T[] {
-  if (filters.open_now === null) return places
+): OpenNowFilterResult<T> {
+  if (filters.open_now === null) {
+    return {
+      rows: places,
+      stats: createOpenNowFilterStats(),
+    }
+  }
+
   const expected = filters.open_now
-  return places.filter((place) => matchesOpenNow(place, expected, referenceTime, null))
+  const filtered: T[] = []
+  const stats = createOpenNowFilterStats()
+
+  for (const place of places) {
+    const result = evaluateOpenNowMatch(place, expected, referenceTime, null)
+    stats.evaluatedCount += 1
+    if (result.resolutionSource === 'utc_fallback') {
+      stats.utcFallbackCount += 1
+    }
+    if (result.matches) {
+      filtered.push(place)
+    }
+  }
+
+  return { rows: filtered, stats }
 }
 
 function applyOpenNowToListItems<T extends ListItemWithPlace>(
@@ -188,12 +231,35 @@ function applyOpenNowToListItems<T extends ListItemWithPlace>(
   filters: CanonicalServerFilters,
   referenceTime: Date,
   listTimezone: string | null
-): T[] {
-  if (filters.open_now === null) return items
+): OpenNowFilterResult<T> {
+  if (filters.open_now === null) {
+    return {
+      rows: items,
+      stats: createOpenNowFilterStats(),
+    }
+  }
+
   const expected = filters.open_now
-  return items.filter((item) =>
-    matchesOpenNow(item.place ?? null, expected, referenceTime, listTimezone)
-  )
+  const filtered: T[] = []
+  const stats = createOpenNowFilterStats()
+
+  for (const item of items) {
+    const result = evaluateOpenNowMatch(
+      item.place ?? null,
+      expected,
+      referenceTime,
+      listTimezone
+    )
+    stats.evaluatedCount += 1
+    if (result.resolutionSource === 'utc_fallback') {
+      stats.utcFallbackCount += 1
+    }
+    if (result.matches) {
+      filtered.push(item)
+    }
+  }
+
+  return { rows: filtered, stats }
 }
 
 async function resolvePlaceIds(
@@ -318,16 +384,27 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: itemsError.message }, { status: 500 })
       }
 
-      const filteredItems = applyOpenNowToListItems(
+      const filteredItemsResult = applyOpenNowToListItems(
         (items ?? []) as ListItemWithPlace[],
         filters,
         referenceTime,
         list.timezone ?? null
       )
+
+      if (filters.open_now !== null) {
+        await recordOpenNowUtcFallbackTelemetry({
+          mode: 'list_items',
+          listId: list.id,
+          expected: filters.open_now,
+          evaluatedCount: filteredItemsResult.stats.evaluatedCount,
+          utcFallbackCount: filteredItemsResult.stats.utcFallbackCount,
+        })
+      }
+
       const pagedItems =
         filters.open_now === null
-          ? filteredItems
-          : filteredItems.slice(offset, offset + limit)
+          ? filteredItemsResult.rows
+          : filteredItemsResult.rows.slice(offset, offset + limit)
 
       return NextResponse.json({
         mode: 'list_items',
@@ -363,15 +440,25 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: placesError.message }, { status: 500 })
     }
 
-    const filteredPlaces = applyOpenNowToPlaces(
+    const filteredPlacesResult = applyOpenNowToPlaces(
       (places ?? []) as PlaceWithOpeningHours[],
       filters,
       referenceTime
     )
+
+    if (filters.open_now !== null) {
+      await recordOpenNowUtcFallbackTelemetry({
+        mode: 'places',
+        expected: filters.open_now,
+        evaluatedCount: filteredPlacesResult.stats.evaluatedCount,
+        utcFallbackCount: filteredPlacesResult.stats.utcFallbackCount,
+      })
+    }
+
     const pagedPlaces =
       filters.open_now === null
-        ? filteredPlaces
-        : filteredPlaces.slice(offset, offset + limit)
+        ? filteredPlacesResult.rows
+        : filteredPlacesResult.rows.slice(offset, offset + limit)
 
     return NextResponse.json({
       mode: 'places',

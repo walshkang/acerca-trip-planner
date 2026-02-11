@@ -4,8 +4,16 @@ const { createClientMock } = vi.hoisted(() => ({
   createClientMock: vi.fn(),
 }))
 
+const { recordOpenNowUtcFallbackTelemetryMock } = vi.hoisted(() => ({
+  recordOpenNowUtcFallbackTelemetryMock: vi.fn().mockResolvedValue(undefined),
+}))
+
 vi.mock('@/lib/supabase/server', () => ({
   createClient: createClientMock,
+}))
+
+vi.mock('@/lib/server/filters/open-now-telemetry', () => ({
+  recordOpenNowUtcFallbackTelemetry: recordOpenNowUtcFallbackTelemetryMock,
 }))
 
 import { POST } from '@/app/api/filters/query/route'
@@ -13,6 +21,8 @@ import { POST } from '@/app/api/filters/query/route'
 describe('POST /api/filters/query', () => {
   beforeEach(() => {
     createClientMock.mockReset()
+    recordOpenNowUtcFallbackTelemetryMock.mockReset()
+    recordOpenNowUtcFallbackTelemetryMock.mockResolvedValue(undefined)
   })
 
   afterEach(() => {
@@ -336,6 +346,127 @@ describe('POST /api/filters/query', () => {
     expect(json.items?.map((item) => item.id)).toEqual(['item-open'])
     expect(listItemsQuery.range).toHaveBeenCalledWith(0, 4999)
     expect(fromSpy).toHaveBeenCalledWith('list_items')
+    expect(recordOpenNowUtcFallbackTelemetryMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        mode: 'list_items',
+        listId,
+        expected: true,
+        evaluatedCount: 2,
+        utcFallbackCount: 0,
+      })
+    )
+  })
+
+  it('emits telemetry when open_now falls back to UTC', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-02-09T10:00:00.000Z')) // Monday 10:00 UTC
+
+    const listId = '11111111-1111-4111-8111-111111111111'
+    const listRecord = {
+      id: listId,
+      name: 'UTC Fallback',
+      description: null,
+      is_default: false,
+      created_at: '2026-02-10T00:00:00.000Z',
+      start_date: '2026-02-10',
+      end_date: '2026-02-11',
+      timezone: null,
+    }
+
+    const listsEqQuery = {
+      single: vi.fn().mockResolvedValue({ data: listRecord, error: null }),
+    } as {
+      single: ReturnType<typeof vi.fn>
+    }
+    const listsSelectQuery = {
+      eq: vi.fn().mockReturnValue(listsEqQuery),
+    } as {
+      eq: ReturnType<typeof vi.fn>
+    }
+
+    const listItemsQuery = {
+      eq: vi.fn(),
+      in: vi.fn(),
+      or: vi.fn(),
+      order: vi.fn(),
+      range: vi.fn(),
+    } as {
+      eq: ReturnType<typeof vi.fn>
+      in: ReturnType<typeof vi.fn>
+      or: ReturnType<typeof vi.fn>
+      order: ReturnType<typeof vi.fn>
+      range: ReturnType<typeof vi.fn>
+    }
+
+    listItemsQuery.eq.mockReturnValue(listItemsQuery)
+    listItemsQuery.in.mockReturnValue(listItemsQuery)
+    listItemsQuery.or.mockReturnValue(listItemsQuery)
+    listItemsQuery.order.mockReturnValue(listItemsQuery)
+    listItemsQuery.range.mockResolvedValue({
+      data: [
+        {
+          id: 'item-utc-fallback',
+          place: {
+            opening_hours: {
+              periods: [
+                {
+                  open: { day: 1, time: '0900' },
+                  close: { day: 1, time: '1100' },
+                },
+              ],
+            },
+          },
+        },
+      ],
+      error: null,
+    })
+
+    const fromSpy = vi.fn((table: string) => {
+      if (table === 'lists') {
+        return { select: vi.fn().mockReturnValue(listsSelectQuery) }
+      }
+      if (table === 'list_items') {
+        return { select: vi.fn().mockReturnValue(listItemsQuery) }
+      }
+      throw new Error(`Unexpected table query: ${table}`)
+    })
+
+    createClientMock.mockResolvedValue({
+      auth: {
+        getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'user-1' } } }),
+      },
+      from: fromSpy,
+    })
+
+    const response = await POST(
+      new Request('http://localhost/api/filters/query', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          list_id: listId,
+          filters: { open_now: true },
+          limit: 10,
+          offset: 0,
+        }),
+      })
+    )
+
+    expect(response.status).toBe(200)
+    const json = (await response.json()) as {
+      items?: Array<{ id?: string }>
+    }
+
+    expect(json.items?.map((item) => item.id)).toEqual(['item-utc-fallback'])
+    expect(recordOpenNowUtcFallbackTelemetryMock).toHaveBeenCalledTimes(1)
+    expect(recordOpenNowUtcFallbackTelemetryMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        mode: 'list_items',
+        listId,
+        expected: true,
+        evaluatedCount: 1,
+        utcFallbackCount: 1,
+      })
+    )
   })
 
   it('prefers place timezone over list timezone when both are present', async () => {

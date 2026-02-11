@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { evaluateOpenNow } from '@/lib/filters/open-now'
+import {
+  evaluateOpenNow,
+  evaluateOpenNowWithResolution,
+} from '@/lib/filters/open-now'
 
 describe('evaluateOpenNow', () => {
   it('evaluates weekly periods using fallback timezone', () => {
@@ -29,6 +32,36 @@ describe('evaluateOpenNow', () => {
         fallbackTimezone: 'America/New_York',
       })
     ).toBe(false)
+
+    const withResolution = evaluateOpenNowWithResolution({
+      openingHours,
+      referenceTime: morningUtc,
+      fallbackTimezone: 'America/New_York',
+    })
+    expect(withResolution.openNow).toBe(true)
+    expect(withResolution.resolutionSource).toBe('list_timezone')
+  })
+
+  it('prefers place timezone over fallback timezone', () => {
+    const openingHours = {
+      timezone: 'America/Los_Angeles',
+      periods: [
+        {
+          open: { day: 1, time: '1700' },
+          close: { day: 1, time: '1900' },
+        },
+      ],
+    }
+
+    const referenceUtc = new Date('2026-02-10T02:00:00.000Z') // Monday 18:00 PST
+    const result = evaluateOpenNowWithResolution({
+      openingHours,
+      referenceTime: referenceUtc,
+      fallbackTimezone: 'America/New_York',
+    })
+
+    expect(result.openNow).toBe(true)
+    expect(result.resolutionSource).toBe('place_timezone')
   })
 
   it('handles overnight periods that cross midnight', () => {
@@ -115,6 +148,13 @@ describe('evaluateOpenNow', () => {
         referenceTime: referenceUtc,
       })
     ).toBe(true)
+
+    const withResolution = evaluateOpenNowWithResolution({
+      openingHours,
+      referenceTime: referenceUtc,
+    })
+    expect(withResolution.openNow).toBe(true)
+    expect(withResolution.resolutionSource).toBe('utc_offset')
   })
 
   it('falls back to stored open_now when periods are unavailable', () => {
@@ -148,6 +188,13 @@ describe('evaluateOpenNow', () => {
         referenceTime: referenceUtc,
       })
     ).toBe(true)
+
+    const withResolution = evaluateOpenNowWithResolution({
+      openingHours,
+      referenceTime: referenceUtc,
+    })
+    expect(withResolution.openNow).toBe(true)
+    expect(withResolution.resolutionSource).toBe('utc_fallback')
   })
 
   it('returns null when schedule and fallback booleans are unavailable', () => {
