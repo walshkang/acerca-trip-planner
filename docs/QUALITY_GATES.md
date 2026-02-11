@@ -3,14 +3,14 @@
 This file defines the current verification contract for daily work in this repo.
 
 ## Purpose
-- Keep delivery moving while seeded E2E is paused.
+- Keep delivery moving while seeded E2E is only partially active.
 - Make current gate status explicit in one place.
 - Prevent process drift between hooks, checks, and docs.
 
 ## Current Gate Status
 - Unit and integration tests (`npm test`): active when behavior changes.
 - Static contract checks (`npm run check`): active and expected before push when possible.
-- Seeded Playwright E2E (`npm run test:e2e`): paused for default workflow.
+- Seeded Playwright E2E (`npm run test:e2e`): active for the restored seeded suite (8 tests across 4 specs).
 - Learning reports: generation can be automated by local post-commit hook; changed/new reports must pass rationale checks.
 
 ## Required For Behavior Changes
@@ -19,10 +19,10 @@ This file defines the current verification contract for daily work in this repo.
 3. If schema changed, run `npm run db:types`.
 4. If report files are changed, fill `Decisions / Rationale` and `Next Steps` with concrete content.
 
-## Playwright Pause Policy
-- E2E specs may remain skipped while seeded infra is descoped.
-- Do not treat paused E2E as a blocker for merge when unit/contract checks are green.
-- When E2E resumes, update this file and re-enable required `test:e2e` gates.
+## Playwright Gate Policy
+- Run `npm run test:e2e` when changing planner move flows, list detail filtering/search flows, place drawer behavior, or map/list URL linking semantics.
+- For behavior changes outside restored seeded coverage, treat unit/API tests and `npm run check` as the baseline gate and add E2E when coverage is extended.
+- Keep restored seeded coverage listed in `docs/PLAYWRIGHT.md` up to date whenever spec status changes.
 
 ## Hook Policy
 - Local hook behavior is developer-machine specific (`core.hooksPath`).

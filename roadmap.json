@@ -397,7 +397,7 @@
             {
               "id": "2.8",
               "task": "Descope Playwright seeded acceptance for planner/map changes.",
-              "details": "Until seeding infra is restored, rely on unit/API checks and keep E2E suite intentionally skipped.",
+              "details": "Temporarily relied on unit/API checks while seeding infra was removed; planner seeded coverage has since been partially restored.",
               "status": "completed"
             }
           ]
@@ -418,25 +418,25 @@
               "id": "2.9",
               "task": "Define server-owned filter JSON schema with runtime validation.",
               "details": "Implement category/energy/tags/open_now/within_list_id validation and deterministic boolean semantics.",
-              "status": "in_progress"
+              "status": "completed"
             },
             {
               "id": "2.10",
               "task": "Implement intent translation endpoint.",
               "details": "POST /api/filters/translate allows LLM output only as validated filter JSON.",
-              "status": "planned"
+              "status": "completed"
             },
             {
               "id": "2.11",
               "task": "Implement deterministic filter query endpoint.",
               "details": "POST /api/filters/query executes deterministic DB filtering without LLM usage.",
-              "status": "planned"
+              "status": "completed"
             },
             {
               "id": "2.12",
               "task": "Defer open_now until timezone strategy is implemented.",
               "details": "Implement timezone storage and deterministic conversion before shipping open_now filtering.",
-              "status": "planned"
+              "status": "completed"
             }
           ]
         },

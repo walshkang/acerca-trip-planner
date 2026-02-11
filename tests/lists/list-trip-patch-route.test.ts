@@ -36,6 +36,50 @@ function mockAuthenticatedClient(rpcResponse: RpcResponse) {
   return { getUser, rpc, single }
 }
 
+function mockAmbiguousRpcFallbackClient(args: {
+  currentList: Record<string, unknown>
+  updatedList: Record<string, unknown>
+}) {
+  const getUser = vi.fn().mockResolvedValue({ data: { user: { id: 'user-1' } } })
+  const rpc = vi.fn().mockReturnValue({
+    single: vi.fn().mockResolvedValue({
+      data: null,
+      error: { code: '42702', message: 'column reference "id" is ambiguous' },
+    }),
+  })
+
+  const listsFetchQuery = {
+    select: vi.fn(),
+    eq: vi.fn(),
+    single: vi.fn().mockResolvedValue({ data: args.currentList, error: null }),
+  } as any
+  listsFetchQuery.select.mockReturnValue(listsFetchQuery)
+  listsFetchQuery.eq.mockReturnValue(listsFetchQuery)
+
+  const listsUpdateQuery = {
+    update: vi.fn(),
+    eq: vi.fn(),
+    select: vi.fn(),
+    single: vi.fn().mockResolvedValue({ data: args.updatedList, error: null }),
+  } as any
+  listsUpdateQuery.update.mockReturnValue(listsUpdateQuery)
+  listsUpdateQuery.eq.mockReturnValue(listsUpdateQuery)
+  listsUpdateQuery.select.mockReturnValue(listsUpdateQuery)
+
+  const from = vi
+    .fn()
+    .mockReturnValueOnce(listsFetchQuery)
+    .mockReturnValueOnce(listsUpdateQuery)
+
+  createClientMock.mockResolvedValue({
+    auth: { getUser },
+    rpc,
+    from,
+  })
+
+  return { rpc, from, listsUpdateQuery }
+}
+
 describe('PATCH /api/lists/[id]', () => {
   beforeEach(() => {
     createClientMock.mockReset()
@@ -220,6 +264,41 @@ describe('PATCH /api/lists/[id]', () => {
       p_has_timezone: true,
       p_timezone: 'America/New_York',
       p_max_trip_days: 60,
+    })
+  })
+
+  it('falls back to direct table patch when rpc fails with ambiguous column error', async () => {
+    const currentList = {
+      id: 'list-1',
+      name: 'Weekend',
+      description: null,
+      is_default: false,
+      created_at: '2026-02-10T00:00:00.000Z',
+      start_date: '2026-02-10',
+      end_date: '2026-02-11',
+      timezone: 'America/New_York',
+    }
+    const updatedList = {
+      ...currentList,
+      timezone: 'UTC',
+    }
+
+    const { rpc, from, listsUpdateQuery } = mockAmbiguousRpcFallbackClient({
+      currentList,
+      updatedList,
+    })
+
+    const response = await PATCH(makePatchRequest({ timezone: 'UTC' }) as any, {
+      params: { id: 'list-1' },
+    })
+
+    expect(response.status).toBe(200)
+    await expect(response.json()).resolves.toEqual({ list: updatedList })
+    expect(rpc).toHaveBeenCalledTimes(1)
+    expect(from).toHaveBeenNthCalledWith(1, 'lists')
+    expect(from).toHaveBeenNthCalledWith(2, 'lists')
+    expect(listsUpdateQuery.update).toHaveBeenCalledWith({
+      timezone: 'UTC',
     })
   })
 })

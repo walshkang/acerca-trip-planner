@@ -8,22 +8,23 @@
 
 ## 🧠 Active Context
 - Current Phase: The Interactive Planner (Birthday Cake)
-- Active Epic: Deterministic Filtering & Intent Translation
-- Immediate Blocker: Task 2.12 – Ship timezone strategy required for deterministic `open_now` filtering.
-- Recently Completed: Tasks 2.9-2.11 (server-owned filter schema, intent translate endpoint, deterministic query endpoint) including full-page `ListDetailPanel` intent-control parity.
+- Active Epic: Deterministic Filtering & Intent Translation (stabilization)
+- Immediate Blocker: Expand restored seeded Playwright coverage beyond planner move (remaining seeded specs are still paused).
+- Recently Completed: Tasks 2.9-2.12 (filter schema, translate endpoint, deterministic query endpoint, and deterministic `open_now` timezone fallback + telemetry) including full-page `ListDetailPanel` intent-control parity.
 
 ## ✅ P2-E1 Remaining Plan (Tracking)
 - Spec: `docs/PHASE_2_KANBAN_SPEC.md`.
-- [ ] Decide slot encoding (MVP): sentinel `scheduled_start_time` values for Morning/Afternoon/Evening.
-- [ ] Add `Drinks` to `category_enum` + icon mapping + exhaustive tests; normalize bars → Drinks deterministically.
-- [ ] Implement list trip date write path: `PATCH /api/lists/[id]` (`start_date`, `end_date`, `timezone`).
-- [ ] Implement scheduling write path: `PATCH /api/lists/[id]/items/[itemId]` (date/slot/order/completed_at only + audit fields; `source` includes `tap_move`).
-- [ ] Add Planner view in map ContextPanel:
+- [x] Decide slot encoding (MVP): sentinel `scheduled_start_time` values for Morning/Afternoon/Evening.
+- [x] Add `Drinks` to `category_enum` + icon mapping + exhaustive tests; normalize bars → Drinks deterministically.
+- [x] Implement list trip date write path: `PATCH /api/lists/[id]` (`start_date`, `end_date`, `timezone`).
+- [x] Implement scheduling write path: `PATCH /api/lists/[id]/items/[itemId]` (date/slot/order/completed_at only + audit fields; `source` includes `tap_move`).
+- [x] Add Planner view in map ContextPanel:
   - Desktop: right pane `Plan` mode (keeps list visible).
   - Mobile: `Places | Plan | Details` with Plan as a vertical agenda.
-- [ ] Mobile MVP: tap-to-move via `Move` picker + optimistic UI + calm/clear motion.
-- [ ] Desktop follow-up: DnD schedule + reorder within slot.
-- [ ] E2E: Playwright coverage for schedule + Done/Backlog transitions (mobile Move picker first; desktop DnD follow-up).
+- [x] Mobile MVP: tap-to-move via `Move` picker + optimistic UI + calm/clear motion.
+- [x] Desktop follow-up: DnD schedule + reorder within slot.
+- [x] E2E: Playwright coverage for mobile Move picker schedule + Done/Backlog transitions.
+- [ ] E2E follow-up: desktop DnD scheduling/reorder persistence coverage.
 
 ## ✅ P2-E4 Remaining Plan (Tracking)
 - [x] Decide URL contract: `/?place=<id>` map drawer deep link; keep `/places/[id]` full detail page.
@@ -50,7 +51,7 @@
 - [x] Render transit overlays in `MapView.*` (non-interactive layers, lazy-load/cached).
 - [x] E2E: transit enabled does not block marker click → place drawer opens.
 - [x] Map style selection: dark map style for Mapbox + MapLibre (map-only).
-- [ ] Neighborhood boundaries: NYC GeoJSON overlay (runtime layer).
+- [x] Neighborhood boundaries: NYC GeoJSON overlay (runtime layer).
 
 ## 🗺️ Roadmap Visualization
 
@@ -66,8 +67,8 @@ gantt
   "P1-E5 Map View + Discovery Refinements (Phase 0-4 Plan)" :done, p1e5, after p1e4, 7d
   section The_Interactive_Planner_(Birthday_Cake)
   "P2-E1 Stateful Planning (Kanban)" :done, p2e1, after p1e5, 7d
-  "P2-E2 Deterministic Filtering & Intent Translation" :active, p2e2, after p2e1, 7d
-  "P2-E3 List Workspace + Tags" :p2e3, after p2e2, 7d
+  "P2-E2 Deterministic Filtering & Intent Translation" :done, p2e2, after p2e1, 7d
+  "P2-E3 List Workspace + Tags" :active, p2e3, after p2e2, 7d
   "P2-E4 Map-First List Context" :p2e4, after p2e3, 7d
   section The_Intelligent_Concierge_(Wedding_Cake)
   "P3-E1 Deterministic Routing" :p3e1, after p2e4, 7d
@@ -82,6 +83,9 @@ gantt
 - User edits never overwrite frozen AI enrichment.
 
 ## 📝 Implementation Memory
+- 2026-02-11 – chore: restore seeded planner Playwright baseline
+    - Reintroduced guarded `/api/test/seed` + `lib/server/testSeed.ts` so seeded planner E2E can run without reopening all paused specs.
+    - Re-enabled `tests/e2e/list-planner-move.spec.ts` with environment-based skips when seed prerequisites are missing.
 - 2026-02-09 – feat: wire deterministic intent controls into full-page list detail
     - Reused shared filter-client helpers for canonical draft/applied state and field-error normalization.
     - Added `/api/filters/translate` + `/api/filters/query` intent flow to `ListDetailPanel` to match `ListDrawer`.
