@@ -162,6 +162,36 @@ export type Database = {
         }
         Relationships: []
       }
+      open_now_filter_telemetry_daily: {
+        Row: {
+          created_at: string
+          day: string
+          evaluated_count: number
+          expected: boolean
+          mode: string
+          updated_at: string
+          utc_fallback_count: number
+        }
+        Insert: {
+          created_at?: string
+          day: string
+          evaluated_count?: number
+          expected: boolean
+          mode: string
+          updated_at?: string
+          utc_fallback_count?: number
+        }
+        Update: {
+          created_at?: string
+          day?: string
+          evaluated_count?: number
+          expected?: boolean
+          mode?: string
+          updated_at?: string
+          utc_fallback_count?: number
+        }
+        Relationships: []
+      }
       place_candidates: {
         Row: {
           address: string | null
@@ -664,6 +694,28 @@ export type Database = {
       geomfromewkt: { Args: { "": string }; Returns: unknown }
       gettransactionid: { Args: never; Returns: unknown }
       longtransactionsenabled: { Args: never; Returns: boolean }
+      patch_list_trip_dates: {
+        Args: {
+          p_end_date?: string
+          p_has_end_date?: boolean
+          p_has_start_date?: boolean
+          p_has_timezone?: boolean
+          p_list_id: string
+          p_max_trip_days?: number
+          p_start_date?: string
+          p_timezone?: string
+        }
+        Returns: {
+          created_at: string
+          description: string
+          end_date: string
+          id: string
+          is_default: boolean
+          name: string
+          start_date: string
+          timezone: string
+        }[]
+      }
       populate_geometry_columns:
         | { Args: { tbl_oid: unknown; use_typmod?: boolean }; Returns: number }
         | { Args: { use_typmod?: boolean }; Returns: string }
@@ -710,6 +762,23 @@ export type Database = {
             Args: { p_candidate_id: string; p_list_id?: string }
             Returns: string
           }
+      record_open_now_filter_telemetry: {
+        Args: {
+          p_day: string
+          p_evaluated_count: number
+          p_expected: boolean
+          p_mode: string
+          p_utc_fallback_count: number
+        }
+        Returns: {
+          day: string
+          evaluated_count: number
+          expected: boolean
+          fallback_rate: number
+          mode: string
+          utc_fallback_count: number
+        }[]
+      }
       st_3dclosestpoint: {
         Args: { geom1: unknown; geom2: unknown }
         Returns: unknown
@@ -1304,7 +1373,13 @@ export type Database = {
       }
     }
     Enums: {
-      category_enum: "Food" | "Coffee" | "Sights" | "Shop" | "Activity"
+      category_enum:
+        | "Food"
+        | "Coffee"
+        | "Sights"
+        | "Shop"
+        | "Activity"
+        | "Drinks"
       energy_enum: "Low" | "Medium" | "High"
     }
     CompositeTypes: {
@@ -1441,7 +1516,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      category_enum: ["Food", "Coffee", "Sights", "Shop", "Activity"],
+      category_enum: ["Food", "Coffee", "Sights", "Shop", "Activity", "Drinks"],
       energy_enum: ["Low", "Medium", "High"],
     },
   },
