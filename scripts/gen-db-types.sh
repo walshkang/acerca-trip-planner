@@ -30,7 +30,11 @@ if [[ -n "${SUPABASE_DB_URL:-}" ]]; then
 fi
 
 if [[ -n "${SUPABASE_PROJECT_REF:-}" ]]; then
-  write_types "SUPABASE_PROJECT_REF" npx supabase gen types typescript --project-id "${SUPABASE_PROJECT_REF}" --schema public
+  if command -v supabase >/dev/null 2>&1; then
+    write_types "SUPABASE_PROJECT_REF" supabase gen types typescript --project-id "${SUPABASE_PROJECT_REF}" --schema public
+  else
+    write_types "SUPABASE_PROJECT_REF" npx --yes supabase gen types typescript --project-id "${SUPABASE_PROJECT_REF}" --schema public
+  fi
   exit 0
 fi
 
