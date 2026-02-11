@@ -337,4 +337,209 @@ describe('POST /api/filters/query', () => {
     expect(listItemsQuery.range).toHaveBeenCalledWith(0, 4999)
     expect(fromSpy).toHaveBeenCalledWith('list_items')
   })
+
+  it('prefers place timezone over list timezone when both are present', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-02-10T02:00:00.000Z')) // Monday 21:00 NY / 18:00 LA
+
+    const listId = '11111111-1111-4111-8111-111111111111'
+    const listRecord = {
+      id: listId,
+      name: 'Timezone Mismatch',
+      description: null,
+      is_default: false,
+      created_at: '2026-02-10T00:00:00.000Z',
+      start_date: '2026-02-10',
+      end_date: '2026-02-11',
+      timezone: 'America/Los_Angeles',
+    }
+
+    const listsEqQuery = {
+      single: vi.fn().mockResolvedValue({ data: listRecord, error: null }),
+    } as {
+      single: ReturnType<typeof vi.fn>
+    }
+    const listsSelectQuery = {
+      eq: vi.fn().mockReturnValue(listsEqQuery),
+    } as {
+      eq: ReturnType<typeof vi.fn>
+    }
+
+    const listItemsQuery = {
+      eq: vi.fn(),
+      in: vi.fn(),
+      or: vi.fn(),
+      order: vi.fn(),
+      range: vi.fn(),
+    } as {
+      eq: ReturnType<typeof vi.fn>
+      in: ReturnType<typeof vi.fn>
+      or: ReturnType<typeof vi.fn>
+      order: ReturnType<typeof vi.fn>
+      range: ReturnType<typeof vi.fn>
+    }
+
+    listItemsQuery.eq.mockReturnValue(listItemsQuery)
+    listItemsQuery.in.mockReturnValue(listItemsQuery)
+    listItemsQuery.or.mockReturnValue(listItemsQuery)
+    listItemsQuery.order.mockReturnValue(listItemsQuery)
+    listItemsQuery.range.mockResolvedValue({
+      data: [
+        {
+          id: 'item-ny-open',
+          place: {
+            opening_hours: {
+              timezone: 'America/New_York',
+              periods: [
+                {
+                  open: { day: 1, time: '2000' },
+                  close: { day: 1, time: '2200' },
+                },
+              ],
+            },
+          },
+        },
+      ],
+      error: null,
+    })
+
+    const fromSpy = vi.fn((table: string) => {
+      if (table === 'lists') {
+        return { select: vi.fn().mockReturnValue(listsSelectQuery) }
+      }
+      if (table === 'list_items') {
+        return { select: vi.fn().mockReturnValue(listItemsQuery) }
+      }
+      throw new Error(`Unexpected table query: ${table}`)
+    })
+
+    createClientMock.mockResolvedValue({
+      auth: {
+        getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'user-1' } } }),
+      },
+      from: fromSpy,
+    })
+
+    const response = await POST(
+      new Request('http://localhost/api/filters/query', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          list_id: listId,
+          filters: { open_now: true },
+          limit: 10,
+          offset: 0,
+        }),
+      })
+    )
+
+    expect(response.status).toBe(200)
+    const json = (await response.json()) as {
+      items?: Array<{ id?: string }>
+    }
+
+    expect(json.items?.map((item) => item.id)).toEqual(['item-ny-open'])
+  })
+
+  it('keeps overnight slots open across midnight in list timezone fallback', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-02-10T04:00:00.000Z')) // Monday 23:00 in New York
+
+    const listId = '11111111-1111-4111-8111-111111111111'
+    const listRecord = {
+      id: listId,
+      name: 'Overnight',
+      description: null,
+      is_default: false,
+      created_at: '2026-02-10T00:00:00.000Z',
+      start_date: '2026-02-10',
+      end_date: '2026-02-11',
+      timezone: 'America/New_York',
+    }
+
+    const listsEqQuery = {
+      single: vi.fn().mockResolvedValue({ data: listRecord, error: null }),
+    } as {
+      single: ReturnType<typeof vi.fn>
+    }
+    const listsSelectQuery = {
+      eq: vi.fn().mockReturnValue(listsEqQuery),
+    } as {
+      eq: ReturnType<typeof vi.fn>
+    }
+
+    const listItemsQuery = {
+      eq: vi.fn(),
+      in: vi.fn(),
+      or: vi.fn(),
+      order: vi.fn(),
+      range: vi.fn(),
+    } as {
+      eq: ReturnType<typeof vi.fn>
+      in: ReturnType<typeof vi.fn>
+      or: ReturnType<typeof vi.fn>
+      order: ReturnType<typeof vi.fn>
+      range: ReturnType<typeof vi.fn>
+    }
+
+    listItemsQuery.eq.mockReturnValue(listItemsQuery)
+    listItemsQuery.in.mockReturnValue(listItemsQuery)
+    listItemsQuery.or.mockReturnValue(listItemsQuery)
+    listItemsQuery.order.mockReturnValue(listItemsQuery)
+    listItemsQuery.range.mockResolvedValue({
+      data: [
+        {
+          id: 'item-overnight-open',
+          place: {
+            opening_hours: {
+              periods: [
+                {
+                  open: { day: 1, time: '2200' },
+                  close: { day: 2, time: '0200' },
+                },
+              ],
+            },
+          },
+        },
+      ],
+      error: null,
+    })
+
+    const fromSpy = vi.fn((table: string) => {
+      if (table === 'lists') {
+        return { select: vi.fn().mockReturnValue(listsSelectQuery) }
+      }
+      if (table === 'list_items') {
+        return { select: vi.fn().mockReturnValue(listItemsQuery) }
+      }
+      throw new Error(`Unexpected table query: ${table}`)
+    })
+
+    createClientMock.mockResolvedValue({
+      auth: {
+        getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'user-1' } } }),
+      },
+      from: fromSpy,
+    })
+
+    const response = await POST(
+      new Request('http://localhost/api/filters/query', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          list_id: listId,
+          filters: { open_now: true },
+          limit: 10,
+          offset: 0,
+        }),
+      })
+    )
+
+    expect(response.status).toBe(200)
+    const json = (await response.json()) as {
+      items?: Array<{ id?: string }>
+    }
+
+    expect(json.items?.map((item) => item.id)).toEqual(['item-overnight-open'])
+  })
 })

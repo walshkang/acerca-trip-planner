@@ -60,6 +60,43 @@ describe('evaluateOpenNow', () => {
     ).toBe(false)
   })
 
+  it('handles DST transition with timezone-aware fallback', () => {
+    const openingHours = {
+      periods: [
+        {
+          open: { day: 0, time: '0100' },
+          close: { day: 0, time: '0330' },
+        },
+      ],
+    }
+
+    const beforeSpringForwardUtc = new Date('2026-03-08T06:30:00.000Z') // Sunday 01:30 EST
+    const afterSpringForwardUtc = new Date('2026-03-08T07:15:00.000Z') // Sunday 03:15 EDT
+    const afterCloseUtc = new Date('2026-03-08T07:45:00.000Z') // Sunday 03:45 EDT
+
+    expect(
+      evaluateOpenNow({
+        openingHours,
+        referenceTime: beforeSpringForwardUtc,
+        fallbackTimezone: 'America/New_York',
+      })
+    ).toBe(true)
+    expect(
+      evaluateOpenNow({
+        openingHours,
+        referenceTime: afterSpringForwardUtc,
+        fallbackTimezone: 'America/New_York',
+      })
+    ).toBe(true)
+    expect(
+      evaluateOpenNow({
+        openingHours,
+        referenceTime: afterCloseUtc,
+        fallbackTimezone: 'America/New_York',
+      })
+    ).toBe(false)
+  })
+
   it('uses utc_offset_minutes when timezone is unavailable', () => {
     const openingHours = {
       utc_offset_minutes: 540,
@@ -91,6 +128,26 @@ describe('evaluateOpenNow', () => {
         openingHours: { open_now: false },
       })
     ).toBe(false)
+  })
+
+  it('uses UTC deterministically when periods exist but timezone metadata is unavailable', () => {
+    const openingHours = {
+      open_now: false,
+      periods: [
+        {
+          open: { day: 1, time: '0900' },
+          close: { day: 1, time: '1100' },
+        },
+      ],
+    }
+
+    const referenceUtc = new Date('2026-02-09T10:00:00.000Z') // Monday 10:00 UTC
+    expect(
+      evaluateOpenNow({
+        openingHours,
+        referenceTime: referenceUtc,
+      })
+    ).toBe(true)
   })
 
   it('returns null when schedule and fallback booleans are unavailable', () => {

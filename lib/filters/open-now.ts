@@ -1,5 +1,6 @@
 const MINUTES_PER_DAY = 24 * 60
 const MINUTES_PER_WEEK = 7 * MINUTES_PER_DAY
+const DETERMINISTIC_FALLBACK_TIMEZONE = 'UTC'
 
 type OpeningPeriod = {
   openDay: number
@@ -243,6 +244,12 @@ export function evaluateOpenNow({
     if (offsetMinutes !== null) {
       weekMinute = weekMinuteFromUtcOffset(referenceTime, offsetMinutes)
     }
+  }
+  if (weekMinute === null) {
+    weekMinute = weekMinuteFromTimezone(
+      referenceTime,
+      DETERMINISTIC_FALLBACK_TIMEZONE
+    )
   }
   if (weekMinute === null) {
     return fallbackBooleanOpenNow(openingHoursRecord)
