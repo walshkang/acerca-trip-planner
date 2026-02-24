@@ -10,7 +10,7 @@ This file defines the current verification contract for daily work in this repo.
 ## Current Gate Status
 - Static contract checks (`npm run check`): always active.
 - Unit/API tests (`npm test`): active for behavior changes.
-- Seeded Playwright E2E (`npm run test:e2e`): active for the restored seeded suite (10 tests across 4 specs).
+- Seeded Playwright E2E (`npm run test:e2e`): active for the restored seeded suite (12 tests across 4 specs).
 - Learning reports: generation can be automated by local post-commit hook; changed/new reports must pass rationale checks.
 
 ## Required For Behavior Changes

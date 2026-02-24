@@ -51,6 +51,10 @@ function plannerDayCard(planner: Locator, isoDate: string) {
   return plannerSectionByHeading(planner, isoDate)
 }
 
+function plannerLaneByHeading(planner: Locator, heading: string) {
+  return plannerSectionByHeading(planner, heading).locator('div.rounded-md').first()
+}
+
 function plannerSlotLane(dayCard: Locator, slotLabel: 'Morning' | 'Afternoon' | 'Evening') {
   return dayCard.getByText(slotLabel, { exact: true }).first().locator('..')
 }
@@ -65,14 +69,23 @@ async function expectDragPatch(patchResponse: Promise<APIResponse>) {
   expect(requestBody?.source).toBe('drag')
 
   const responseJson = (await response.json().catch(() => ({}))) as {
-    item?: { last_scheduled_source?: string | null }
+    item?: {
+      last_scheduled_source?: string | null
+      completed_at?: string | null
+    }
   }
   expect(responseJson.item?.last_scheduled_source).toBe('drag')
+  return {
+    requestBody,
+    responseItem: responseJson.item ?? null,
+  }
 }
 
 type ListItemApiRow = {
   scheduled_date: string | null
   scheduled_start_time: string | null
+  scheduled_order: number | null
+  completed_at: string | null
   place: { id: string; name: string; category: string } | null
 }
 
@@ -337,6 +350,144 @@ test.describe('desktop dnd planner', () => {
         .map((item) => item.place?.id)
 
       expect(morningIds).toEqual([seedB.place_id, seedA.place_id])
+    } finally {
+      await cleanupSeededData(page, seeds)
+    }
+  })
+
+  test('desktop drag from slot to done persists and records drag source', async ({
+    page,
+  }) => {
+    await page.goto('/')
+    await ensureSignedIn(page)
+
+    const seeds = [] as Awaited<ReturnType<typeof seedListWithPlace>>[]
+    try {
+      const seed = await seedListWithPlace(page)
+      seeds.push(seed)
+
+      const today = new Date().toISOString().slice(0, 10)
+      await setTripDates(page, seed.list.id, today)
+      await page.goto(`/?list=${encodeURIComponent(seed.list.id)}`)
+      await ensureSignedIn(page)
+
+      const listDrawer = visibleByTestId(page, 'list-drawer')
+      await expect(listDrawer).toBeVisible()
+
+      await openPlanTab(page)
+      const planner = visibleByTestId(page, 'list-planner')
+      await expect(planner).toBeVisible()
+
+      const backlogSection = plannerSectionByHeading(planner, 'Backlog')
+      const backlogCard = draggableCardByPlaceName(backlogSection, seed.place_name)
+      await expect(backlogCard).toHaveAttribute('draggable', 'true')
+
+      const dayCard = plannerDayCard(planner, today)
+      const morningLane = plannerSlotLane(dayCard, 'Morning')
+      await morningLane.scrollIntoViewIfNeeded()
+
+      const patchToMorning = waitForPlannerPatch(page, seed.list.id)
+      await backlogCard.dragTo(morningLane)
+      await expectDragPatch(patchToMorning)
+
+      const morningCard = draggableCardByPlaceName(morningLane, seed.place_name)
+      await expect(morningCard).toHaveAttribute('draggable', 'true')
+
+      const doneLane = plannerLaneByHeading(planner, 'Done')
+      const patchToDone = waitForPlannerPatch(page, seed.list.id)
+      await morningCard.dragTo(doneLane)
+      const donePatch = await expectDragPatch(patchToDone)
+      expect(donePatch.responseItem?.completed_at).toBeTruthy()
+
+      await page.reload()
+      await ensureSignedIn(page)
+      await expect(listDrawer).toBeVisible()
+      await openPlanTab(page)
+
+      const reloadedPlanner = visibleByTestId(page, 'list-planner')
+      const reloadedDoneSection = plannerSectionByHeading(reloadedPlanner, 'Done')
+      const reloadedDayCard = plannerDayCard(reloadedPlanner, today)
+      const reloadedMorningLane = plannerSlotLane(reloadedDayCard, 'Morning')
+      await expect(reloadedDoneSection.getByText(seed.place_name)).toBeVisible()
+      await expect(reloadedMorningLane.getByText(seed.place_name)).toBeHidden()
+    } finally {
+      await cleanupSeededData(page, seeds)
+    }
+  })
+
+  test('desktop drag from done to backlog clears scheduling and completion', async ({
+    page,
+  }) => {
+    await page.goto('/')
+    await ensureSignedIn(page)
+
+    const seeds = [] as Awaited<ReturnType<typeof seedListWithPlace>>[]
+    try {
+      const seed = await seedListWithPlace(page)
+      seeds.push(seed)
+
+      const today = new Date().toISOString().slice(0, 10)
+      await setTripDates(page, seed.list.id, today)
+      await page.goto(`/?list=${encodeURIComponent(seed.list.id)}`)
+      await ensureSignedIn(page)
+
+      const listDrawer = visibleByTestId(page, 'list-drawer')
+      await expect(listDrawer).toBeVisible()
+
+      await openPlanTab(page)
+      const planner = visibleByTestId(page, 'list-planner')
+      await expect(planner).toBeVisible()
+
+      const backlogSection = plannerSectionByHeading(planner, 'Backlog')
+      const backlogCard = draggableCardByPlaceName(backlogSection, seed.place_name)
+      await expect(backlogCard).toHaveAttribute('draggable', 'true')
+
+      const dayCard = plannerDayCard(planner, today)
+      const morningLane = plannerSlotLane(dayCard, 'Morning')
+      await morningLane.scrollIntoViewIfNeeded()
+
+      const patchToMorning = waitForPlannerPatch(page, seed.list.id)
+      await backlogCard.dragTo(morningLane)
+      await expectDragPatch(patchToMorning)
+
+      const morningCard = draggableCardByPlaceName(morningLane, seed.place_name)
+      const doneLane = plannerLaneByHeading(planner, 'Done')
+      const patchToDone = waitForPlannerPatch(page, seed.list.id)
+      await morningCard.dragTo(doneLane)
+      await expectDragPatch(patchToDone)
+
+      const doneCard = draggableCardByPlaceName(doneLane, seed.place_name)
+      await expect(doneCard).toHaveAttribute('draggable', 'true')
+
+      const backlogLane = plannerLaneByHeading(planner, 'Backlog')
+      const patchToBacklog = waitForPlannerPatch(page, seed.list.id)
+      await doneCard.dragTo(backlogLane)
+      const backlogPatch = await expectDragPatch(patchToBacklog)
+      expect(backlogPatch.requestBody?.completed).toBe(false)
+      expect(backlogPatch.requestBody?.scheduled_date).toBeNull()
+      expect(backlogPatch.requestBody?.slot).toBeNull()
+
+      await page.reload()
+      await ensureSignedIn(page)
+      await expect(listDrawer).toBeVisible()
+      await openPlanTab(page)
+
+      const reloadedPlanner = visibleByTestId(page, 'list-planner')
+      const reloadedBacklog = plannerSectionByHeading(reloadedPlanner, 'Backlog')
+      const reloadedDone = plannerSectionByHeading(reloadedPlanner, 'Done')
+      await expect(reloadedBacklog.getByText(seed.place_name)).toBeVisible()
+      await expect(reloadedDone.getByText(seed.place_name)).toBeHidden()
+
+      const reloadedItems = await fetchListItems(page, seed.list.id)
+      const reloadedItem = reloadedItems.find((item) => item.place?.id === seed.place_id)
+      if (!reloadedItem) {
+        throw new Error('Expected seeded place to exist after Done -> Backlog drag.')
+      }
+
+      expect(reloadedItem.scheduled_date).toBeNull()
+      expect(reloadedItem.scheduled_start_time).toBeNull()
+      expect(reloadedItem.completed_at).toBeNull()
+      expect(reloadedItem.scheduled_order).toBe(0)
     } finally {
       await cleanupSeededData(page, seeds)
     }

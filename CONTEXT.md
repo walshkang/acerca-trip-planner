@@ -9,7 +9,7 @@
 ## 🧠 Active Context
 - Current Phase: The Interactive Planner (Birthday Cake)
 - Active Epic: Deterministic Filtering & Intent Translation (stabilization)
-- Immediate Blocker: None. Seeded Playwright desktop DnD scheduling/reorder persistence coverage is restored in the 10-test baseline.
+- Immediate Blocker: None. Seeded Playwright desktop DnD scheduling/reorder/Done/Backlog persistence coverage is restored in the 12-test baseline.
 - Recently Completed: Tasks 2.9-2.12 (filter schema, translate endpoint, deterministic query endpoint, and deterministic `open_now` timezone fallback + telemetry) including full-page `ListDetailPanel` intent-control parity.
 
 ## ✅ P2-E1 Remaining Plan (Tracking)
@@ -24,7 +24,7 @@
 - [x] Mobile MVP: tap-to-move via `Move` picker + optimistic UI + calm/clear motion.
 - [x] Desktop follow-up: DnD schedule + reorder within slot.
 - [x] E2E: Playwright coverage for mobile Move picker schedule + Done/Backlog transitions.
-- [x] E2E follow-up: desktop DnD scheduling/reorder persistence coverage.
+- [x] E2E follow-up: desktop DnD scheduling/reorder/Done/Backlog persistence coverage.
 
 ## ✅ P2-E4 Remaining Plan (Tracking)
 - [x] Decide URL contract: `/?place=<id>` map drawer deep link; keep `/places/[id]` full detail page.
@@ -84,9 +84,10 @@ gantt
 
 ## 📝 Implementation Memory
 - 2026-02-24 – test: add desktop planner DnD persistence coverage
-    - Expanded `tests/e2e/list-planner-move.spec.ts` with seeded desktop drag-to-slot persistence and in-slot reorder persistence checks.
+    - Expanded `tests/e2e/list-planner-move.spec.ts` with seeded desktop drag-to-slot, in-slot reorder, slot→Done, and Done→Backlog persistence checks.
     - Added assertions that DnD PATCH payloads/rows record `source="drag"` and `last_scheduled_source="drag"`, and that order remains stable after reload.
-    - Updated seeded suite contract counts in `docs/PLAYWRIGHT.md` and `docs/QUALITY_GATES.md` to 10 tests across 4 specs.
+    - Added Done→Backlog assertions that persisted rows clear scheduling/completion fields after reload.
+    - Updated seeded suite contract counts in `docs/PLAYWRIGHT.md` and `docs/QUALITY_GATES.md` to 12 tests across 4 specs.
 - 2026-02-11 – chore: restore seeded planner Playwright baseline
     - Reintroduced guarded `/api/test/seed` + `lib/server/testSeed.ts` so seeded planner E2E can run without reopening all paused specs.
     - Re-enabled `tests/e2e/list-planner-move.spec.ts` with environment-based skips when seed prerequisites are missing.

@@ -9,7 +9,7 @@ Active seeded specs:
 - `tests/e2e/list-local-search.spec.ts`
 - `tests/e2e/list-filters-and-map-link.spec.ts`
 
-Current restored seeded total: 10 tests.
+Current restored seeded total: 12 tests.
 
 ## 1) Install browsers (one-time)
 ```sh
