@@ -245,7 +245,7 @@ Notes:
 - Preserve layering contract: Map → Context Panel → Tools Sheet → transient toasts.
 - Keep overlay readability high across light and dark base map styles.
 - Spec source: `docs/LIGHT_MODE_UI_SPEC.md`.
-- Status: Implemented (2026-02-25); verification hardening in progress.
+- Status: Implemented (2026-02-25); verification complete (2026-02-25).
 
 ### List Drawer Overlay (Map stays primary, done)
 - Provide a drawer/overlay next to the map (do not navigate away by default).
@@ -330,7 +330,7 @@ Notes:
 12. Map camera stability + overlay layering + sign-out placement. (done)
 13. Scheduling UI + API updates (P2-E1).
 14. Filter translation + query pipeline (P2-E2).
-15. UI/UX Track B: warm-glass light-mode alignment (semantics + chrome + motion; no surface-model changes). (implemented; verification hardening in progress)
+15. UI/UX Track B: warm-glass light-mode alignment (semantics + chrome + motion; no surface-model changes). (implemented; verification complete (2026-02-25))
 
 ## Testing & Verification
 - Unit tests for filter schema validation and query builder.

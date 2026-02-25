@@ -7,9 +7,9 @@
 - Starting a new task/chat? Use `prompts/agent_task.md`.
 
 ## 🧠 Active Context
-- Current Phase: The Interactive Planner (Birthday Cake)
-- Active Epic: Map-First List Context
-- Immediate Blocker: Task 4.4 – Close warm-glass Track B verification loop.
+- Current Phase: The Intelligent Concierge (Wedding Cake)
+- Active Epic: Deterministic Routing
+- Immediate Blocker: Task 1.3 – Define deterministic itinerary sequencing data model.
 
 ## ✅ P2-E1 Remaining Plan (Tracking)
 - Spec: `docs/PHASE_2_KANBAN_SPEC.md`.
@@ -67,10 +67,10 @@ gantt
   section The_Interactive_Planner_(Birthday_Cake)
   "P2-E1 Stateful Planning (Kanban)" :done, p2e1, after p1e5, 7d
   "P2-E2 Deterministic Filtering & Intent Translation" :done, p2e2, after p2e1, 7d
-  "P2-E3 List Workspace + Tags" :p2e3, after p2e2, 7d
-  "P2-E4 Map-First List Context" :active, p2e4, after p2e3, 7d
+  "P2-E3 List Workspace + Tags" :done, p2e3, after p2e2, 7d
+  "P2-E4 Map-First List Context" :done, p2e4, after p2e3, 7d
   section The_Intelligent_Concierge_(Wedding_Cake)
-  "P3-E1 Deterministic Routing" :p3e1, after p2e4, 7d
+  "P3-E1 Deterministic Routing" :active, p3e1, after p2e4, 7d
   "P3-E2 AI Discovery (Suggestion Layer)" :p3e2, after p3e1, 7d
 ```
 
@@ -82,9 +82,9 @@ gantt
 - User edits never overwrite frozen AI enrichment.
 
 ## 📝 Implementation Memory
+- 2026-02-25 – Review post-green plan
+    Auto-generated from git log (f7999d6).
+- 2026-02-25 – Update status docs for PRs
+    Auto-generated from git log (415fab3).
 - 2026-02-25 – Plan tracking sync actions
     Auto-generated from git log (4b0d7a3).
-- 2026-02-25 – Clarify PMTiles archive plan
-    Auto-generated from git log (7b7a86c).
-- 2026-02-25 – Fix planner drag reorder test
-    Auto-generated from git log (346af45).

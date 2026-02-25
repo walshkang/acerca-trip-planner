@@ -456,6 +456,26 @@
             "Local search uses a deterministic contract with nullable display_address.",
             "Local search accepts keyword input only and returns empty results for short queries.",
             "List search results render in a portal to avoid drawer clipping."
+          ],
+          "tasks": [
+            {
+              "id": "3.1",
+              "task": "Ship list-scoped tags write/read flows.",
+              "details": "PATCH/GET list tag endpoints, normalization, and deterministic filter behavior.",
+              "status": "completed"
+            },
+            {
+              "id": "3.2",
+              "task": "Ship local search add-to-list flow.",
+              "details": "Deterministic list-local canonical place search and idempotent add contract.",
+              "status": "completed"
+            },
+            {
+              "id": "3.3",
+              "task": "Stabilize map/list linkage for list context.",
+              "details": "List selection, place linkage semantics, and drawer-local list context behavior.",
+              "status": "completed"
+            }
           ]
         },
         {
@@ -505,16 +525,17 @@
               "id": "4.4",
               "task": "Close warm-glass Track B verification loop.",
               "details": "Run seeded E2E + manual QA pass for warm-glass readability and overlay budget behavior.",
-              "status": "in_progress"
+              "status": "completed"
             }
           ]
         }
       ],
-      "status": "in_progress"
+      "status": "completed"
     },
     "phase_3": {
       "name": "The Intelligent Concierge (Wedding Cake)",
       "goal": "Optimization and discovery without compromising trust.",
+      "status": "in_progress",
       "epics": [
         {
           "id": "P3-E1",
@@ -523,6 +544,32 @@
             "Route Optimization via OSRM or Google Routes API.",
             "Travel-time badges rendered between scheduled items.",
             "LLMs are not involved in routing or timing."
+          ],
+          "tasks": [
+            {
+              "id": "1.1",
+              "task": "Define deterministic routing contract.",
+              "details": "Completion artifact required: docs/PHASE_3_ROUTING_CONTRACT.md defining request/response schema, invariants, and acceptance checks.",
+              "status": "completed"
+            },
+            {
+              "id": "1.2",
+              "task": "Define server-only routing adapter boundary.",
+              "details": "Provider-agnostic server interface and failure semantics; no client-side routing compute.",
+              "status": "completed"
+            },
+            {
+              "id": "1.3",
+              "task": "Define deterministic itinerary sequencing data model.",
+              "details": "Inputs/outputs for ordered legs, durations, and travel-time badge rendering contract.",
+              "status": "in_progress"
+            },
+            {
+              "id": "1.4",
+              "task": "Define verification gate for routing contract slice.",
+              "details": "Unit/API test matrix and acceptance criteria for deterministic route outputs.",
+              "status": "pending"
+            }
           ]
         },
         {

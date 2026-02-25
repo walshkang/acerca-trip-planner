@@ -1,7 +1,7 @@
 # Light Mode UI Spec (Warm Glass)
 
 - Date: 2026-02-08
-- Status: Implemented (Phase 2; verification hardening in progress)
+- Status: Implemented (Phase 2; verification complete (2026-02-25))
 - Scope: Phase 2 map shell overlays (`Context Panel` + `Tools Sheet`)
 - Related:
   - `docs/SIGNAL_VISUAL_LANGUAGE.md`
