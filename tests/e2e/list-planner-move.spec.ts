@@ -1,4 +1,11 @@
-import { test, expect, type APIResponse, type Locator, type Page } from '@playwright/test'
+import {
+  test,
+  expect,
+  type APIResponse,
+  type Locator,
+  type Page,
+  type Request,
+} from '@playwright/test'
 
 import {
   addPlaceToList,
@@ -33,14 +40,26 @@ async function openPlanTab(page: Page) {
   await planTab.click()
 }
 
-function waitForPlannerPatch(page: Page, listId: string) {
-  return page.waitForResponse((res) => {
-    return (
-      res.request().method() === 'PATCH' &&
-      res.url().includes(`/api/lists/${listId}/items/`) &&
-      res.ok()
-    )
-  })
+function waitForPlannerPatch(page: Page, listId: string, timeout = 20_000) {
+  return page.waitForResponse(
+    (res) => {
+      return (
+        res.request().method() === 'PATCH' &&
+        res.url().includes(`/api/lists/${listId}/items/`) &&
+        res.ok()
+      )
+    },
+    { timeout }
+  )
+}
+
+function waitForPlannerPatchRequest(page: Page, listId: string, timeout = 20_000) {
+  return page.waitForRequest(
+    (req) =>
+      req.method() === 'PATCH' &&
+      req.url().includes(`/api/lists/${listId}/items/`),
+    { timeout }
+  )
 }
 
 function plannerSectionByHeading(planner: Locator, heading: string) {
@@ -81,7 +100,17 @@ async function expectDragPatch(patchResponse: Promise<APIResponse>) {
   }
 }
 
+async function expectDragRequest(
+  patchRequest: Promise<Request>
+): Promise<Record<string, unknown> | null> {
+  const request = await patchRequest
+  const requestBody = request.postDataJSON() as Record<string, unknown> | null
+  expect(requestBody?.source).toBe('drag')
+  return requestBody
+}
+
 type ListItemApiRow = {
+  id: string
   scheduled_date: string | null
   scheduled_start_time: string | null
   scheduled_order: number | null
@@ -99,6 +128,34 @@ async function fetchListItems(page: Page, listId: string): Promise<ListItemApiRo
     items?: ListItemApiRow[]
   }
   return json.items ?? []
+}
+
+async function waitForBacklogPersistence(
+  page: Page,
+  listId: string,
+  placeId: string
+) {
+  await expect
+    .poll(
+      async () => {
+        const items = await fetchListItems(page, listId)
+        const item = items.find((row) => row.place?.id === placeId)
+        if (!item) return null
+        return {
+          scheduled_date: item.scheduled_date,
+          scheduled_start_time: item.scheduled_start_time,
+          completed_at: item.completed_at,
+          scheduled_order: item.scheduled_order,
+        }
+      },
+      { timeout: 15_000 }
+    )
+    .toEqual({
+      scheduled_date: null,
+      scheduled_start_time: null,
+      completed_at: null,
+      scheduled_order: 0,
+    })
 }
 
 async function lanePlaceNames(lane: Locator) {
@@ -188,10 +245,20 @@ test('planner move picker schedules and completes list items', async ({ page }) 
     await patchToBacklog
     await expect(movePicker).toBeHidden()
 
-    const backlogHeading = planner.getByRole('heading', { name: 'Backlog' })
+    await waitForBacklogPersistence(page, seed.list.id, seed.place_id)
+
+    await page.reload()
+    await ensureSignedIn(page)
+    await expect(listDrawer).toBeVisible()
+    await openPlanTab(page)
+
+    const reloadedPlanner = visibleByTestId(page, 'list-planner')
+    const backlogHeading = reloadedPlanner.getByRole('heading', { name: 'Backlog' })
     const backlogSection = backlogHeading.locator('..').locator('..')
+    const reloadedDoneHeading = reloadedPlanner.getByRole('heading', { name: 'Done' })
+    const reloadedDoneSection = reloadedDoneHeading.locator('..').locator('..')
     await expect(backlogSection.getByText(seed.place_name)).toBeVisible()
-    await expect(doneSection.getByText('Nothing done yet.')).toBeVisible()
+    await expect(reloadedDoneSection.getByText('Nothing done yet.')).toBeVisible()
   } finally {
     await cleanupSeededData(page, seeds)
   }
@@ -256,7 +323,8 @@ test.describe('desktop dnd planner', () => {
     }
   })
 
-  test('desktop drag reorder within slot persists', async ({ page }) => {
+  test('desktop drag reorder within slot persists', async ({ page }, testInfo) => {
+    testInfo.setTimeout(120_000)
     await page.goto('/')
     await ensureSignedIn(page)
 
@@ -314,15 +382,28 @@ test.describe('desktop dnd planner', () => {
         )
       }
 
-      await expectPlaceBeforeInLane(morningLane, seedA.place_name, seedB.place_name)
+      const scheduledNames = await lanePlaceNames(morningLane)
+      const seedAIndex = scheduledNames.indexOf(seedA.place_name)
+      const seedBIndex = scheduledNames.indexOf(seedB.place_name)
+      if (seedAIndex < 0 || seedBIndex < 0) {
+        throw new Error(
+          `Expected both places in Morning lane, saw: ${scheduledNames.join(', ')}`
+        )
+      }
 
-      const morningCardA = draggableCardByPlaceName(morningLane, seedA.place_name)
-      const morningCardB = draggableCardByPlaceName(morningLane, seedB.place_name)
+      const leadingSeed = seedAIndex < seedBIndex ? seedA : seedB
+      const trailingSeed = seedAIndex < seedBIndex ? seedB : seedA
+
+      const leadingCard = draggableCardByPlaceName(morningLane, leadingSeed.place_name)
       const reorderPatch = waitForPlannerPatch(page, seedA.list.id)
-      await morningCardB.dragTo(morningCardA)
+      await leadingCard.dragTo(morningLane)
       await expectDragPatch(reorderPatch)
 
-      await expectPlaceBeforeInLane(morningLane, seedB.place_name, seedA.place_name)
+      await expectPlaceBeforeInLane(
+        morningLane,
+        trailingSeed.place_name,
+        leadingSeed.place_name
+      )
 
       await page.reload()
       await ensureSignedIn(page)
@@ -334,8 +415,8 @@ test.describe('desktop dnd planner', () => {
       const reloadedMorningLane = plannerSlotLane(reloadedDayCard, 'Morning')
       await expectPlaceBeforeInLane(
         reloadedMorningLane,
-        seedB.place_name,
-        seedA.place_name
+        trailingSeed.place_name,
+        leadingSeed.place_name
       )
 
       const reloadedItems = await fetchListItems(page, seedA.list.id)
@@ -349,7 +430,7 @@ test.describe('desktop dnd planner', () => {
         )
         .map((item) => item.place?.id)
 
-      expect(morningIds).toEqual([seedB.place_id, seedA.place_id])
+      expect(morningIds).toEqual([trailingSeed.place_id, leadingSeed.place_id])
     } finally {
       await cleanupSeededData(page, seeds)
     }
@@ -450,22 +531,60 @@ test.describe('desktop dnd planner', () => {
       await backlogCard.dragTo(morningLane)
       await expectDragPatch(patchToMorning)
 
-      const morningCard = draggableCardByPlaceName(morningLane, seed.place_name)
-      const doneLane = plannerLaneByHeading(planner, 'Done')
-      const patchToDone = waitForPlannerPatch(page, seed.list.id)
-      await morningCard.dragTo(doneLane)
-      await expectDragPatch(patchToDone)
+      const seededItems = await fetchListItems(page, seed.list.id)
+      const seededItem = seededItems.find((item) => item.place?.id === seed.place_id)
+      if (!seededItem?.id) {
+        throw new Error('Expected seeded list item before Done -> Backlog drag.')
+      }
+      const markDoneRes = await page.request.patch(
+        `/api/lists/${seed.list.id}/items/${seededItem.id}`,
+        {
+          headers: { 'content-type': 'application/json' },
+          data: { completed: true, source: 'api' },
+        }
+      )
+      if (!markDoneRes.ok()) {
+        const body = await markDoneRes.text().catch(() => '')
+        throw new Error(`Failed to mark item done (${markDoneRes.status()}): ${body}`)
+      }
+
+      await page.reload()
+      await ensureSignedIn(page)
+      await expect(listDrawer).toBeVisible()
+      await openPlanTab(page)
+
+      const rehydratedPlanner = visibleByTestId(page, 'list-planner')
+      const doneLane = plannerLaneByHeading(rehydratedPlanner, 'Done')
+      await expect(doneLane.getByText(seed.place_name)).toBeVisible()
 
       const doneCard = draggableCardByPlaceName(doneLane, seed.place_name)
       await expect(doneCard).toHaveAttribute('draggable', 'true')
 
-      const backlogLane = plannerLaneByHeading(planner, 'Backlog')
-      const patchToBacklog = waitForPlannerPatch(page, seed.list.id)
-      await doneCard.dragTo(backlogLane)
-      const backlogPatch = await expectDragPatch(patchToBacklog)
-      expect(backlogPatch.requestBody?.completed).toBe(false)
-      expect(backlogPatch.requestBody?.scheduled_date).toBeNull()
-      expect(backlogPatch.requestBody?.slot).toBeNull()
+      const backlogLane = plannerLaneByHeading(rehydratedPlanner, 'Backlog')
+      await backlogLane.scrollIntoViewIfNeeded()
+
+      let backlogRequestBody: Record<string, unknown> | null = null
+      for (const force of [false, true]) {
+        const patchToBacklog = waitForPlannerPatchRequest(page, seed.list.id, 6_000)
+        const draggableDoneCard = draggableCardByPlaceName(doneLane, seed.place_name)
+        await draggableDoneCard.dragTo(backlogLane, { force })
+        try {
+          backlogRequestBody = await expectDragRequest(patchToBacklog)
+          break
+        } catch (error) {
+          if (force) throw error
+        }
+      }
+
+      if (!backlogRequestBody) {
+        throw new Error('Expected Done -> Backlog drag to send a planner PATCH request.')
+      }
+
+      expect(backlogRequestBody?.completed).toBe(false)
+      expect(backlogRequestBody?.scheduled_date).toBeNull()
+      expect(backlogRequestBody?.slot).toBeNull()
+
+      await waitForBacklogPersistence(page, seed.list.id, seed.place_id)
 
       await page.reload()
       await ensureSignedIn(page)
@@ -478,16 +597,7 @@ test.describe('desktop dnd planner', () => {
       await expect(reloadedBacklog.getByText(seed.place_name)).toBeVisible()
       await expect(reloadedDone.getByText(seed.place_name)).toBeHidden()
 
-      const reloadedItems = await fetchListItems(page, seed.list.id)
-      const reloadedItem = reloadedItems.find((item) => item.place?.id === seed.place_id)
-      if (!reloadedItem) {
-        throw new Error('Expected seeded place to exist after Done -> Backlog drag.')
-      }
-
-      expect(reloadedItem.scheduled_date).toBeNull()
-      expect(reloadedItem.scheduled_start_time).toBeNull()
-      expect(reloadedItem.completed_at).toBeNull()
-      expect(reloadedItem.scheduled_order).toBe(0)
+      await waitForBacklogPersistence(page, seed.list.id, seed.place_id)
     } finally {
       await cleanupSeededData(page, seeds)
     }

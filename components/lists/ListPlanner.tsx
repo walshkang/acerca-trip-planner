@@ -308,6 +308,14 @@ export default function ListPlanner({
         item.scheduled_date && !item.completed_at
           ? slotFromScheduledStartTime(item.scheduled_start_time)
           : null
+      const requestedOrder =
+        typeof options?.scheduledOrder === 'number' ? options.scheduledOrder : null
+      const currentOrder =
+        typeof item.scheduled_order === 'number' ? item.scheduled_order : 0
+      const hasOrderChange =
+        requestedOrder != null &&
+        Number.isFinite(requestedOrder) &&
+        Math.abs(requestedOrder - currentOrder) > Number.EPSILON
       const isInBacklog = !item.completed_at && !item.scheduled_date
       const isDone = Boolean(item.completed_at)
 
@@ -323,7 +331,8 @@ export default function ListPlanner({
         destination.type === 'slot' &&
         !isDone &&
         item.scheduled_date === destination.date &&
-        currentSlot === destination.slot
+        currentSlot === destination.slot &&
+        !hasOrderChange
       ) {
         setMoveItemId(null)
         return

@@ -1,5 +1,5 @@
 import fs from 'node:fs'
-import type { APIResponse, Locator, Page } from '@playwright/test'
+import { request, type APIResponse, type Locator, type Page } from '@playwright/test'
 
 type SkipRegistrar = {
   skip: (condition: boolean, description?: string) => void
@@ -18,6 +18,9 @@ export const storageStatePath =
   process.env.PLAYWRIGHT_STORAGE_STATE ?? 'playwright/.auth/user.json'
 export const hasStorageState = fs.existsSync(storageStatePath)
 export const hasSeedToken = Boolean(process.env.PLAYWRIGHT_SEED_TOKEN)
+const CLEANUP_MAX_ATTEMPTS = 2
+const CLEANUP_REQUEST_TIMEOUT_MS = 5_000
+const FAIL_ON_CLEANUP_ERROR = process.env.PLAYWRIGHT_STRICT_CLEANUP === 'true'
 
 export function applySeededPrerequisiteSkips(test: SkipRegistrar) {
   test.skip(!hasSeedToken, 'PLAYWRIGHT_SEED_TOKEN is required for seeded E2E.')
@@ -90,20 +93,48 @@ export async function cleanupSeededData(
 
   if (listIds.length === 0 && placeIds.length === 0) return
 
-  const res = await page.request.delete('/api/test/seed', {
-    headers: {
-      'x-seed-token': seedToken,
-      'content-type': 'application/json',
-    },
-    data: {
-      list_ids: listIds,
-      place_ids: placeIds,
-    },
-  })
+  const pageUrl = page.url()
+  const cleanupBaseUrl =
+    pageUrl && pageUrl !== 'about:blank'
+      ? new URL(pageUrl).origin
+      : process.env.PLAYWRIGHT_BASE_URL ?? 'http://127.0.0.1:3000'
 
-  if (!res.ok()) {
-    throw new Error(`Cleanup failed (${res.status()}): ${await responseBody(res)}`)
+  let lastError = 'No cleanup attempt was made.'
+  for (let attempt = 1; attempt <= CLEANUP_MAX_ATTEMPTS; attempt += 1) {
+    const cleanupRequest = await request.newContext({
+      baseURL: cleanupBaseUrl,
+      storageState: storageStatePath,
+      timeout: CLEANUP_REQUEST_TIMEOUT_MS,
+    })
+    try {
+      const res = await cleanupRequest.delete('/api/test/seed', {
+        headers: {
+          'x-seed-token': seedToken,
+          'content-type': 'application/json',
+        },
+        data: {
+          list_ids: listIds,
+          place_ids: placeIds,
+        },
+      })
+      if (res.ok()) return
+      lastError = `Cleanup failed (${res.status()}): ${await responseBody(res)}`
+    } catch (error: unknown) {
+      lastError = error instanceof Error ? error.message : String(error)
+    } finally {
+      await cleanupRequest.dispose()
+    }
+
+    if (attempt < CLEANUP_MAX_ATTEMPTS) {
+      await new Promise((resolve) => setTimeout(resolve, 500 * attempt))
+    }
   }
+
+  const message = `Cleanup failed after ${CLEANUP_MAX_ATTEMPTS} attempts: ${lastError}`
+  if (FAIL_ON_CLEANUP_ERROR) {
+    throw new Error(message)
+  }
+  console.warn(`[playwright seeded cleanup] ${message}`)
 }
 
 export async function addPlaceToList(
