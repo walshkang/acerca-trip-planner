@@ -1,7 +1,7 @@
 # Light Mode UI Spec (Warm Glass)
 
 - Date: 2026-02-08
-- Status: Draft
+- Status: Implemented (Phase 2; verification hardening in progress)
 - Scope: Phase 2 map shell overlays (`Context Panel` + `Tools Sheet`)
 - Related:
   - `docs/SIGNAL_VISUAL_LANGUAGE.md`
@@ -151,24 +151,24 @@ Layering contract must remain:
 
 ---
 
-## 13) Rollout Slices
+## 13) Rollout Slices (completed)
 
 1. Semantic token mapping and docs alignment.
 2. Overlay chrome + icon consistency pass.
-3. Motion and reduced-motion pass.
+3. Motion and reduced-motion pass (`prefers-reduced-motion` honored for glass interactions).
 4. Manual QA against existing Phase 2 acceptance checks.
 
 ---
 
-## 14) Open Questions
+## 14) Resolved Defaults
 
-- If focus blue is reserved, what is the default visual emphasis for primary actions?
-- What translucency range preserves readability while keeping map context visible?
-- Are any exceptions needed for destructive/urgent actions?
+- Focus blue remains reserved for linkage semantics; primary actions use neutral glass button emphasis.
+- Light-mode overlays use warm translucent glass with restrained blur and explicit border contrast.
+- No destructive-action exception to focus-link blue; destructive intent relies on error/destructive tokens only.
 
 ---
 
 ## 15) Decision Log
 
 - 2026-02-08: Adopt “warm-tinted glass” wording for light mode to preserve the existing glass contract while improving tone.
-
+- 2026-02-25: Enforce mobile state hierarchy where URL/preview state suppresses local Tools Sheet state.

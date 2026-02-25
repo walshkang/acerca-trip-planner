@@ -20,6 +20,14 @@
 
     --glass-coin-bg: rgba(30, 41, 59, 0.9);
     --glass-coin-border: rgba(255, 255, 255, 0.2);
+
+    --focus-link-ring: rgba(56, 189, 248, 0.42);
+    --glass-tab-active-bg: rgb(241 245 249);
+    --glass-tab-active-border: rgb(241 245 249);
+    --glass-tab-active-text: rgb(15 23 42);
+    --glass-tab-inactive-text: rgb(226 232 240);
+    --glass-tab-inactive-border: rgba(255, 255, 255, 0.1);
+    --glass-tab-inactive-border-hover: rgba(255, 255, 255, 0.3);
   }
 
   [data-map-tone='light'] {
@@ -39,6 +47,14 @@
 
     --glass-coin-bg: rgba(248, 250, 252, 0.9);
     --glass-coin-border: rgba(148, 163, 184, 0.5);
+
+    --focus-link-ring: rgba(37, 99, 235, 0.38);
+    --glass-tab-active-bg: rgb(15 23 42);
+    --glass-tab-active-border: rgb(15 23 42);
+    --glass-tab-active-text: rgb(248 250 252);
+    --glass-tab-inactive-text: rgb(51 65 85);
+    --glass-tab-inactive-border: rgba(148, 163, 184, 0.6);
+    --glass-tab-inactive-border-hover: rgba(71, 85, 105, 0.9);
   }
 }
 
@@ -55,7 +71,7 @@
   }
 
   .glass-button {
-    @apply inline-flex items-center rounded-full border px-3 py-1 text-xs shadow-sm backdrop-blur-md transition-colors duration-200;
+    @apply inline-flex items-center rounded-full border px-3 py-1 text-xs shadow-sm backdrop-blur-md transition-colors duration-200 focus-visible:outline-none;
     border-color: var(--glass-button-border);
     background-color: var(--glass-button-bg);
     color: var(--glass-button-text);
@@ -63,6 +79,10 @@
 
   .glass-button:hover {
     background-color: var(--glass-button-bg-hover);
+  }
+
+  .glass-button:focus-visible {
+    box-shadow: 0 0 0 2px var(--focus-link-ring);
   }
 
   .glass-input {
@@ -97,23 +117,26 @@
   }
 
   .glass-tab {
-    @apply rounded-full border px-3 py-1 text-xs transition;
+    @apply rounded-full border px-3 py-1 text-xs transition focus-visible:outline-none;
   }
 
   .glass-tab-active {
-    @apply border-slate-100 bg-slate-100 text-slate-900;
+    border-color: var(--glass-tab-active-border);
+    background-color: var(--glass-tab-active-bg);
+    color: var(--glass-tab-active-text);
   }
 
   .glass-tab-inactive {
-    @apply border-white/10 text-slate-200 hover:border-white/30;
+    color: var(--glass-tab-inactive-text);
+    border-color: var(--glass-tab-inactive-border);
   }
 
-  [data-map-tone='light'] .glass-tab-active {
-    @apply border-slate-900 bg-slate-900 text-slate-50;
+  .glass-tab-inactive:hover {
+    border-color: var(--glass-tab-inactive-border-hover);
   }
 
-  [data-map-tone='light'] .glass-tab-inactive {
-    @apply border-slate-400/60 text-slate-700 hover:border-slate-600;
+  .glass-tab:focus-visible {
+    box-shadow: 0 0 0 2px var(--focus-link-ring);
   }
 
   [data-map-tone='light'] .planner-light .text-slate-100 {
@@ -194,5 +217,15 @@
 
   [data-map-tone='light'] .inspector-light .hover\:text-slate-100:hover {
     @apply text-slate-900;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .glass-panel-interactive,
+    .glass-button,
+    .glass-coin-interactive,
+    .glass-tab {
+      transition-duration: 1ms !important;
+      animation-duration: 1ms !important;
+    }
   }
 }

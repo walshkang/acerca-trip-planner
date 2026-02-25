@@ -29,6 +29,7 @@ export default function ContextPanel({
   mobileContent,
 }: Props) {
   if (!open) return null
+  const divideClass = tone === 'dark' ? 'divide-white/10' : 'divide-slate-300/60'
 
   return (
     <>
@@ -61,7 +62,7 @@ export default function ContextPanel({
               {desktopContent ?? right ?? left ?? null}
             </div>
           ) : (
-            <div className="grid h-full grid-cols-2 divide-x divide-white/10">
+            <div className={`grid h-full grid-cols-2 divide-x ${divideClass}`}>
               <div className="min-h-0 overflow-auto">{left}</div>
               <div className="min-h-0 overflow-auto">{right}</div>
             </div>

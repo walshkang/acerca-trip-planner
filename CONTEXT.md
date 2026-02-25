@@ -8,9 +8,8 @@
 
 ## 🧠 Active Context
 - Current Phase: The Interactive Planner (Birthday Cake)
-- Active Epic: Deterministic Filtering & Intent Translation (stabilization)
-- Immediate Blocker: None. Seeded Playwright desktop DnD scheduling/reorder/Done/Backlog persistence coverage is restored in the 12-test baseline.
-- Recently Completed: Tasks 2.9-2.12 (filter schema, translate endpoint, deterministic query endpoint, and deterministic `open_now` timezone fallback + telemetry) including full-page `ListDetailPanel` intent-control parity.
+- Active Epic: Map-First List Context
+- Immediate Blocker: Task 4.4 – Close warm-glass Track B verification loop.
 
 ## ✅ P2-E1 Remaining Plan (Tracking)
 - Spec: `docs/PHASE_2_KANBAN_SPEC.md`.
@@ -68,8 +67,8 @@ gantt
   section The_Interactive_Planner_(Birthday_Cake)
   "P2-E1 Stateful Planning (Kanban)" :done, p2e1, after p1e5, 7d
   "P2-E2 Deterministic Filtering & Intent Translation" :done, p2e2, after p2e1, 7d
-  "P2-E3 List Workspace + Tags" :active, p2e3, after p2e2, 7d
-  "P2-E4 Map-First List Context" :p2e4, after p2e3, 7d
+  "P2-E3 List Workspace + Tags" :p2e3, after p2e2, 7d
+  "P2-E4 Map-First List Context" :active, p2e4, after p2e3, 7d
   section The_Intelligent_Concierge_(Wedding_Cake)
   "P3-E1 Deterministic Routing" :p3e1, after p2e4, 7d
   "P3-E2 AI Discovery (Suggestion Layer)" :p3e2, after p3e1, 7d
@@ -83,21 +82,9 @@ gantt
 - User edits never overwrite frozen AI enrichment.
 
 ## 📝 Implementation Memory
-- 2026-02-24 – test: add desktop planner DnD persistence coverage
-    - Expanded `tests/e2e/list-planner-move.spec.ts` with seeded desktop drag-to-slot, in-slot reorder, slot→Done, and Done→Backlog persistence checks.
-    - Added assertions that DnD PATCH payloads/rows record `source="drag"` and `last_scheduled_source="drag"`, and that order remains stable after reload.
-    - Added Done→Backlog assertions that persisted rows clear scheduling/completion fields after reload.
-    - Updated seeded suite contract counts in `docs/PLAYWRIGHT.md` and `docs/QUALITY_GATES.md` to 12 tests across 4 specs.
-- 2026-02-11 – chore: restore seeded planner Playwright baseline
-    - Reintroduced guarded `/api/test/seed` + `lib/server/testSeed.ts` so seeded planner E2E can run without reopening all paused specs.
-    - Re-enabled `tests/e2e/list-planner-move.spec.ts` with environment-based skips when seed prerequisites are missing.
-- 2026-02-09 – feat: wire deterministic intent controls into full-page list detail
-    - Reused shared filter-client helpers for canonical draft/applied state and field-error normalization.
-    - Added `/api/filters/translate` + `/api/filters/query` intent flow to `ListDetailPanel` to match `ListDrawer`.
-    - Added unit coverage for shared client filter helpers (`tests/lists/filter-client.test.ts`).
-- 2026-02-08 – fix: trip date changes, place drawer errors, omnibox light mode
-    - Move items outside trip range to backlog when dates change (PATCH lists) - Fix neighborhood lookup JSON parse error on non-JSON responses - Apply light mode styling to Omnibox search results dropdown Co-authored-by: Cursor <cursoragent@cursor.com>
-- 2026-02-08 – learning report
-    Auto-generated from git log (56e60e3).
-- 2026-02-08 – chore: add learning report for warm-glass ui pass
-    Auto-generated from git log (91ae3d1).
+- 2026-02-25 – Clarify PMTiles archive plan
+    Auto-generated from git log (7b7a86c).
+- 2026-02-25 – Fix planner drag reorder test
+    Auto-generated from git log (346af45).
+- 2026-02-24 – Align desktop drag tests
+    Auto-generated from git log (2656511).

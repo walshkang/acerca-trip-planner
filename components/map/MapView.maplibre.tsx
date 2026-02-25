@@ -1,9 +1,13 @@
 'use client'
 
-import { forwardRef, useEffect, useState } from 'react'
+import { forwardRef, useCallback, useEffect, useMemo, useState } from 'react'
 import MapGL, { Layer, Marker, Source } from 'react-map-gl/maplibre'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { getCategoryEmoji } from '@/lib/icons/mapping'
+import {
+  resolveOverlayBeforeId,
+  type StyleLayerLike,
+} from '@/lib/map/styleResolver'
 import { ensurePmtilesProtocolRegistered } from '@/lib/map/pmtilesProtocol'
 import { PLACE_FOCUS_GLOW } from '@/lib/ui/glow'
 import type { MapViewProps, MapViewRef } from './MapView.types'
@@ -224,6 +228,27 @@ const transitStationLayer = {
   },
 }
 
+function readStyleLayersFromMap(mapInstance: unknown): StyleLayerLike[] {
+  if (!mapInstance || typeof mapInstance !== 'object') return []
+  const style = (mapInstance as { getStyle?: () => { layers?: unknown } })
+    .getStyle?.()
+  if (!style || !Array.isArray(style.layers)) return []
+
+  return style.layers
+    .filter((layer): layer is StyleLayerLike => {
+      return (
+        Boolean(layer) &&
+        typeof layer === 'object' &&
+        typeof (layer as { id?: unknown }).id === 'string'
+      )
+    })
+    .map((layer) => ({
+      id: layer.id,
+      type: layer.type,
+      layout: layer.layout as Record<string, unknown> | undefined,
+    }))
+}
+
 const MapViewMaplibre = forwardRef<MapViewRef, MapViewProps>(
   function MapViewMaplibre(
     {
@@ -245,6 +270,7 @@ const MapViewMaplibre = forwardRef<MapViewRef, MapViewProps>(
       transitLinesUrl,
       transitStationsUrl,
       transitBeforeId,
+      transitBeforeIdCandidates,
       transitLineWidth = 2.5,
       transitLineOpacity = 0.75,
       transitCasingWidth = 4,
@@ -254,6 +280,7 @@ const MapViewMaplibre = forwardRef<MapViewRef, MapViewProps>(
       neighborhoodBoundariesUrl,
       neighborhoodLabelsUrl,
       neighborhoodBeforeId,
+      neighborhoodBeforeIdCandidates,
       neighborhoodFillColor = '#64748b',
       neighborhoodFillOpacity = 0.08,
       neighborhoodOutlineColor = '#334155',
@@ -267,6 +294,7 @@ const MapViewMaplibre = forwardRef<MapViewRef, MapViewProps>(
       neighborhoodLabelHaloWidth = 1.25,
       markerBackdropClassName = '',
       styleKey,
+      onMapError,
     },
     ref
   ) {
@@ -283,6 +311,14 @@ const MapViewMaplibre = forwardRef<MapViewRef, MapViewProps>(
       showNeighborhoodLabels
     )
     const [styleReady, setStyleReady] = useState(false)
+    const [
+      resolvedTransitBeforeId,
+      setResolvedTransitBeforeId,
+    ] = useState<string | undefined>(transitBeforeId)
+    const [
+      resolvedNeighborhoodBeforeId,
+      setResolvedNeighborhoodBeforeId,
+    ] = useState<string | undefined>(neighborhoodBeforeId)
     const transitLinesKey = styleKey ? `transit-lines-${styleKey}` : 'transit-lines'
     const transitStationsKey = styleKey
       ? `transit-stations-${styleKey}`
@@ -315,21 +351,75 @@ const MapViewMaplibre = forwardRef<MapViewRef, MapViewProps>(
       neighborhoodLabelHaloColor,
       neighborhoodLabelHaloWidth
     )
+    const transitCandidateKey = useMemo(
+      () => (transitBeforeIdCandidates ?? []).join('|'),
+      [transitBeforeIdCandidates]
+    )
+    const neighborhoodCandidateKey = useMemo(
+      () => (neighborhoodBeforeIdCandidates ?? []).join('|'),
+      [neighborhoodBeforeIdCandidates]
+    )
+
+    const syncBeforeIdsFromStyle = useCallback(
+      (mapInstance: unknown) => {
+        const styleLayers = readStyleLayersFromMap(mapInstance)
+        setResolvedTransitBeforeId(
+          resolveOverlayBeforeId({
+            layers: styleLayers,
+            preferredId: transitBeforeId,
+            candidates: transitBeforeIdCandidates,
+          })
+        )
+        setResolvedNeighborhoodBeforeId(
+          resolveOverlayBeforeId({
+            layers: styleLayers,
+            preferredId: neighborhoodBeforeId,
+            candidates: neighborhoodBeforeIdCandidates,
+          })
+        )
+      },
+      [
+        neighborhoodBeforeId,
+        neighborhoodBeforeIdCandidates,
+        transitBeforeId,
+        transitBeforeIdCandidates,
+      ]
+    )
 
     useEffect(() => {
       setStyleReady(false)
     }, [mapStyle])
 
+    useEffect(() => {
+      setResolvedTransitBeforeId(transitBeforeId)
+      setResolvedNeighborhoodBeforeId(neighborhoodBeforeId)
+    }, [
+      mapStyle,
+      neighborhoodBeforeId,
+      neighborhoodCandidateKey,
+      transitBeforeId,
+      transitCandidateKey,
+    ])
+
     return (
       <MapGL
-        ref={ref}
+        ref={ref as any}
         initialViewState={initialViewState}
         style={{ width: '100%', height: '100%' }}
         mapStyle={mapStyle}
         onClick={onMapClick}
         onMoveEnd={onMoveEnd}
-        onLoad={() => setStyleReady(true)}
-        onStyleData={() => setStyleReady(true)}
+        onLoad={(event) => {
+          setStyleReady(true)
+          syncBeforeIdsFromStyle((event as { target?: unknown }).target)
+        }}
+        onStyleData={(event) => {
+          setStyleReady(true)
+          syncBeforeIdsFromStyle((event as { target?: unknown }).target)
+        }}
+        onError={(event) => {
+          onMapError?.((event as { error?: unknown }).error ?? event)
+        }}
       >
         {styleReady && showNeighborhoodBoundaries && neighborhoodBoundaries ? (
           <Source
@@ -341,12 +431,12 @@ const MapViewMaplibre = forwardRef<MapViewRef, MapViewProps>(
             <Layer
               key={`${neighborhoodKey}-fill`}
               {...(neighborhoodFillLayer as any)}
-              beforeId={neighborhoodBeforeId}
+              beforeId={resolvedNeighborhoodBeforeId}
             />
             <Layer
               key={`${neighborhoodKey}-outline`}
               {...(neighborhoodOutlineLayer as any)}
-              beforeId={neighborhoodBeforeId}
+              beforeId={resolvedNeighborhoodBeforeId}
             />
           </Source>
         ) : null}
@@ -360,7 +450,7 @@ const MapViewMaplibre = forwardRef<MapViewRef, MapViewProps>(
             <Layer
               key={`${neighborhoodKey}-labels-layer`}
               {...(neighborhoodLabelLayer as any)}
-              beforeId={neighborhoodBeforeId}
+              beforeId={resolvedNeighborhoodBeforeId}
             />
           </Source>
         ) : null}
@@ -374,12 +464,12 @@ const MapViewMaplibre = forwardRef<MapViewRef, MapViewProps>(
             <Layer
               key={`${transitLinesKey}-casing`}
               {...(transitLineCasingLayer as any)}
-              beforeId={transitBeforeId}
+              beforeId={resolvedTransitBeforeId}
             />
             <Layer
               key={`${transitLinesKey}-layer`}
               {...(transitLineLayer as any)}
-              beforeId={transitBeforeId}
+              beforeId={resolvedTransitBeforeId}
             />
           </Source>
         ) : null}
@@ -393,7 +483,7 @@ const MapViewMaplibre = forwardRef<MapViewRef, MapViewProps>(
             <Layer
               key={`${transitStationsKey}-layer`}
               {...(transitStationLayer as any)}
-              beforeId={transitBeforeId}
+              beforeId={resolvedTransitBeforeId}
             />
           </Source>
         ) : null}

@@ -7,8 +7,10 @@ import type { CategoryEnum } from '@/lib/types/enums'
 import MapViewMapbox from '@/components/map/MapView.mapbox'
 import MapViewMaplibre from '@/components/map/MapView.maplibre'
 import type {
+  MapMoveEndEvent,
   MapPlace,
   LatLng,
+  MapViewRef,
   PlaceMarkerVariant,
 } from '@/components/map/MapView.types'
 import { useCategoryIconOverrides } from '@/lib/icons/useCategoryIconOverrides'
@@ -22,8 +24,14 @@ import ToolsSheet from '@/components/ui/ToolsSheet'
 import { useMediaQuery } from '@/components/ui/useMediaQuery'
 import { useDiscoveryStore } from '@/lib/state/useDiscoveryStore'
 import { derivePreviewMode } from '@/lib/ui/previewMode'
-import { resolveMapStyle } from '@/lib/map/styleResolver'
-import type { MapRef, ViewState, ViewStateChangeEvent } from 'react-map-gl'
+import {
+  extractMapErrorText,
+  normalizeMaplibreStyleSource,
+  resolveMapStyle,
+  shouldFallbackFromPmtiles,
+  type MaplibreStyleSource,
+} from '@/lib/map/styleResolver'
+import type { ViewState } from 'react-map-gl/maplibre'
 
 type Bounds = { sw: LatLng; ne: LatLng }
 
@@ -121,6 +129,11 @@ export default function MapContainer() {
   const [showNeighborhoodBoundaries, setShowNeighborhoodBoundaries] =
     useState(false)
   const [mapStyleMode, setMapStyleMode] = useState<'light' | 'dark'>('light')
+  const [runtimeMaplibreStyleSource, setRuntimeMaplibreStyleSource] =
+    useState<MaplibreStyleSource | null>(null)
+  const [mapFallbackNotice, setMapFallbackNotice] = useState<string | null>(
+    null
+  )
   const uiTone: 'light' | 'dark' = mapStyleMode === 'dark' ? 'dark' : 'light'
   const isDarkTone = uiTone === 'dark'
   const [listTagRefreshKey, setListTagRefreshKey] = useState(0)
@@ -132,19 +145,28 @@ export default function MapContainer() {
     process.env.NEXT_PUBLIC_MAP_PROVIDER === 'mapbox' ? 'mapbox' : 'maplibre'
   const maplibreStyleSource = process.env.NEXT_PUBLIC_MAPLIBRE_STYLE_SOURCE
   const isMapbox = mapProvider === 'mapbox'
+  const configuredMaplibreStyleSource = useMemo(
+    () => normalizeMaplibreStyleSource(maplibreStyleSource),
+    [maplibreStyleSource]
+  )
+  const effectiveMaplibreStyleSource =
+    runtimeMaplibreStyleSource ?? configuredMaplibreStyleSource
   const {
     mapStyle,
+    styleSource,
     styleKey,
     transitBeforeId,
     neighborhoodBeforeId,
+    transitBeforeIdCandidates,
+    neighborhoodBeforeIdCandidates,
   } = useMemo(
     () =>
       resolveMapStyle({
         provider: mapProvider,
         tone: mapStyleMode,
-        maplibreStyleSource,
+        maplibreStyleSource: effectiveMaplibreStyleSource,
       }),
-    [mapProvider, mapStyleMode, maplibreStyleSource]
+    [effectiveMaplibreStyleSource, mapProvider, mapStyleMode]
   )
   const markerBackdropClassName =
     mapStyleMode === 'dark'
@@ -193,7 +215,7 @@ export default function MapContainer() {
   const discoveryError = useDiscoveryStore((s) => s.error)
   const clearDiscovery = useDiscoveryStore((s) => s.clear)
   const setSearchBias = useDiscoveryStore((s) => s.setSearchBias)
-  const mapRef = useRef<MapRef | null>(null)
+  const mapRef = useRef<MapViewRef | null>(null)
   const didInitActiveList = useRef(false)
   const previewFlyToIdRef = useRef<string | null>(null)
   const panelModeBeforeDetailsRef = useRef<'lists' | 'plan'>('lists')
@@ -297,6 +319,32 @@ export default function MapContainer() {
     const next = `${pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`
     return `/auth/sign-in?next=${encodeURIComponent(next)}`
   }, [pathname, searchParams])
+  const handleMapError = useCallback(
+    (error: unknown) => {
+      const hasFallbackApplied = runtimeMaplibreStyleSource === 'carto'
+      if (
+        !shouldFallbackFromPmtiles({
+          provider: mapProvider,
+          currentStyleSource: styleSource,
+          hasFallbackApplied,
+          error,
+        })
+      ) {
+        return
+      }
+
+      const text = extractMapErrorText(error) || 'Unknown map error'
+      console.warn(
+        '[map] PMTiles failed, falling back to Carto for this session.',
+        text
+      )
+      setRuntimeMaplibreStyleSource('carto')
+      setMapFallbackNotice(
+        'PMTiles tiles were unavailable. Switched to Carto style for this session.'
+      )
+    },
+    [mapProvider, runtimeMaplibreStyleSource, styleSource]
+  )
 
   const activeListPlaceIdSet = useMemo(
     () => new Set(activeListPlaceIds),
@@ -332,12 +380,14 @@ export default function MapContainer() {
     () => places.find((place) => place.id === selectedPlaceId) ?? null,
     [places, selectedPlaceId]
   )
+  const urlDrivenStateActive = Boolean(selectedPlaceId || selectedListParam)
+  const previewStateActive = Boolean(previewCandidate || previewSelectedResultId)
+  const suppressToolsForPriority =
+    isMobile && (urlDrivenStateActive || previewStateActive)
+  const toolsSheetOpen = toolsOpen && !suppressToolsForPriority
   const isContextPanelOpen =
-    (drawerOpen ||
-      Boolean(selectedPlaceId) ||
-      Boolean(previewCandidate) ||
-      Boolean(previewSelectedResultId)) &&
-    !(isMobile && toolsOpen)
+    (drawerOpen || urlDrivenStateActive || previewStateActive) &&
+    !(isMobile && toolsSheetOpen)
   const mobilePanelHeightRatio = 0.75
   const fitBoundsPadding = useMemo(() => {
     const basePadding = { top: 80, bottom: 80, left: 80, right: 80 }
@@ -419,6 +469,17 @@ export default function MapContainer() {
 
     checkAuth().catch(() => null)
   }, [isMapbox, mapboxToken])
+
+  useEffect(() => {
+    setRuntimeMaplibreStyleSource(null)
+    setMapFallbackNotice(null)
+  }, [configuredMaplibreStyleSource, mapProvider])
+
+  useEffect(() => {
+    if (!toolsOpen) return
+    if (!suppressToolsForPriority) return
+    setToolsOpen(false)
+  }, [suppressToolsForPriority, toolsOpen])
 
   useEffect(() => {
     if (didInitActiveList.current) return
@@ -761,7 +822,7 @@ export default function MapContainer() {
   }, [clearDiscovery, selectedPlaceId, setPlaceParam])
 
   const handleMoveEnd = useCallback(
-    (evt: ViewStateChangeEvent) => {
+    (evt: MapMoveEndEvent) => {
       if (typeof window === 'undefined') return
       const { longitude, latitude, zoom, bearing, pitch } = evt.viewState
       window.localStorage.setItem(
@@ -872,6 +933,18 @@ export default function MapContainer() {
             {drawerOpen ? 'Hide lists' : 'Lists'}
           </button>
         </div>
+        {mapFallbackNotice ? (
+          <div className="pointer-events-auto glass-panel max-w-[320px] rounded-lg px-3 py-2">
+            <p className={`text-[11px] ${panelMutedClass}`}>{mapFallbackNotice}</p>
+            <button
+              type="button"
+              onClick={() => setMapFallbackNotice(null)}
+              className="mt-2 glass-button px-2 py-1 text-[11px]"
+            >
+              Dismiss
+            </button>
+          </div>
+        ) : null}
         <Omnibox tone={uiTone} />
       </div>
 
@@ -883,10 +956,12 @@ export default function MapContainer() {
           <button
             type="button"
             onClick={() => {
+              if (suppressToolsForPriority) return
               setToolsOpen(true)
               if (isMobile) setDrawerOpen(false)
             }}
             className="glass-button"
+            disabled={suppressToolsForPriority}
           >
             Tools
           </button>
@@ -1232,7 +1307,7 @@ export default function MapContainer() {
         )
       })()}
 
-      <ToolsSheet open={toolsOpen} tone={uiTone} onClose={() => setToolsOpen(false)}>
+      <ToolsSheet open={toolsSheetOpen} tone={uiTone} onClose={() => setToolsOpen(false)}>
         <form action="/auth/sign-out" method="post">
           <button className="glass-button" type="submit">
             Sign out
@@ -1327,6 +1402,7 @@ export default function MapContainer() {
         transitLinesUrl={transitLinesUrl}
         transitStationsUrl={transitStationsUrl}
         transitBeforeId={transitBeforeId}
+        transitBeforeIdCandidates={transitBeforeIdCandidates}
         transitLineWidth={transitLineWidth}
         transitLineOpacity={transitLineOpacity}
         transitCasingWidth={transitCasingWidth}
@@ -1336,6 +1412,7 @@ export default function MapContainer() {
         neighborhoodBoundariesUrl={neighborhoodBoundariesUrl}
         neighborhoodLabelsUrl={neighborhoodLabelsUrl}
         neighborhoodBeforeId={neighborhoodBeforeId}
+        neighborhoodBeforeIdCandidates={neighborhoodBeforeIdCandidates}
         neighborhoodFillColor={neighborhoodFillColor}
         neighborhoodFillOpacity={neighborhoodFillOpacity}
         neighborhoodOutlineColor={neighborhoodOutlineColor}
@@ -1349,6 +1426,7 @@ export default function MapContainer() {
         neighborhoodLabelHaloWidth={neighborhoodLabelHaloWidth}
         markerBackdropClassName={markerBackdropClassName}
         styleKey={styleKey}
+        onMapError={handleMapError}
       />
     </div>
   )

@@ -238,14 +238,14 @@ Notes:
 - Update contrast on text/inputs so readability stays high on dark glass surfaces.
  - Status: Done (2026-02-02).
 
-### UI/UX Track B — Warm Glass Light Mode (planned)
+### UI/UX Track B — Warm Glass Light Mode (implemented)
 - Keep overlays glass-based in light mode (warm-tinted glass), not opaque paper blocks.
 - Reserve focus-linkage blue for marker/list/details linkage semantics.
 - Keep preview/ghost styling clearly distinct from approved truth.
 - Preserve layering contract: Map → Context Panel → Tools Sheet → transient toasts.
 - Keep overlay readability high across light and dark base map styles.
 - Spec source: `docs/LIGHT_MODE_UI_SPEC.md`.
-- Status: Planned.
+- Status: Implemented (2026-02-25); verification hardening in progress.
 
 ### List Drawer Overlay (Map stays primary, done)
 - Provide a drawer/overlay next to the map (do not navigate away by default).
@@ -288,11 +288,12 @@ Notes:
 - Make behavior layer provider-agnostic (remove `mapbox-gl` types; replace `LngLatBounds` + `distanceTo` usage).
 - Make token gating provider-aware: require `NEXT_PUBLIC_MAPBOX_TOKEN` only for Mapbox.
 - Add a minimal MapLibre style JSON for the spike and optional PMTiles protocol wiring + style JSON for staged assets.
+- Add PMTiles runtime fallback (PMTiles → Carto) and dynamic overlay anchor resolution so transit/neighborhood layers remain stable across style sources.
 - Document the optional Playwright run with `NEXT_PUBLIC_MAP_PROVIDER=mapbox`.
 - Acceptance: MapLibre mode loads without Mapbox token; marker click opens drawer and updates `?place=`.
 - Status: Done (2026-02-25).
 
-### Map Customization (planned)
+### Map Customization (done)
 
 #### Transit Overlay (NYC first, runtime GeoJSON)
 - Use static GeoJSON assets under `public/map/overlays/` (lines + optional stations).
@@ -311,7 +312,7 @@ Notes:
 #### Neighborhood Boundaries (NYC)
 - Start as static GeoJSON under `public/map/overlays/` and render as runtime overlay layers.
 - Optional future slice: DB-backed ingestion if needed (separate schema + RLS).
-- Status: Planned.
+- Status: Done (2026-02-03).
 
 ## Sequencing (recommended)
 0. UI/UX Track A: apply Slate Glass overlays (Omnibox, inspector, list/placedrawers, pills) without changing layout invariants. (done)
@@ -323,13 +324,13 @@ Notes:
 6. MapLibre feasibility spike (flag + renderer split + provider-agnostic bounds + minimal style). (done)
 7. Transit overlay (NYC GeoJSON, runtime layers, toggle in right overlay). (done)
 8. Map style selection (map-only dark style). (done)
-9. Neighborhood boundaries (NYC GeoJSON, runtime layers).
+9. Neighborhood boundaries (NYC GeoJSON, runtime layers). (done)
 10. List add flow: local search + add with tags, list drawer create list. (done)
 11. Tagging UI + API updates (P2-E3) including add-time tag seeding. (done)
 12. Map camera stability + overlay layering + sign-out placement. (done)
 13. Scheduling UI + API updates (P2-E1).
 14. Filter translation + query pipeline (P2-E2).
-15. UI/UX Track B: warm-glass light-mode alignment (semantics + chrome + motion; no surface-model changes). (planned)
+15. UI/UX Track B: warm-glass light-mode alignment (semantics + chrome + motion; no surface-model changes). (implemented; verification hardening in progress)
 
 ## Testing & Verification
 - Unit tests for filter schema validation and query builder.

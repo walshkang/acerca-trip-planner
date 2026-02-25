@@ -1,6 +1,6 @@
 'use client'
 
-import type { ViewState, MapRef, ViewStateChangeEvent } from 'react-map-gl'
+import type { ViewState } from 'react-map-gl/maplibre'
 import type { CategoryEnum } from '@/lib/types/enums'
 
 export type MapPlace = {
@@ -18,12 +18,35 @@ export type LatLng = {
 
 export type PlaceMarkerVariant = 'default' | 'backlog' | 'scheduled' | 'done'
 
+export type MapViewRef = {
+  getBounds: () => {
+    getCenter: () => LatLng
+    getNorthEast: () => LatLng
+  }
+  getZoom: () => number
+  flyTo: (options: unknown) => void
+  fitBounds: (
+    bounds: [[number, number], [number, number]],
+    options?: unknown
+  ) => void
+}
+
+export type MapMoveEndEvent = {
+  viewState: {
+    longitude: number
+    latitude: number
+    zoom: number
+    bearing?: number
+    pitch?: number
+  }
+}
+
 export type MapViewProps = {
   mapStyle: string
   mapboxAccessToken?: string
   initialViewState: ViewState
   onMapClick: () => void
-  onMoveEnd: (event: ViewStateChangeEvent) => void
+  onMoveEnd: (event: MapMoveEndEvent) => void
   places: MapPlace[]
   ghostLocation?: LatLng | null
   onPlaceClick: (placeId: string) => void
@@ -38,6 +61,7 @@ export type MapViewProps = {
   transitLinesUrl?: string
   transitStationsUrl?: string
   transitBeforeId?: string
+  transitBeforeIdCandidates?: string[]
   transitLineWidth?: number
   transitLineOpacity?: number
   transitCasingWidth?: number
@@ -47,6 +71,7 @@ export type MapViewProps = {
   neighborhoodBoundariesUrl?: string
   neighborhoodLabelsUrl?: string
   neighborhoodBeforeId?: string
+  neighborhoodBeforeIdCandidates?: string[]
   neighborhoodFillColor?: string
   neighborhoodFillOpacity?: number
   neighborhoodOutlineColor?: string
@@ -60,6 +85,5 @@ export type MapViewProps = {
   neighborhoodLabelHaloWidth?: number
   markerBackdropClassName?: string
   styleKey?: string
+  onMapError?: (error: unknown) => void
 }
-
-export type MapViewRef = MapRef

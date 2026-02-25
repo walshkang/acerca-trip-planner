@@ -18,6 +18,8 @@ const isPmtilesMode =
   process.env.NEXT_PUBLIC_MAPLIBRE_STYLE_SOURCE === 'pmtiles'
 const styleConsoleErrorPattern =
   /source-layer|layer .* does not exist|failed to load source|failed to load style|cannot parse style/i
+const pmtilesFallbackNotice =
+  'PMTiles tiles were unavailable. Switched to Carto style for this session.'
 
 async function waitForMembershipApplied(
   placeDrawer: Locator,
@@ -59,6 +61,85 @@ test('pmtiles basemap loads tiles without style errors', async ({ page }) => {
     styleConsoleErrorPattern.test(message)
   )
   expect(styleErrors).toEqual([])
+})
+
+test('pmtiles falls back to carto when archive fails during initial load', async ({
+  page,
+}) => {
+  test.skip(
+    !isPmtilesMode,
+    'Requires NEXT_PUBLIC_MAPLIBRE_STYLE_SOURCE=pmtiles in MapLibre mode.'
+  )
+
+  await page.route('**/map/nyc.pmtiles**', (route) => route.abort('failed'))
+
+  await page.goto('/')
+  await ensureSignedIn(page)
+
+  const seeds = [] as Awaited<ReturnType<typeof seedListWithPlace>>[]
+  try {
+    const seed = await seedListWithPlace(page)
+    seeds.push(seed)
+
+    await expect(page.getByText(pmtilesFallbackNotice)).toBeVisible()
+
+    await page.getByRole('button', { name: 'Lists' }).click()
+    const listDrawer = visibleByTestId(page, 'list-drawer')
+    await expect(listDrawer).toBeVisible()
+    await listDrawer.getByRole('button', { name: seed.list.name }).click()
+
+    await page.getByRole('button', { name: `Open ${seed.place_name}` }).click()
+    const placeDrawer = visibleByTestId(page, 'place-drawer')
+    await waitForPlaceDrawerReady(placeDrawer, seed.place_name)
+  } finally {
+    await cleanupSeededData(page, seeds)
+  }
+})
+
+test('pmtiles runtime failure after initial load falls back without breaking overlays', async ({
+  page,
+}) => {
+  test.skip(
+    !isPmtilesMode,
+    'Requires NEXT_PUBLIC_MAPLIBRE_STYLE_SOURCE=pmtiles in MapLibre mode.'
+  )
+
+  await page.goto('/')
+  await ensureSignedIn(page)
+
+  const seeds = [] as Awaited<ReturnType<typeof seedListWithPlace>>[]
+  try {
+    const seed = await seedListWithPlace(page)
+    seeds.push(seed)
+
+    await page.waitForResponse((response) => {
+      return (
+        response.url().includes('/map/nyc.pmtiles') &&
+        (response.status() === 200 || response.status() === 206)
+      )
+    })
+
+    await page.route('**/map/nyc.pmtiles**', (route) => route.abort('failed'))
+
+    await page.getByRole('button', { name: 'Tools' }).click()
+    await page.getByRole('button', { name: 'Dark' }).click()
+    await expect(page.getByText(pmtilesFallbackNotice)).toBeVisible()
+
+    await page.getByLabel('Transit lines').check()
+    await page.getByLabel('Neighborhoods').check()
+    await page.getByRole('button', { name: 'Close' }).click()
+
+    await page.getByRole('button', { name: 'Lists' }).click()
+    const listDrawer = visibleByTestId(page, 'list-drawer')
+    await expect(listDrawer).toBeVisible()
+    await listDrawer.getByRole('button', { name: seed.list.name }).click()
+
+    await page.getByRole('button', { name: `Open ${seed.place_name}` }).click()
+    const placeDrawer = visibleByTestId(page, 'place-drawer')
+    await waitForPlaceDrawerReady(placeDrawer, seed.place_name)
+  } finally {
+    await cleanupSeededData(page, seeds)
+  }
 })
 
 test('place drawer opens and tags are editable for active list', async ({ page }, testInfo) => {
@@ -211,4 +292,33 @@ test('transit overlay does not block marker clicks', async ({ page }) => {
   } finally {
     await cleanupSeededData(page, seeds)
   }
+})
+
+test.describe('mobile overlay hierarchy', () => {
+  test.use({ viewport: { width: 390, height: 844 } })
+
+  test('mobile deep-link mount keeps place visible and tools closed', async ({
+    page,
+  }) => {
+    const seeds = [] as Awaited<ReturnType<typeof seedListWithPlace>>[]
+    try {
+      await page.goto('/')
+      await ensureSignedIn(page)
+      const seed = await seedListWithPlace(page)
+      seeds.push(seed)
+
+      await page.getByRole('button', { name: 'Tools' }).click()
+      await expect(page.getByRole('heading', { name: 'Tools' })).toBeVisible()
+
+      const encodedPlaceId = encodeURIComponent(seed.place_id)
+      await page.goto(`/?place=${encodedPlaceId}`)
+      await ensureSignedIn(page)
+
+      const placeDrawer = visibleByTestId(page, 'place-drawer')
+      await waitForPlaceDrawerReady(placeDrawer, seed.place_name)
+      await expect(page.getByRole('heading', { name: 'Tools' })).toBeHidden()
+    } finally {
+      await cleanupSeededData(page, seeds)
+    }
+  })
 })

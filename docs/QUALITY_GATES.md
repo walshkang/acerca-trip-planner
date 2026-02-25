@@ -10,14 +10,15 @@ This file defines the current verification contract for daily work in this repo.
 ## Current Gate Status
 - Static contract checks (`npm run check`): always active.
 - Unit/API tests (`npm test`): active for behavior changes.
-- Seeded Playwright E2E (`npm run test:e2e`): active for the restored seeded suite (12 tests across 4 specs).
+- Seeded Playwright E2E (`npm run test:e2e`): active for the restored seeded suite (15 tests across 4 specs, including PMTiles-mode guarded coverage).
 - Learning reports: generation can be automated by local post-commit hook; changed/new reports must pass rationale checks.
 
 ## Required For Behavior Changes
 1. Update or add tests that cover changed behavior.
 2. Run `npm run check`.
 3. If schema changed, run `npm run db:types`.
-4. If report files are changed, fill `Decisions / Rationale` and `Next Steps` with concrete content.
+4. Update `roadmap.json` status for the affected slice and regenerate `CONTEXT.md` via `npm run context:refresh`.
+5. If report files are changed, fill `Decisions / Rationale` and `Next Steps` with concrete content.
 
 ## Decision Table (What To Run)
 | Change type | Required commands | Notes |
@@ -43,3 +44,4 @@ This file defines the current verification contract for daily work in this repo.
 
 ## Process Sync Rule
 - If seeded suite scope changes, update both `docs/PLAYWRIGHT.md` and `CONTEXT.md` in the same PR.
+- If a PR changes shipped behavior, update `roadmap.json` and regenerate `CONTEXT.md` in the same PR to prevent status drift.

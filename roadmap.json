@@ -1,7 +1,7 @@
 {
   "project_name": "AI_Travel_Itinerary_Manager",
   "version": "2.2.0-phase2-defined",
-  "last_updated": "2026-02-09",
+  "last_updated": "2026-02-25",
   "development_principles": [
     "LLMs label and translate intent; deterministic systems retrieve and compute.",
     "Only approved pins are truth (Map is the interface).",
@@ -476,9 +476,37 @@
             "Focused list row + place drawer share a subtle glow outline for visual linkage. (done)",
             "MapLibre pmtiles assets staged under public/map for future map style swaps. (done)",
             "MapLibre feasibility spike: provider flag + renderer split + provider-agnostic bounds + minimal style (PMTiles optional). (done)",
+            "PMTiles runtime fallback to Carto and dynamic overlay anchor resolution across style sources. (done)",
             "Transit overlay (NYC GeoJSON lines + optional stations) with a right-overlay toggle and non-interactive layers. (done)",
             "Map style selection: map-only dark style for Mapbox + MapLibre. (done)",
-            "Neighborhood boundaries (NYC GeoJSON) rendered as runtime overlays. (planned)"
+            "Neighborhood boundaries (NYC GeoJSON) rendered as runtime overlays. (done)",
+            "Mobile state hierarchy: URL-driven place/list context overrides local Tools Sheet state. (done)"
+          ],
+          "tasks": [
+            {
+              "id": "4.1",
+              "task": "Stabilize style-source-specific layer insertion anchors.",
+              "details": "Resolve transit/neighborhood beforeId dynamically from loaded style layers and candidate anchors.",
+              "status": "completed"
+            },
+            {
+              "id": "4.2",
+              "task": "Add PMTiles runtime fallback path.",
+              "details": "Fallback from PMTiles to Carto once per session on initial or runtime PMTiles style/source failure.",
+              "status": "completed"
+            },
+            {
+              "id": "4.3",
+              "task": "Enforce mobile URL-over-tools state priority.",
+              "details": "When URL/preview state is active on mobile, auto-close/suppress Tools Sheet without mutating URL params.",
+              "status": "completed"
+            },
+            {
+              "id": "4.4",
+              "task": "Close warm-glass Track B verification loop.",
+              "details": "Run seeded E2E + manual QA pass for warm-glass readability and overlay budget behavior.",
+              "status": "in_progress"
+            }
           ]
         }
       ],
