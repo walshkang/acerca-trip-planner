@@ -80,6 +80,20 @@ export NEXT_PUBLIC_MAP_PROVIDER=mapbox
 
 Then run Playwright as usual. This lets you verify the Mapbox path when needed.
 
+## 3.6) Optional PMTiles run (MapLibre)
+For PMTiles style smoke coverage, keep MapLibre as the provider and set the style source:
+
+```sh
+export NEXT_PUBLIC_MAP_PROVIDER=maplibre
+export NEXT_PUBLIC_MAPLIBRE_STYLE_SOURCE=pmtiles
+```
+
+Then run the targeted map spec (or full suite) as usual.
+
+Fresh clone precondition:
+- If PMTiles map files were fetched via Git LFS pointers, run `git lfs pull` before PMTiles runs.
+- PMTiles style uses local archive path `/map/nyc.pmtiles`.
+
 ## 4) Common workflows
 ### Record a new flow quickly
 ```sh

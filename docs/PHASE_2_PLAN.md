@@ -281,16 +281,16 @@ Notes:
 - Avoid global-scale fitBounds; prefer the active list or last place when clusters are far apart.
  - Status: Done (2026-02-02).
 
-### MapLibre Feasibility (planned)
+### MapLibre Feasibility (done)
 - Feature-flag provider (`NEXT_PUBLIC_MAP_PROVIDER=mapbox|maplibre`, default maplibre).
 - Split renderers: `MapView.mapbox.tsx` and `MapView.maplibre.tsx`, both `forwardRef` to preserve `mapRef` behavior.
 - Move all Marker rendering (including GhostMarker) into the renderer to avoid mixed provider imports.
 - Make behavior layer provider-agnostic (remove `mapbox-gl` types; replace `LngLatBounds` + `distanceTo` usage).
 - Make token gating provider-aware: require `NEXT_PUBLIC_MAPBOX_TOKEN` only for Mapbox.
-- Add a minimal MapLibre style JSON for the spike; PMTiles integration is optional after base render.
+- Add a minimal MapLibre style JSON for the spike and optional PMTiles protocol wiring + style JSON for staged assets.
 - Document the optional Playwright run with `NEXT_PUBLIC_MAP_PROVIDER=mapbox`.
 - Acceptance: MapLibre mode loads without Mapbox token; marker click opens drawer and updates `?place=`.
-- Status: Done (2026-02-03).
+- Status: Done (2026-02-25).
 
 ### Map Customization (planned)
 

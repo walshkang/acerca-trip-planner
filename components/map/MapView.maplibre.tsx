@@ -4,6 +4,7 @@ import { forwardRef, useEffect, useState } from 'react'
 import MapGL, { Layer, Marker, Source } from 'react-map-gl/maplibre'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { getCategoryEmoji } from '@/lib/icons/mapping'
+import { ensurePmtilesProtocolRegistered } from '@/lib/map/pmtilesProtocol'
 import { PLACE_FOCUS_GLOW } from '@/lib/ui/glow'
 import type { MapViewProps, MapViewRef } from './MapView.types'
 import { useGeoJson } from './useGeoJson'
@@ -269,6 +270,7 @@ const MapViewMaplibre = forwardRef<MapViewRef, MapViewProps>(
     },
     ref
   ) {
+    ensurePmtilesProtocolRegistered()
     const showStations = showTransit && showTransitStations
     const transitLines = useGeoJson(transitLinesUrl, showTransit)
     const transitStations = useGeoJson(transitStationsUrl, showStations)

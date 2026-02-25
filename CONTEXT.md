@@ -42,7 +42,7 @@
 - [x] Move all Marker rendering (including GhostMarker) into the renderer to avoid mixed providers.
 - [x] Make bounds + radius calculations provider-agnostic (remove `LngLatBounds` + `distanceTo`).
 - [x] Add minimal MapLibre style JSON and wire the MapLibre renderer.
-- [ ] Optional: PMTiles protocol wiring + pmtiles style JSON for staged assets.
+- [x] Optional: PMTiles protocol wiring + pmtiles style JSON for staged assets.
 - [x] Document optional MapLibre Playwright run in `docs/PLAYWRIGHT.md`.
 
 ## 🧭 Map Customization (Tracking)

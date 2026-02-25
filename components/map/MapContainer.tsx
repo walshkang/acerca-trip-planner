@@ -22,6 +22,7 @@ import ToolsSheet from '@/components/ui/ToolsSheet'
 import { useMediaQuery } from '@/components/ui/useMediaQuery'
 import { useDiscoveryStore } from '@/lib/state/useDiscoveryStore'
 import { derivePreviewMode } from '@/lib/ui/previewMode'
+import { resolveMapStyle } from '@/lib/map/styleResolver'
 import type { MapRef, ViewState, ViewStateChangeEvent } from 'react-map-gl'
 
 type Bounds = { sw: LatLng; ne: LatLng }
@@ -129,18 +130,22 @@ export default function MapContainer() {
   const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN
   const mapProvider =
     process.env.NEXT_PUBLIC_MAP_PROVIDER === 'mapbox' ? 'mapbox' : 'maplibre'
+  const maplibreStyleSource = process.env.NEXT_PUBLIC_MAPLIBRE_STYLE_SOURCE
   const isMapbox = mapProvider === 'mapbox'
-  const mapStyle = useMemo(() => {
-    if (isMapbox) {
-      return mapStyleMode === 'dark'
-        ? 'mapbox://styles/mapbox/navigation-night-v1'
-        : 'mapbox://styles/mapbox/light-v11'
-    }
-    return mapStyleMode === 'dark'
-      ? 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json'
-      : 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json'
-  }, [isMapbox, mapStyleMode])
-  const styleKey = `${mapProvider}-${mapStyleMode}`
+  const {
+    mapStyle,
+    styleKey,
+    transitBeforeId,
+    neighborhoodBeforeId,
+  } = useMemo(
+    () =>
+      resolveMapStyle({
+        provider: mapProvider,
+        tone: mapStyleMode,
+        maplibreStyleSource,
+      }),
+    [mapProvider, mapStyleMode, maplibreStyleSource]
+  )
   const markerBackdropClassName =
     mapStyleMode === 'dark'
       ? 'bg-slate-100/95 border-2 border-slate-900/20 shadow-[0_8px_20px_rgba(2,6,23,0.5)]'
@@ -176,8 +181,6 @@ export default function MapContainer() {
     '/map/overlays/nyc_neighborhood_boundaries.geojson'
   const neighborhoodLabelsUrl =
     '/map/overlays/nyc_neighborhood_labels.geojson'
-  const transitBeforeId = undefined
-  const neighborhoodBeforeId = transitBeforeId
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()

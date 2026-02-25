@@ -13,6 +13,12 @@ import {
 
 applySeededPrerequisiteSkips(test)
 
+const isPmtilesMode =
+  process.env.NEXT_PUBLIC_MAP_PROVIDER !== 'mapbox' &&
+  process.env.NEXT_PUBLIC_MAPLIBRE_STYLE_SOURCE === 'pmtiles'
+const styleConsoleErrorPattern =
+  /source-layer|layer .* does not exist|failed to load source|failed to load style|cannot parse style/i
+
 async function waitForMembershipApplied(
   placeDrawer: Locator,
   membershipButton: Locator
@@ -23,6 +29,37 @@ async function waitForMembershipApplied(
   await expect(tagInput).toBeEnabled()
   return tagInput
 }
+
+test('pmtiles basemap loads tiles without style errors', async ({ page }) => {
+  test.skip(
+    !isPmtilesMode,
+    'Requires NEXT_PUBLIC_MAPLIBRE_STYLE_SOURCE=pmtiles in MapLibre mode.'
+  )
+
+  const consoleErrors: string[] = []
+  page.on('console', (message) => {
+    if (message.type() === 'error') {
+      consoleErrors.push(message.text())
+    }
+  })
+
+  const pmtilesResponse = page.waitForResponse((response) => {
+    return (
+      response.url().includes('/map/nyc.pmtiles') &&
+      (response.status() === 200 || response.status() === 206)
+    )
+  })
+
+  await page.goto('/')
+  await ensureSignedIn(page)
+  await expect(page.getByRole('button', { name: 'Tools' })).toBeVisible()
+  await pmtilesResponse
+
+  const styleErrors = consoleErrors.filter((message) =>
+    styleConsoleErrorPattern.test(message)
+  )
+  expect(styleErrors).toEqual([])
+})
 
 test('place drawer opens and tags are editable for active list', async ({ page }, testInfo) => {
   await page.goto('/')
