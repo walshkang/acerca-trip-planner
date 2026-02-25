@@ -82,9 +82,9 @@ gantt
 - User edits never overwrite frozen AI enrichment.
 
 ## 📝 Implementation Memory
+- 2026-02-25 – Plan tracking sync actions
+    Auto-generated from git log (4b0d7a3).
 - 2026-02-25 – Clarify PMTiles archive plan
     Auto-generated from git log (7b7a86c).
 - 2026-02-25 – Fix planner drag reorder test
     Auto-generated from git log (346af45).
-- 2026-02-24 – Align desktop drag tests
-    Auto-generated from git log (2656511).

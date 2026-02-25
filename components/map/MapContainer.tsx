@@ -36,6 +36,7 @@ import type { ViewState } from 'react-map-gl/maplibre'
 type Bounds = { sw: LatLng; ne: LatLng }
 
 const EARTH_RADIUS_METERS = 6371000
+const PMTILES_ARCHIVE_URL = '/map/nyc.pmtiles'
 
 function haversineMeters(a: LatLng, b: LatLng) {
   const toRadians = (deg: number) => (deg * Math.PI) / 180
@@ -474,6 +475,46 @@ export default function MapContainer() {
     setRuntimeMaplibreStyleSource(null)
     setMapFallbackNotice(null)
   }, [configuredMaplibreStyleSource, mapProvider])
+
+  useEffect(() => {
+    if (mapProvider !== 'maplibre') return
+    if (styleSource !== 'pmtiles') return
+    if (runtimeMaplibreStyleSource === 'carto') return
+
+    let cancelled = false
+    const healthCheck = async () => {
+      try {
+        const response = await fetch(PMTILES_ARCHIVE_URL, {
+          method: 'HEAD',
+          cache: 'no-store',
+        })
+        if (!response.ok) {
+          throw new Error(`PMTiles healthcheck failed: HTTP ${response.status}`)
+        }
+      } catch (error) {
+        if (cancelled) return
+        const details = extractMapErrorText(error)
+        const wrappedError = new Error(
+          `PMTiles healthcheck failed: ${details || 'unknown error'}`
+        )
+        handleMapError(wrappedError)
+      }
+    }
+
+    healthCheck().catch(() => {
+      // handled above through handleMapError
+    })
+
+    return () => {
+      cancelled = true
+    }
+  }, [
+    handleMapError,
+    mapProvider,
+    runtimeMaplibreStyleSource,
+    styleKey,
+    styleSource,
+  ])
 
   useEffect(() => {
     if (!toolsOpen) return

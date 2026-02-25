@@ -117,7 +117,9 @@ export function isLikelyPmtilesError(error: unknown): boolean {
     text.includes('source-layer') ||
     text.includes('failed to load source') ||
     text.includes('failed to load style') ||
-    text.includes('cannot parse style')
+    text.includes('cannot parse style') ||
+    (text.includes('pmtiles') && text.includes('failed')) ||
+    (text.includes('pmtiles') && text.includes('err_'))
   )
 }
 
