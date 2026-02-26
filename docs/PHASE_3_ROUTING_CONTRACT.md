@@ -1,10 +1,10 @@
-# Phase 3 Routing Contract (P3-E1 / 1.3)
+# Phase 3 Routing Contract (P3-E1 / 1.4)
 
 ## Goal
 - Define a deterministic, server-owned routing preview contract for scheduled list items.
-- Establish a stable success data model for itinerary legs, travel-time badges, and summary totals before real provider integration.
+- Lock a verification-ready response contract for itinerary legs, travel-time badges, and provider-boundary error semantics.
 
-## Non-Goals (Task 1.3)
+## Non-Goals (Task 1.4)
 - No route optimization or itinerary reordering.
 - No UI rendering changes.
 - No schema migration.
@@ -69,7 +69,7 @@
 - Legs are adjacent pairs across routeable sequence only.
 - Provider metrics are merged onto these deterministic draft legs by `index` only.
 
-## Success Leg Model (Task 1.3)
+## Success Leg Model
 - Success legs contain deterministic adjacency identity plus normalized metrics:
   - `index`
   - `from_item_id`
@@ -133,11 +133,20 @@
   - `legs` (deterministic adjacent pairs)
   - `summary` (`total_distance_m`/`total_duration_s` are `null`)
 
+### 502: Provider Bad Gateway
+- Condition:
+  - provider returns `provider_error`, or
+  - provider success payload fails route-side validation (count/index/value).
+- Payload:
+  - `code: "routing_provider_bad_gateway"`
+  - `message`
+  - `lastValidCanonicalRequest`
+
 ## Provider Success Validation Rules
 - Provider leg metrics count must equal deterministic draft leg count.
 - Indices must be unique, integer, and in range `[0, leg_count - 1]`.
 - Metrics must be finite and non-negative prior to normalization.
-- Validation failure maps to `500` with `code: "internal_error"` (contract stability from Task 1.2).
+- Validation failure maps to `502` with `code: "routing_provider_bad_gateway"`.
 
 ## Error Payload Contract
 - Standard error fields:
@@ -151,12 +160,17 @@
 - `date_outside_trip_range` (400)
 - `unauthorized` (401)
 - `not_found` (404)
+- `routing_provider_unavailable` (501)
+- `routing_provider_bad_gateway` (502)
 - `internal_error` (500)
 
-## Acceptance Checks (Task 1.3)
-- Existing 400/401/404/501 behavior remains unchanged.
+## Acceptance Checks (Task 1.4)
+- Existing 400/401/404 behavior remains unchanged.
 - `<2` routeable items still return `status: "insufficient_items"`.
 - Valid provider success returns `status: "ok"` with computed legs and non-null totals.
 - `duration_s = 0` yields `0m` and `0 min`.
 - Float metrics are normalized to integers.
-- Invalid provider success payload (count/index/value) returns `500 internal_error`.
+- Invalid provider success payload (count/index/non-finite/negative) returns `502 routing_provider_bad_gateway`.
+- Adapter `provider_error` returns `502 routing_provider_bad_gateway`.
+- Provider unavailable remains `501 routing_provider_unavailable`.
+- DB/read failures and unexpected exceptions remain `500 internal_error`.

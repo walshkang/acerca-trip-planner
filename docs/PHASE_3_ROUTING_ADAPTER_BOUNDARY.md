@@ -1,12 +1,11 @@
-# Phase 3 Routing Adapter Boundary (P3-E1 / 1.2)
+# Phase 3 Routing Adapter Boundary (P3-E1 / 1.4)
 
 ## Goal
 - Define a server-only, provider-agnostic adapter boundary for routing preview.
-- Preserve the existing public preview route response contract while provider integration is pending.
+- Preserve deterministic sequencing ownership in the route layer while normalizing provider failure semantics.
 
-## Non-Goals (Task 1.2)
-- No external routing provider calls.
-- No travel-time/distance computation.
+## Non-Goals (Task 1.4)
+- No external routing provider calls in this slice.
 - No UI or planner rendering changes.
 - No schema migrations.
 
@@ -45,7 +44,7 @@
 - `provider_error` means provider execution failed unexpectedly (timeout/upstream/adapter failure class).
 - Failure payloads are deterministic and include provider kind + retryability flag.
 
-## Success Semantics (Task 1.3)
+## Success Semantics
 - Provider returns metric rows keyed by deterministic leg `index`.
 - Provider cannot reorder legs or redefine itinerary adjacency.
 - Provider metrics are transport values only; route handler merges them onto deterministic `legDrafts`.
@@ -56,19 +55,19 @@
   - `index` values must be unique integers and sequentially cover `[0, N-1]`.
   - `distance_m` and `duration_s` must be finite and non-negative.
 - Route normalizes metric values with integer rounding (`Math.round`) and clamp to zero.
-- Validation failures are logged structurally and mapped to `500 internal_error` (contract stability from Task 1.2).
 
 ## Route Mapping
 | Adapter result | Route response |
 | --- | --- |
 | `ok: true` + valid metrics | `200` payload with `status: "ok"` and computed leg metrics/badges |
-| `provider_unavailable` | Existing `501` payload with `code: "routing_provider_unavailable"` and `status: "provider_unavailable"` |
-| `provider_error` | Existing `500` payload with `code: "internal_error"` |
+| `ok: true` + invalid metric payload | `502` payload with `code: "routing_provider_bad_gateway"` |
+| `provider_unavailable` | `501` payload with `code: "routing_provider_unavailable"` and `status: "provider_unavailable"` |
+| `provider_error` | `502` payload with `code: "routing_provider_bad_gateway"` |
 
 ## Contract Stability Rule
-- Task 1.3 adds a success mode but preserves Task 1.2 failure mapping and codes.
-- Adapter boundary is internal architecture only.
+- Task 1.4 keeps request + success response contracts stable and only sharpens provider-boundary failure classification.
+- Adapter boundary remains internal architecture only.
 
 ## Follow-ups
-- Task 1.4: expand verification matrix for provider failure classes and success mapping.
-- Task 1.4+: evaluate `500` vs `502` for invalid upstream payload semantics.
+- Implement concrete Google/OSRM adapters that emit the success contract.
+- Evaluate partial-leg behavior (mixed valid/invalid legs) as a separate explicit contract update.

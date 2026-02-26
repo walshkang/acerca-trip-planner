@@ -24,6 +24,7 @@ export type RoutingPreviewErrorCode =
   | 'date_outside_trip_range'
   | 'unauthorized'
   | 'not_found'
+  | 'routing_provider_bad_gateway'
   | 'internal_error'
 
 export type RoutingPreviewErrorPayload = {

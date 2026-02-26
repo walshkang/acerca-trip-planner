@@ -25,6 +25,7 @@ This file defines the current verification contract for daily work in this repo.
 | --- | --- | --- |
 | Any behavior change | `npm run check` and `npm test` | Baseline for deterministic logic + route contracts. |
 | Planner move flows, list detail filtering/search, place drawer behavior, map/list URL semantics | `npm run check`, `npm test`, `npm run test:e2e` | Run seeded E2E for cross-surface regressions in these high-risk flows. |
+| Routing contract/provider-boundary behavior (`/api/lists/[id]/routing/preview`) | `npm run check` and targeted routing unit/API tests | Backend-only slice; E2E is not required unless UI behavior changes. |
 | Schema or migration changes | `npm run check`, `npm test`, `npm run db:types` | Keep generated types synced with schema. |
 | Reports changed in diff | Above plus rationale hygiene in changed reports | No TODO placeholders in `Decisions / Rationale` or `Next Steps`. |
 
@@ -45,3 +46,4 @@ This file defines the current verification contract for daily work in this repo.
 ## Process Sync Rule
 - If seeded suite scope changes, update both `docs/PLAYWRIGHT.md` and `CONTEXT.md` in the same PR.
 - If a PR changes shipped behavior, update `roadmap.json` and regenerate `CONTEXT.md` in the same PR to prevent status drift.
+- If routing contract semantics change, update `docs/PHASE_3_ROUTING_CONTRACT.md`, `docs/PHASE_3_ROUTING_ADAPTER_BOUNDARY.md`, and `docs/PHASE_3_ROUTING_VERIFICATION_GATE.md` together.

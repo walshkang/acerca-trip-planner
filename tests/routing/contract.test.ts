@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { parseRoutingPreviewRequest } from '@/lib/routing/contract'
+import {
+  parseRoutingPreviewRequest,
+  type RoutingPreviewErrorPayload,
+} from '@/lib/routing/contract'
 
 describe('parseRoutingPreviewRequest', () => {
   it('accepts valid date and defaults mode to scheduled', () => {
@@ -61,5 +64,15 @@ describe('parseRoutingPreviewRequest', () => {
     expect(parsed.ok).toBe(false)
     if (parsed.ok) return
     expect(parsed.fieldErrors.payload).toEqual(['Unknown field: foo'])
+  })
+
+  it('supports provider bad gateway error code in payload contract', () => {
+    const payload: RoutingPreviewErrorPayload = {
+      code: 'routing_provider_bad_gateway',
+      message: 'Upstream provider returned invalid leg metrics.',
+      lastValidCanonicalRequest: { date: '2026-03-01', mode: 'scheduled' },
+    }
+
+    expect(payload.code).toBe('routing_provider_bad_gateway')
   })
 })

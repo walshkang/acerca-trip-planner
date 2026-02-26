@@ -739,7 +739,7 @@ describe('POST /api/lists/[id]/routing/preview', () => {
     })
   })
 
-  it('returns 500 when provider success payload leg count mismatches drafts', async () => {
+  it('returns 502 when provider success payload leg count mismatches drafts', async () => {
     const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     try {
       providerPreviewMock.mockResolvedValueOnce({
@@ -811,9 +811,9 @@ describe('POST /api/lists/[id]/routing/preview', () => {
         params: { id: 'list-1' },
       })
 
-      expect(response.status).toBe(500)
+      expect(response.status).toBe(502)
       await expect(response.json()).resolves.toEqual({
-        code: 'internal_error',
+        code: 'routing_provider_bad_gateway',
         message: 'Routing provider returned invalid leg metrics.',
         lastValidCanonicalRequest: { date: '2026-03-01', mode: 'scheduled' },
       })
@@ -833,7 +833,7 @@ describe('POST /api/lists/[id]/routing/preview', () => {
     }
   })
 
-  it('returns 500 when provider success payload includes invalid index', async () => {
+  it('returns 502 when provider success payload includes invalid index', async () => {
     const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     try {
       providerPreviewMock.mockResolvedValueOnce({
@@ -910,9 +910,9 @@ describe('POST /api/lists/[id]/routing/preview', () => {
         params: { id: 'list-1' },
       })
 
-      expect(response.status).toBe(500)
+      expect(response.status).toBe(502)
       await expect(response.json()).resolves.toEqual({
-        code: 'internal_error',
+        code: 'routing_provider_bad_gateway',
         message: 'Routing provider returned invalid leg metrics.',
         lastValidCanonicalRequest: { date: '2026-03-01', mode: 'scheduled' },
       })
@@ -932,7 +932,7 @@ describe('POST /api/lists/[id]/routing/preview', () => {
     }
   })
 
-  it('returns 500 when provider success payload includes negative metric values', async () => {
+  it('returns 502 when provider success payload includes negative metric values', async () => {
     const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     try {
       providerPreviewMock.mockResolvedValueOnce({
@@ -1009,9 +1009,9 @@ describe('POST /api/lists/[id]/routing/preview', () => {
         params: { id: 'list-1' },
       })
 
-      expect(response.status).toBe(500)
+      expect(response.status).toBe(502)
       await expect(response.json()).resolves.toEqual({
-        code: 'internal_error',
+        code: 'routing_provider_bad_gateway',
         message: 'Routing provider returned invalid leg metrics.',
         lastValidCanonicalRequest: { date: '2026-03-01', mode: 'scheduled' },
       })
@@ -1031,7 +1031,106 @@ describe('POST /api/lists/[id]/routing/preview', () => {
     }
   })
 
-  it('maps provider_error failures to 500 internal_error', async () => {
+  it('returns 502 when provider success payload includes non-finite metric values', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      providerPreviewMock.mockResolvedValueOnce({
+        ok: true,
+        provider: 'google_routes',
+        legs: [
+          {
+            index: 0,
+            distance_m: Number.POSITIVE_INFINITY,
+            duration_s: 50,
+          },
+          {
+            index: 1,
+            distance_m: 120,
+            duration_s: 60,
+          },
+        ],
+      })
+
+      mockClient({
+        joinedItemsResult: {
+          data: [
+            {
+              id: 'item-1',
+              place_id: 'place-1',
+              created_at: '2026-03-01T10:00:00.000Z',
+              scheduled_date: '2026-03-01',
+              scheduled_start_time: '09:00:00',
+              scheduled_order: 1,
+              place: {
+                id: 'place-1',
+                name: 'A',
+                category: 'Food',
+                lat: 40.7,
+                lng: -73.9,
+              },
+            },
+            {
+              id: 'item-2',
+              place_id: 'place-2',
+              created_at: '2026-03-01T10:01:00.000Z',
+              scheduled_date: '2026-03-01',
+              scheduled_start_time: '14:00:00',
+              scheduled_order: 1,
+              place: {
+                id: 'place-2',
+                name: 'B',
+                category: 'Coffee',
+                lat: 40.71,
+                lng: -73.91,
+              },
+            },
+            {
+              id: 'item-3',
+              place_id: 'place-3',
+              created_at: '2026-03-01T10:02:00.000Z',
+              scheduled_date: '2026-03-01',
+              scheduled_start_time: '19:00:00',
+              scheduled_order: 1,
+              place: {
+                id: 'place-3',
+                name: 'C',
+                category: 'Drinks',
+                lat: 40.72,
+                lng: -73.92,
+              },
+            },
+          ],
+          error: null,
+        },
+      })
+
+      const response = await POST(makeRequest({ date: '2026-03-01' }) as any, {
+        params: { id: 'list-1' },
+      })
+
+      expect(response.status).toBe(502)
+      await expect(response.json()).resolves.toEqual({
+        code: 'routing_provider_bad_gateway',
+        message: 'Routing provider returned invalid leg metrics.',
+        lastValidCanonicalRequest: { date: '2026-03-01', mode: 'scheduled' },
+      })
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          event: 'routing_provider_leg_metrics_invalid',
+          provider: 'google_routes',
+          list_id: 'list-1',
+          date: '2026-03-01',
+          expected_leg_count: 2,
+          received_leg_count: 2,
+          reason: 'non_finite_metric:0',
+        })
+      )
+    } finally {
+      consoleErrorSpy.mockRestore()
+    }
+  })
+
+  it('maps provider_error failures to 502 routing_provider_bad_gateway', async () => {
     providerPreviewMock.mockResolvedValueOnce({
       ok: false,
       code: 'provider_error',
@@ -1082,9 +1181,9 @@ describe('POST /api/lists/[id]/routing/preview', () => {
       params: { id: 'list-1' },
     })
 
-    expect(response.status).toBe(500)
+    expect(response.status).toBe(502)
     await expect(response.json()).resolves.toEqual({
-      code: 'internal_error',
+      code: 'routing_provider_bad_gateway',
       message: 'Routing provider request failed.',
       lastValidCanonicalRequest: { date: '2026-03-01', mode: 'scheduled' },
     })

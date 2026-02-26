@@ -9,7 +9,7 @@
 ## 🧠 Active Context
 - Current Phase: The Intelligent Concierge (Wedding Cake)
 - Active Epic: Deterministic Routing
-- Immediate Blocker: Task 1.3 – Define deterministic itinerary sequencing data model.
+- Immediate Blocker: None (all tasks in active epic are completed)
 
 ## ✅ P2-E1 Remaining Plan (Tracking)
 - Spec: `docs/PHASE_2_KANBAN_SPEC.md`.
@@ -70,7 +70,7 @@ gantt
   "P2-E3 List Workspace + Tags" :done, p2e3, after p2e2, 7d
   "P2-E4 Map-First List Context" :done, p2e4, after p2e3, 7d
   section The_Intelligent_Concierge_(Wedding_Cake)
-  "P3-E1 Deterministic Routing" :active, p3e1, after p2e4, 7d
+  "P3-E1 Deterministic Routing" :done, p3e1, after p2e4, 7d
   "P3-E2 AI Discovery (Suggestion Layer)" :p3e2, after p3e1, 7d
 ```
 
@@ -82,9 +82,9 @@ gantt
 - User edits never overwrite frozen AI enrichment.
 
 ## 📝 Implementation Memory
+- 2026-02-26 – Summarize plan critique
+    Auto-generated from git log (670a893).
+- 2026-02-25 – Redraft deterministic routing doc
+    Auto-generated from git log (7a36315).
 - 2026-02-25 – Review post-green plan
     Auto-generated from git log (f7999d6).
-- 2026-02-25 – Update status docs for PRs
-    Auto-generated from git log (415fab3).
-- 2026-02-25 – Plan tracking sync actions
-    Auto-generated from git log (4b0d7a3).

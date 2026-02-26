@@ -3,13 +3,15 @@ import type { CategoryEnum } from '@/lib/types/enums'
 import type {
   CanonicalRoutingPreviewRequest,
   RoutingComputedLeg,
-  RoutingLegDraft,
   RoutingProviderKind,
-  RoutingProviderLegMetric,
   RoutingPreviewErrorPayload,
   RoutingPreviewListContext,
 } from '@/lib/routing/contract'
 import { parseRoutingPreviewRequest } from '@/lib/routing/contract'
+import {
+  buildComputedLegs,
+  validateAndNormalizeProviderLegMetrics,
+} from '@/lib/routing/provider-leg-metrics'
 import {
   buildRoutingSequence,
   type RoutingSequenceInputRow,
@@ -74,24 +76,11 @@ type PlaceViewRow = {
   lng: number | null
 }
 
-type NormalizedLegMetric = {
-  distance_m: number
-  duration_s: number
-}
-
 function toErrorResponse(
   status: number,
   payload: RoutingPreviewErrorPayload
 ): NextResponse<RoutingPreviewErrorPayload> {
   return NextResponse.json(payload, { status })
-}
-
-function isFiniteNumber(value: unknown): value is number {
-  return typeof value === 'number' && Number.isFinite(value)
-}
-
-function normalizeNonNegativeInteger(value: number): number {
-  return Math.max(0, Math.round(value))
 }
 
 function isDateOutsideRange(
@@ -251,133 +240,6 @@ function buildSummary(args: {
     total_distance_m: args.totalDistanceMeters ?? null,
     total_duration_s: args.totalDurationSeconds ?? null,
   }
-}
-
-function toTravelTimeBadges(durationSeconds: number) {
-  if (durationSeconds === 0) {
-    return {
-      travel_time_badge_minutes: 0,
-      travel_time_badge_short: '0m',
-      travel_time_badge_long: '0 min',
-    }
-  }
-
-  const minutes = Math.max(1, Math.round(durationSeconds / 60))
-  return {
-    travel_time_badge_minutes: minutes,
-    travel_time_badge_short: `${minutes}m`,
-    travel_time_badge_long: `${minutes} min`,
-  }
-}
-
-function validateProviderLegMetrics(
-  legMetrics: RoutingProviderLegMetric[],
-  expectedLegCount: number
-):
-  | {
-      ok: true
-      normalizedByIndex: Map<number, NormalizedLegMetric>
-    }
-  | {
-      ok: false
-      reason: string
-      receivedLegCount: number
-    } {
-  const receivedLegCount = legMetrics.length
-  if (receivedLegCount !== expectedLegCount) {
-    return {
-      ok: false,
-      reason: `leg_count_mismatch:${expectedLegCount}:${receivedLegCount}`,
-      receivedLegCount,
-    }
-  }
-
-  const seenIndices = new Set<number>()
-  const normalizedByIndex = new Map<number, NormalizedLegMetric>()
-
-  for (const leg of legMetrics) {
-    if (!Number.isInteger(leg.index)) {
-      return {
-        ok: false,
-        reason: `invalid_index:${leg.index}`,
-        receivedLegCount,
-      }
-    }
-
-    if (leg.index < 0 || leg.index >= expectedLegCount) {
-      return {
-        ok: false,
-        reason: `index_out_of_range:${leg.index}`,
-        receivedLegCount,
-      }
-    }
-
-    if (seenIndices.has(leg.index)) {
-      return {
-        ok: false,
-        reason: `duplicate_index:${leg.index}`,
-        receivedLegCount,
-      }
-    }
-
-    if (!isFiniteNumber(leg.distance_m) || !isFiniteNumber(leg.duration_s)) {
-      return {
-        ok: false,
-        reason: `non_finite_metric:${leg.index}`,
-        receivedLegCount,
-      }
-    }
-
-    if (leg.distance_m < 0 || leg.duration_s < 0) {
-      return {
-        ok: false,
-        reason: `negative_metric:${leg.index}`,
-        receivedLegCount,
-      }
-    }
-
-    seenIndices.add(leg.index)
-    normalizedByIndex.set(leg.index, {
-      distance_m: normalizeNonNegativeInteger(leg.distance_m),
-      duration_s: normalizeNonNegativeInteger(leg.duration_s),
-    })
-  }
-
-  for (let index = 0; index < expectedLegCount; index += 1) {
-    if (!seenIndices.has(index)) {
-      return {
-        ok: false,
-        reason: `missing_index:${index}`,
-        receivedLegCount,
-      }
-    }
-  }
-
-  return {
-    ok: true,
-    normalizedByIndex,
-  }
-}
-
-function buildComputedLegs(args: {
-  legDrafts: RoutingLegDraft[]
-  normalizedByIndex: Map<number, NormalizedLegMetric>
-}): RoutingComputedLeg[] {
-  const legs: RoutingComputedLeg[] = []
-  for (const draft of args.legDrafts) {
-    const metrics = args.normalizedByIndex.get(draft.index)
-    if (!metrics) {
-      throw new Error(`Missing normalized metric for leg index ${draft.index}`)
-    }
-
-    legs.push({
-      ...draft,
-      distance_m: metrics.distance_m,
-      duration_s: metrics.duration_s,
-      ...toTravelTimeBadges(metrics.duration_s),
-    })
-  }
-  return legs
 }
 
 function logInvalidProviderMetrics(args: {
@@ -574,7 +436,7 @@ export async function POST(
     })
 
     if (providerResult.ok) {
-      const validated = validateProviderLegMetrics(
+      const validated = validateAndNormalizeProviderLegMetrics(
         providerResult.legs,
         built.legs.length
       )
@@ -589,8 +451,8 @@ export async function POST(
           reason: validated.reason,
         })
 
-        return toErrorResponse(500, {
-          code: 'internal_error',
+        return toErrorResponse(502, {
+          code: 'routing_provider_bad_gateway',
           message: INVALID_PROVIDER_PAYLOAD_MESSAGE,
           lastValidCanonicalRequest: canonical,
         })
@@ -614,6 +476,14 @@ export async function POST(
         list: listContext,
         rows: built,
         message: providerResult.message,
+      })
+    }
+
+    if (providerResult.code === 'provider_error') {
+      return toErrorResponse(502, {
+        code: 'routing_provider_bad_gateway',
+        message: providerResult.message,
+        lastValidCanonicalRequest: canonical,
       })
     }
 

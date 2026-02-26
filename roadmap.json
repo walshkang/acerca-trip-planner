@@ -562,13 +562,13 @@
               "id": "1.3",
               "task": "Define deterministic itinerary sequencing data model.",
               "details": "Inputs/outputs for ordered legs, durations, and travel-time badge rendering contract.",
-              "status": "in_progress"
+              "status": "completed"
             },
             {
               "id": "1.4",
               "task": "Define verification gate for routing contract slice.",
               "details": "Unit/API test matrix and acceptance criteria for deterministic route outputs.",
-              "status": "pending"
+              "status": "completed"
             }
           ]
         },
