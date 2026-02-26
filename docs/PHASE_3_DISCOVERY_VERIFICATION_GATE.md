@@ -20,7 +20,8 @@ This gate applies to discovery suggestion-layer behavior for:
 ## Required Commands (Implementation Slices)
 1. `npm run test -- tests/discovery/contract.test.ts tests/discovery/suggest-route.test.ts tests/discovery/summary.test.ts`
 2. `npm run test -- tests/discovery/client.test.ts tests/discovery/store.test.ts`
-3. `npm run check`
+3. `npm run test -- tests/discovery/reject-route.test.ts`
+4. `npm run check`
 
 ## Unit/API Matrix
 | Area | Scenario | Expected |
@@ -33,9 +34,9 @@ This gate applies to discovery suggestion-layer behavior for:
 | Client adapter | mixed `places_index` and `google_search` suggestions | deterministic row mapping + stable row identifiers |
 | Map-shell suggest integration | canonical row click vs non-canonical row click | canonical opens `?place=<id>`; non-canonical goes through preview ingest |
 | Persistence boundary | suggest request | zero writes to `place_candidates`, `enrichments`, `places`, `list_items` |
-| Preview path (future gate) | preview a suggestion | staged artifacts created via Airlock only |
-| Approve path (future gate) | approve preview-created candidate | promote succeeds with no re-enrichment |
-| Reject path (future gate) | reject preview-created candidate | staged artifacts discarded |
+| Preview path | preview a suggestion | staged artifacts created via Airlock only |
+| Approve path | approve preview-created candidate | promote succeeds with no re-enrichment |
+| Reject path | reject/discard preview-created candidate | discard RPC deletes candidate only; store discardAndClear clears state and calls discard; idempotent |
 | Taxonomy | category outputs | enum-safe (`Food/Coffee/Sights/Shop/Activity/Drinks`) |
 | Provider failures | upstream provider unavailable/error | deterministic `503` or `502` mapping |
 | Internal failures | unexpected route exception | `500 internal_error` |
@@ -50,9 +51,9 @@ This gate applies to discovery suggestion-layer behavior for:
 - Client/store integration behavior is covered by automated tests.
 - `roadmap.json` and regenerated `CONTEXT.md` are aligned when task statuses change.
 
-## Deferred Gate Items (P3-E2 / 2.6-2.7)
-- Add reject/discard automated tests when cleanup path is implemented.
-- Promote preview/approve/reject rows in the matrix above from future gate to required gate.
+## Completed Gate Items (P3-E2 / 2.6-2.7)
+- Reject/discard automated tests added: `tests/discovery/reject-route.test.ts`, store tests in `store.test.ts`.
+- Preview/approve/reject rows in the matrix above are required; discard path covered by reject-route and store tests.
 
 ## Acceptance Checklist
 - [ ] Contract errors map to the documented `400/401/404/502/503/500` semantics.
@@ -61,7 +62,7 @@ This gate applies to discovery suggestion-layer behavior for:
 - [ ] Suggest results map deterministically into map-shell rows.
 - [ ] Canonical suggestions open existing place details; non-canonical suggestions use preview ingest.
 - [ ] Suggest endpoint is read-only across canonical and staging tables.
-- [ ] Preview persists through Airlock only (required for `P3-E2 / 2.6-2.7`).
-- [ ] Approval promotes without re-enrichment (required for `P3-E2 / 2.6-2.7`).
-- [ ] Reject path discards preview-created staged artifacts (required for `P3-E2 / 2.6-2.7`).
+- [x] Preview persists through Airlock only.
+- [x] Approval promotes without re-enrichment.
+- [x] Reject path discards preview-created staged artifacts (discard route + store discardAndClear; enrichments preserved).
 - [ ] Taxonomy remains exhaustive and icon-safe.

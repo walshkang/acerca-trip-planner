@@ -70,6 +70,7 @@ type DiscoveryState = {
   setSearchBias: (bias: SearchBias | null) => void
   setListScopeId: (listId: string | null) => void
   clear: () => void
+  discardAndClear: () => void
   submit: () => Promise<void>
   previewResult: (result: DiscoverySearchResult) => Promise<void>
 }
@@ -133,6 +134,40 @@ export const useDiscoveryStore = create<DiscoveryState>((set, get) => ({
       previewEnrichment: null,
       previewGoogle: null,
     }),
+
+  discardAndClear: () => {
+    const current = get().previewCandidate
+    const candidateId = current?.id
+    const status = current?.status
+
+    set({
+      query: '',
+      isSubmitting: false,
+      error: null,
+      results: [],
+      selectedResult: null,
+      selectedResultId: null,
+      candidate: null,
+      previewCandidate: null,
+      ghostLocation: null,
+      enrichment: null,
+      previewEnrichment: null,
+      previewGoogle: null,
+    })
+
+    if (!candidateId || status === 'promoted') {
+      return
+    }
+
+    // Fire-and-forget; UI state is already cleared and endpoint is idempotent.
+    void fetch('/api/places/discard', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ candidate_id: candidateId }),
+    }).catch(() => {
+      // Best-effort cleanup; errors are intentionally swallowed.
+    })
+  },
 
   submit: async () => {
     const q = get().query.trim()
@@ -239,6 +274,17 @@ export const useDiscoveryStore = create<DiscoveryState>((set, get) => ({
 
   previewResult: async (result) => {
     if (isCanonicalRow(result) || !result?.place_id) return
+
+    const previous = get().previewCandidate
+    if (previous?.id && previous.status !== 'promoted') {
+      void fetch('/api/places/discard', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ candidate_id: previous.id }),
+      }).catch(() => {
+        // Best-effort cleanup; errors are intentionally swallowed.
+      })
+    }
 
     set({
       isSubmitting: true,

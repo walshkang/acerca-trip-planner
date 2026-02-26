@@ -133,3 +133,79 @@ describe('useDiscoveryStore.submit', () => {
     })
   })
 })
+
+describe('useDiscoveryStore.discardAndClear', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks()
+    vi.unstubAllGlobals()
+    resetDiscoveryStore()
+  })
+
+  it('clears state immediately and does not call discard when no preview candidate', () => {
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+
+    const store = useDiscoveryStore.getState()
+    store.setQuery('foo')
+    store.setResults([{ place_id: 'x', name: 'X', canonical_place_id: null } as any])
+    store.discardAndClear()
+
+    const state = useDiscoveryStore.getState()
+    expect(state.query).toBe('')
+    expect(state.results).toEqual([])
+    expect(state.previewCandidate).toBeNull()
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('clears state and fires discard request when preview candidate exists', () => {
+    const fetchMock = vi.fn().mockResolvedValue(makeResponse({ status: 'ok' }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const candidateId = '550e8400-e29b-41d4-a716-446655440000'
+    useDiscoveryStore.setState({
+      previewCandidate: {
+        id: candidateId,
+        name: 'Test',
+        address: null,
+        status: 'enriched',
+        enrichment_id: 'e1',
+        created_at: new Date().toISOString(),
+      },
+      previewEnrichment: {} as any,
+      ghostLocation: { lat: 40, lng: -74 },
+    })
+
+    useDiscoveryStore.getState().discardAndClear()
+
+    const state = useDiscoveryStore.getState()
+    expect(state.previewCandidate).toBeNull()
+    expect(state.previewEnrichment).toBeNull()
+    expect(state.ghostLocation).toBeNull()
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(fetchMock.mock.calls[0]?.[0]).toBe('/api/places/discard')
+    const requestInit = fetchMock.mock.calls[0]?.[1] as RequestInit
+    const body = JSON.parse(String(requestInit.body)) as Record<string, unknown>
+    expect(body).toEqual({ candidate_id: candidateId })
+  })
+
+  it('does not fire discard when preview candidate status is promoted', () => {
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+
+    useDiscoveryStore.setState({
+      previewCandidate: {
+        id: '550e8400-e29b-41d4-a716-446655440000',
+        name: 'Test',
+        address: null,
+        status: 'promoted',
+        enrichment_id: 'e1',
+        created_at: new Date().toISOString(),
+      },
+    })
+
+    useDiscoveryStore.getState().discardAndClear()
+
+    expect(useDiscoveryStore.getState().previewCandidate).toBeNull()
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+})

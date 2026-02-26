@@ -214,7 +214,7 @@ export default function MapContainer() {
   const previewSelectedResultId = useDiscoveryStore((s) => s.selectedResultId)
   const discoveryIsSubmitting = useDiscoveryStore((s) => s.isSubmitting)
   const discoveryError = useDiscoveryStore((s) => s.error)
-  const clearDiscovery = useDiscoveryStore((s) => s.clear)
+  const discardPreview = useDiscoveryStore((s) => s.discardAndClear)
   const setSearchBias = useDiscoveryStore((s) => s.setSearchBias)
   const setListScopeId = useDiscoveryStore((s) => s.setListScopeId)
   const mapRef = useRef<MapViewRef | null>(null)
@@ -613,7 +613,7 @@ export default function MapContainer() {
   const cancelPreview = useCallback(() => {
     const saved = prePreviewStateRef.current
     prePreviewStateRef.current = null
-    clearDiscovery()
+    discardPreview()
     if (!saved) {
       setPlaceParam(null)
       return
@@ -626,7 +626,7 @@ export default function MapContainer() {
     setDrawerOpen(saved.drawerOpen)
     setPanelMode(saved.panelMode)
     setFocusedListPlaceId(saved.focusedListPlaceId ?? null)
-  }, [clearDiscovery, setPlaceParam])
+  }, [discardPreview, setPlaceParam])
 
   const closePlaceDetails = useCallback(() => {
     setPlaceParam(null)
@@ -860,12 +860,12 @@ export default function MapContainer() {
   }, [loading, updateSearchBiasFromMap])
 
   const handleMapClick = useCallback(() => {
-    clearDiscovery()
+    discardPreview()
     setFocusedListPlaceId(null)
     if (selectedPlaceId) {
       setPlaceParam(null)
     }
-  }, [clearDiscovery, selectedPlaceId, setPlaceParam])
+  }, [discardPreview, selectedPlaceId, setPlaceParam])
 
   const handleMoveEnd = useCallback(
     (evt: MapMoveEndEvent) => {
@@ -1204,7 +1204,7 @@ export default function MapContainer() {
               setDrawerOpen(false)
               setFocusedListPlaceId(null)
               setPlaceParam(null)
-              clearDiscovery()
+              discardPreview()
             }}
             left={isPreviewing ? undefined : listPane}
             right={desktopRight}

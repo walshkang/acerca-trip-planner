@@ -15,7 +15,7 @@ export default function Omnibox({
   const query = useDiscoveryStore((s) => s.query)
   const setQuery = useDiscoveryStore((s) => s.setQuery)
   const submit = useDiscoveryStore((s) => s.submit)
-  const clear = useDiscoveryStore((s) => s.clear)
+  const discardAndClear = useDiscoveryStore((s) => s.discardAndClear)
   const isSubmitting = useDiscoveryStore((s) => s.isSubmitting)
   const error = useDiscoveryStore((s) => s.error)
   const results = useDiscoveryStore((s) => s.results)
@@ -78,14 +78,14 @@ export default function Omnibox({
             }
             if (e.key === 'Escape') {
               e.preventDefault()
-              clear()
+              discardAndClear()
             }
           }}
         />
         {query ? (
           <button
             type="button"
-            onClick={clear}
+            onClick={discardAndClear}
             className="glass-button"
           >
             Clear

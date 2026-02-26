@@ -9,7 +9,7 @@
 ## 🧠 Active Context
 - Current Phase: The Intelligent Concierge (Wedding Cake)
 - Active Epic: AI Discovery (Suggestion Layer)
-- Immediate Blocker: Task 2.6 – Ship reject/discard cleanup path for staged preview artifacts.
+- P3-E2 tasks 2.6 and 2.7 completed: reject/discard path and verification gate in place.
 
 ## ✅ P2-E1 Remaining Plan (Tracking)
 - Spec: `docs/PHASE_2_KANBAN_SPEC.md`.
@@ -82,6 +82,7 @@ gantt
 - User edits never overwrite frozen AI enrichment.
 
 ## 📝 Implementation Memory
+- 2026-02-26 – P3-E2 closeout: discard path for staged preview artifacts (tasks 2.6, 2.7). Added discard_place_candidate RPC, POST /api/places/discard, store discardAndClear; wired Close/Cancel/Escape/preview-switch/map-click to discard then clear; enrichments left intact (EORF). Tests: reject-route.test.ts, store discardAndClear. Docs and roadmap updated.
 - 2026-02-26 – feat: complete P3-E2 task 2.4 summary isolation
     Auto-generated from git log (96f1fcb).
 - 2026-02-26 – Draft P3-E2 discovery docs

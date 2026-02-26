@@ -17,8 +17,9 @@
 - User edits and approvals never overwrite frozen enrichment payloads.
 - Taxonomy remains strict (`Food | Coffee | Sights | Shop | Activity | Drinks`).
 
-## Endpoint
-- `POST /api/discovery/suggest`
+## Endpoints
+- `POST /api/discovery/suggest` (read-only suggestion retrieval)
+- `POST /api/places/discard` (reject/discard staged preview candidate)
 
 ## Implementation Status
 - `P3-E2 / 2.1` completed: deterministic contract defined.
@@ -26,6 +27,8 @@
 - `P3-E2 / 2.3` completed: server-owned suggest endpoint implemented.
 - `P3-E2 / 2.4` completed: optional summary path implemented with ranking isolation.
 - `P3-E2 / 2.5` completed: map-first discovery UI now calls suggest; canonical hits open place details and non-canonical hits use preview ingest.
+- `P3-E2 / 2.6` completed: discard path implemented; Close/Cancel/switching previews call discard then clear; enrichments are deliberately not deleted (EORF).
+- `P3-E2 / 2.7` completed: automated tests for discard route and store discardAndClear; verification gate updated.
 
 ## Request Contract
 - Body must be a JSON object.
@@ -68,7 +71,7 @@
   - no writes to `list_items`.
 - Persistence begins only when the user explicitly previews a suggestion through Airlock (`/api/places/ingest`).
 - Approval continues to promote via `/api/places/promote` with no re-enrichment during promotion.
-- Rejection must discard staged preview artifacts (candidate/enrichment) when they have not been promoted.
+- Rejection must discard staged preview artifacts when they have not been promoted. Discard deletes only the `place_candidates` row for the current user and unpromoted candidate; enrichments are left intact (Enrich Once, Read Forever).
 
 ## Success Response Contract (200)
 - Payload shape:
@@ -141,3 +144,10 @@
 - Preview persists via Airlock; approval promotes without re-enrichment.
 - Rejection discards preview-created staged artifacts.
 - Taxonomy remains enum-safe and exhaustive (`Food | Coffee | Sights | Shop | Activity | Drinks`).
+
+## Discard Endpoint Contract (`POST /api/places/discard`)
+- Body: `{ candidate_id: string }` (required). Invalid or missing `candidate_id` returns `400 invalid_discard_payload`.
+- Auth: requires authenticated user; unauthenticated returns `401 unauthorized`.
+- Behavior: calls RPC `discard_place_candidate(p_candidate_id)` which deletes the matching `place_candidates` row only when `user_id = auth.uid()` and `status <> 'promoted'`. Does not delete enrichments.
+- Response: `200` with `{ status: "ok" }` on success. Idempotent: repeat calls for the same or already-deleted candidate return `200`.
+- Errors: `500 internal_error` if RPC fails.

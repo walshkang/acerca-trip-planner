@@ -617,13 +617,15 @@
               "id": "2.6",
               "task": "Ship reject/discard cleanup path for staged preview artifacts.",
               "details": "Ensure rejection discards preview-created candidate/enrichment artifacts when never promoted, preserving approve-as-truth semantics.",
-              "status": "pending"
+              "status": "completed",
+              "notes": "Added discard_place_candidate RPC (candidate only; enrichments preserved), POST /api/places/discard, store discardAndClear; wired into cancelPreview, Omnibox Escape, previewResult, map click, panel close."
             },
             {
               "id": "2.7",
               "task": "Add automated verification for discovery contract invariants.",
               "details": "Add unit/API coverage for contract validation, deterministic ordering, summary isolation, read-only suggest behavior, and reject-discard semantics.",
-              "status": "pending"
+              "status": "completed",
+              "notes": "Added tests/discovery/reject-route.test.ts and discardAndClear tests in store.test.ts; updated verification gate and contract docs."
             }
           ]
         }
