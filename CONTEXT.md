@@ -8,8 +8,8 @@
 
 ## 🧠 Active Context
 - Current Phase: The Intelligent Concierge (Wedding Cake)
-- Active Epic: Deterministic Routing
-- Immediate Blocker: None (all tasks in active epic are completed)
+- Active Epic: AI Discovery (Suggestion Layer)
+- Immediate Blocker: Task 2.4 – Implement optional summary path with ranking isolation.
 
 ## ✅ P2-E1 Remaining Plan (Tracking)
 - Spec: `docs/PHASE_2_KANBAN_SPEC.md`.
@@ -82,9 +82,9 @@ gantt
 - User edits never overwrite frozen AI enrichment.
 
 ## 📝 Implementation Memory
+- 2026-02-26 – Implement deterministic routing API
+    Auto-generated from git log (1a36875).
 - 2026-02-26 – Summarize plan critique
     Auto-generated from git log (670a893).
 - 2026-02-25 – Redraft deterministic routing doc
     Auto-generated from git log (7a36315).
-- 2026-02-25 – Review post-green plan
-    Auto-generated from git log (f7999d6).

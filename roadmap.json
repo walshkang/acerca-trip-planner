@@ -581,6 +581,50 @@
             "Results are ingested through the Airlock pipeline and appear as Ghost Pins.",
             "Approval promotes to canonical truth; no re-enrichment on approval.",
             "Rejected items are discarded and never stored."
+          ],
+          "tasks": [
+            {
+              "id": "2.1",
+              "task": "Define deterministic discovery suggestion contract.",
+              "details": "Completion artifact required: docs/PHASE_3_DISCOVERY_CONTRACT.md defining request/response schema, persistence boundaries, invariants, and acceptance checks.",
+              "status": "completed"
+            },
+            {
+              "id": "2.2",
+              "task": "Define verification gate for discovery contract slice.",
+              "details": "Completion artifact required: docs/PHASE_3_DISCOVERY_VERIFICATION_GATE.md defining test matrix, command gate, and pass criteria.",
+              "status": "completed"
+            },
+            {
+              "id": "2.3",
+              "task": "Implement server-owned discovery suggest endpoint.",
+              "details": "Add POST /api/discovery/suggest with strict payload validation, canonical request shaping, deterministic retrieval/filter/ranking, and documented error mapping.",
+              "status": "completed"
+            },
+            {
+              "id": "2.4",
+              "task": "Implement optional summary path with ranking isolation.",
+              "details": "Add include_summary support where summary text is optional and never influences deterministic ranking or filtering outputs.",
+              "status": "pending"
+            },
+            {
+              "id": "2.5",
+              "task": "Integrate suggestion layer into map discovery UI.",
+              "details": "Wire suggest results into map-first discovery flow while keeping suggest read-only and preview as the first persistence point.",
+              "status": "pending"
+            },
+            {
+              "id": "2.6",
+              "task": "Ship reject/discard cleanup path for staged preview artifacts.",
+              "details": "Ensure rejection discards preview-created candidate/enrichment artifacts when never promoted, preserving approve-as-truth semantics.",
+              "status": "pending"
+            },
+            {
+              "id": "2.7",
+              "task": "Add automated verification for discovery contract invariants.",
+              "details": "Add unit/API coverage for contract validation, deterministic ordering, summary isolation, read-only suggest behavior, and reject-discard semantics.",
+              "status": "pending"
+            }
           ]
         }
       ]

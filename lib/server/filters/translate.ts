@@ -102,7 +102,7 @@ function extractHashtagTags(intent: string): string[] {
   return normalizeTagList(raw) ?? []
 }
 
-function deterministicFallbackTranslate({
+export function translateIntentToFiltersDeterministic({
   intent,
   listId,
 }: TranslateInput): TranslateIntentResult {
@@ -224,12 +224,12 @@ export async function translateIntentToFilters(
   input: TranslateInput
 ): Promise<TranslateIntentResult> {
   if (!process.env.OPENAI_API_KEY) {
-    return deterministicFallbackTranslate(input)
+    return translateIntentToFiltersDeterministic(input)
   }
 
   try {
     return await translateWithOpenAI(input)
   } catch {
-    return deterministicFallbackTranslate(input)
+    return translateIntentToFiltersDeterministic(input)
   }
 }
