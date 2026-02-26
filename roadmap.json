@@ -611,7 +611,7 @@
               "id": "2.5",
               "task": "Integrate suggestion layer into map discovery UI.",
               "details": "Wire suggest results into map-first discovery flow while keeping suggest read-only and preview as the first persistence point.",
-              "status": "pending"
+              "status": "completed"
             },
             {
               "id": "2.6",

@@ -4,7 +4,13 @@ import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useDiscoveryStore } from '@/lib/state/useDiscoveryStore'
 
-export default function Omnibox({ tone = 'dark' }: { tone?: 'light' | 'dark' }) {
+export default function Omnibox({
+  tone = 'dark',
+  onCanonicalPlaceSelect,
+}: {
+  tone?: 'light' | 'dark'
+  onCanonicalPlaceSelect?: (placeId: string) => void
+}) {
   const isDark = tone === 'dark'
   const query = useDiscoveryStore((s) => s.query)
   const setQuery = useDiscoveryStore((s) => s.setQuery)
@@ -117,7 +123,15 @@ export default function Omnibox({ tone = 'dark' }: { tone?: 'light' | 'dark' }) 
                   <button
                     key={result.place_id}
                     type="button"
-                    onClick={() => previewResult(result)}
+                    onClick={() => {
+                      if (result.canonical_place_id) {
+                        setResults([])
+                        setSelectedResultId(null)
+                        onCanonicalPlaceSelect?.(result.canonical_place_id)
+                        return
+                      }
+                      previewResult(result)
+                    }}
                     className={`flex w-full flex-col gap-1 px-4 py-2 text-left text-xs ${
                       isDark
                         ? `text-slate-100 hover:bg-white/5 ${isSelected ? 'bg-white/5' : ''}`

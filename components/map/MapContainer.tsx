@@ -216,6 +216,7 @@ export default function MapContainer() {
   const discoveryError = useDiscoveryStore((s) => s.error)
   const clearDiscovery = useDiscoveryStore((s) => s.clear)
   const setSearchBias = useDiscoveryStore((s) => s.setSearchBias)
+  const setListScopeId = useDiscoveryStore((s) => s.setListScopeId)
   const mapRef = useRef<MapViewRef | null>(null)
   const didInitActiveList = useRef(false)
   const previewFlyToIdRef = useRef<string | null>(null)
@@ -656,6 +657,10 @@ export default function MapContainer() {
     setFocusedListPlaceId(null)
   }, [activeListId])
 
+  useEffect(() => {
+    setListScopeId(activeListId)
+  }, [activeListId, setListScopeId])
+
   const fetchPlaces = useCallback(async () => {
     // Fetch places from Supabase view
     // Note: Only reads from places_view (canonical layer), never place_candidates
@@ -890,6 +895,13 @@ export default function MapContainer() {
     },
     [activeListId, activeListPlaceIdSet, setPlaceParam]
   )
+  const handleCanonicalSuggestionSelect = useCallback(
+    (placeId: string) => {
+      setPendingFocusPlaceId(placeId)
+      handlePlaceClick(placeId)
+    },
+    [handlePlaceClick]
+  )
   const MapView = isMapbox ? MapViewMapbox : MapViewMaplibre
 
   if (isMapbox && !mapboxToken) {
@@ -986,7 +998,10 @@ export default function MapContainer() {
             </button>
           </div>
         ) : null}
-        <Omnibox tone={uiTone} />
+        <Omnibox
+          tone={uiTone}
+          onCanonicalPlaceSelect={handleCanonicalSuggestionSelect}
+        />
       </div>
 
       <div

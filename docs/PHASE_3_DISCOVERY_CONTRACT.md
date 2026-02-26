@@ -1,12 +1,11 @@
-# Phase 3 Discovery Contract (P3-E2 / 2.1-2.4)
+# Phase 3 Discovery Contract (P3-E2 / 2.1-2.5)
 
 ## Goal
 - Define a deterministic, server-owned discovery suggestion contract before implementation.
 - Lock request/response/error semantics for a suggestion layer that preserves map-truth and Airlock approval boundaries.
 
 ## Non-Goals
-- No discovery UI integration in this slice (`P3-E2 / 2.5` is separate).
-- No UI behavior changes.
+- No additional UI behavior changes beyond map-shell suggest integration.
 - No schema migration.
 - No enrichment model changes.
 
@@ -26,6 +25,7 @@
 - `P3-E2 / 2.2` completed: verification gate defined.
 - `P3-E2 / 2.3` completed: server-owned suggest endpoint implemented.
 - `P3-E2 / 2.4` completed: optional summary path implemented with ranking isolation.
+- `P3-E2 / 2.5` completed: map-first discovery UI now calls suggest; canonical hits open place details and non-canonical hits use preview ingest.
 
 ## Request Contract
 - Body must be a JSON object.
@@ -129,12 +129,15 @@
 - `discovery_provider_unavailable` (`503`)
 - `internal_error` (`500`)
 
-## Acceptance Checks (Tasks 2.1-2.4)
+## Acceptance Checks (Tasks 2.1-2.5)
 - Unauthorized requests return `401 unauthorized`.
 - Invalid payloads (missing/empty `intent`, unknown keys, invalid bias pairing) return `400 invalid_discovery_payload`.
 - Same canonical request yields stable deterministic suggestion ordering.
 - `include_summary` toggles summary payload only; ranking and ordering remain unchanged.
 - Suggest endpoint performs zero writes to canonical or staging tables.
+- Map search flow uses suggest as read-only retrieval:
+  - canonical suggestions open existing place details directly,
+  - non-canonical suggestions enter preview ingest via Airlock.
 - Preview persists via Airlock; approval promotes without re-enrichment.
 - Rejection discards preview-created staged artifacts.
 - Taxonomy remains enum-safe and exhaustive (`Food | Coffee | Sights | Shop | Activity | Drinks`).

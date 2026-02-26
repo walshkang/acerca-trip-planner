@@ -1,10 +1,11 @@
-# Phase 3 Discovery Verification Gate (P3-E2 / 2.2, 2.4)
+# Phase 3 Discovery Verification Gate (P3-E2 / 2.2, 2.4, 2.5)
 
 ## Scope
 This gate applies to discovery suggestion-layer behavior for:
 - request parsing/canonicalization and auth/list-scope validation,
 - deterministic retrieval/filter/ranking semantics,
 - optional summary generation constraints,
+- map-shell integration behavior for canonical vs preview suggestion handling,
 - persistence boundaries for the suggest path (preview/approve/reject cleanup is tracked separately),
 - error-code mapping for provider and internal failures.
 
@@ -18,7 +19,8 @@ This gate applies to discovery suggestion-layer behavior for:
 
 ## Required Commands (Implementation Slices)
 1. `npm run test -- tests/discovery/contract.test.ts tests/discovery/suggest-route.test.ts tests/discovery/summary.test.ts`
-2. `npm run check`
+2. `npm run test -- tests/discovery/client.test.ts tests/discovery/store.test.ts`
+3. `npm run check`
 
 ## Unit/API Matrix
 | Area | Scenario | Expected |
@@ -28,6 +30,8 @@ This gate applies to discovery suggestion-layer behavior for:
 | List scope | inaccessible or missing `list_id` | `404 not_found` |
 | Determinism | same canonical request repeated | stable ordering + ranks |
 | Summary isolation | `include_summary` toggled | same suggestions/order/score |
+| Client adapter | mixed `places_index` and `google_search` suggestions | deterministic row mapping + stable row identifiers |
+| Map-shell suggest integration | canonical row click vs non-canonical row click | canonical opens `?place=<id>`; non-canonical goes through preview ingest |
 | Persistence boundary | suggest request | zero writes to `place_candidates`, `enrichments`, `places`, `list_items` |
 | Preview path (future gate) | preview a suggestion | staged artifacts created via Airlock only |
 | Approve path (future gate) | approve preview-created candidate | promote succeeds with no re-enrichment |
@@ -43,6 +47,7 @@ This gate applies to discovery suggestion-layer behavior for:
   - `docs/PHASE_3_DISCOVERY_VERIFICATION_GATE.md`
 - Suggest endpoint write-path checks prove read-only behavior.
 - Summary isolation behavior is covered by automated tests.
+- Client/store integration behavior is covered by automated tests.
 - `roadmap.json` and regenerated `CONTEXT.md` are aligned when task statuses change.
 
 ## Deferred Gate Items (P3-E2 / 2.6-2.7)
@@ -53,6 +58,8 @@ This gate applies to discovery suggestion-layer behavior for:
 - [ ] Contract errors map to the documented `400/401/404/502/503/500` semantics.
 - [ ] Deterministic ordering is stable for repeated identical requests.
 - [ ] Summary generation does not change deterministic suggestion results.
+- [ ] Suggest results map deterministically into map-shell rows.
+- [ ] Canonical suggestions open existing place details; non-canonical suggestions use preview ingest.
 - [ ] Suggest endpoint is read-only across canonical and staging tables.
 - [ ] Preview persists through Airlock only (required for `P3-E2 / 2.6-2.7`).
 - [ ] Approval promotes without re-enrichment (required for `P3-E2 / 2.6-2.7`).

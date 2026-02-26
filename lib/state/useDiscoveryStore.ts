@@ -1,4 +1,13 @@
 import { create } from 'zustand'
+import {
+  isCanonicalRow,
+  mapDiscoverySuggestionsToUiResults,
+  type DiscoveryUiResult,
+} from '@/lib/discovery/client'
+import type {
+  DiscoverySuggestErrorPayload,
+  DiscoverySuggestSuccessPayload,
+} from '@/lib/discovery/contract'
 
 export type DiscoveryCandidate = {
   id: string
@@ -9,15 +18,7 @@ export type DiscoveryCandidate = {
   created_at: string
 }
 
-export type DiscoverySearchResult = {
-  place_id: string
-  name: string | null
-  address: string | null
-  lat?: number | null
-  lng?: number | null
-  neighborhood?: string | null
-  borough?: string | null
-}
+export type DiscoverySearchResult = DiscoveryUiResult
 
 export type DiscoveryGoogleDetails = {
   website: string | null
@@ -57,6 +58,7 @@ type DiscoveryState = {
   previewEnrichment: DiscoveryEnrichment | null
   previewGoogle: DiscoveryGoogleDetails | null
   searchBias: SearchBias | null
+  listScopeId: string | null
   setQuery: (v: string) => void
   setResults: (results: DiscoverySearchResult[]) => void
   setSelectedResultId: (id: string | null) => void
@@ -66,6 +68,7 @@ type DiscoveryState = {
     ghostLocation: LatLng | null
   }) => void
   setSearchBias: (bias: SearchBias | null) => void
+  setListScopeId: (listId: string | null) => void
   clear: () => void
   submit: () => Promise<void>
   previewResult: (result: DiscoverySearchResult) => Promise<void>
@@ -99,6 +102,7 @@ export const useDiscoveryStore = create<DiscoveryState>((set, get) => ({
   previewEnrichment: null,
   previewGoogle: null,
   searchBias: null,
+  listScopeId: null,
 
   setQuery: (v) => set({ query: v }),
   setResults: (results) => set({ results }),
@@ -112,6 +116,7 @@ export const useDiscoveryStore = create<DiscoveryState>((set, get) => ({
       previewEnrichment: enrichment,
     }),
   setSearchBias: (bias) => set({ searchBias: bias }),
+  setListScopeId: (listId) => set({ listScopeId: listId }),
 
   clear: () =>
     set({
@@ -182,26 +187,48 @@ export const useDiscoveryStore = create<DiscoveryState>((set, get) => ({
         return
       }
 
-      const params = new URLSearchParams({
-        q,
-        limit: '6',
-      })
+      const suggestPayload: Record<string, unknown> = {
+        intent: q,
+        limit: 6,
+        include_summary: false,
+      }
+      const listScopeId = get().listScopeId
+      if (listScopeId) {
+        suggestPayload.list_id = listScopeId
+      }
       const bias = get().searchBias
       if (bias) {
-        params.set('lat', String(bias.lat))
-        params.set('lng', String(bias.lng))
-        params.set('radius_m', String(Math.round(bias.radiusMeters)))
+        suggestPayload.lat = bias.lat
+        suggestPayload.lng = bias.lng
+        suggestPayload.radius_m = Math.round(bias.radiusMeters)
       }
 
-      const res = await fetch(`/api/places/search?${params.toString()}`)
+      const res = await fetch('/api/discovery/suggest', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(suggestPayload),
+      })
       const json = await res.json().catch(() => ({}))
       if (!res.ok) {
-        set({ error: json?.error || `HTTP ${res.status}` })
+        const payload = json as Partial<DiscoverySuggestErrorPayload> & {
+          error?: unknown
+        }
+        const message =
+          typeof payload.message === 'string'
+            ? payload.message
+            : typeof payload.error === 'string'
+              ? payload.error
+              : `HTTP ${res.status}`
+        const code = typeof payload.code === 'string' ? payload.code : null
+        set({ error: code ? `${code}: ${message}` : message })
         return
       }
 
+      const payload = json as Partial<DiscoverySuggestSuccessPayload>
       set({
-        results: (json?.results ?? []) as DiscoverySearchResult[],
+        results: Array.isArray(payload.suggestions)
+          ? mapDiscoverySuggestionsToUiResults(payload.suggestions)
+          : [],
       })
     } catch (e: unknown) {
       set({ error: e instanceof Error ? e.message : 'Request failed' })
@@ -211,7 +238,7 @@ export const useDiscoveryStore = create<DiscoveryState>((set, get) => ({
   },
 
   previewResult: async (result) => {
-    if (!result?.place_id) return
+    if (isCanonicalRow(result) || !result?.place_id) return
 
     set({
       isSubmitting: true,

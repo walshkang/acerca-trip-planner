@@ -9,7 +9,7 @@
 ## 🧠 Active Context
 - Current Phase: The Intelligent Concierge (Wedding Cake)
 - Active Epic: AI Discovery (Suggestion Layer)
-- Immediate Blocker: Task 2.5 – Integrate suggestion layer into map discovery UI.
+- Immediate Blocker: Task 2.6 – Ship reject/discard cleanup path for staged preview artifacts.
 
 ## ✅ P2-E1 Remaining Plan (Tracking)
 - Spec: `docs/PHASE_2_KANBAN_SPEC.md`.
@@ -82,9 +82,9 @@ gantt
 - User edits never overwrite frozen AI enrichment.
 
 ## 📝 Implementation Memory
+- 2026-02-26 – feat: complete P3-E2 task 2.4 summary isolation
+    Auto-generated from git log (96f1fcb).
 - 2026-02-26 – Draft P3-E2 discovery docs
     Auto-generated from git log (e684f35).
 - 2026-02-26 – Implement deterministic routing API
     Auto-generated from git log (1a36875).
-- 2026-02-26 – Summarize plan critique
-    Auto-generated from git log (670a893).
