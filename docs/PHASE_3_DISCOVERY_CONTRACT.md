@@ -1,11 +1,11 @@
-# Phase 3 Discovery Contract (P3-E2 / 2.1)
+# Phase 3 Discovery Contract (P3-E2 / 2.1-2.4)
 
 ## Goal
 - Define a deterministic, server-owned discovery suggestion contract before implementation.
 - Lock request/response/error semantics for a suggestion layer that preserves map-truth and Airlock approval boundaries.
 
-## Non-Goals (Kickoff Contract Slice)
-- No runtime/API implementation in this slice.
+## Non-Goals
+- No discovery UI integration in this slice (`P3-E2 / 2.5` is separate).
 - No UI behavior changes.
 - No schema migration.
 - No enrichment model changes.
@@ -18,9 +18,14 @@
 - User edits and approvals never overwrite frozen enrichment payloads.
 - Taxonomy remains strict (`Food | Coffee | Sights | Shop | Activity | Drinks`).
 
-## Planned Endpoint
+## Endpoint
 - `POST /api/discovery/suggest`
-- This document defines the contract only; implementation is tracked as roadmap task `P3-E2 / 2.3`.
+
+## Implementation Status
+- `P3-E2 / 2.1` completed: deterministic contract defined.
+- `P3-E2 / 2.2` completed: verification gate defined.
+- `P3-E2 / 2.3` completed: server-owned suggest endpoint implemented.
+- `P3-E2 / 2.4` completed: optional summary path implemented with ranking isolation.
 
 ## Request Contract
 - Body must be a JSON object.
@@ -102,6 +107,7 @@
   - `usedFallback`: boolean
 - Summary must not include citations, URL lists, or source attribution payloads.
 - Summary generation must not alter `suggestions` ordering, filtering, or score values.
+- Current implementation uses a deterministic fallback summary builder and keeps ranking/filtering fully isolated from summary generation.
 
 ### `meta` contract
 - `retrieved_count`: integer
@@ -123,7 +129,7 @@
 - `discovery_provider_unavailable` (`503`)
 - `internal_error` (`500`)
 
-## Acceptance Checks (Task 2.1)
+## Acceptance Checks (Tasks 2.1-2.4)
 - Unauthorized requests return `401 unauthorized`.
 - Invalid payloads (missing/empty `intent`, unknown keys, invalid bias pairing) return `400 invalid_discovery_payload`.
 - Same canonical request yields stable deterministic suggestion ordering.

@@ -17,6 +17,7 @@ import {
   rankLocalSearchMatch,
   resolveCategoryMatch,
 } from '@/lib/places/local-search'
+import { buildDiscoverySummary } from '@/lib/server/discovery/summary'
 import { translateIntentToFiltersDeterministic } from '@/lib/server/filters/translate'
 import { createClient } from '@/lib/supabase/server'
 import type { CategoryEnum, EnergyEnum } from '@/lib/types/enums'
@@ -141,42 +142,6 @@ function isReadConstrainedByPlaceFilters(filters: CanonicalServerFilters): boole
     filters.open_now !== null ||
     filters.tags.length > 0
   )
-}
-
-function buildDeterministicSummary(input: {
-  intent: string
-  filters: CanonicalServerFilters | null
-  suggestions: DiscoverySuggestion[]
-}): DiscoverySummary {
-  const topNames = input.suggestions
-    .map((item) => item.name?.trim() ?? '')
-    .filter((value) => value.length > 0)
-    .slice(0, 3)
-
-  let text = ''
-  if (topNames.length === 0) {
-    text = `No suggestions matched "${input.intent}".`
-  } else if (topNames.length === 1) {
-    text = `Top suggestion for "${input.intent}" is ${topNames[0]}.`
-  } else {
-    text = `Top suggestions for "${input.intent}" are ${topNames.join(', ')}.`
-  }
-
-  if (input.filters?.category.length) {
-    text += ` Categories: ${input.filters.category.join(', ')}.`
-  }
-  if (input.filters?.open_now !== null) {
-    text += input.filters.open_now
-      ? ' Open-now filter is active.'
-      : ' Closed-now filter is active.'
-  }
-
-  return {
-    text,
-    model: 'deterministic-fallback',
-    promptVersion: 'discovery-summary-fallback-v1',
-    usedFallback: true,
-  }
 }
 
 async function fetchCoordinates(
@@ -488,13 +453,12 @@ export async function buildDiscoverySuggestions(
   return {
     canonicalFilters,
     suggestions: mergedSorted,
-    summary: canonical.include_summary
-      ? buildDeterministicSummary({
-          intent: canonical.intent,
-          filters: canonicalFilters,
-          suggestions: mergedSorted,
-        })
-      : null,
+    summary: buildDiscoverySummary({
+      includeSummary: canonical.include_summary,
+      intent: canonical.intent,
+      filters: canonicalFilters,
+      suggestions: mergedSorted,
+    }),
     meta: {
       retrieved_count: localSuggestions.length + googleRanked.length,
       returned_count: mergedSorted.length,

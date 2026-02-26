@@ -605,7 +605,7 @@
               "id": "2.4",
               "task": "Implement optional summary path with ranking isolation.",
               "details": "Add include_summary support where summary text is optional and never influences deterministic ranking or filtering outputs.",
-              "status": "pending"
+              "status": "completed"
             },
             {
               "id": "2.5",

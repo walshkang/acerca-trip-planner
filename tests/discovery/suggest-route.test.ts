@@ -303,6 +303,15 @@ describe('POST /api/discovery/suggest', () => {
     const a = (await withoutSummary.json()) as { suggestions?: unknown[]; summary?: unknown }
     const b = (await withSummary.json()) as { suggestions?: unknown[]; summary?: unknown }
     expect(a.suggestions).toEqual(b.suggestions)
+    expect(
+      (a.suggestions as Array<{ score: number; rank: number }> | undefined)?.map(
+        ({ score, rank }) => ({ score, rank })
+      )
+    ).toEqual(
+      (b.suggestions as Array<{ score: number; rank: number }> | undefined)?.map(
+        ({ score, rank }) => ({ score, rank })
+      )
+    )
     expect(a.summary).toBeNull()
     expect(b.summary).not.toBeNull()
   })
