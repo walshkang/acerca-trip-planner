@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   getRoutingPreviewProvider,
+  type RoutingProviderResult,
   resolveRoutingProviderKind,
 } from '@/lib/routing/provider'
 
@@ -57,5 +58,30 @@ describe('routing provider boundary', () => {
         retryable: false,
       })
     }
+  })
+
+  it('accepts success result union shape with per-leg metrics', () => {
+    const successResult: RoutingProviderResult = {
+      ok: true,
+      provider: 'google_routes',
+      legs: [
+        {
+          index: 0,
+          distance_m: 1250,
+          duration_s: 420,
+        },
+      ],
+    }
+
+    expect(successResult.ok).toBe(true)
+    if (!successResult.ok) return
+    expect(successResult.provider).toBe('google_routes')
+    expect(successResult.legs).toEqual([
+      {
+        index: 0,
+        distance_m: 1250,
+        duration_s: 420,
+      },
+    ])
   })
 })

@@ -2,6 +2,10 @@ import { NextResponse } from 'next/server'
 import type { CategoryEnum } from '@/lib/types/enums'
 import type {
   CanonicalRoutingPreviewRequest,
+  RoutingComputedLeg,
+  RoutingLegDraft,
+  RoutingProviderKind,
+  RoutingProviderLegMetric,
   RoutingPreviewErrorPayload,
   RoutingPreviewListContext,
 } from '@/lib/routing/contract'
@@ -19,6 +23,8 @@ const JOINED_ITEM_FIELDS =
 const FALLBACK_ITEM_FIELDS =
   'id, place_id, created_at, scheduled_date, scheduled_start_time, scheduled_order'
 const PLACE_FIELDS = 'id, name, category, lat, lng'
+const INVALID_PROVIDER_PAYLOAD_MESSAGE =
+  'Routing provider returned invalid leg metrics.'
 
 type PostgrestLikeError = {
   code?: string | null
@@ -68,11 +74,24 @@ type PlaceViewRow = {
   lng: number | null
 }
 
+type NormalizedLegMetric = {
+  distance_m: number
+  duration_s: number
+}
+
 function toErrorResponse(
   status: number,
   payload: RoutingPreviewErrorPayload
 ): NextResponse<RoutingPreviewErrorPayload> {
   return NextResponse.json(payload, { status })
+}
+
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value)
+}
+
+function normalizeNonNegativeInteger(value: number): number {
+  return Math.max(0, Math.round(value))
 }
 
 function isDateOutsideRange(
@@ -221,15 +240,163 @@ function buildSummary(args: {
   routeableItems: number
   unroutableItems: number
   legCount: number
+  totalDistanceMeters?: number | null
+  totalDurationSeconds?: number | null
 }) {
   return {
     total_items: args.totalItems,
     routeable_items: args.routeableItems,
     unroutable_items: args.unroutableItems,
     leg_count: args.legCount,
-    total_distance_m: null,
-    total_duration_s: null,
+    total_distance_m: args.totalDistanceMeters ?? null,
+    total_duration_s: args.totalDurationSeconds ?? null,
   }
+}
+
+function toTravelTimeBadges(durationSeconds: number) {
+  if (durationSeconds === 0) {
+    return {
+      travel_time_badge_minutes: 0,
+      travel_time_badge_short: '0m',
+      travel_time_badge_long: '0 min',
+    }
+  }
+
+  const minutes = Math.max(1, Math.round(durationSeconds / 60))
+  return {
+    travel_time_badge_minutes: minutes,
+    travel_time_badge_short: `${minutes}m`,
+    travel_time_badge_long: `${minutes} min`,
+  }
+}
+
+function validateProviderLegMetrics(
+  legMetrics: RoutingProviderLegMetric[],
+  expectedLegCount: number
+):
+  | {
+      ok: true
+      normalizedByIndex: Map<number, NormalizedLegMetric>
+    }
+  | {
+      ok: false
+      reason: string
+      receivedLegCount: number
+    } {
+  const receivedLegCount = legMetrics.length
+  if (receivedLegCount !== expectedLegCount) {
+    return {
+      ok: false,
+      reason: `leg_count_mismatch:${expectedLegCount}:${receivedLegCount}`,
+      receivedLegCount,
+    }
+  }
+
+  const seenIndices = new Set<number>()
+  const normalizedByIndex = new Map<number, NormalizedLegMetric>()
+
+  for (const leg of legMetrics) {
+    if (!Number.isInteger(leg.index)) {
+      return {
+        ok: false,
+        reason: `invalid_index:${leg.index}`,
+        receivedLegCount,
+      }
+    }
+
+    if (leg.index < 0 || leg.index >= expectedLegCount) {
+      return {
+        ok: false,
+        reason: `index_out_of_range:${leg.index}`,
+        receivedLegCount,
+      }
+    }
+
+    if (seenIndices.has(leg.index)) {
+      return {
+        ok: false,
+        reason: `duplicate_index:${leg.index}`,
+        receivedLegCount,
+      }
+    }
+
+    if (!isFiniteNumber(leg.distance_m) || !isFiniteNumber(leg.duration_s)) {
+      return {
+        ok: false,
+        reason: `non_finite_metric:${leg.index}`,
+        receivedLegCount,
+      }
+    }
+
+    if (leg.distance_m < 0 || leg.duration_s < 0) {
+      return {
+        ok: false,
+        reason: `negative_metric:${leg.index}`,
+        receivedLegCount,
+      }
+    }
+
+    seenIndices.add(leg.index)
+    normalizedByIndex.set(leg.index, {
+      distance_m: normalizeNonNegativeInteger(leg.distance_m),
+      duration_s: normalizeNonNegativeInteger(leg.duration_s),
+    })
+  }
+
+  for (let index = 0; index < expectedLegCount; index += 1) {
+    if (!seenIndices.has(index)) {
+      return {
+        ok: false,
+        reason: `missing_index:${index}`,
+        receivedLegCount,
+      }
+    }
+  }
+
+  return {
+    ok: true,
+    normalizedByIndex,
+  }
+}
+
+function buildComputedLegs(args: {
+  legDrafts: RoutingLegDraft[]
+  normalizedByIndex: Map<number, NormalizedLegMetric>
+}): RoutingComputedLeg[] {
+  const legs: RoutingComputedLeg[] = []
+  for (const draft of args.legDrafts) {
+    const metrics = args.normalizedByIndex.get(draft.index)
+    if (!metrics) {
+      throw new Error(`Missing normalized metric for leg index ${draft.index}`)
+    }
+
+    legs.push({
+      ...draft,
+      distance_m: metrics.distance_m,
+      duration_s: metrics.duration_s,
+      ...toTravelTimeBadges(metrics.duration_s),
+    })
+  }
+  return legs
+}
+
+function logInvalidProviderMetrics(args: {
+  provider: RoutingProviderKind
+  listId: string
+  canonical: CanonicalRoutingPreviewRequest
+  expectedLegCount: number
+  receivedLegCount: number
+  reason: string
+}) {
+  console.error({
+    event: 'routing_provider_leg_metrics_invalid',
+    provider: args.provider,
+    list_id: args.listId,
+    date: args.canonical.date,
+    expected_leg_count: args.expectedLegCount,
+    received_leg_count: args.receivedLegCount,
+    reason: args.reason,
+  })
 }
 
 function insufficientResponse(args: {
@@ -278,6 +445,43 @@ function providerUnavailableResponse(args: {
     },
     { status: 501 }
   )
+}
+
+function providerSuccessResponse(args: {
+  canonical: CanonicalRoutingPreviewRequest
+  list: RoutingPreviewListContext
+  rows: ReturnType<typeof buildRoutingSequence>
+  provider: RoutingProviderKind
+  legs: RoutingComputedLeg[]
+}) {
+  const totals = args.legs.reduce(
+    (acc, leg) => ({
+      totalDistanceMeters: acc.totalDistanceMeters + leg.distance_m,
+      totalDurationSeconds: acc.totalDurationSeconds + leg.duration_s,
+    }),
+    {
+      totalDistanceMeters: 0,
+      totalDurationSeconds: 0,
+    }
+  )
+
+  return NextResponse.json({
+    status: 'ok' as const,
+    provider: args.provider,
+    canonicalRequest: args.canonical,
+    list: args.list,
+    sequence: args.rows.sequence,
+    unroutableItems: args.rows.unroutableItems,
+    legs: args.legs,
+    summary: buildSummary({
+      totalItems: args.rows.sequence.length,
+      routeableItems: args.rows.routeableSequence.length,
+      unroutableItems: args.rows.unroutableItems.length,
+      legCount: args.legs.length,
+      totalDistanceMeters: totals.totalDistanceMeters,
+      totalDurationSeconds: totals.totalDurationSeconds,
+    }),
+  })
 }
 
 export async function POST(
@@ -368,6 +572,41 @@ export async function POST(
       routeableSequence: built.routeableSequence,
       legDrafts: built.legs,
     })
+
+    if (providerResult.ok) {
+      const validated = validateProviderLegMetrics(
+        providerResult.legs,
+        built.legs.length
+      )
+
+      if (!validated.ok) {
+        logInvalidProviderMetrics({
+          provider: providerResult.provider,
+          listId: params.id,
+          canonical,
+          expectedLegCount: built.legs.length,
+          receivedLegCount: validated.receivedLegCount,
+          reason: validated.reason,
+        })
+
+        return toErrorResponse(500, {
+          code: 'internal_error',
+          message: INVALID_PROVIDER_PAYLOAD_MESSAGE,
+          lastValidCanonicalRequest: canonical,
+        })
+      }
+
+      return providerSuccessResponse({
+        canonical,
+        list: listContext,
+        rows: built,
+        provider: providerResult.provider,
+        legs: buildComputedLegs({
+          legDrafts: built.legs,
+          normalizedByIndex: validated.normalizedByIndex,
+        }),
+      })
+    }
 
     if (providerResult.code === 'provider_unavailable') {
       return providerUnavailableResponse({

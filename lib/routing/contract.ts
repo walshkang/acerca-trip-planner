@@ -41,6 +41,8 @@ export type RoutingPreviewListContext = {
   end_date: string | null
 }
 
+export type RoutingProviderKind = 'unimplemented' | 'google_routes' | 'osrm'
+
 export type RoutingSlotKind = 'morning' | 'afternoon' | 'evening' | 'unslotted'
 
 export type RoutingSequenceItem = {
@@ -74,6 +76,20 @@ export type RoutingLegDraft = {
   to_place_id: string
 }
 
+export type RoutingProviderLegMetric = {
+  index: number
+  distance_m: number
+  duration_s: number
+}
+
+export type RoutingComputedLeg = RoutingLegDraft & {
+  distance_m: number
+  duration_s: number
+  travel_time_badge_minutes: number
+  travel_time_badge_short: string
+  travel_time_badge_long: string
+}
+
 export type RoutingPreviewSummary = {
   total_items: number
   routeable_items: number
@@ -102,6 +118,19 @@ export type RoutingPreviewProviderUnavailablePayload =
     status: 'provider_unavailable'
     message: string
   }
+
+export type RoutingPreviewSuccessPayload = Omit<
+  RoutingPreviewBasePayload,
+  'legs' | 'summary'
+> & {
+  status: 'ok'
+  provider: RoutingProviderKind
+  legs: RoutingComputedLeg[]
+  summary: RoutingPreviewSummary & {
+    total_distance_m: number
+    total_duration_s: number
+  }
+}
 
 export type ParseRoutingPreviewRequestResult =
   | {

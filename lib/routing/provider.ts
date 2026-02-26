@@ -1,11 +1,11 @@
 import type {
   CanonicalRoutingPreviewRequest,
   RoutingLegDraft,
+  RoutingProviderKind,
+  RoutingProviderLegMetric,
   RoutingPreviewListContext,
   RoutingSequenceItem,
 } from '@/lib/routing/contract'
-
-export type RoutingProviderKind = 'unimplemented' | 'google_routes' | 'osrm'
 
 export type RoutingProviderFailureCode =
   | 'provider_unavailable'
@@ -19,13 +19,23 @@ export type RoutingProviderInput = {
   legDrafts: RoutingLegDraft[]
 }
 
-export type RoutingProviderResult = {
+export type RoutingProviderFailureResult = {
   ok: false
   code: RoutingProviderFailureCode
   provider: RoutingProviderKind
   message: string
   retryable: boolean
 }
+
+export type RoutingProviderSuccessResult = {
+  ok: true
+  provider: RoutingProviderKind
+  legs: RoutingProviderLegMetric[]
+}
+
+export type RoutingProviderResult =
+  | RoutingProviderFailureResult
+  | RoutingProviderSuccessResult
 
 export interface RoutingPreviewProviderAdapter {
   readonly provider: RoutingProviderKind

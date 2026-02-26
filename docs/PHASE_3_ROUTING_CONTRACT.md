@@ -1,14 +1,14 @@
-# Phase 3 Routing Contract (P3-E1 / 1.1)
+# Phase 3 Routing Contract (P3-E1 / 1.3)
 
 ## Goal
 - Define a deterministic, server-owned routing preview contract for scheduled list items.
-- Establish a stable request/response surface before provider integration.
+- Establish a stable success data model for itinerary legs, travel-time badges, and summary totals before real provider integration.
 
-## Non-Goals (Task 1.1)
-- No OSRM / Google Routes integration.
-- No UI rendering changes (travel-time badges come later).
-- No itinerary optimization/reordering algorithm.
+## Non-Goals (Task 1.3)
+- No route optimization or itinerary reordering.
+- No UI rendering changes.
 - No schema migration.
+- No partial-leg success mode (all-or-nothing validation for provider success payloads).
 
 ## Invariants
 - Deterministic compute only (no LLM routing logic).
@@ -67,7 +67,33 @@
 
 ### Leg Drafting
 - Legs are adjacent pairs across routeable sequence only.
-- No duration/distance computation in Task 1.1.
+- Provider metrics are merged onto these deterministic draft legs by `index` only.
+
+## Success Leg Model (Task 1.3)
+- Success legs contain deterministic adjacency identity plus normalized metrics:
+  - `index`
+  - `from_item_id`
+  - `to_item_id`
+  - `from_place_id`
+  - `to_place_id`
+  - `distance_m` (integer, meters)
+  - `duration_s` (integer, seconds)
+  - `travel_time_badge_minutes` (integer)
+  - `travel_time_badge_short` (string, e.g. `"8m"`)
+  - `travel_time_badge_long` (string, e.g. `"8 min"`)
+- Metric normalization:
+  - Metrics must be finite and non-negative before normalization.
+  - Server normalizes with `Math.round` and clamps at `0`.
+
+### Badge Derivation
+- If `duration_s === 0`:
+  - `travel_time_badge_minutes = 0`
+  - `travel_time_badge_short = "0m"`
+  - `travel_time_badge_long = "0 min"`
+- If `duration_s > 0`:
+  - `travel_time_badge_minutes = max(1, round(duration_s / 60))`
+  - `travel_time_badge_short = "<N>m"`
+  - `travel_time_badge_long = "<N> min"`
 
 ## Response Modes
 
@@ -82,8 +108,20 @@
   - `legs: []`
   - `summary` (`total_distance_m`/`total_duration_s` are `null`)
 
+### 200: Provider Success
+- Condition: provider returns success metrics for every deterministic draft leg and validation passes.
+- Payload:
+  - `status: "ok"`
+  - `provider`
+  - `canonicalRequest`
+  - `list`
+  - `sequence`
+  - `unroutableItems`
+  - `legs` (computed legs with distance/duration/badges)
+  - `summary` (`total_distance_m`/`total_duration_s` are non-null integer totals)
+
 ### 501: Provider Unavailable
-- Condition: routeable sequence size `>= 2` and provider integration not yet implemented.
+- Condition: routeable sequence size `>= 2` and provider integration path is unavailable.
 - Payload:
   - `code: "routing_provider_unavailable"`
   - `status: "provider_unavailable"`
@@ -94,6 +132,12 @@
   - `unroutableItems`
   - `legs` (deterministic adjacent pairs)
   - `summary` (`total_distance_m`/`total_duration_s` are `null`)
+
+## Provider Success Validation Rules
+- Provider leg metrics count must equal deterministic draft leg count.
+- Indices must be unique, integer, and in range `[0, leg_count - 1]`.
+- Metrics must be finite and non-negative prior to normalization.
+- Validation failure maps to `500` with `code: "internal_error"` (contract stability from Task 1.2).
 
 ## Error Payload Contract
 - Standard error fields:
@@ -109,11 +153,10 @@
 - `not_found` (404)
 - `internal_error` (500)
 
-## Acceptance Checks (Task 1.1)
-- Invalid payloads are rejected with field-level errors.
-- Date-range behavior supports missing/partial/full bounds.
-- Sequence order is deterministic for mixed slots/categories/orders.
-- Unslotted items sort after evening.
-- Missing coordinates become unroutable.
-- Response mode is `insufficient_items` for `<2` routeable stops.
-- Response mode is `provider_unavailable` (`501`) for `>=2` routeable stops.
+## Acceptance Checks (Task 1.3)
+- Existing 400/401/404/501 behavior remains unchanged.
+- `<2` routeable items still return `status: "insufficient_items"`.
+- Valid provider success returns `status: "ok"` with computed legs and non-null totals.
+- `duration_s = 0` yields `0m` and `0 min`.
+- Float metrics are normalized to integers.
+- Invalid provider success payload (count/index/value) returns `500 internal_error`.

@@ -606,6 +606,431 @@ describe('POST /api/lists/[id]/routing/preview', () => {
     )
   })
 
+  it('returns 200 ok with normalized leg metrics, badges, and totals', async () => {
+    providerPreviewMock.mockResolvedValueOnce({
+      ok: true,
+      provider: 'google_routes',
+      legs: [
+        {
+          index: 0,
+          distance_m: 125.6,
+          duration_s: 0,
+        },
+        {
+          index: 1,
+          distance_m: 240.4,
+          duration_s: 91.7,
+        },
+      ],
+    })
+
+    mockClient({
+      joinedItemsResult: {
+        data: [
+          {
+            id: 'item-1',
+            place_id: 'place-1',
+            created_at: '2026-03-01T10:00:00.000Z',
+            scheduled_date: '2026-03-01',
+            scheduled_start_time: '09:00:00',
+            scheduled_order: 1,
+            place: {
+              id: 'place-1',
+              name: 'A',
+              category: 'Food',
+              lat: 40.7,
+              lng: -73.9,
+            },
+          },
+          {
+            id: 'item-2',
+            place_id: 'place-2',
+            created_at: '2026-03-01T10:01:00.000Z',
+            scheduled_date: '2026-03-01',
+            scheduled_start_time: '14:00:00',
+            scheduled_order: 1,
+            place: {
+              id: 'place-2',
+              name: 'B',
+              category: 'Coffee',
+              lat: 40.71,
+              lng: -73.91,
+            },
+          },
+          {
+            id: 'item-3',
+            place_id: 'place-3',
+            created_at: '2026-03-01T10:02:00.000Z',
+            scheduled_date: '2026-03-01',
+            scheduled_start_time: '19:00:00',
+            scheduled_order: 1,
+            place: {
+              id: 'place-3',
+              name: 'C',
+              category: 'Drinks',
+              lat: 40.72,
+              lng: -73.92,
+            },
+          },
+        ],
+        error: null,
+      },
+    })
+
+    const response = await POST(makeRequest({ date: '2026-03-01' }) as any, {
+      params: { id: 'list-1' },
+    })
+
+    expect(response.status).toBe(200)
+    const json = (await response.json()) as {
+      status?: string
+      provider?: string
+      legs?: Array<{
+        index: number
+        from_item_id: string
+        to_item_id: string
+        from_place_id: string
+        to_place_id: string
+        distance_m: number
+        duration_s: number
+        travel_time_badge_minutes: number
+        travel_time_badge_short: string
+        travel_time_badge_long: string
+      }>
+      summary?: {
+        total_distance_m?: number
+        total_duration_s?: number
+        leg_count?: number
+      }
+    }
+
+    expect(json.status).toBe('ok')
+    expect(json.provider).toBe('google_routes')
+    expect(json.legs).toEqual([
+      {
+        index: 0,
+        from_item_id: 'item-1',
+        to_item_id: 'item-2',
+        from_place_id: 'place-1',
+        to_place_id: 'place-2',
+        distance_m: 126,
+        duration_s: 0,
+        travel_time_badge_minutes: 0,
+        travel_time_badge_short: '0m',
+        travel_time_badge_long: '0 min',
+      },
+      {
+        index: 1,
+        from_item_id: 'item-2',
+        to_item_id: 'item-3',
+        from_place_id: 'place-2',
+        to_place_id: 'place-3',
+        distance_m: 240,
+        duration_s: 92,
+        travel_time_badge_minutes: 2,
+        travel_time_badge_short: '2m',
+        travel_time_badge_long: '2 min',
+      },
+    ])
+    expect(json.summary).toMatchObject({
+      leg_count: 2,
+      total_distance_m: 366,
+      total_duration_s: 92,
+    })
+  })
+
+  it('returns 500 when provider success payload leg count mismatches drafts', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      providerPreviewMock.mockResolvedValueOnce({
+        ok: true,
+        provider: 'osrm',
+        legs: [
+          {
+            index: 0,
+            distance_m: 100,
+            duration_s: 50,
+          },
+        ],
+      })
+
+      mockClient({
+        joinedItemsResult: {
+          data: [
+            {
+              id: 'item-1',
+              place_id: 'place-1',
+              created_at: '2026-03-01T10:00:00.000Z',
+              scheduled_date: '2026-03-01',
+              scheduled_start_time: '09:00:00',
+              scheduled_order: 1,
+              place: {
+                id: 'place-1',
+                name: 'A',
+                category: 'Food',
+                lat: 40.7,
+                lng: -73.9,
+              },
+            },
+            {
+              id: 'item-2',
+              place_id: 'place-2',
+              created_at: '2026-03-01T10:01:00.000Z',
+              scheduled_date: '2026-03-01',
+              scheduled_start_time: '14:00:00',
+              scheduled_order: 1,
+              place: {
+                id: 'place-2',
+                name: 'B',
+                category: 'Coffee',
+                lat: 40.71,
+                lng: -73.91,
+              },
+            },
+            {
+              id: 'item-3',
+              place_id: 'place-3',
+              created_at: '2026-03-01T10:02:00.000Z',
+              scheduled_date: '2026-03-01',
+              scheduled_start_time: '19:00:00',
+              scheduled_order: 1,
+              place: {
+                id: 'place-3',
+                name: 'C',
+                category: 'Drinks',
+                lat: 40.72,
+                lng: -73.92,
+              },
+            },
+          ],
+          error: null,
+        },
+      })
+
+      const response = await POST(makeRequest({ date: '2026-03-01' }) as any, {
+        params: { id: 'list-1' },
+      })
+
+      expect(response.status).toBe(500)
+      await expect(response.json()).resolves.toEqual({
+        code: 'internal_error',
+        message: 'Routing provider returned invalid leg metrics.',
+        lastValidCanonicalRequest: { date: '2026-03-01', mode: 'scheduled' },
+      })
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          event: 'routing_provider_leg_metrics_invalid',
+          provider: 'osrm',
+          list_id: 'list-1',
+          date: '2026-03-01',
+          expected_leg_count: 2,
+          received_leg_count: 1,
+          reason: 'leg_count_mismatch:2:1',
+        })
+      )
+    } finally {
+      consoleErrorSpy.mockRestore()
+    }
+  })
+
+  it('returns 500 when provider success payload includes invalid index', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      providerPreviewMock.mockResolvedValueOnce({
+        ok: true,
+        provider: 'google_routes',
+        legs: [
+          {
+            index: 0,
+            distance_m: 100,
+            duration_s: 50,
+          },
+          {
+            index: 2,
+            distance_m: 120,
+            duration_s: 60,
+          },
+        ],
+      })
+
+      mockClient({
+        joinedItemsResult: {
+          data: [
+            {
+              id: 'item-1',
+              place_id: 'place-1',
+              created_at: '2026-03-01T10:00:00.000Z',
+              scheduled_date: '2026-03-01',
+              scheduled_start_time: '09:00:00',
+              scheduled_order: 1,
+              place: {
+                id: 'place-1',
+                name: 'A',
+                category: 'Food',
+                lat: 40.7,
+                lng: -73.9,
+              },
+            },
+            {
+              id: 'item-2',
+              place_id: 'place-2',
+              created_at: '2026-03-01T10:01:00.000Z',
+              scheduled_date: '2026-03-01',
+              scheduled_start_time: '14:00:00',
+              scheduled_order: 1,
+              place: {
+                id: 'place-2',
+                name: 'B',
+                category: 'Coffee',
+                lat: 40.71,
+                lng: -73.91,
+              },
+            },
+            {
+              id: 'item-3',
+              place_id: 'place-3',
+              created_at: '2026-03-01T10:02:00.000Z',
+              scheduled_date: '2026-03-01',
+              scheduled_start_time: '19:00:00',
+              scheduled_order: 1,
+              place: {
+                id: 'place-3',
+                name: 'C',
+                category: 'Drinks',
+                lat: 40.72,
+                lng: -73.92,
+              },
+            },
+          ],
+          error: null,
+        },
+      })
+
+      const response = await POST(makeRequest({ date: '2026-03-01' }) as any, {
+        params: { id: 'list-1' },
+      })
+
+      expect(response.status).toBe(500)
+      await expect(response.json()).resolves.toEqual({
+        code: 'internal_error',
+        message: 'Routing provider returned invalid leg metrics.',
+        lastValidCanonicalRequest: { date: '2026-03-01', mode: 'scheduled' },
+      })
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          event: 'routing_provider_leg_metrics_invalid',
+          provider: 'google_routes',
+          list_id: 'list-1',
+          date: '2026-03-01',
+          expected_leg_count: 2,
+          received_leg_count: 2,
+          reason: 'index_out_of_range:2',
+        })
+      )
+    } finally {
+      consoleErrorSpy.mockRestore()
+    }
+  })
+
+  it('returns 500 when provider success payload includes negative metric values', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      providerPreviewMock.mockResolvedValueOnce({
+        ok: true,
+        provider: 'google_routes',
+        legs: [
+          {
+            index: 0,
+            distance_m: -100,
+            duration_s: 50,
+          },
+          {
+            index: 1,
+            distance_m: 120,
+            duration_s: 60,
+          },
+        ],
+      })
+
+      mockClient({
+        joinedItemsResult: {
+          data: [
+            {
+              id: 'item-1',
+              place_id: 'place-1',
+              created_at: '2026-03-01T10:00:00.000Z',
+              scheduled_date: '2026-03-01',
+              scheduled_start_time: '09:00:00',
+              scheduled_order: 1,
+              place: {
+                id: 'place-1',
+                name: 'A',
+                category: 'Food',
+                lat: 40.7,
+                lng: -73.9,
+              },
+            },
+            {
+              id: 'item-2',
+              place_id: 'place-2',
+              created_at: '2026-03-01T10:01:00.000Z',
+              scheduled_date: '2026-03-01',
+              scheduled_start_time: '14:00:00',
+              scheduled_order: 1,
+              place: {
+                id: 'place-2',
+                name: 'B',
+                category: 'Coffee',
+                lat: 40.71,
+                lng: -73.91,
+              },
+            },
+            {
+              id: 'item-3',
+              place_id: 'place-3',
+              created_at: '2026-03-01T10:02:00.000Z',
+              scheduled_date: '2026-03-01',
+              scheduled_start_time: '19:00:00',
+              scheduled_order: 1,
+              place: {
+                id: 'place-3',
+                name: 'C',
+                category: 'Drinks',
+                lat: 40.72,
+                lng: -73.92,
+              },
+            },
+          ],
+          error: null,
+        },
+      })
+
+      const response = await POST(makeRequest({ date: '2026-03-01' }) as any, {
+        params: { id: 'list-1' },
+      })
+
+      expect(response.status).toBe(500)
+      await expect(response.json()).resolves.toEqual({
+        code: 'internal_error',
+        message: 'Routing provider returned invalid leg metrics.',
+        lastValidCanonicalRequest: { date: '2026-03-01', mode: 'scheduled' },
+      })
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          event: 'routing_provider_leg_metrics_invalid',
+          provider: 'google_routes',
+          list_id: 'list-1',
+          date: '2026-03-01',
+          expected_leg_count: 2,
+          received_leg_count: 2,
+          reason: 'negative_metric:0',
+        })
+      )
+    } finally {
+      consoleErrorSpy.mockRestore()
+    }
+  })
+
   it('maps provider_error failures to 500 internal_error', async () => {
     providerPreviewMock.mockResolvedValueOnce({
       ok: false,
