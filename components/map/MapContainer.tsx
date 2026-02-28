@@ -1030,7 +1030,11 @@ export default function MapContainer() {
             Tools
           </button>
         </div>
-        <div className="pointer-events-auto w-full min-w-[140px]">
+        <div
+          className={`pointer-events-auto w-full min-w-[140px] transition-opacity duration-200 ${
+            isMobile && contextOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'
+          }`}
+        >
           <button
             type="button"
             onClick={() => {
@@ -1051,11 +1055,6 @@ export default function MapContainer() {
           >
             {contextOpen ? 'Hide workspace' : 'Workspace'}
           </button>
-          <p
-            className={`mt-0.5 text-center text-[10px] ${isDarkTone ? 'text-slate-400' : 'text-slate-500'}`}
-          >
-            {contextOpen ? 'Close panel' : 'Lists & plan'}
-          </p>
         </div>
       </div>
 
