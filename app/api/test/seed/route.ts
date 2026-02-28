@@ -150,14 +150,94 @@ export async function DELETE(request: NextRequest) {
     const body = (await request.json().catch(() => ({}))) as SeedCleanupRequest
     const listIds = parseIdArray(body.list_ids)
     const placeIds = parseIdArray(body.place_ids)
+    const isSweepMode = listIds.length === 0 && placeIds.length === 0
 
-    if (listIds.length === 0 && placeIds.length === 0) {
-      return NextResponse.json(
-        { error: 'list_ids or place_ids is required' },
-        { status: 400 }
-      )
+    if (isSweepMode) {
+      // Sweep: delete all Playwright-created lists, places, and place_candidates by name prefix (sequential to avoid lock contention).
+      const LIST_PREFIX = 'Playwright Smoke List %'
+      const PLACE_PREFIX = 'Playwright Place %'
+
+      const { data: listRows } = await supabase
+        .from('lists')
+        .select('id')
+        .eq('user_id', user.id)
+        .like('name', LIST_PREFIX)
+      const sweepListIds = (listRows ?? []).map((r) => r.id)
+
+      const { data: placeRows } = await supabase
+        .from('places')
+        .select('id')
+        .eq('user_id', user.id)
+        .like('name', PLACE_PREFIX)
+      const sweepPlaceIds = (placeRows ?? []).map((r) => r.id)
+
+      const { data: candidateRows } = await supabase
+        .from('place_candidates')
+        .select('id')
+        .eq('user_id', user.id)
+        .like('name', PLACE_PREFIX)
+      const sweepCandidateIds = (candidateRows ?? []).map((r) => r.id)
+
+      let deletedLists = 0
+      let deletedPlaces = 0
+      let deletedPlaceCandidates = 0
+
+      if (sweepListIds.length > 0) {
+        const { data, error } = await supabase
+          .from('lists')
+          .delete()
+          .eq('user_id', user.id)
+          .in('id', sweepListIds)
+          .select('id')
+        if (error) {
+          return NextResponse.json(
+            { error: error.message || 'Failed to delete seeded lists' },
+            { status: 500 }
+          )
+        }
+        deletedLists = data?.length ?? 0
+      }
+
+      if (sweepPlaceIds.length > 0) {
+        const { data, error } = await supabase
+          .from('places')
+          .delete()
+          .eq('user_id', user.id)
+          .in('id', sweepPlaceIds)
+          .select('id')
+        if (error) {
+          return NextResponse.json(
+            { error: error.message || 'Failed to delete seeded places' },
+            { status: 500 }
+          )
+        }
+        deletedPlaces = data?.length ?? 0
+      }
+
+      if (sweepCandidateIds.length > 0) {
+        const { data, error } = await supabase
+          .from('place_candidates')
+          .delete()
+          .eq('user_id', user.id)
+          .in('id', sweepCandidateIds)
+          .select('id')
+        if (error) {
+          return NextResponse.json(
+            { error: error.message || 'Failed to delete seeded place_candidates' },
+            { status: 500 }
+          )
+        }
+        deletedPlaceCandidates = data?.length ?? 0
+      }
+
+      return NextResponse.json({
+        deleted_lists: deletedLists,
+        deleted_places: deletedPlaces,
+        deleted_place_candidates: deletedPlaceCandidates,
+      })
     }
 
+    // Explicit ids: delete only the given lists and places (per-test cleanup).
     let deletedLists = 0
     let deletedPlaces = 0
 

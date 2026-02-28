@@ -73,7 +73,7 @@ test('map marker click focuses list row and opens place drawer', async ({ page }
     const seed = await seedListWithPlace(page)
     seeds.push(seed)
 
-    await page.getByRole('button', { name: 'Lists' }).click()
+    await page.getByRole('button', { name: 'Workspace' }).click()
     const listDrawer = visibleByTestId(page, 'list-drawer')
     await expect(listDrawer).toBeVisible()
     await listDrawer.getByRole('button', { name: seed.list.name }).click()

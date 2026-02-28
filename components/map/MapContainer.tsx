@@ -634,6 +634,26 @@ export default function MapContainer() {
     setPanelMode(panelModeBeforeDetailsRef.current)
   }, [setPlaceParam])
 
+  const closeWorkspace = useCallback(() => {
+    setToolsOpen(false)
+    if (previewSelectedResultId ?? previewCandidate) {
+      cancelPreview()
+      return
+    }
+    setDrawerOpen(false)
+    setFocusedListPlaceId(null)
+    setPlaceParam(null)
+    setListParam(null)
+    discardPreview()
+  }, [
+    cancelPreview,
+    discardPreview,
+    previewCandidate,
+    previewSelectedResultId,
+    setListParam,
+    setPlaceParam,
+  ])
+
   useEffect(() => {
     if (typeof window === 'undefined') return
     const stored = window.localStorage.getItem('acerca:mapStyleMode')
@@ -974,18 +994,6 @@ export default function MapContainer() {
         className="absolute left-4 top-4 z-[70] pointer-events-none space-y-2"
         data-testid="map-overlay-left"
       >
-        <div className="pointer-events-auto">
-          <button
-            type="button"
-            onClick={() => {
-              setDrawerOpen((prev) => !prev)
-              setPanelMode('lists')
-            }}
-            className="glass-button"
-          >
-            {drawerOpen ? 'Hide lists' : 'Lists'}
-          </button>
-        </div>
         {mapFallbackNotice ? (
           <div className="pointer-events-auto glass-panel max-w-[320px] rounded-lg px-3 py-2">
             <p className={`text-[11px] ${panelMutedClass}`}>{mapFallbackNotice}</p>
@@ -1005,7 +1013,7 @@ export default function MapContainer() {
       </div>
 
       <div
-        className="absolute right-4 top-4 z-[80] pointer-events-none"
+        className="absolute right-4 top-4 z-[80] pointer-events-none flex flex-col items-end gap-2"
         data-testid="map-overlay-right"
       >
         <div className="pointer-events-auto">
@@ -1022,6 +1030,33 @@ export default function MapContainer() {
             Tools
           </button>
         </div>
+        <div className="pointer-events-auto w-full min-w-[140px]">
+          <button
+            type="button"
+            onClick={() => {
+              if (contextOpen) {
+                closeWorkspace()
+              } else {
+                setDrawerOpen(true)
+                setPanelMode('lists')
+              }
+            }}
+            className={`w-full rounded-full border px-4 py-2.5 text-sm font-semibold shadow-md backdrop-blur-md transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${
+              contextOpen
+                ? isDarkTone
+                  ? 'border-slate-100 bg-slate-100 text-slate-900 hover:bg-slate-200'
+                  : 'border-slate-900 bg-slate-900 text-white hover:bg-slate-800'
+                : 'glass-button hover:opacity-95'
+            }`}
+          >
+            {contextOpen ? 'Hide workspace' : 'Workspace'}
+          </button>
+          <p
+            className={`mt-0.5 text-center text-[10px] ${isDarkTone ? 'text-slate-400' : 'text-slate-500'}`}
+          >
+            {contextOpen ? 'Close panel' : 'Lists & plan'}
+          </p>
+        </div>
       </div>
 
       {(() => {
@@ -1030,7 +1065,7 @@ export default function MapContainer() {
             open={contextOpen}
             variant="embedded"
             tone={uiTone}
-            onClose={() => setDrawerOpen(false)}
+            onClose={closeWorkspace}
             activeListId={activeListId}
             onActiveListChange={(id) => {
               setActiveListId(id)
@@ -1195,17 +1230,7 @@ export default function MapContainer() {
             tone={uiTone}
             desktopLayout={isPreviewing ? 'single' : 'split'}
             desktopContent={desktopRight}
-            onClose={() => {
-              setToolsOpen(false)
-              if (isPreviewing) {
-                cancelPreview()
-                return
-              }
-              setDrawerOpen(false)
-              setFocusedListPlaceId(null)
-              setPlaceParam(null)
-              discardPreview()
-            }}
+            onClose={closeWorkspace}
             left={isPreviewing ? undefined : listPane}
             right={desktopRight}
             mobileContent={
@@ -1216,7 +1241,7 @@ export default function MapContainer() {
                       open={contextOpen}
                       variant="embedded"
                       tone={uiTone}
-                      onClose={() => setDrawerOpen(false)}
+                      onClose={closeWorkspace}
                       activeListId={activeListId}
                       onActiveListChange={(id) => {
                         setActiveListId(id)

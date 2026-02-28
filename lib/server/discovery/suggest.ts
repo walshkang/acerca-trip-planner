@@ -280,24 +280,28 @@ export async function buildDiscoverySuggestions(
       return a.place.id.localeCompare(b.place.id)
     })
 
-  const localSuggestions: DiscoverySuggestion[] = localSorted.map(({ place }, index) => {
-    const coords = localCoordinates.get(place.id) ?? { lat: null, lng: null }
-    const geo = resolveNeighborhood(coords.lat, coords.lng)
-    return {
-      source: 'places_index',
-      source_id: place.id,
-      name: place.name ?? null,
-      address: place.address ?? null,
-      lat: coords.lat,
-      lng: coords.lng,
-      neighborhood: geo.neighborhood,
-      borough: geo.borough,
-      matched_place_id: place.id,
-      score: 2000 - index,
-      rank: 0,
-      reasons: ['places_index'],
-    }
-  })
+  const localWithRank: { suggestion: DiscoverySuggestion; textRank: number }[] =
+    localSorted.map(({ place, textRank }, index) => {
+      const coords = localCoordinates.get(place.id) ?? { lat: null, lng: null }
+      const geo = resolveNeighborhood(coords.lat, coords.lng)
+      return {
+        textRank,
+        suggestion: {
+          source: 'places_index',
+          source_id: place.id,
+          name: place.name ?? null,
+          address: place.address ?? null,
+          lat: coords.lat,
+          lng: coords.lng,
+          neighborhood: geo.neighborhood,
+          borough: geo.borough,
+          matched_place_id: place.id,
+          score: 2000 - index,
+          rank: 0,
+          reasons: ['places_index'],
+        },
+      }
+    })
 
   let googleCandidates: GooglePlacesTextCandidate[]
   try {
@@ -359,7 +363,9 @@ export async function buildDiscoverySuggestions(
     matchedByGoogleId.set(row.google_place_id, row)
   }
 
-  const localPlaceIdSet = new Set(localSuggestions.map((suggestion) => suggestion.source_id))
+  const localPlaceIdSet = new Set(
+    localWithRank.map((item) => item.suggestion.source_id)
+  )
   const restrictiveFilters = isReadConstrainedByPlaceFilters(canonicalFilters)
 
   const googleRanked = googleCandidates
@@ -373,8 +379,9 @@ export async function buildDiscoverySuggestions(
         return null
       }
 
-      if (restrictiveFilters) {
-        if (!matched) return null
+      // Apply schema filters only when we have a matched place (we have category/energy/opening_hours).
+      // Google-only candidates are included anyway: the query intent already constrained the API.
+      if (restrictiveFilters && matched) {
         if (!applyPlaceFilters(matched, canonicalFilters, listTimezone)) {
           return null
         }
@@ -433,20 +440,25 @@ export async function buildDiscoverySuggestions(
       return a.suggestion.source_id.localeCompare(b.suggestion.source_id)
     })
     .map((item, index) => ({
-      ...item.suggestion,
-      score: 1000 - index,
+      suggestion: { ...item.suggestion, score: 1000 - index },
+      textRank: item.textRank,
     }))
 
-  const mergedSorted = [...localSuggestions, ...googleRanked]
+  const mergedSorted = [...localWithRank, ...googleRanked]
     .sort((a, b) => {
-      if (a.score !== b.score) return b.score - a.score
-      const nameCmp = asComparableName(a.name).localeCompare(asComparableName(b.name))
+      if (a.textRank !== b.textRank) return a.textRank - b.textRank
+      if (a.suggestion.score !== b.suggestion.score) {
+        return b.suggestion.score - a.suggestion.score
+      }
+      const nameCmp = asComparableName(a.suggestion.name).localeCompare(
+        asComparableName(b.suggestion.name)
+      )
       if (nameCmp !== 0) return nameCmp
-      return a.source_id.localeCompare(b.source_id)
+      return a.suggestion.source_id.localeCompare(b.suggestion.source_id)
     })
     .slice(0, canonical.limit)
     .map((item, index) => ({
-      ...item,
+      ...item.suggestion,
       rank: index + 1,
     }))
 
@@ -460,7 +472,7 @@ export async function buildDiscoverySuggestions(
       suggestions: mergedSorted,
     }),
     meta: {
-      retrieved_count: localSuggestions.length + googleRanked.length,
+      retrieved_count: localWithRank.length + googleRanked.length,
       returned_count: mergedSorted.length,
       pipeline_version: DISCOVERY_PIPELINE_VERSION,
     },

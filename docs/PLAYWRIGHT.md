@@ -111,4 +111,5 @@ npx playwright show-trace test-results/.../trace.zip
 - Tests live in `tests/e2e/`.
 - Storage state is ignored by git (`playwright/.auth/`).
 - Seeded specs share helpers in `tests/e2e/seeded-helpers.ts` (env guards, API auth probe, seed helpers, and resilient visible test-id locators).
-- Seeded specs now call guarded cleanup (`DELETE /api/test/seed`) in `finally` blocks to remove seeded lists/places created during test runs.
+- **Sweep at start**: Before the suite runs, `globalSetup` (`tests/e2e/global-setup.ts`) calls `DELETE /api/test/seed` with an empty body to sweep any remaining Playwright-created lists, places, and place_candidates (by name prefix). That keeps the manual-test account clean even after aborted runs; the same account can be used for both E2E and manual testing.
+- Seeded specs also call guarded cleanup (`DELETE /api/test/seed` with explicit `list_ids`/`place_ids`) in `finally` blocks to remove seeded data created during each test.

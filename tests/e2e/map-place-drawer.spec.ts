@@ -83,7 +83,7 @@ test('pmtiles falls back to carto when archive fails during initial load', async
 
     await expect(page.getByText(pmtilesFallbackNotice)).toBeVisible()
 
-    await page.getByRole('button', { name: 'Lists' }).click()
+    await page.getByRole('button', { name: 'Workspace' }).click()
     const listDrawer = visibleByTestId(page, 'list-drawer')
     await expect(listDrawer).toBeVisible()
     await listDrawer.getByRole('button', { name: seed.list.name }).click()
@@ -129,7 +129,7 @@ test('pmtiles runtime failure after initial load falls back without breaking ove
     await page.getByLabel('Neighborhoods').check()
     await page.getByRole('button', { name: 'Close' }).click()
 
-    await page.getByRole('button', { name: 'Lists' }).click()
+    await page.getByRole('button', { name: 'Workspace' }).click()
     const listDrawer = visibleByTestId(page, 'list-drawer')
     await expect(listDrawer).toBeVisible()
     await listDrawer.getByRole('button', { name: seed.list.name }).click()
@@ -151,7 +151,7 @@ test('place drawer opens and tags are editable for active list', async ({ page }
     const seed = await seedListWithPlace(page)
     seeds.push(seed)
 
-    await page.getByRole('button', { name: 'Lists' }).click()
+    await page.getByRole('button', { name: 'Workspace' }).click()
     const listDrawer = visibleByTestId(page, 'list-drawer')
     await expect(listDrawer).toBeVisible()
 
@@ -206,7 +206,7 @@ test('place drawer stays below inspector overlay', async ({ page }) => {
     const seed = await seedListWithPlace(page)
     seeds.push(seed)
 
-    await page.getByRole('button', { name: 'Lists' }).click()
+    await page.getByRole('button', { name: 'Workspace' }).click()
     const listDrawer = visibleByTestId(page, 'list-drawer')
     await expect(listDrawer).toBeVisible()
     await listDrawer.getByRole('button', { name: seed.list.name }).click()
@@ -277,7 +277,7 @@ test('transit overlay does not block marker clicks', async ({ page }) => {
     await transitToggle.check()
     await page.getByRole('button', { name: 'Close' }).click()
 
-    await page.getByRole('button', { name: 'Lists' }).click()
+    await page.getByRole('button', { name: 'Workspace' }).click()
     const listDrawer = visibleByTestId(page, 'list-drawer')
     await expect(listDrawer).toBeVisible()
     await listDrawer.getByRole('button', { name: seed.list.name }).click()
