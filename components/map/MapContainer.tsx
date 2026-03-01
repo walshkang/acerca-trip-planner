@@ -24,6 +24,9 @@ import ToolsSheet from '@/components/ui/ToolsSheet'
 import { useMediaQuery } from '@/components/ui/useMediaQuery'
 import { useDiscoveryStore } from '@/lib/state/useDiscoveryStore'
 import { derivePreviewMode } from '@/lib/ui/previewMode'
+
+const PANEL_STORAGE_KEY = 'acerca:panelWidth'
+const PANEL_SNAP_VALUES = [360, 520, 760]
 import {
   extractMapErrorText,
   normalizeMaplibreStyleSource,
@@ -110,6 +113,15 @@ export default function MapContainer() {
     null
   )
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const [desktopPanelWidth, setDesktopPanelWidth] = useState(() => {
+    if (typeof window === 'undefined') return 760
+    const stored = localStorage.getItem(PANEL_STORAGE_KEY)
+    const parsed = stored ? Number(stored) : NaN
+    return PANEL_SNAP_VALUES.includes(parsed) ? parsed : 760
+  })
+  const [mobileSheetSnap, setMobileSheetSnap] = useState<
+    'peek' | 'half' | 'expanded'
+  >('half')
   const [panelMode, setPanelMode] = useState<'lists' | 'plan' | 'details'>(
     'lists'
   )
@@ -390,15 +402,13 @@ export default function MapContainer() {
   const isContextPanelOpen =
     (drawerOpen || urlDrivenStateActive || previewStateActive) &&
     !(isMobile && toolsSheetOpen)
-  const mobilePanelHeightRatio = 0.75
   const fitBoundsPadding = useMemo(() => {
     const basePadding = { top: 80, bottom: 80, left: 80, right: 80 }
     if (typeof window === 'undefined') return basePadding
 
     if (isDesktop && isContextPanelOpen) {
       const viewportWidth = window.innerWidth
-      // Match ContextPanel desktop container width: min(760px, 92vw), with right offset.
-      const panelWidth = Math.min(760, viewportWidth * 0.92)
+      const panelWidth = Math.min(desktopPanelWidth, viewportWidth * 0.92)
       return {
         ...basePadding,
         right: Math.round(panelWidth + 48),
@@ -407,16 +417,20 @@ export default function MapContainer() {
 
     if (isMobile && isContextPanelOpen) {
       const viewportHeight = window.innerHeight
-      const sheetHeight = Math.round(viewportHeight * mobilePanelHeightRatio)
+      const snapHeights: Record<string, number> = {
+        peek: 120,
+        half: viewportHeight * 0.5,
+        expanded: viewportHeight * 0.85,
+      }
+      const sheetHeight = snapHeights[mobileSheetSnap] ?? viewportHeight * 0.5
       return {
         ...basePadding,
-        // Keep fit bounds inside the visible map window above the mobile sheet.
-        bottom: Math.max(basePadding.bottom, sheetHeight + 16),
+        bottom: Math.max(basePadding.bottom, Math.round(sheetHeight + 16)),
       }
     }
 
     return basePadding
-  }, [isContextPanelOpen, isDesktop, isMobile, mobilePanelHeightRatio])
+  }, [isContextPanelOpen, isDesktop, isMobile, desktopPanelWidth, mobileSheetSnap])
   const isPlaceFocused = useCallback(
     (place: MapPlace) => {
       if (previewSelectedResultId) return false
@@ -453,6 +467,11 @@ export default function MapContainer() {
     },
     [activeListItemByPlaceId]
   )
+
+  // Persist desktop panel width to localStorage
+  useEffect(() => {
+    localStorage.setItem(PANEL_STORAGE_KEY, String(desktopPanelWidth))
+  }, [desktopPanelWidth])
 
   useEffect(() => {
     if (isMapbox && !mapboxToken) {
@@ -644,6 +663,7 @@ export default function MapContainer() {
     setFocusedListPlaceId(null)
     setPlaceParam(null)
     setListParam(null)
+    setMobileSheetSnap('half')
     discardPreview()
   }, [
     cancelPreview,
@@ -1232,6 +1252,10 @@ export default function MapContainer() {
             onClose={closeWorkspace}
             left={isPreviewing ? undefined : listPane}
             right={desktopRight}
+            desktopWidth={desktopPanelWidth}
+            onDesktopWidthChange={setDesktopPanelWidth}
+            mobileSnap={mobileSheetSnap}
+            onMobileSnapChange={setMobileSheetSnap}
             mobileContent={
               <div className="flex h-full min-h-0 flex-col">
                 <div className="min-h-0 flex-1 overflow-y-auto px-2 pt-2">
