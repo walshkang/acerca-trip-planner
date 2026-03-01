@@ -234,6 +234,7 @@ export default function ContextPanel({
       <div className="fixed inset-x-0 bottom-0 z-[90] block md:hidden">
         <section
           ref={sheetRef}
+          data-testid="context-panel-mobile"
           className={`glass-panel mx-3 mb-3 flex flex-col overflow-hidden rounded-xl ${rootText}`}
           style={mobileStyle}
         >
@@ -241,6 +242,7 @@ export default function ContextPanel({
           <div
             className="flex shrink-0 cursor-grab items-center justify-center py-2 active:cursor-grabbing"
             onTouchStart={onGrabStart}
+            data-testid="mobile-grab-bar"
             role="separator"
             aria-orientation="horizontal"
           >
@@ -279,6 +281,7 @@ export default function ContextPanel({
 
       {/* ── Desktop docked panel ────────────────────────────── */}
       <div
+        data-testid="context-panel-desktop"
         className="absolute right-4 top-20 z-[60] hidden md:block"
         style={desktopStyle}
       >
@@ -288,6 +291,7 @@ export default function ContextPanel({
             isDragging ? 'bg-sky-500/20' : handleHover
           }`}
           onMouseDown={onHandleDown}
+          data-testid="desktop-resize-handle"
           role="separator"
           aria-orientation="vertical"
           aria-label="Resize workspace panel"
