@@ -16,6 +16,8 @@ import {
   scheduledStartTimeFromSlot,
   slotFromScheduledStartTime,
 } from '@/lib/lists/planner'
+import { useRoutingPreview } from '@/lib/routing/useRoutingPreview'
+import type { RoutingComputedLeg } from '@/lib/routing/contract'
 
 type Props = {
   listId: string | null
@@ -56,6 +58,343 @@ function orderValue(row: ListItemRow) {
 
 function formatDayLabel(isoDate: string) {
   return isoDate
+}
+
+function formatDistance(meters: number): string {
+  if (meters < 1000) return `${Math.round(meters)}m`
+  return `${(meters / 1000).toFixed(1)}km`
+}
+
+function formatDuration(seconds: number): string {
+  const minutes = Math.round(seconds / 60)
+  if (minutes < 60) return `${minutes}m`
+  const h = Math.floor(minutes / 60)
+  const m = minutes % 60
+  return m > 0 ? `${h}h ${m}m` : `${h}h`
+}
+
+function TravelTimeBadge({ leg }: { leg: RoutingComputedLeg }) {
+  return (
+    <div
+      className="flex items-center justify-center gap-1 py-0.5"
+      aria-label={`Travel time: ${leg.travel_time_badge_long}`}
+    >
+      <div className="h-px w-4 bg-slate-600/60" />
+      <span className="rounded-full bg-slate-800/50 px-1.5 py-0.5 text-[10px] text-slate-400">
+        🚶 {leg.travel_time_badge_short}
+      </span>
+      <div className="h-px w-4 bg-slate-600/60" />
+    </div>
+  )
+}
+
+function TravelTimeBadgeSkeleton() {
+  return (
+    <div className="flex items-center justify-center gap-1 py-0.5">
+      <div className="h-px w-4 bg-slate-600/60" />
+      <div className="h-4 w-10 animate-pulse rounded-full bg-slate-700/50" />
+      <div className="h-px w-4 bg-slate-600/60" />
+    </div>
+  )
+}
+
+type ScheduledDayCardProps = {
+  listId: string
+  date: string
+  scheduledForDay: ListItemRow[]
+  dropTargetKey: string | null
+  canDrag: boolean
+  savingItemId: string | null
+  routingEnabled: boolean
+  onPlaceSelect?: (placeId: string) => void
+  setMoveItemId: (id: string | null) => void
+  onDragStart: (itemId: string) => void
+  onDragEnd: () => void
+  onDragOverTarget: (event: DragEvent, key: string) => void
+  onDropSlot: (
+    event: DragEvent,
+    date: string,
+    slot: PlannerSlot,
+    options?: { beforeItemId?: string; targetCategory?: CategoryEnum }
+  ) => Promise<void>
+  resolveCategoryEmoji: (category: CategoryEnum) => string
+}
+
+function ScheduledDayCard({
+  listId,
+  date,
+  scheduledForDay,
+  dropTargetKey,
+  canDrag,
+  savingItemId,
+  routingEnabled,
+  onPlaceSelect,
+  setMoveItemId,
+  onDragStart,
+  onDragEnd,
+  onDragOverTarget,
+  onDropSlot,
+  resolveCategoryEmoji,
+}: ScheduledDayCardProps) {
+  const { legsByToItemId, status, isLoading } = useRoutingPreview(
+    listId,
+    date,
+    routingEnabled
+  )
+
+  const orderedItemIds = useMemo(() => {
+    const ids: string[] = []
+    for (const slot of PLANNER_SLOT_ORDER) {
+      const slotItems = scheduledForDay
+        .filter(
+          (item) =>
+            (slotFromScheduledStartTime(item.scheduled_start_time) ?? 'morning') === slot
+        )
+        .slice()
+
+      const byCategory = new Map<CategoryEnum, ListItemRow[]>()
+      for (const item of slotItems) {
+        const category = item.place?.category
+        if (!category) continue
+        const existing = byCategory.get(category) ?? []
+        existing.push(item)
+        byCategory.set(category, existing)
+      }
+      const categories = Array.from(byCategory.keys()).sort(comparePlannerCategories)
+      for (const category of categories) {
+        const sorted = (byCategory.get(category) ?? [])
+          .slice()
+          .sort(
+            (a, b) =>
+              (typeof a.scheduled_order === 'number' ? a.scheduled_order : 0) -
+                (typeof b.scheduled_order === 'number' ? b.scheduled_order : 0) ||
+              a.created_at.localeCompare(b.created_at)
+          )
+        for (const item of sorted) ids.push(item.id)
+      }
+    }
+    return ids
+  }, [scheduledForDay])
+
+  const nextItemIdMap = useMemo(() => {
+    const map = new Map<string, string>()
+    for (let i = 0; i < orderedItemIds.length - 1; i += 1) {
+      map.set(orderedItemIds[i], orderedItemIds[i + 1])
+    }
+    return map
+  }, [orderedItemIds])
+
+  const showProviderError =
+    status === 'provider_error' && scheduledForDay.length > 0
+
+  const bySlot = useMemo(() => {
+    const map = new Map<PlannerSlot, ListItemRow[]>()
+    for (const item of scheduledForDay) {
+      const slot = slotFromScheduledStartTime(item.scheduled_start_time) ?? 'morning'
+      const existing = map.get(slot) ?? []
+      existing.push(item)
+      map.set(slot, existing)
+    }
+    return map
+  }, [scheduledForDay])
+
+  return (
+    <div
+      key={date}
+      className="rounded-lg border border-white/10 bg-white/5 p-3 space-y-3"
+    >
+      <div className="flex items-center justify-between gap-2">
+        <h4 className="text-xs font-semibold text-slate-100">
+          {formatDayLabel(date)}
+        </h4>
+        <span className="text-[11px] text-slate-400">
+          {scheduledForDay.length}
+        </span>
+      </div>
+
+      {!scheduledForDay.length ? (
+        <p className="text-[11px] text-slate-400">Nothing scheduled yet.</p>
+      ) : null}
+
+      {showProviderError ? (
+        <p className="text-[11px] text-slate-500">Route unavailable.</p>
+      ) : null}
+
+      {PLANNER_SLOT_ORDER.map((slot) => {
+        const slotItems = (bySlot.get(slot) ?? []).slice()
+        const slotDropKey = `slot:${date}:${slot}`
+        if (!slotItems.length) {
+          return (
+            <div
+              key={slot}
+              className={`space-y-1 rounded-md p-1 transition ${
+                dropTargetKey === slotDropKey
+                  ? 'bg-slate-100/10 ring-1 ring-slate-200/40'
+                  : ''
+              }`}
+              onDragOver={(event) => onDragOverTarget(event, slotDropKey)}
+              onDrop={(event) => onDropSlot(event, date, slot)}
+            >
+              <p className="text-[11px] font-semibold text-slate-200">
+                {PLANNER_SLOT_LABEL[slot]}
+              </p>
+              <p className="text-[11px] text-slate-400">Empty.</p>
+            </div>
+          )
+        }
+
+        const byCategory = new Map<CategoryEnum, ListItemRow[]>()
+        for (const item of slotItems) {
+          const category = item.place?.category
+          if (!category) continue
+          const existing = byCategory.get(category) ?? []
+          existing.push(item)
+          byCategory.set(category, existing)
+        }
+
+        const categories = Array.from(byCategory.keys()).sort(
+          comparePlannerCategories
+        )
+
+        return (
+          <div
+            key={slot}
+            className={`space-y-2 rounded-md p-1 transition ${
+              dropTargetKey === slotDropKey
+                ? 'bg-slate-100/10 ring-1 ring-slate-200/40'
+                : ''
+            }`}
+            onDragOver={(event) => onDragOverTarget(event, slotDropKey)}
+            onDrop={(event) => onDropSlot(event, date, slot)}
+          >
+            <p className="text-[11px] font-semibold text-slate-200">
+              {PLANNER_SLOT_LABEL[slot]}
+            </p>
+            <div className="space-y-2">
+              {categories.map((category) => {
+                const categoryItems = (byCategory.get(category) ?? [])
+                  .slice()
+                  .sort(
+                    (a, b) =>
+                      (typeof a.scheduled_order === 'number'
+                        ? a.scheduled_order
+                        : 0) -
+                        (typeof b.scheduled_order === 'number'
+                          ? b.scheduled_order
+                          : 0) || a.created_at.localeCompare(b.created_at)
+                  )
+                if (!categoryItems.length) return null
+
+                return (
+                  <div
+                    key={`${date}-${slot}-${category}`}
+                    className="space-y-2"
+                  >
+                    <p className="text-[11px] text-slate-300 inline-flex items-center gap-1">
+                      <span aria-hidden className="text-[13px] leading-none">
+                        {resolveCategoryEmoji(category)}
+                      </span>
+                      <span>{category}</span>
+                    </p>
+                    <div className="space-y-1">
+                      {categoryItems.map((item) => {
+                        const place = item.place!
+                        const nextId = nextItemIdMap.get(item.id)
+                        const leg = nextId
+                          ? legsByToItemId.get(nextId)
+                          : undefined
+                        const showBadge =
+                          routingEnabled &&
+                          nextId !== undefined &&
+                          (status === 'ok' || isLoading)
+                        return (
+                          <div key={item.id}>
+                            <div
+                              draggable={canDrag}
+                              onDragStart={() => onDragStart(item.id)}
+                              onDragEnd={onDragEnd}
+                              onDragOver={(event) =>
+                                onDragOverTarget(
+                                  event,
+                                  `item:${date}:${slot}:${category}:${item.id}`
+                                )
+                              }
+                              onDrop={(event) =>
+                                onDropSlot(event, date, slot, {
+                                  beforeItemId: item.id,
+                                  targetCategory: category,
+                                })
+                              }
+                              className={`rounded-lg border px-3 py-2 transition ${
+                                dropTargetKey ===
+                                `item:${date}:${slot}:${category}:${item.id}`
+                                  ? 'border-slate-200/40 bg-slate-900/55'
+                                  : 'border-white/10 bg-slate-900/35'
+                              }`}
+                            >
+                              <div className="flex items-start justify-between gap-2">
+                                <button
+                                  type="button"
+                                  className="min-w-0 text-left"
+                                  onClick={() => onPlaceSelect?.(place.id)}
+                                >
+                                  <p className="truncate text-sm font-medium text-slate-100 hover:underline">
+                                    {place.name}
+                                  </p>
+                                  {place.address ? (
+                                    <p className="mt-0.5 truncate text-[11px] text-slate-400">
+                                      {place.address}
+                                    </p>
+                                  ) : null}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setMoveItemId(item.id)}
+                                  disabled={savingItemId === item.id}
+                                  className="rounded-md border border-white/10 bg-white/5 px-2 py-1 text-[11px] text-slate-100 hover:border-white/25 disabled:opacity-60"
+                                >
+                                  Move
+                                </button>
+                              </div>
+                            </div>
+                            {showBadge ? (
+                              isLoading ? (
+                                <TravelTimeBadgeSkeleton />
+                              ) : leg ? (
+                                <TravelTimeBadge leg={leg} />
+                              ) : null
+                            ) : null}
+                          </div>
+                        )
+                      })}
+                    </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )
+      })}
+
+      {status === 'ok' && legsByToItemId.size > 0 ? (() => {
+        const totalDuration = Array.from(legsByToItemId.values()).reduce(
+          (sum, leg) => sum + leg.duration_s,
+          0
+        )
+        const totalDistance = Array.from(legsByToItemId.values()).reduce(
+          (sum, leg) => sum + leg.distance_m,
+          0
+        )
+        return (
+          <p className="text-[11px] text-slate-500 pt-1">
+            Total travel: {formatDuration(totalDuration)} ·{' '}
+            {formatDistance(totalDistance)}
+          </p>
+        )
+      })() : null}
+    </div>
+  )
 }
 
 export default function ListPlanner({
@@ -917,163 +1256,24 @@ export default function ListPlanner({
           <div className="space-y-4">
             {scheduleDatesToRender.map((date) => {
               const scheduledForDay = scheduledItemsByDate.get(date) ?? []
-
-              const bySlot = new Map<PlannerSlot, ListItemRow[]>()
-              for (const item of scheduledForDay) {
-                const slot = slotFromScheduledStartTime(item.scheduled_start_time) ?? 'morning'
-                const existing = bySlot.get(slot) ?? []
-                existing.push(item)
-                bySlot.set(slot, existing)
-              }
-
               return (
-                <div key={date} className="rounded-lg border border-white/10 bg-white/5 p-3 space-y-3">
-                  <div className="flex items-center justify-between gap-2">
-                    <h4 className="text-xs font-semibold text-slate-100">
-                      {formatDayLabel(date)}
-                    </h4>
-                    <span className="text-[11px] text-slate-400">
-                      {scheduledForDay.length}
-                    </span>
-                  </div>
-
-                  {!scheduledForDay.length ? (
-                    <p className="text-[11px] text-slate-400">
-                      Nothing scheduled yet.
-                    </p>
-                  ) : null}
-
-                  {PLANNER_SLOT_ORDER.map((slot) => {
-                    const slotItems = (bySlot.get(slot) ?? []).slice()
-                    const slotDropKey = `slot:${date}:${slot}`
-                    if (!slotItems.length) {
-                      return (
-                        <div
-                          key={slot}
-                          className={`space-y-1 rounded-md p-1 transition ${
-                            dropTargetKey === slotDropKey
-                              ? 'bg-slate-100/10 ring-1 ring-slate-200/40'
-                              : ''
-                          }`}
-                          onDragOver={(event) => onDragOverTarget(event, slotDropKey)}
-                          onDrop={(event) => onDropSlot(event, date, slot)}
-                        >
-                          <p className="text-[11px] font-semibold text-slate-200">
-                            {PLANNER_SLOT_LABEL[slot]}
-                          </p>
-                          <p className="text-[11px] text-slate-400">
-                            Empty.
-                          </p>
-                        </div>
-                      )
-                    }
-
-                    const byCategory = new Map<CategoryEnum, ListItemRow[]>()
-                    for (const item of slotItems) {
-                      const category = item.place?.category
-                      if (!category) continue
-                      const existing = byCategory.get(category) ?? []
-                      existing.push(item)
-                      byCategory.set(category, existing)
-                    }
-
-                    const categories = Array.from(byCategory.keys()).sort(
-                      comparePlannerCategories
-                    )
-
-                    return (
-                      <div
-                        key={slot}
-                        className={`space-y-2 rounded-md p-1 transition ${
-                          dropTargetKey === slotDropKey
-                            ? 'bg-slate-100/10 ring-1 ring-slate-200/40'
-                            : ''
-                        }`}
-                        onDragOver={(event) => onDragOverTarget(event, slotDropKey)}
-                        onDrop={(event) => onDropSlot(event, date, slot)}
-                      >
-                        <p className="text-[11px] font-semibold text-slate-200">
-                          {PLANNER_SLOT_LABEL[slot]}
-                        </p>
-                        <div className="space-y-2">
-                          {categories.map((category) => {
-                            const categoryItems = (byCategory.get(category) ?? [])
-                              .slice()
-                              .sort(sortByScheduledOrder)
-                            if (!categoryItems.length) return null
-
-                            return (
-                              <div key={`${date}-${slot}-${category}`} className="space-y-2">
-                                <p className="text-[11px] text-slate-300 inline-flex items-center gap-1">
-                                  <span aria-hidden className="text-[13px] leading-none">
-                                    {resolveCategoryEmoji(category)}
-                                  </span>
-                                  <span>{category}</span>
-                                </p>
-                                <div className="space-y-2">
-                                  {categoryItems.map((item) => {
-                                    const place = item.place!
-                                    return (
-                                      <div
-                                        key={item.id}
-                                        draggable={canDrag}
-                                        onDragStart={() => onDragStart(item.id)}
-                                        onDragEnd={onDragEnd}
-                                        onDragOver={(event) =>
-                                          onDragOverTarget(
-                                            event,
-                                            `item:${date}:${slot}:${category}:${item.id}`
-                                          )
-                                        }
-                                        onDrop={(event) =>
-                                          onDropSlot(event, date, slot, {
-                                            beforeItemId: item.id,
-                                            targetCategory: category,
-                                          })
-                                        }
-                                        className={`rounded-lg border px-3 py-2 transition ${
-                                          dropTargetKey ===
-                                          `item:${date}:${slot}:${category}:${item.id}`
-                                            ? 'border-slate-200/40 bg-slate-900/55'
-                                            : 'border-white/10 bg-slate-900/35'
-                                        }`}
-                                      >
-                                        <div className="flex items-start justify-between gap-2">
-                                          <button
-                                            type="button"
-                                            className="min-w-0 text-left"
-                                            onClick={() => onPlaceSelect?.(place.id)}
-                                          >
-                                            <p className="truncate text-sm font-medium text-slate-100 hover:underline">
-                                              {place.name}
-                                            </p>
-                                            {place.address ? (
-                                              <p className="mt-0.5 truncate text-[11px] text-slate-400">
-                                                {place.address}
-                                              </p>
-                                            ) : null}
-                                          </button>
-                                          <button
-                                            type="button"
-                                            onClick={() => setMoveItemId(item.id)}
-                                            disabled={savingItemId === item.id}
-                                            className="rounded-md border border-white/10 bg-white/5 px-2 py-1 text-[11px] text-slate-100 hover:border-white/25 disabled:opacity-60"
-                                          >
-                                            Move
-                                          </button>
-                                        </div>
-                                      </div>
-                                    )
-                                  })}
-                                </div>
-                              </div>
-                            )
-                          })}
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
+                <ScheduledDayCard
+                  key={date}
+                  listId={listId}
+                  date={date}
+                  scheduledForDay={scheduledForDay}
+                  dropTargetKey={dropTargetKey}
+                  canDrag={canDrag}
+                  savingItemId={savingItemId}
+                  routingEnabled={Boolean(tripRange)}
+                  onPlaceSelect={onPlaceSelect}
+                  setMoveItemId={setMoveItemId}
+                  onDragStart={onDragStart}
+                  onDragEnd={onDragEnd}
+                  onDragOverTarget={onDragOverTarget}
+                  onDropSlot={onDropSlot}
+                  resolveCategoryEmoji={resolveCategoryEmoji}
+                />
               )
             })}
           </div>

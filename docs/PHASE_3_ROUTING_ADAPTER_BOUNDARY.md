@@ -69,5 +69,6 @@
 - Adapter boundary remains internal architecture only.
 
 ## Follow-ups
-- Implement concrete Google/OSRM adapters that emit the success contract.
+- ~~Implement concrete OSRM adapter~~ — completed in P3-E1 task 1.5 (`lib/routing/adapters/osrm.ts`).
+- Implement concrete Google Routes adapter (deferred, currently returns `provider_unavailable`).
 - Evaluate partial-leg behavior (mixed valid/invalid legs) as a separate explicit contract update.

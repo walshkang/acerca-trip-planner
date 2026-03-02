@@ -1,7 +1,7 @@
 {
   "project_name": "AI_Travel_Itinerary_Manager",
-  "version": "2.2.0-phase2-defined",
-  "last_updated": "2026-02-25",
+  "version": "2.3.0-p3e1-routing-impl",
+  "last_updated": "2026-03-02",
   "development_principles": [
     "LLMs label and translate intent; deterministic systems retrieve and compute.",
     "Only approved pins are truth (Map is the interface).",
@@ -14,7 +14,7 @@
       "id": "46e9d05",
       "date": "2026-02-02",
       "title": "Add Playwright coverage for list filters and map linking",
-      "summary": "Added Playwright coverage for list tag filters and the map marker → list row focus + place drawer behavior."
+      "summary": "Added Playwright coverage for list tag filters and the map marker \u2192 list row focus + place drawer behavior."
     },
     {
       "id": "6f8573b",
@@ -44,7 +44,7 @@
       "id": "e4c4f71",
       "date": "2026-01-27",
       "title": "Discovery omnibox UX loop + curated Wikipedia/Wikidata enrichment",
-      "summary": "Implemented the map-first UX loop (Search → Preview → Approve): added a floating Omnibox, Ghost Pin state, and an Inspector preview card that shows frozen enrichment before approval. Added deterministic curated Wikipedia/Wikidata extraction (summary, thumbnail, stable fact pairs) stored on enrichments.curated_data, updated ingest to return preview enrichment immediately, and added minimal Supabase types + a db:types generation helper."
+      "summary": "Implemented the map-first UX loop (Search \u2192 Preview \u2192 Approve): added a floating Omnibox, Ghost Pin state, and an Inspector preview card that shows frozen enrichment before approval. Added deterministic curated Wikipedia/Wikidata extraction (summary, thumbnail, stable fact pairs) stored on enrichments.curated_data, updated ingest to return preview enrichment immediately, and added minimal Supabase types + a db:types generation helper."
     },
     {
       "id": "e1d391c",
@@ -101,13 +101,17 @@
       "goal": "A deterministic, map-based database of approved places. Eliminates messy lists and taxonomy drift.",
       "estimated_timeline": "MVP (Weeks 1-4)",
       "status": "completed",
-      "progress_summary": "Phase 1 MVP loop complete: auth-gated map, Omnibox ingestion (URL/place_id/name → place_candidates), Enriched Preview on Ghost Pins, and one-click Approve to canonical places. Enrichment is frozen at ingestion; promotion is a state transition only. Completed: places_view + map serialization and viewport persistence with fitBounds/last-view fallback, approval flyTo, lightweight search results + preview ingest, Inspector gated on preview state, lists schema + types, list CRUD UI, list assignment on approval, list-scoped tags + filters, and list membership editing from place detail + map drawer. Phase 2 is now underway.",
+      "progress_summary": "Phase 1 MVP loop complete: auth-gated map, Omnibox ingestion (URL/place_id/name \u2192 place_candidates), Enriched Preview on Ghost Pins, and one-click Approve to canonical places. Enrichment is frozen at ingestion; promotion is a state transition only. Completed: places_view + map serialization and viewport persistence with fitBounds/last-view fallback, approval flyTo, lightweight search results + preview ingest, Inspector gated on preview state, lists schema + types, list CRUD UI, list assignment on approval, list-scoped tags + filters, and list membership editing from place detail + map drawer. Phase 2 is now underway.",
       "epics": [
         {
           "id": "P1-E1",
           "title": "Strict Schema, Versioning & Deduplication",
           "description": "Enforce data integrity and enrichment immutability before the first pin is dropped.",
-          "tech_stack": ["Supabase", "PostgreSQL", "PostGIS"],
+          "tech_stack": [
+            "Supabase",
+            "PostgreSQL",
+            "PostGIS"
+          ],
           "tasks": [
             {
               "id": "1.1",
@@ -142,7 +146,12 @@
           "id": "P1-E2",
           "title": "The Librarian Agent (Deterministic Ingestion)",
           "description": "Multi-source enrichment that is frozen, auditable, and schema-aligned.",
-          "tech_stack": ["Edge Functions", "Google Places API", "Wikipedia API", "Wikidata API"],
+          "tech_stack": [
+            "Edge Functions",
+            "Google Places API",
+            "Wikipedia API",
+            "Wikidata API"
+          ],
           "tasks": [
             {
               "id": "2.1",
@@ -178,7 +187,10 @@
           "id": "P1-E3",
           "title": "Aligned Visual Interface",
           "description": "UI that mirrors database truth exactly.",
-          "tech_stack": ["Mapbox GL JS", "React"],
+          "tech_stack": [
+            "Mapbox GL JS",
+            "React"
+          ],
           "tasks": [
             {
               "id": "3.1",
@@ -192,7 +204,7 @@
               "task": "Build Place Detail View.",
               "details": "Display frozen AI tags and factual summaries. Allow user-added notes and user tags stored separately.",
               "status": "completed",
-              "notes": "Added /places/[id] route showing frozen enrichment + editable user_notes/user_tags (stored on places). Wired marker click → detail view, and added PATCH API for user meta updates."
+              "notes": "Added /places/[id] route showing frozen enrichment + editable user_notes/user_tags (stored on places). Wired marker click \u2192 detail view, and added PATCH API for user meta updates."
             }
           ]
         },
@@ -200,7 +212,11 @@
           "id": "P1-E4",
           "title": "The Airlock (Visual Ingestion)",
           "description": "A visual staging layer for items you already found. Enrichment happens at ingestion and is frozen on Ghosts; approval only promotes to canonical truth.",
-          "tech_stack": ["Zustand", "Mapbox GL JS", "React"],
+          "tech_stack": [
+            "Zustand",
+            "Mapbox GL JS",
+            "React"
+          ],
           "tasks": [
             {
               "id": "4.1",
@@ -236,7 +252,13 @@
           "id": "P1-E5",
           "title": "Map View + Discovery Refinements (Phase 0-4 Plan)",
           "description": "Harden map data integrity, viewport behavior, search/preview flow, and list persistence before planner work begins.",
-          "tech_stack": ["Supabase", "PostGIS", "Mapbox GL JS", "React", "Next.js"],
+          "tech_stack": [
+            "Supabase",
+            "PostGIS",
+            "Mapbox GL JS",
+            "React",
+            "Next.js"
+          ],
           "tasks": [
             {
               "id": "5.1",
@@ -568,6 +590,30 @@
               "id": "1.4",
               "task": "Define verification gate for routing contract slice.",
               "details": "Unit/API test matrix and acceptance criteria for deterministic route outputs.",
+              "status": "completed"
+            },
+            {
+              "id": "1.5",
+              "task": "Implement OSRM routing adapter.",
+              "details": "Concrete adapter implementing RoutingPreviewProviderAdapter; reads OSRM_BASE_URL; calls /route/v1/driving/ with overview=false; returns per-leg distance_m/duration_s. Server-only.",
+              "status": "completed"
+            },
+            {
+              "id": "1.6",
+              "task": "Wire OSRM adapter into provider factory.",
+              "details": "getRoutingPreviewProvider() returns createOsrmAdapter() when providerKind === 'osrm'. google_routes remains unimplemented.",
+              "status": "completed"
+            },
+            {
+              "id": "1.7",
+              "task": "Add client-side routing preview hook.",
+              "details": "useRoutingPreview(listId, date, enabled) calls POST /api/lists/{id}/routing/preview; exposes legs, legsByToItemId, summary, status, isLoading, error.",
+              "status": "completed"
+            },
+            {
+              "id": "1.8",
+              "task": "Render travel-time badges in ListPlanner UI.",
+              "details": "ScheduledDayCard sub-component uses useRoutingPreview per day; renders TravelTimeBadge between consecutive scheduled items; skeleton on loading; day-level total summary.",
               "status": "completed"
             }
           ]

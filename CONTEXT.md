@@ -10,6 +10,7 @@
 - Current Phase: The Intelligent Concierge (Wedding Cake)
 - Active Epic: AI Discovery (Suggestion Layer)
 - P3-E2 tasks 2.6 and 2.7 completed: reject/discard path and verification gate in place.
+- P3-E1 implementation complete: OSRM adapter, provider wiring, useRoutingPreview hook, and travel-time badges in ListPlanner.
 
 ## ✅ P2-E1 Remaining Plan (Tracking)
 - Spec: `docs/PHASE_2_KANBAN_SPEC.md`.
