@@ -6,6 +6,7 @@ import type {
   RoutingPreviewListContext,
   RoutingSequenceItem,
 } from '@/lib/routing/contract'
+import { createOsrmAdapter } from '@/lib/routing/adapters/osrm'
 
 export type RoutingProviderFailureCode =
   | 'provider_unavailable'
@@ -92,6 +93,10 @@ export function getRoutingPreviewProvider(
   const providerKind = resolveRoutingProviderKind(
     kindOverride ?? process.env.ROUTING_PROVIDER
   )
+
+  if (providerKind === 'osrm') {
+    return createOsrmAdapter()
+  }
 
   return createUnimplementedAdapter(providerKind)
 }

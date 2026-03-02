@@ -41,9 +41,9 @@ describe('routing provider boundary', () => {
   })
 
   it('returns deterministic provider_unavailable results for all providers', async () => {
-    const providers = ['unimplemented', 'google_routes', 'osrm'] as const
+    const unimplementedProviders = ['unimplemented', 'google_routes'] as const
 
-    for (const provider of providers) {
+    for (const provider of unimplementedProviders) {
       const adapter = getRoutingPreviewProvider(provider)
       const result = await adapter.preview(BASE_INPUT)
 
@@ -58,6 +58,21 @@ describe('routing provider boundary', () => {
         retryable: false,
       })
     }
+  })
+
+  it('returns provider_unavailable for osrm when OSRM_BASE_URL is not set', async () => {
+    const savedUrl = process.env.OSRM_BASE_URL
+    delete process.env.OSRM_BASE_URL
+    const adapter = getRoutingPreviewProvider('osrm')
+    const result = await adapter.preview(BASE_INPUT)
+    expect(result).toEqual({
+      ok: false,
+      code: 'provider_unavailable',
+      provider: 'osrm',
+      message: 'OSRM_BASE_URL is not configured.',
+      retryable: false,
+    })
+    if (savedUrl !== undefined) process.env.OSRM_BASE_URL = savedUrl
   })
 
   it('accepts success result union shape with per-leg metrics', () => {
