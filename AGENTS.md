@@ -3,6 +3,7 @@
 This file is the single source of truth for how we build here. It applies to humans and agents.
 
 ## Read First
+- DESIGN.md (UI/UX source of truth — layout, interaction, visual system, component inventory)
 - CONTEXT.md (active phase, immediate blockers)
 - docs/VIBE_PLAYBOOK.md (checklists and patterns)
 

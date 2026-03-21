@@ -1,16 +1,22 @@
 ## Agent Quickstart
-- Read `AGENTS.md` and `docs/VIBE_PLAYBOOK.md` before making changes.
+- Read `AGENTS.md`, `DESIGN.md`, and `docs/VIBE_PLAYBOOK.md` before making changes.
+- For UI/UX changes, `DESIGN.md` is the source of truth for layout, interaction, visual system, and component inventory.
 - Invariants: DB is source of truth; only approved pins are truth; enrich once, read forever; strict taxonomy; user edits never overwrite frozen AI enrichment.
 - DoD: tests updated/added; verification steps; migrations + `npm run db:types` if schema changed; no TODO placeholders in Decisions / Rationale or Next Steps.
 - Pointers: `roadmap.json` for phases, `supabase/migrations` for schema, `docs/reports` for learning reports.
-- Phase 2 plan: `docs/PHASE_2_PLAN.md`.
 - Starting a new task/chat? Use `prompts/agent_task.md`.
 
 ## 🧠 Active Context
-- Current Phase: The Intelligent Concierge (Wedding Cake)
-- Active Epic: AI Discovery (Suggestion Layer)
-- P3-E2 tasks 2.6 and 2.7 completed: reject/discard path and verification gate in place.
+- Current Phase: UI/UX Revamp (cross-cutting) + The Intelligent Concierge (Wedding Cake)
+- Active Epic: UI/UX Redesign (P3-E3) — design system + day grid planner + component migration
+- Active Epic: AI Discovery (Suggestion Layer) + Deterministic Routing (P3-E1, P3-E2 in The Intelligent Concierge)
 - P3-E1 implementation complete: OSRM adapter, provider wiring, useRoutingPreview hook, and travel-time badges in ListPlanner.
+- P3-E2 tasks 2.6 and 2.7 completed: reject/discard path and verification gate in place.
+- UI/UX Revamp active work: Comprehensive UI/UX redesign coordinated via `DESIGN.md`
+  - Planner redesign: column-based kanban → compact day grid (see DESIGN.md Section C)
+  - Component migration: presentation components moved to `components/stitch/`, wired by `components/workspace/WorkspaceContainer.tsx`
+  - New architecture: `MapShell` (pure map) + `WorkspaceContainer` (orchestrator) + `ContextPanel`/`ToolsSheet` (UI shells)
+  - Visual system: open for revision (glass/frosted may change — see DESIGN.md Section D)
 
 ## ✅ P2-E1 Remaining Plan (Tracking)
 - Spec: `docs/PHASE_2_KANBAN_SPEC.md`.

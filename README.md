@@ -130,10 +130,15 @@ Turn saved places into an actual plan.
 
 **Features**
 
-* **Kanban-Style Itinerary**
+* **Day Grid Planner**
 
-  * Drag places from a *Backlog* into day buckets (Friday, Saturday, etc.)
-  * Backlog vs Scheduled is derived from `scheduled_date` (NULL = Backlog) and shared across Map + Kanban
+  * Compact calendar-like grid: each trip day is a cell, rows of up to 7 days
+  * Drag places between day cells or to/from a filterable backlog
+  * Color-coded time-of-day hints (warm=morning, neutral=afternoon, cool=evening) instead of slot sub-sections
+  * Desktop: grid overview on left + selected day detail on right
+  * Mobile: compact grid in bottom sheet — short drag distances for quick rescheduling on the go
+  * Trip date changes handled gracefully: adding days adds blank cells; reducing days warns and returns displaced places to backlog
+  * Backlog vs Scheduled is derived from `scheduled_date` (NULL = Backlog) and shared across Map + Planner
   * Optimistic updates reconcile with server truth; lightweight scheduling audit timestamps
 * **Deterministic Filtering**
 
@@ -178,7 +183,7 @@ Make plans efficient and exportable.
 
 **State & Drag-and-Drop**
 
-* dnd-kit or react-beautiful-dnd
+* @dnd-kit/core, @dnd-kit/sortable
 
 **Backend & Database**
 

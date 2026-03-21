@@ -674,6 +674,55 @@
               "notes": "Added tests/discovery/reject-route.test.ts and discardAndClear tests in store.test.ts; updated verification gate and contract docs."
             }
           ]
+        },
+        {
+          "id": "P3-E3",
+          "title": "UI/UX Revamp (Day Grid Planner + Design System)",
+          "description": "Comprehensive UI/UX redesign: replace column-based kanban with compact day grid planner, establish a design system in DESIGN.md, migrate components to stitch/ namespace, and refactor the app shell into MapShell + WorkspaceContainer.",
+          "features": [
+            "Compact day grid planner replaces column-based kanban (see DESIGN.md Section C).",
+            "Day cells in a calendar-like grid (7 per row); backlog pinned above/beside.",
+            "Color-coded time-of-day dots (warm=morning, neutral=afternoon, cool=evening) replace slot sub-sections.",
+            "Desktop: grid on left + selected day detail on right; planner can expand beyond standard panel width.",
+            "Mobile: compact grid fits in bottom sheet; short drag distances for quick rescheduling.",
+            "Trip date changes: adding days adds blank cells; reducing days warns and returns displaced places to backlog.",
+            "Soft capacity warning when a day exceeds ~5 items.",
+            "Backlog is filterable and shows both unassigned and assigned items.",
+            "Visual system open for revision (glass/frosted may change; DESIGN.md Section D).",
+            "Component architecture: MapShell (pure map) + WorkspaceContainer (orchestrator) + ContextPanel/ToolsSheet (UI shells) + stitch/ components (presentation)."
+          ],
+          "tasks": [
+            {
+              "id": "3.1",
+              "task": "Write comprehensive DESIGN.md spec.",
+              "details": "Product context, app shell layout, planner day grid spec, visual system (open), component inventory, Playwright selector contract.",
+              "status": "completed"
+            },
+            {
+              "id": "3.2",
+              "task": "Update planning docs (AGENTS.md, CONTEXT.md, roadmap.json, README.md, IMPLEMENTATION.md, PHASE_2_KANBAN_SPEC.md).",
+              "details": "Align all planning docs with the new UI/UX direction. Mark old kanban spec as superseded.",
+              "status": "completed"
+            },
+            {
+              "id": "3.3",
+              "task": "Redesign ListPlanner as day grid.",
+              "details": "Replace column-based kanban in components/stitch/ListPlanner.tsx with the compact day grid described in DESIGN.md Section C. Preserve backend data model.",
+              "status": "not_started"
+            },
+            {
+              "id": "3.4",
+              "task": "Update stitch components for design system consistency.",
+              "details": "Apply DESIGN.md visual and interaction patterns across all stitch/ components. Includes mobile optimization.",
+              "status": "not_started"
+            },
+            {
+              "id": "3.5",
+              "task": "Update Playwright E2E tests for day grid planner.",
+              "details": "Add coverage for day grid interactions, backlog filtering, trip date changes, and mobile planner.",
+              "status": "not_started"
+            }
+          ]
         }
       ]
     }

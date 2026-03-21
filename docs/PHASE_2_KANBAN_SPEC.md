@@ -1,5 +1,7 @@
 # Phase 2 Kanban (P2-E1): Slot Planner Spec
 
+> **Superseded (UI/UX):** The column-based kanban UI described here has been replaced by the compact day grid planner. See `DESIGN.md` Section C for the current planner spec. The **backend data model** (slot sentinels, fractional ordering, API contract, move behaviors) defined below **remains valid** and is referenced by the new spec.
+
 This is a concrete, deterministic spec for the Phase 2 planner UI and the minimal backend writes needed to support it.
 
 ## Goal

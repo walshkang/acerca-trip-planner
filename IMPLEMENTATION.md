@@ -106,7 +106,9 @@ Note: This is a historical snapshot. Current rules and workflow live in `AGENTS.
 
 ## Phase 2 Planner Notes
 
-- Backlog vs Scheduled is derived from `scheduled_date` (NULL = Backlog) and used as the single source of truth across Map + Kanban.
+> **Note:** The column-based kanban planner (P2-E1) has been superseded by the compact day grid planner. See `DESIGN.md` Section C for the current planner spec. The backend data model (slot sentinels, fractional ordering, API contract) from `docs/PHASE_2_KANBAN_SPEC.md` remains valid.
+
+- Backlog vs Scheduled is derived from `scheduled_date` (NULL = Backlog) and used as the single source of truth across Map + Planner.
 - Optimistic scheduling reconciles against server truth and captures a lightweight audit (last_scheduled_at, last_scheduled_by/source).
 - Compound filters (AND/OR) are supported in the filter JSON from day one.
 - Open-now uses server time converted to place timezone via offline lat/lng lookup (IANA), with a trip-timezone or utc_offset_minutes fallback.
