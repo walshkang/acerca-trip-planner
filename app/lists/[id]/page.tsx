@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import ListDetailPanel from '@/components/lists/ListDetailPanel'
+import ListDetailPanel from '@/components/stitch/ListDetailPanel'
 
 export default async function ListDetailPage({
   params,

@@ -10,6 +10,7 @@ export type ListSummary = {
 
 type ListsResponse = {
   lists: ListSummary[]
+  error?: string
 }
 
 type Props = {

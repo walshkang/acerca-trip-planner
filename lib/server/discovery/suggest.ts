@@ -222,7 +222,7 @@ export async function buildDiscoverySuggestions(
       throw new Error(error.message || 'Failed to load list items')
     }
 
-    for (const row of (data ?? []) as ListItemRecord[]) {
+    for (const row of (data ?? []) as unknown as ListItemRecord[]) {
       if (!row.place) continue
       localPlaces.push(row.place)
       localTagsByPlaceId.set(row.place_id, row.tags ?? null)
@@ -368,8 +368,9 @@ export async function buildDiscoverySuggestions(
   )
   const restrictiveFilters = isReadConstrainedByPlaceFilters(canonicalFilters)
 
-  const googleRanked = googleCandidates
-    .map((candidate) => {
+  const googleRanked = (
+    googleCandidates
+      .map((candidate) => {
       const matched = matchedByGoogleId.get(candidate.place_id)
       if (matched && localPlaceIdSet.has(matched.id)) {
         return null
@@ -428,9 +429,8 @@ export async function buildDiscoverySuggestions(
         textRank,
       }
     })
-    .filter((item): item is { suggestion: DiscoverySuggestion; textRank: number } =>
-      Boolean(item)
-    )
+      .filter(Boolean) as { suggestion: DiscoverySuggestion; textRank: number }[]
+  )
     .sort((a, b) => {
       if (a.textRank !== b.textRank) return a.textRank - b.textRank
       const nameCmp = asComparableName(a.suggestion.name).localeCompare(

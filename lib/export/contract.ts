@@ -70,7 +70,7 @@ function isExportScope(value: unknown): value is ExportScope {
 }
 
 function isCategoryEnum(value: unknown): value is CategoryEnum {
-  return typeof value === 'string' && (CATEGORY_ENUM_VALUES as string[]).includes(value)
+  return typeof value === 'string' && (CATEGORY_ENUM_VALUES as readonly string[]).includes(value)
 }
 
 export type ExportRequestValidationError = { field: string; message: string }

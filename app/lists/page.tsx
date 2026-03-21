@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import ListsPanel from '@/components/lists/ListsPanel'
+import ListsPanel from '@/components/stitch/ListsPanel'
 
 export default async function ListsPage() {
   const supabase = await createClient()

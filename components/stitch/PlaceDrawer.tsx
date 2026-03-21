@@ -1,8 +1,8 @@
 'use client'
 
 import { type FormEvent, useCallback, useEffect, useMemo, useState } from 'react'
-import PlaceListMembershipEditor from '@/components/places/PlaceListMembershipEditor'
-import PlaceUserMetaForm from '@/components/places/PlaceUserMetaForm'
+import PlaceListMembershipEditor from '@/components/stitch/PlaceListMembershipEditor'
+import PlaceUserMetaForm from '@/components/stitch/PlaceUserMetaForm'
 import { normalizeTagList } from '@/lib/lists/tags'
 import { PLACE_FOCUS_GLOW } from '@/lib/ui/glow'
 import {

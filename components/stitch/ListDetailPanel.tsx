@@ -1,17 +1,18 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import ListDetailBody, {
   ListItemRow,
   ListSummary,
-} from '@/components/lists/ListDetailBody'
+} from '@/components/stitch/ListDetailBody'
 import {
   distinctTypesFromItems,
   isCategoryEnum,
   type ListFilterFieldErrors,
 } from '@/lib/lists/filters'
-import type { CategoryEnum, EnergyEnum } from '@/lib/types/enums'
 import { distinctTagsFromItems } from '@/lib/lists/tags'
+import type { CategoryEnum, EnergyEnum } from '@/lib/types/enums'
 import {
   areFiltersEqual,
   buildServerFiltersFromDraft,
@@ -26,53 +27,15 @@ import {
   uniqueStrings,
 } from '@/lib/lists/filter-client'
 
-type Props = {
-  open: boolean
-  onClose: () => void
-  activeListId: string | null
-  onActiveListChange: (id: string | null) => void
-  onPlaceIdsChange: (placeIds: string[]) => void
-  onActiveTypeFiltersChange?: (types: CategoryEnum[]) => void
-  onPlaceSelect: (placeId: string) => void
-  onActiveListItemsChange?: (
-    items: Array<{
-      id: string
-      list_id: string
-      place_id: string
-      tags: string[]
-      scheduled_date: string | null
-      scheduled_start_time: string | null
-      completed_at: string | null
-    }>
-  ) => void
-  focusedPlaceId?: string | null
-  tagsRefreshKey?: number
-  itemsRefreshKey?: number
-  onTagsUpdated?: () => void
-  variant?: 'floating' | 'embedded'
-  tone?: 'light' | 'dark'
-}
-
-type ListsResponse = {
-  lists: ListSummary[]
-  error?: string
-}
-
 type ItemsResponse = {
-  list: ListSummary
-  items: ListItemRow[]
+  list?: ListSummary | null
+  items?: ListItemRow[]
   distinct_tags?: string[]
   canonicalFilters?: unknown
   code?: string
   message?: string
   error?: string
   fieldErrors?: unknown
-  lastValidCanonicalFilters?: unknown
-}
-
-type FetchItemsOptions = {
-  updateAppliedFilters?: boolean
-  updateDraftFilters?: boolean
 }
 
 type QueryFiltersResponse = {
@@ -84,7 +47,6 @@ type QueryFiltersResponse = {
   message?: string
   error?: string
   fieldErrors?: unknown
-  lastValidCanonicalFilters?: unknown
 }
 
 type TranslateFiltersResponse = {
@@ -97,6 +59,22 @@ type TranslateFiltersResponse = {
   message?: string
   error?: string
   fieldErrors?: unknown
+}
+
+type SearchResult = {
+  id: string
+  name: string | null
+  category: string
+  display_address: string | null
+}
+
+type FetchItemsOptions = {
+  updateAppliedFilters?: boolean
+  updateDraftFilters?: boolean
+}
+
+type Props = {
+  listId: string
 }
 
 function buildItemsUrl(listId: string, filters: CanonicalListFilters): string {
@@ -121,37 +99,32 @@ function buildItemsUrl(listId: string, filters: CanonicalListFilters): string {
   return `/api/lists/${listId}/items?${searchParams.toString()}`
 }
 
-function hasServerOnlyFilters(filters: CanonicalListFilters): boolean {
-  return filters.energy.length > 0 || filters.open_now !== null
+function hasAnyFilters(filters: CanonicalListFilters): boolean {
+  return (
+    filters.categories.length > 0 ||
+    filters.tags.length > 0 ||
+    filters.energy.length > 0 ||
+    filters.open_now !== null ||
+    filters.scheduled_date !== null ||
+    filters.slot !== null
+  )
 }
 
-export default function ListDrawer({
-  open,
-  onClose,
-  activeListId,
-  onActiveListChange,
-  onPlaceIdsChange,
-  onActiveTypeFiltersChange,
-  onPlaceSelect,
-  onActiveListItemsChange,
-  focusedPlaceId = null,
-  tagsRefreshKey,
-  itemsRefreshKey,
-  onTagsUpdated,
-  variant = 'floating',
-  tone = 'dark',
-}: Props) {
-  const [lists, setLists] = useState<ListSummary[]>([])
-  const [listsLoading, setListsLoading] = useState(false)
-  const [listsError, setListsError] = useState<string | null>(null)
-  const [newListName, setNewListName] = useState('')
-  const [creatingList, setCreatingList] = useState(false)
-  const [activeList, setActiveList] = useState<ListSummary | null>(null)
+function placeIdsFromItems(items: ListItemRow[]): string[] {
+  return items
+    .map((item) => item.place?.id)
+    .filter((id): id is string => Boolean(id))
+}
+
+export default function ListDetailPanel({ listId }: Props) {
+  const router = useRouter()
+  const [list, setList] = useState<ListSummary | null>(null)
   const [items, setItems] = useState<ListItemRow[]>([])
   const [distinctTags, setDistinctTags] = useState<string[]>([])
   const [distinctTypes, setDistinctTypes] = useState<CategoryEnum[]>([])
-  const [appliedFilters, setAppliedFilters] = useState<CanonicalListFilters>(
-    () => emptyCanonicalFilters()
+  const [allPlaceIds, setAllPlaceIds] = useState<string[]>([])
+  const [appliedFilters, setAppliedFilters] = useState<CanonicalListFilters>(() =>
+    emptyCanonicalFilters()
   )
   const [draftFilters, setDraftFilters] = useState<CanonicalListFilters>(() =>
     emptyCanonicalFilters()
@@ -159,15 +132,26 @@ export default function ListDrawer({
   const [undoFilters, setUndoFilters] = useState<CanonicalListFilters | null>(null)
   const [filterFieldErrors, setFilterFieldErrors] =
     useState<ListFilterFieldErrors | null>(null)
-  const [filterErrorMessage, setFilterErrorMessage] = useState<string | null>(null)
+  const [filterErrorMessage, setFilterErrorMessage] = useState<string | null>(
+    null
+  )
   const [filterIntent, setFilterIntent] = useState('')
   const [translateErrorMessage, setTranslateErrorMessage] = useState<string | null>(
     null
   )
   const [translateHint, setTranslateHint] = useState<string | null>(null)
   const [translatingFilters, setTranslatingFilters] = useState(false)
-  const [itemsLoading, setItemsLoading] = useState(false)
-  const [itemsError, setItemsError] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([])
+  const [searchLoading, setSearchLoading] = useState(false)
+  const [searchError, setSearchError] = useState<string | null>(null)
+  const [searchTagInputs, setSearchTagInputs] = useState<Record<string, string>>(
+    {}
+  )
+  const [addedResultIds, setAddedResultIds] = useState<Set<string>>(new Set())
+  const [addingPlaceId, setAddingPlaceId] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const appliedFiltersRef = useRef(appliedFilters)
   const requestSequenceRef = useRef(0)
@@ -186,8 +170,8 @@ export default function ListDrawer({
     activeRequestRef.current?.controller.abort()
     const controller = new AbortController()
     activeRequestRef.current = { requestId, controller }
-    setItemsLoading(true)
-    setItemsError(null)
+    setLoading(true)
+    setError(null)
     return { requestId, signal: controller.signal }
   }, [])
 
@@ -200,7 +184,7 @@ export default function ListDrawer({
   const finishItemsRequest = useCallback((requestId: number) => {
     if (activeRequestRef.current?.requestId !== requestId) return
     activeRequestRef.current = null
-    setItemsLoading(false)
+    setLoading(false)
   }, [])
 
   useEffect(
@@ -211,78 +195,23 @@ export default function ListDrawer({
     []
   )
 
-  const selectedListIds = useMemo(() => {
-    return activeListId ? new Set([activeListId]) : new Set<string>()
-  }, [activeListId])
-
-  const fetchLists = useCallback(async () => {
-    setListsLoading(true)
-    setListsError(null)
-    try {
-      const res = await fetch('/api/lists')
-      const json = (await res.json().catch(() => ({}))) as Partial<ListsResponse>
-      if (!res.ok) {
-        setListsError(json?.error || `HTTP ${res.status}`)
-        return
-      }
-      setLists((json?.lists ?? []) as ListSummary[])
-    } catch (e: unknown) {
-      setListsError(e instanceof Error ? e.message : 'Request failed')
-    } finally {
-      setListsLoading(false)
-    }
-  }, [])
-
-  const createList = useCallback(async () => {
-    const name = newListName.trim()
-    if (!name) return
-    setCreatingList(true)
-    setListsError(null)
-    try {
-      const res = await fetch('/api/lists', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ name }),
-      })
-      const json = await res.json().catch(() => ({}))
-      if (!res.ok) {
-        setListsError(json?.error || `HTTP ${res.status}`)
-        return
-      }
-      const list = json?.list as ListSummary | undefined
-      if (list) {
-        setLists((prev) => [...prev, list])
-        setNewListName('')
-        onActiveListChange(list.id)
-      } else {
-        await fetchLists()
-      }
-    } catch (e: unknown) {
-      setListsError(e instanceof Error ? e.message : 'Request failed')
-    } finally {
-      setCreatingList(false)
-    }
-  }, [fetchLists, newListName, onActiveListChange])
-
   const fetchItems = useCallback(
     async (
-      listId: string,
       filters: CanonicalListFilters,
       options: FetchItemsOptions = {}
-    ) => {
+    ): Promise<boolean> => {
       const {
         updateAppliedFilters = true,
         updateDraftFilters = false,
       } = options
       const { requestId, signal } = beginItemsRequest()
       try {
-        const url = buildItemsUrl(listId, filters)
-        const res = await fetch(url, { signal })
+        const res = await fetch(buildItemsUrl(listId, filters), { signal })
         const json = (await res.json().catch(() => ({}))) as Partial<ItemsResponse>
         if (isStaleItemsRequest(requestId, signal)) return false
         if (!res.ok) {
           const responseMessage = json?.message || json?.error || `HTTP ${res.status}`
-          setItemsError(responseMessage)
+          setError(responseMessage)
           if (json?.code === 'invalid_filter_payload') {
             setFilterErrorMessage(responseMessage)
             setFilterFieldErrors(
@@ -302,7 +231,7 @@ export default function ListDrawer({
         )
         const nextItems = (json?.items ?? []) as ListItemRow[]
 
-        setActiveList((json?.list ?? null) as ListSummary | null)
+        setList((json?.list ?? null) as ListSummary | null)
         setItems(nextItems)
         setDistinctTags(
           Array.isArray(json?.distinct_tags)
@@ -316,6 +245,9 @@ export default function ListDrawer({
             : distinctTagsFromItems(nextItems)
         )
         setDistinctTypes(distinctTypesFromItems(nextItems))
+        if (!hasAnyFilters(canonicalFilters)) {
+          setAllPlaceIds(placeIdsFromItems(nextItems))
+        }
         setFilterFieldErrors(null)
         setFilterErrorMessage(null)
         setTranslateErrorMessage(null)
@@ -336,21 +268,20 @@ export default function ListDrawer({
           return false
         }
         const message = e instanceof Error ? e.message : 'Request failed'
-        setItemsError(message)
+        setError(message)
         return false
       } finally {
         finishItemsRequest(requestId)
       }
     },
-    [beginItemsRequest, finishItemsRequest, isStaleItemsRequest]
+    [beginItemsRequest, finishItemsRequest, isStaleItemsRequest, listId]
   )
 
   const fetchItemsViaQuery = useCallback(
     async (
-      listId: string,
       filters: unknown,
       options: FetchItemsOptions = {}
-    ) => {
+    ): Promise<boolean> => {
       const {
         updateAppliedFilters = true,
         updateDraftFilters = false,
@@ -374,7 +305,7 @@ export default function ListDrawer({
 
         if (!res.ok) {
           const responseMessage = json?.message || json?.error || `HTTP ${res.status}`
-          setItemsError(responseMessage)
+          setError(responseMessage)
           if (json?.code === 'invalid_filter_payload') {
             setFilterErrorMessage(responseMessage)
             setFilterFieldErrors(
@@ -392,7 +323,7 @@ export default function ListDrawer({
         const nextItems = (json?.items ?? []) as ListItemRow[]
         const canonicalFilters = normalizeCanonicalFilters(json?.canonicalFilters ?? {})
         if (Object.prototype.hasOwnProperty.call(json, 'list')) {
-          setActiveList((json?.list ?? null) as ListSummary | null)
+          setList((json?.list ?? null) as ListSummary | null)
         }
         setItems(nextItems)
         setDistinctTags(distinctTagsFromItems(nextItems))
@@ -409,133 +340,112 @@ export default function ListDrawer({
         }
 
         return true
-      } catch (error: unknown) {
+      } catch (e: unknown) {
         if (
-          (error as { name?: string })?.name === 'AbortError' ||
+          (e as { name?: string })?.name === 'AbortError' ||
           isStaleItemsRequest(requestId, signal)
         ) {
           return false
         }
-        const message = error instanceof Error ? error.message : 'Request failed'
-        setItemsError(message)
+        const message = e instanceof Error ? e.message : 'Request failed'
+        setError(message)
         return false
       } finally {
         finishItemsRequest(requestId)
       }
     },
-    [beginItemsRequest, finishItemsRequest, isStaleItemsRequest]
+    [beginItemsRequest, finishItemsRequest, isStaleItemsRequest, listId]
   )
 
   const refreshAppliedItems = useCallback(async () => {
-    if (!activeListId) return
-    const current = appliedFiltersRef.current
-    if (hasServerOnlyFilters(current)) {
-      await fetchItemsViaQuery(activeListId, buildServerFiltersFromDraft(current), {
+    const currentFilters = appliedFiltersRef.current
+    if (hasAnyFilters(currentFilters)) {
+      await fetchItemsViaQuery(buildServerFiltersFromDraft(currentFilters), {
         updateAppliedFilters: true,
         updateDraftFilters: false,
       })
       return
     }
-    await fetchItems(activeListId, current, {
+    await fetchItems(currentFilters, {
       updateAppliedFilters: true,
       updateDraftFilters: false,
     })
-  }, [activeListId, fetchItems, fetchItemsViaQuery])
+  }, [fetchItems, fetchItemsViaQuery])
 
   useEffect(() => {
-    if (!open) return
-    void fetchLists()
-  }, [fetchLists, open])
-
-  useEffect(() => {
-    if (!activeListId) {
-      activeRequestRef.current?.controller.abort()
-      activeRequestRef.current = null
-      setItemsLoading(false)
-      setActiveList(null)
-      setItems([])
-      setDistinctTags([])
-      setDistinctTypes([])
-      setAppliedFilters(emptyCanonicalFilters())
-      setDraftFilters(emptyCanonicalFilters())
-      setUndoFilters(null)
-      setFilterFieldErrors(null)
-      setFilterErrorMessage(null)
-      setFilterIntent('')
-      setTranslateErrorMessage(null)
-      setTranslateHint(null)
-      onPlaceIdsChange([])
-      return
-    }
-
+    activeRequestRef.current?.controller.abort()
+    activeRequestRef.current = null
+    setLoading(false)
     const nextFilters = emptyCanonicalFilters()
+    setList(null)
+    setItems([])
+    setDistinctTags([])
+    setDistinctTypes([])
+    setAllPlaceIds([])
+    setAppliedFilters(nextFilters)
+    setDraftFilters(nextFilters)
+    setUndoFilters(null)
     setFilterFieldErrors(null)
     setFilterErrorMessage(null)
     setFilterIntent('')
     setTranslateErrorMessage(null)
     setTranslateHint(null)
-    setAppliedFilters(nextFilters)
-    setDraftFilters(nextFilters)
-    setUndoFilters(null)
-    void fetchItems(activeListId, nextFilters, {
+    setSearchQuery('')
+    setSearchResults([])
+    setSearchLoading(false)
+    setSearchError(null)
+    setSearchTagInputs({})
+    setAddedResultIds(new Set())
+
+    void fetchItems(nextFilters, {
       updateAppliedFilters: true,
       updateDraftFilters: true,
     })
-  }, [activeListId, fetchItems, onPlaceIdsChange])
+  }, [fetchItems, listId])
 
   useEffect(() => {
-    if (!activeListId) return
-    void refreshAppliedItems()
-  }, [activeListId, itemsRefreshKey, refreshAppliedItems, tagsRefreshKey])
-
-  useEffect(() => {
-    if (!open || !activeListId) return
-    void refreshAppliedItems()
-  }, [activeListId, open, refreshAppliedItems])
-
-  useEffect(() => {
-    onActiveTypeFiltersChange?.(appliedFilters.categories)
-  }, [appliedFilters.categories, onActiveTypeFiltersChange])
-
-  useEffect(() => {
-    if (!items.length) {
-      onPlaceIdsChange([])
+    const trimmed = searchQuery.trim()
+    if (trimmed.length < 2) {
+      setSearchResults([])
+      setSearchError(null)
+      setSearchLoading(false)
       return
     }
-    const placeIds = items
-      .map((item) => item.place?.id)
-      .filter((id): id is string => Boolean(id))
-    onPlaceIdsChange(placeIds)
-  }, [items, onPlaceIdsChange])
 
-  useEffect(() => {
-    if (!activeListId) {
-      onActiveListItemsChange?.([])
-      return
+    const controller = new AbortController()
+    const handle = setTimeout(async () => {
+      setSearchLoading(true)
+      setSearchError(null)
+      try {
+        const res = await fetch(
+          `/api/places/local-search?q=${encodeURIComponent(trimmed)}`,
+          { signal: controller.signal }
+        )
+        const json = (await res.json().catch(() => ({}))) as {
+          results?: SearchResult[]
+          error?: string
+        }
+        if (!res.ok) {
+          setSearchError(json?.error || `HTTP ${res.status}`)
+          setSearchResults([])
+          return
+        }
+        setSearchResults((json?.results ?? []) as SearchResult[])
+      } catch (err: unknown) {
+        if ((err as { name?: string })?.name === 'AbortError') return
+        setSearchError(err instanceof Error ? err.message : 'Request failed')
+      } finally {
+        if (!controller.signal.aborted) {
+          setSearchLoading(false)
+        }
+      }
+    }, 300)
+
+    return () => {
+      controller.abort()
+      clearTimeout(handle)
     }
-    const mapped = items
-      .map((item) => ({
-        id: item.id,
-        list_id: activeListId,
-        place_id: item.place?.id,
-        tags: item.tags ?? [],
-        scheduled_date: item.scheduled_date ?? null,
-        scheduled_start_time: item.scheduled_start_time ?? null,
-        completed_at: item.completed_at ?? null,
-      }))
-      .filter((item): item is {
-        id: string
-        list_id: string
-        place_id: string
-        tags: string[]
-        scheduled_date: string | null
-        scheduled_start_time: string | null
-        completed_at: string | null
-      } =>
-        Boolean(item.place_id)
-      )
-    onActiveListItemsChange?.(mapped)
-  }, [activeListId, items, onActiveListItemsChange])
+  }, [searchQuery])
 
   const availableTags = useMemo(
     () =>
@@ -554,9 +464,12 @@ export default function ListDrawer({
     return sortCategories(merged)
   }, [appliedFilters.categories, distinctTypes, draftFilters.categories])
 
+  const existingPlaceIds = useMemo(() => {
+    return new Set([...allPlaceIds, ...placeIdsFromItems(items)])
+  }, [allPlaceIds, items])
+
   const applyFiltersImmediately = useCallback(
     async (nextFilters: CanonicalListFilters) => {
-      if (!activeListId) return
       const previous = appliedFiltersRef.current
       if (areFiltersEqual(nextFilters, previous)) return
 
@@ -564,21 +477,17 @@ export default function ListDrawer({
       setTranslateHint(null)
       setFilterFieldErrors(null)
       setFilterErrorMessage(null)
-      setItemsError(null)
+      setError(null)
 
-      const ok = await fetchItemsViaQuery(
-        activeListId,
-        buildServerFiltersFromDraft(nextFilters),
-        {
-          updateAppliedFilters: true,
-          updateDraftFilters: true,
-        }
-      )
+      const ok = await fetchItemsViaQuery(buildServerFiltersFromDraft(nextFilters), {
+        updateAppliedFilters: true,
+        updateDraftFilters: true,
+      })
       if (ok) {
         setUndoFilters(previous)
       }
     },
-    [activeListId, fetchItemsViaQuery]
+    [fetchItemsViaQuery]
   )
 
   const handleTagToggle = useCallback(
@@ -680,30 +589,25 @@ export default function ListDrawer({
   }, [applyFiltersImmediately])
 
   const handleResetFilters = useCallback(async () => {
-    if (!activeListId || !undoFilters) return
+    if (!undoFilters) return
     const target = undoFilters
     const current = appliedFiltersRef.current
     setTranslateErrorMessage(null)
     setTranslateHint(null)
     setFilterFieldErrors(null)
     setFilterErrorMessage(null)
-    setItemsError(null)
+    setError(null)
 
-    const ok = await fetchItemsViaQuery(
-      activeListId,
-      buildServerFiltersFromDraft(target),
-      {
-        updateAppliedFilters: true,
-        updateDraftFilters: true,
-      }
-    )
+    const ok = await fetchItemsViaQuery(buildServerFiltersFromDraft(target), {
+      updateAppliedFilters: true,
+      updateDraftFilters: true,
+    })
     if (ok) {
       setUndoFilters(current)
     }
-  }, [activeListId, fetchItemsViaQuery, undoFilters])
+  }, [fetchItemsViaQuery, undoFilters])
 
   const handleTranslateIntent = useCallback(async () => {
-    if (!activeListId) return
     const intent = filterIntent.trim()
     if (!intent) return
 
@@ -718,7 +622,7 @@ export default function ListDrawer({
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
           intent,
-          list_id: activeListId,
+          list_id: listId,
         }),
       })
       const translateJson = (await translateRes
@@ -742,7 +646,6 @@ export default function ListDrawer({
 
       const previous = appliedFiltersRef.current
       const applyOk = await fetchItemsViaQuery(
-        activeListId,
         translateJson?.canonicalFilters ?? {},
         {
           updateAppliedFilters: true,
@@ -764,28 +667,69 @@ export default function ListDrawer({
       } else {
         setTranslateHint('Filters interpreted successfully.')
       }
-    } catch (error: unknown) {
-      setTranslateErrorMessage(
-        error instanceof Error ? error.message : 'Request failed'
-      )
+    } catch (e: unknown) {
+      setTranslateErrorMessage(e instanceof Error ? e.message : 'Request failed')
     } finally {
       setTranslatingFilters(false)
     }
-  }, [activeListId, fetchItemsViaQuery, filterIntent])
+  }, [fetchItemsViaQuery, filterIntent, listId])
+
+  const handleSearchTagChange = useCallback((placeId: string, value: string) => {
+    setSearchTagInputs((prev) => ({ ...prev, [placeId]: value }))
+  }, [])
+
+  const handleAddPlace = useCallback(
+    async (placeId: string) => {
+      if (addingPlaceId) return
+      setAddingPlaceId(placeId)
+      setSearchError(null)
+      try {
+        const tagsInput = searchTagInputs[placeId] ?? ''
+        const payload: { place_id: string; tags?: string } = {
+          place_id: placeId,
+        }
+        if (tagsInput.trim().length) {
+          payload.tags = tagsInput
+        }
+        const listRes = await fetch(`/api/lists/${listId}/items`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(payload),
+        })
+        const listJson = await listRes.json().catch(() => ({}))
+        if (!listRes.ok) {
+          setSearchError(listJson?.error || `HTTP ${listRes.status}`)
+          return
+        }
+        setSearchTagInputs((prev) => ({ ...prev, [placeId]: '' }))
+        setAddedResultIds((prev) => new Set(prev).add(placeId))
+        setAllPlaceIds((prev) =>
+          prev.includes(placeId) ? prev : [...prev, placeId]
+        )
+        await refreshAppliedItems()
+      } catch (err: unknown) {
+        setSearchError(err instanceof Error ? err.message : 'Request failed')
+      } finally {
+        setAddingPlaceId(null)
+      }
+    },
+    [addingPlaceId, listId, refreshAppliedItems, searchTagInputs]
+  )
+
+  const handlePlaceSelect = useCallback(
+    (placeId: string) => {
+      router.push(`/?place=${encodeURIComponent(placeId)}`)
+    },
+    [router]
+  )
 
   const handleTagsUpdate = useCallback(
     async (itemId: string, tags: string[]) => {
-      if (!activeListId) {
-        throw new Error('No active list selected')
-      }
-      const res = await fetch(
-        `/api/lists/${activeListId}/items/${itemId}/tags`,
-        {
-          method: 'PATCH',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ tags }),
-        }
-      )
+      const res = await fetch(`/api/lists/${listId}/items/${itemId}/tags`, {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ tags }),
+      })
       const json = (await res.json().catch(() => ({}))) as {
         item?: { tags?: string[] }
         error?: string
@@ -803,176 +747,148 @@ export default function ListDrawer({
         setDistinctTags(distinctTagsFromItems(next))
         return next
       })
-      onTagsUpdated?.()
       void refreshAppliedItems()
       return updatedTags
     },
-    [activeListId, onTagsUpdated, refreshAppliedItems]
+    [listId, refreshAppliedItems]
   )
 
-  if (!open) return null
-
-  const isEmbedded = variant === 'embedded'
-  const isDark = tone === 'dark'
-  const rootTextClass = isDark ? 'text-slate-100' : 'text-slate-900'
-  const borderClass = isDark ? 'border-white/10' : 'border-slate-300/60'
-  const titleClass = isDark ? 'text-slate-100' : 'text-slate-900'
-  const subtitleClass = isDark ? 'text-slate-300' : 'text-slate-600'
-  const actionClass = isDark
-    ? 'text-slate-300 hover:text-slate-100'
-    : 'text-slate-600 hover:text-slate-900'
-  const helperClass = isDark ? 'text-slate-300' : 'text-slate-600'
-  const errorClass = isDark ? 'text-red-300' : 'text-red-600'
-  const selectedChipClass = isDark
-    ? 'border-slate-100 bg-slate-100 text-slate-900'
-    : 'border-slate-900 bg-slate-900 text-slate-50'
-  const unselectedChipClass = isDark
-    ? 'border-white/10 text-slate-200 hover:border-white/30'
-    : 'border-slate-300 text-slate-700 hover:border-slate-500'
-
   return (
-    <aside
-      className={
-        isEmbedded
-          ? rootTextClass
-          : `glass-panel absolute left-4 top-20 z-20 w-[min(360px,90vw)] max-h-[80vh] overflow-hidden rounded-xl ${rootTextClass}`
-      }
-      data-testid="list-drawer"
-    >
-      <div
-        className={`flex items-center justify-between border-b px-4 py-3 ${borderClass}`}
-      >
+    <div className="space-y-6">
+      <section className="rounded-lg border border-gray-200 bg-white p-4 space-y-3">
         <div>
-          <h2 className={`text-sm font-semibold ${titleClass}`}>Lists</h2>
-          <p className={`text-xs ${subtitleClass}`}>Keep the map in view.</p>
+          <h3 className="text-sm font-semibold text-gray-900">
+            Add places to this list
+          </h3>
+          <p className="text-xs text-gray-500">
+            Search approved places and add tags at the same time.
+          </p>
         </div>
-        <div className="flex items-center gap-2">
-          {isEmbedded ? null : (
-            <>
-              <button
-                type="button"
-                onClick={() => onActiveListChange(null)}
-                className={`text-xs ${actionClass}`}
-              >
-                Clear
-              </button>
-              <button
-                type="button"
-                onClick={onClose}
-                className={`text-xs ${actionClass}`}
-              >
-                Close
-              </button>
-            </>
-          )}
-        </div>
-      </div>
-
-      <div className={`border-b px-4 py-3 space-y-2 ${borderClass}`}>
-        <div className="flex items-center gap-2">
-          <input
-            className="glass-input flex-1 text-xs"
-            placeholder="New list name"
-            value={newListName}
-            onChange={(e) => setNewListName(e.target.value)}
-          />
-          <button
-            type="button"
-            onClick={createList}
-            disabled={creatingList || !newListName.trim()}
-            className="glass-button rounded-md px-2 py-1 text-[11px] disabled:opacity-50"
-          >
-            {creatingList ? 'Creating…' : 'Create'}
-          </button>
-        </div>
-        {listsLoading ? (
-          <p className={`text-xs ${helperClass}`}>Loading lists…</p>
-        ) : null}
-        {listsError ? (
-          <p className={`text-xs ${errorClass}`}>{listsError}</p>
-        ) : null}
-        {!listsLoading && !lists.length ? (
-          <p className={`text-xs ${helperClass}`}>No lists yet.</p>
-        ) : null}
-        <div className="flex flex-wrap gap-2">
-          {lists.map((list) => {
-            const selected = selectedListIds.has(list.id)
-            return (
-              <button
-                key={list.id}
-                type="button"
-                onClick={() =>
-                  onActiveListChange(selected ? null : list.id)
-                }
-                className={`rounded-full border px-3 py-1 text-xs transition ${
-                  selected
-                    ? selectedChipClass
-                    : unselectedChipClass
-                }`}
-              >
-                {list.name}
-              </button>
-            )
-          })}
-        </div>
-      </div>
-
-      <div className="max-h-[50vh] overflow-y-auto px-4 py-3">
-        <ListDetailBody
-          list={activeList}
-          items={items}
-          loading={itemsLoading}
-          error={itemsError}
-          emptyLabel={
-            activeList
-              ? appliedFilters.tags.length ||
-                appliedFilters.categories.length ||
-                appliedFilters.energy.length ||
-                appliedFilters.open_now !== null
-                ? 'No places match these filters.'
-                : 'No places in this list yet.'
-              : 'Select a list to see its places.'
-          }
-          onPlaceSelect={onPlaceSelect}
-          focusedPlaceId={focusedPlaceId}
-          availableTypes={availableTypes}
-          activeTypeFilters={appliedFilters.categories}
-          appliedTypeFilters={appliedFilters.categories}
-          onTypeFilterToggle={handleTypeToggle}
-          onClearTypeFilters={handleClearTypeFilters}
-          availableTags={availableTags}
-          activeTagFilters={appliedFilters.tags}
-          appliedTagFilters={appliedFilters.tags}
-          onTagFilterToggle={handleTagToggle}
-          onClearTagFilters={handleClearTagFilters}
-          onClearAllFilters={handleClearAllFilters}
-          activeEnergyFilters={appliedFilters.energy}
-          openNowFilter={appliedFilters.open_now}
-          onEnergyFilterToggle={handleEnergyToggle}
-          onSetOpenNowFilter={handleOpenNowFilterChange}
-          onResetFilters={handleResetFilters}
-          isFilterDirty={false}
-          isApplyingFilters={itemsLoading || translatingFilters}
-          resetDisabled={!undoFilters || itemsLoading || translatingFilters}
-          filterFieldErrors={filterFieldErrors}
-          filterErrorMessage={filterErrorMessage}
-          filterIntent={filterIntent}
-          onFilterIntentChange={(next) => {
-            setFilterIntent(next)
-            setTranslateErrorMessage(null)
-            setTranslateHint(null)
-          }}
-          onTranslateIntent={handleTranslateIntent}
-          isTranslatingIntent={translatingFilters}
-          translateIntentDisabled={
-            !activeListId || translatingFilters || !filterIntent.trim().length
-          }
-          translateIntentError={translateErrorMessage}
-          translateIntentHint={translateHint}
-          onTagsUpdate={handleTagsUpdate}
-          tone={tone}
+        <input
+          className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm"
+          placeholder="Search approved places"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
         />
-      </div>
-    </aside>
+        {searchLoading ? (
+          <p className="text-xs text-gray-500">Searching...</p>
+        ) : null}
+        {searchError ? (
+          <p className="text-xs text-red-600">{searchError}</p>
+        ) : null}
+        {!searchLoading &&
+        !searchError &&
+        searchQuery.trim().length >= 2 &&
+        !searchResults.length ? (
+          <p className="text-xs text-gray-500">No matches yet.</p>
+        ) : null}
+        {searchResults.length ? (
+          <div className="space-y-2" data-testid="local-search-results">
+            {searchResults.map((result) => {
+              const inList =
+                addedResultIds.has(result.id) ||
+                existingPlaceIds.has(result.id)
+              const tagsInput = searchTagInputs[result.id] ?? ''
+              return (
+                <div
+                  key={result.id}
+                  className="rounded-md border border-gray-100 px-3 py-2 space-y-2"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-gray-900">
+                        {result.name ?? 'Untitled place'}
+                      </p>
+                      {result.display_address ? (
+                        <p className="text-xs text-gray-500">
+                          {result.display_address}
+                        </p>
+                      ) : null}
+                    </div>
+                    <span className="rounded-full border border-gray-200 px-2 py-0.5 text-[10px] text-gray-500">
+                      Approved
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <input
+                      className="flex-1 rounded-md border border-gray-200 px-2 py-1 text-xs"
+                      placeholder="Add tags (optional)"
+                      value={tagsInput}
+                      onChange={(e) =>
+                        handleSearchTagChange(result.id, e.target.value)
+                      }
+                      disabled={inList}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleAddPlace(result.id)}
+                      disabled={inList || addingPlaceId === result.id}
+                      className="rounded-md border border-gray-200 px-2 py-1 text-[11px] text-gray-700 disabled:opacity-50"
+                    >
+                      {inList
+                        ? 'Added'
+                        : addingPlaceId === result.id
+                          ? 'Adding...'
+                          : 'Add'}
+                    </button>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        ) : null}
+      </section>
+
+      <ListDetailBody
+        list={list}
+        items={items}
+        loading={loading}
+        error={error}
+        emptyLabel={
+          appliedFilters.tags.length ||
+          appliedFilters.categories.length ||
+          appliedFilters.energy.length ||
+          appliedFilters.open_now !== null ||
+          appliedFilters.scheduled_date ||
+          appliedFilters.slot
+            ? 'No places match these filters.'
+            : 'No places in this list yet.'
+        }
+        onPlaceSelect={handlePlaceSelect}
+        availableTypes={availableTypes}
+        activeTypeFilters={appliedFilters.categories}
+        appliedTypeFilters={appliedFilters.categories}
+        onTypeFilterToggle={handleTypeToggle}
+        onClearTypeFilters={handleClearTypeFilters}
+        availableTags={availableTags}
+        activeTagFilters={appliedFilters.tags}
+        appliedTagFilters={appliedFilters.tags}
+        onTagFilterToggle={handleTagToggle}
+        onClearTagFilters={handleClearTagFilters}
+        onClearAllFilters={handleClearAllFilters}
+        activeEnergyFilters={appliedFilters.energy}
+        openNowFilter={appliedFilters.open_now}
+        onEnergyFilterToggle={handleEnergyToggle}
+        onSetOpenNowFilter={handleOpenNowFilterChange}
+        onResetFilters={handleResetFilters}
+        isFilterDirty={false}
+        isApplyingFilters={loading || translatingFilters}
+        resetDisabled={!undoFilters || loading || translatingFilters}
+        filterFieldErrors={filterFieldErrors}
+        filterErrorMessage={filterErrorMessage}
+        filterIntent={filterIntent}
+        onFilterIntentChange={(next) => {
+          setFilterIntent(next)
+          setTranslateErrorMessage(null)
+          setTranslateHint(null)
+        }}
+        onTranslateIntent={handleTranslateIntent}
+        isTranslatingIntent={translatingFilters}
+        translateIntentDisabled={translatingFilters || !filterIntent.trim().length}
+        translateIntentError={translateErrorMessage}
+        translateIntentHint={translateHint}
+        onTagsUpdate={handleTagsUpdate}
+      />
+    </div>
   )
 }

@@ -32,7 +32,7 @@ export function buildDiscoverySummary(
   if (input.filters?.category.length) {
     text += ` Categories: ${input.filters.category.join(', ')}.`
   }
-  if (input.filters?.open_now !== null) {
+  if (input.filters != null && input.filters.open_now !== null) {
     text += input.filters.open_now
       ? ' Open-now filter is active.'
       : ' Closed-now filter is active.'

@@ -169,7 +169,7 @@ async function fetchRowsWithFallback(
     .eq('scheduled_date', date)
     .is('completed_at', null)
 
-  const joinedData = (joinedResult.data ?? []) as JoinedItemRow[]
+  const joinedData = (joinedResult.data ?? []) as unknown as JoinedItemRow[]
   const joinedError = joinedResult.error
 
   if (!joinedError) {
