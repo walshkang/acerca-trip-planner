@@ -116,7 +116,7 @@ export type MapShellProps = {
   focusedListPlaceId: string | null
   setFocusedListPlaceId: (id: string | null) => void
   setDrawerOpen: (open: boolean) => void
-  setPanelMode: (mode: 'lists' | 'plan' | 'details') => void
+  setPanelMode: (mode: 'lists' | 'details') => void
   pendingFocusPlaceId: string | null
   setPendingFocusPlaceId: (id: string | null) => void
   previewSelectedResultId: string | null

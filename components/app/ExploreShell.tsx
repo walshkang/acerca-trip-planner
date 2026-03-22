@@ -10,7 +10,6 @@ import MapShell, {
 import Omnibox from '@/components/stitch/Omnibox'
 import InspectorCard from '@/components/stitch/InspectorCard'
 import ListDrawer from '@/components/stitch/ListDrawer'
-import ListPlanner from '@/components/stitch/ListPlanner'
 import PlaceDrawer from '@/components/stitch/PlaceDrawer'
 import ContextPanel from '@/components/ui/ContextPanel'
 import ToolsSheet from '@/components/ui/ToolsSheet'
@@ -39,9 +38,7 @@ export default function ExploreShell() {
   const [mobileSheetSnap, setMobileSheetSnap] = useState<
     'peek' | 'half' | 'expanded'
   >('half')
-  const [panelMode, setPanelMode] = useState<'lists' | 'plan' | 'details'>(
-    'lists'
-  )
+  const [panelMode, setPanelMode] = useState<'lists' | 'details'>('lists')
   const [toolsOpen, setToolsOpen] = useState(false)
   const activeListId = useTripStore((s) => s.activeListId)
   const activeListPlaceIds = useTripStore((s) => s.activeListPlaceIds)
@@ -82,10 +79,10 @@ export default function ExploreShell() {
   const setSearchBias = useDiscoveryStore((s) => s.setSearchBias)
   const setListScopeId = useDiscoveryStore((s) => s.setListScopeId)
   const didInitActiveList = useRef(false)
-  const panelModeBeforeDetailsRef = useRef<'lists' | 'plan'>('lists')
+  const panelModeBeforeDetailsRef = useRef<'lists'>('lists')
   const prePreviewStateRef = useRef<{
     drawerOpen: boolean
-    panelMode: 'lists' | 'plan' | 'details'
+    panelMode: 'lists' | 'details'
     focusedListPlaceId: string | null
     selectedPlaceId: string | null
   } | null>(null)
@@ -236,7 +233,7 @@ export default function ExploreShell() {
   }, [selectedListParam])
 
   useEffect(() => {
-    if (panelMode === 'lists' || panelMode === 'plan') {
+    if (panelMode === 'lists') {
       panelModeBeforeDetailsRef.current = panelMode
     }
   }, [panelMode])
@@ -407,9 +404,7 @@ export default function ExploreShell() {
     ? 'Preview'
     : panelMode === 'details'
       ? 'Details'
-      : panelMode === 'plan'
-        ? 'Plan'
-        : 'Lists'
+      : 'Lists'
   const panelHeadingClass = isDarkTone ? 'text-slate-100' : 'text-slate-900'
   const panelMutedClass = isDarkTone ? 'text-slate-400' : 'text-slate-600'
   const stickyHeaderClass = isDarkTone
@@ -554,21 +549,7 @@ export default function ExploreShell() {
           />
         )
 
-        const planPane = (
-          <ListPlanner
-            listId={activeListId}
-            tone={uiTone}
-            onPlanMutated={bumpListItemsRefresh}
-            onPlaceSelect={(placeId) => {
-              setPendingFocusPlaceId(placeId)
-              setPlaceParam(placeId)
-              setFocusedListPlaceId(placeId)
-              setPanelMode('details')
-            }}
-          />
-        )
-
-        const placePane = isPreviewLoading ? (
+        const placePane =isPreviewLoading ? (
           <div className="p-4">
             <p className={`text-sm font-medium ${panelHeadingClass}`}>Loading preview…</p>
             <p className={`mt-1 text-xs ${panelMutedClass}`}>
@@ -668,21 +649,9 @@ export default function ExploreShell() {
                 >
                   Details
                 </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setDrawerOpen(true)
-                    setPanelMode('plan')
-                  }}
-                  className={`glass-tab ${
-                    panelMode === 'plan' ? 'glass-tab-active' : 'glass-tab-inactive'
-                  }`}
-                >
-                  Plan
-                </button>
               </div>
             </div>
-            {panelMode === 'plan' ? planPane : placePane}
+            {placePane}
           </div>
         )
 
@@ -732,8 +701,6 @@ export default function ExploreShell() {
                       itemsRefreshKey={listItemsRefreshKey}
                       onTagsUpdated={bumpPlaceTagRefresh}
                     />
-                  ) : panelMode === 'plan' ? (
-                    planPane
                   ) : isPreviewLoading ? (
                     <div className="p-4">
                       <p className={`text-sm font-medium ${panelHeadingClass}`}>
@@ -825,18 +792,6 @@ export default function ExploreShell() {
                       }`}
                     >
                       Lists
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setDrawerOpen(true)
-                        setPanelMode('plan')
-                      }}
-                      className={`glass-tab ${
-                        panelMode === 'plan' ? 'glass-tab-active' : 'glass-tab-inactive'
-                      }`}
-                    >
-                      Plan
                     </button>
                     <button
                       type="button"
