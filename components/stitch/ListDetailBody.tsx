@@ -43,6 +43,7 @@ export type ListItemRow = {
   completed_at: string | null
   tags: string[] | null
   place: PlaceSummary | null
+  day_index?: number | null
 }
 
 type Props = {

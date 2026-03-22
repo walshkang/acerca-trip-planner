@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-import type { CategoryEnum } from '@/lib/types/enums'
 import type { MapPlace } from '@/components/map/MapView.types'
 import MapShell, {
   type ActiveListItemState,
@@ -17,6 +16,7 @@ import ContextPanel from '@/components/ui/ContextPanel'
 import ToolsSheet from '@/components/ui/ToolsSheet'
 import { useMediaQuery } from '@/components/ui/useMediaQuery'
 import { useDiscoveryStore } from '@/lib/state/useDiscoveryStore'
+import { useTripStore } from '@/lib/state/useTripStore'
 import { derivePreviewMode } from '@/lib/ui/previewMode'
 
 const PANEL_STORAGE_KEY = 'acerca:panelWidth'
@@ -43,14 +43,15 @@ export default function WorkspaceContainer() {
     'lists'
   )
   const [toolsOpen, setToolsOpen] = useState(false)
-  const [activeListId, setActiveListId] = useState<string | null>(null)
-  const [activeListPlaceIds, setActiveListPlaceIds] = useState<string[]>([])
-  const [activeListItems, setActiveListItems] = useState<ActiveListItemState[]>(
-    []
+  const activeListId = useTripStore((s) => s.activeListId)
+  const activeListPlaceIds = useTripStore((s) => s.activeListPlaceIds)
+  const activeListItems = useTripStore((s) => s.activeListItems)
+  const activeListTypeFilters = useTripStore((s) => s.activeListTypeFilters)
+  const setActiveListId = useTripStore((s) => s.setActiveListId)
+  const setActiveListPlaceIds = useTripStore((s) => s.setActiveListPlaceIds)
+  const setActiveListTypeFilters = useTripStore(
+    (s) => s.setActiveListTypeFilters
   )
-  const [activeListTypeFilters, setActiveListTypeFilters] = useState<
-    CategoryEnum[]
-  >([])
   const [focusedListPlaceId, setFocusedListPlaceId] = useState<string | null>(
     null
   )
@@ -66,7 +67,7 @@ export default function WorkspaceContainer() {
   const isDarkTone = uiTone === 'dark'
   const [listTagRefreshKey, setListTagRefreshKey] = useState(0)
   const [placeTagRefreshKey, setPlaceTagRefreshKey] = useState(0)
-  const [listItemsRefreshKey, setListItemsRefreshKey] = useState(0)
+  const listItemsRefreshKey = useTripStore((s) => s.listItemsRefreshKey)
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -95,24 +96,8 @@ export default function WorkspaceContainer() {
   const bumpPlaceTagRefresh = useCallback(() => {
     setPlaceTagRefreshKey((prev) => prev + 1)
   }, [])
-  const bumpListItemsRefresh = useCallback(() => {
-    setListItemsRefreshKey((prev) => prev + 1)
-  }, [])
-  const handleActiveListPlaceIdsChange = useCallback((nextIds: string[]) => {
-    setActiveListPlaceIds((prev) => {
-      if (prev.length !== nextIds.length) return nextIds
-      for (let i = 0; i < prev.length; i += 1) {
-        if (prev[i] !== nextIds[i]) return nextIds
-      }
-      return prev
-    })
-  }, [])
-  const handleActiveListItemsChange = useCallback(
-    (items: ActiveListItemState[]) => {
-      setActiveListItems(items)
-    },
-    []
-  )
+  const bumpListItemsRefresh = useTripStore((s) => s.bumpListItemsRefresh)
+  const setActiveListItems = useTripStore((s) => s.setActiveListItems)
   const lastActiveListKey = 'acerca:lastActiveListId'
   const lastAddedPlaceKey = 'acerca:lastAddedPlaceId'
 
@@ -550,14 +535,12 @@ export default function WorkspaceContainer() {
             activeListId={activeListId}
             onActiveListChange={(id) => {
               setActiveListId(id)
-              setActiveListPlaceIds([])
-              setActiveListItems([])
               setListParam(id)
               if (id) setDrawerOpen(true)
             }}
-            onPlaceIdsChange={handleActiveListPlaceIdsChange}
+            onPlaceIdsChange={setActiveListPlaceIds}
             onActiveTypeFiltersChange={setActiveListTypeFilters}
-            onActiveListItemsChange={handleActiveListItemsChange}
+            onActiveListItemsChange={setActiveListItems}
             focusedPlaceId={focusedListPlaceId}
             onPlaceSelect={(placeId) => {
               setPendingFocusPlaceId(placeId)
@@ -735,9 +718,9 @@ export default function WorkspaceContainer() {
                         setListParam(id)
                         if (id) setDrawerOpen(true)
                       }}
-                      onPlaceIdsChange={handleActiveListPlaceIdsChange}
+                      onPlaceIdsChange={setActiveListPlaceIds}
                       onActiveTypeFiltersChange={setActiveListTypeFilters}
-                      onActiveListItemsChange={handleActiveListItemsChange}
+                      onActiveListItemsChange={setActiveListItems}
                       focusedPlaceId={focusedListPlaceId}
                       onPlaceSelect={(placeId) => {
                         setPendingFocusPlaceId(placeId)

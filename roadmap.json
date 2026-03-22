@@ -677,19 +677,19 @@
         },
         {
           "id": "P3-E3",
-          "title": "UI/UX Revamp (Day Grid Planner + Design System)",
-          "description": "Comprehensive UI/UX redesign: replace column-based kanban with compact day grid planner, establish a design system in DESIGN.md, migrate components to stitch/ namespace, and refactor the app shell into MapShell + WorkspaceContainer.",
+          "title": "UX Pivot — Two-Journey Architecture (Explore / Plan)",
+          "description": "Replace single WorkspaceContainer shell with Explore/Plan dual-journey architecture. ExploreShell wraps existing map+discovery flow. PlannerShell gets its own day grid, map inset, and toolbar. See docs/UX_PIVOT_PLAN.md for full spec.",
           "features": [
-            "Compact day grid planner replaces column-based kanban (see DESIGN.md Section C).",
-            "Day cells in a calendar-like grid (7 per row); backlog pinned above/beside.",
-            "Color-coded time-of-day dots (warm=morning, neutral=afternoon, cool=evening) replace slot sub-sections.",
-            "Desktop: grid on left + selected day detail on right; planner can expand beyond standard panel width.",
-            "Mobile: compact grid fits in bottom sheet; short drag distances for quick rescheduling.",
-            "Trip date changes: adding days adds blank cells; reducing days warns and returns displaced places to backlog.",
+            "Two-journey architecture: Explore (map + discovery) and Plan (day grid + map inset) as separate shells.",
+            "AppShell with NavRail (desktop) / NavFooter (mobile) for mode switching.",
+            "PlannerGrid: calendar-like day grid (7/row dated, horizontal dateless) with drag-and-drop.",
+            "MapInset: real Mapbox minimap in PlannerShell with clickable pins that scroll to planner items.",
+            "day_index column on list_items for dateless trip support.",
+            "Shared state layer: useTripStore (shared), useDiscoveryStore (Explore), usePlannerStore (Plan), useNavStore (nav).",
+            "Color-coded time-of-day dots (warm=morning, neutral=afternoon, cool=evening).",
             "Soft capacity warning when a day exceeds ~5 items.",
             "Backlog is filterable and shows both unassigned and assigned items.",
-            "Visual system open for revision (glass/frosted may change; DESIGN.md Section D).",
-            "Component architecture: MapShell (pure map) + WorkspaceContainer (orchestrator) + ContextPanel/ToolsSheet (UI shells) + stitch/ components (presentation)."
+            "Explicit mode switch with URL state (?mode=explore|plan)."
           ],
           "tasks": [
             {
@@ -706,21 +706,38 @@
             },
             {
               "id": "3.3",
-              "task": "Redesign ListPlanner as day grid.",
-              "details": "Replace column-based kanban in components/stitch/ListPlanner.tsx with the compact day grid described in DESIGN.md Section C. Preserve backend data model.",
-              "status": "not_started"
+              "task": "Phase 0 — Foundation (schema + state extraction + API updates).",
+              "details": "Add day_index column to list_items (nullable integer, backfill, CHECK constraint). Extract useTripStore from WorkspaceContainer. Create useNavStore. Update PATCH /api/lists/[id]/items/[itemId] to accept day_index. Update PATCH /api/lists/[id] to backfill day_index ↔ scheduled_date on date add/remove. See docs/UX_PIVOT_PLAN.md Phase 0.",
+              "status": "not_started",
+              "tier": "deep"
             },
             {
               "id": "3.4",
-              "task": "Update stitch components for design system consistency.",
-              "details": "Apply DESIGN.md visual and interaction patterns across all stitch/ components. Includes mobile optimization.",
-              "status": "not_started"
+              "task": "Phase 1 — Shell Split (AppShell + ExploreShell + PlannerShell + navigation).",
+              "details": "Create AppShell routing between ExploreShell (renamed WorkspaceContainer) and PlannerShell (skeleton). Add NavRail (desktop) and NavFooter (mobile). Wire URL state (?mode=explore|plan). See docs/UX_PIVOT_PLAN.md Phase 1.",
+              "status": "not_started",
+              "tier": "deep+bounded"
             },
             {
               "id": "3.5",
-              "task": "Update Playwright E2E tests for day grid planner.",
-              "details": "Add coverage for day grid interactions, backlog filtering, trip date changes, and mobile planner.",
-              "status": "not_started"
+              "task": "Phase 2 — Planner Core (PlannerGrid + DnD + scheduling).",
+              "details": "Create usePlannerStore. Build PlannerGrid, DayCell, DayDetail, Backlog in components/planner/. Wire @dnd-kit drag-and-drop between cells and backlog. Mobile tap-to-move fallback. See docs/UX_PIVOT_PLAN.md Phase 2.",
+              "status": "not_started",
+              "tier": "deep+bounded"
+            },
+            {
+              "id": "3.6",
+              "task": "Phase 3 — Map Inset (Mapbox minimap in PlannerShell).",
+              "details": "Create MapInset component with real Mapbox GL instance. Pins colored by day, selected day fitBounds, pin click scrolls to item in planner. Lazy mount/destroy on mode switch. See docs/UX_PIVOT_PLAN.md Phase 3.",
+              "status": "not_started",
+              "tier": "deep+bounded"
+            },
+            {
+              "id": "3.7",
+              "task": "Phase 4 — Polish + Cleanup (deprecate old components, E2E, doc updates).",
+              "details": "Deprecate ListPlanner and WorkspaceContainer. Visual polish pass. Playwright E2E tests for two-journey architecture. Update DESIGN.md, CONTEXT.md, roadmap.json. See docs/UX_PIVOT_PLAN.md Phase 4.",
+              "status": "not_started",
+              "tier": "deep+bounded"
             }
           ]
         }

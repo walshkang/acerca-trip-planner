@@ -43,6 +43,7 @@ type Props = {
       scheduled_date: string | null
       scheduled_start_time: string | null
       completed_at: string | null
+      day_index: number | null
     }>
   ) => void
   focusedPlaceId?: string | null
@@ -522,6 +523,7 @@ export default function ListDrawer({
         scheduled_date: item.scheduled_date ?? null,
         scheduled_start_time: item.scheduled_start_time ?? null,
         completed_at: item.completed_at ?? null,
+        day_index: item.day_index ?? null,
       }))
       .filter((item): item is {
         id: string
@@ -531,6 +533,7 @@ export default function ListDrawer({
         scheduled_date: string | null
         scheduled_start_time: string | null
         completed_at: string | null
+        day_index: number | null
       } =>
         Boolean(item.place_id)
       )

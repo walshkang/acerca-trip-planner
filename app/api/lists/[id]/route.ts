@@ -170,6 +170,59 @@ async function fallbackPatchListTripDates(args: {
 
   const nextList = updatedList as ListTripRow
 
+  // Backfill day_index ↔ scheduled_date when start_date transitions
+  if (hasStart) {
+    const oldStartDate = current.start_date
+    const newStartDate = nextList.start_date
+
+    if (!oldStartDate && newStartDate) {
+      // Dates added to a dateless trip: backfill scheduled_date from day_index
+      const { data: dayIndexItems } = await supabase
+        .from('list_items')
+        .select('id, day_index')
+        .eq('list_id', listId)
+        .not('day_index', 'is', null)
+
+      if (dayIndexItems?.length) {
+        for (const row of dayIndexItems) {
+          if (row.day_index == null) continue
+          const d = new Date(`${newStartDate}T00:00:00Z`)
+          d.setUTCDate(d.getUTCDate() + row.day_index)
+          const derivedDate = d.toISOString().slice(0, 10)
+          await supabase
+            .from('list_items')
+            .update({ scheduled_date: derivedDate })
+            .eq('id', row.id)
+        }
+      }
+    } else if (oldStartDate && !newStartDate) {
+      // Dates removed from a dated trip: backfill day_index from scheduled_date, then null out scheduled_date
+      const { data: scheduledItems } = await supabase
+        .from('list_items')
+        .select('id, scheduled_date')
+        .eq('list_id', listId)
+        .not('scheduled_date', 'is', null)
+
+      if (scheduledItems?.length) {
+        const startMs = Date.parse(`${oldStartDate}T00:00:00Z`)
+        for (const row of scheduledItems) {
+          if (!row.scheduled_date) continue
+          const schedMs = Date.parse(`${row.scheduled_date}T00:00:00Z`)
+          const derivedDayIndex = Math.round((schedMs - startMs) / 86_400_000)
+          await supabase
+            .from('list_items')
+            .update({
+              day_index: derivedDayIndex >= 0 ? derivedDayIndex : null,
+              scheduled_date: null,
+              scheduled_start_time: null,
+              scheduled_order: 0,
+            })
+            .eq('id', row.id)
+        }
+      }
+    }
+  }
+
   if (hasStart || hasEnd) {
     const { data: scheduledItems, error: scheduledItemsError } = await supabase
       .from('list_items')

@@ -126,24 +126,33 @@ A visual, structured database of saved places.
 
 ### Phase 2: The Interactive Planner 🎂
 
-Turn saved places into an actual plan.
+Turn saved places into an actual plan via a **two-journey architecture**: Explore (map + discovery) and Plan (day grid + map inset).
 
 **Features**
 
-* **Day Grid Planner**
+* **Two-Journey Architecture**
+  * Explicit Explore / Plan mode switch via NavRail (desktop) or NavFooter (mobile)
+  * ExploreShell: full map with Omnibox, discovery, and place inspection
+  * PlannerShell: dedicated day grid planner with its own Mapbox minimap inset
+  * Shared state layer (`useTripStore`) keeps both journeys in sync
 
+* **Day Grid Planner** (in PlannerShell)
   * Compact calendar-like grid: each trip day is a cell, rows of up to 7 days
+  * Dateless trips supported via `day_index` (Day 1, Day 2, etc.)
   * Drag places between day cells or to/from a filterable backlog
-  * Color-coded time-of-day hints (warm=morning, neutral=afternoon, cool=evening) instead of slot sub-sections
+  * Color-coded time-of-day hints (warm=morning, neutral=afternoon, cool=evening)
   * Desktop: grid overview on left + selected day detail on right
-  * Mobile: compact grid in bottom sheet — short drag distances for quick rescheduling on the go
-  * Trip date changes handled gracefully: adding days adds blank cells; reducing days warns and returns displaced places to backlog
-  * Backlog vs Scheduled is derived from `scheduled_date` (NULL = Backlog) and shared across Map + Planner
-  * Optimistic updates reconcile with server truth; lightweight scheduling audit timestamps
-* **Deterministic Filtering**
+  * Mobile: compact grid with tap-to-move fallback
 
+* **Map Inset** (in PlannerShell)
+  * Real Mapbox minimap with clickable pins colored by day assignment
+  * Pin click scrolls to item in planner; day selection updates map bounds
+  * Lightweight: no Omnibox, no discovery chrome
+
+* **Deterministic Filtering**
   * Filter by category, vibe, or energy level
   * Compound AND/OR filters via filter JSON (no SQL from AI)
+
 * **Cheap, Deterministic Time Handling**
   * “Open now” uses server time converted to place timezone
   * Timezone derived offline from lat/lng at ingestion; fallback to trip timezone
@@ -157,14 +166,11 @@ Make plans efficient and exportable.
 **Features**
 
 * **Route Optimization**
-
   * Deterministic ordering of a day’s activities (TSP-style optimization)
 * **Live Context Awareness**
-
   * Weather alerts for outdoor plans
   * Travel-time badges between scheduled items
 * **Export**
-
   * Google Maps
   * PDF / external tools (e.g., Notion)
 

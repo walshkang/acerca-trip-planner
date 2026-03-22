@@ -7,16 +7,16 @@
 - Starting a new task/chat? Use `prompts/agent_task.md`.
 
 ## 🧠 Active Context
-- Current Phase: UI/UX Revamp (cross-cutting) + The Intelligent Concierge (Wedding Cake)
-- Active Epic: UI/UX Redesign (P3-E3) — design system + day grid planner + component migration
-- Active Epic: AI Discovery (Suggestion Layer) + Deterministic Routing (P3-E1, P3-E2 in The Intelligent Concierge)
-- P3-E1 implementation complete: OSRM adapter, provider wiring, useRoutingPreview hook, and travel-time badges in ListPlanner.
-- P3-E2 tasks 2.6 and 2.7 completed: reject/discard path and verification gate in place.
-- UI/UX Revamp active work: Comprehensive UI/UX redesign coordinated via `DESIGN.md`
-  - Planner redesign: column-based kanban → compact day grid (see DESIGN.md Section C)
-  - Component migration: presentation components moved to `components/stitch/`, wired by `components/workspace/WorkspaceContainer.tsx`
-  - New architecture: `MapShell` (pure map) + `WorkspaceContainer` (orchestrator) + `ContextPanel`/`ToolsSheet` (UI shells)
-  - Visual system: open for revision (glass/frosted may change — see DESIGN.md Section D)
+- Current Phase: **UX Pivot — Two-Journey Architecture** (P3-E3) + The Intelligent Concierge (Wedding Cake)
+- **Active work: UX Pivot** — replacing single WorkspaceContainer shell with Explore/Plan dual-journey architecture. Full spec: `docs/UX_PIVOT_PLAN.md`. Operationalization plan: `.claude/plans/logical-soaring-engelbart.md`.
+  - Phase 0: Foundation (schema `day_index`, extract `useTripStore`, create `useNavStore`, API updates) — not started
+  - Phase 1: Shell Split (AppShell, ExploreShell, PlannerShell, NavRail, NavFooter) — not started
+  - Phase 2: Planner Core (PlannerGrid, DayCell, DayDetail, Backlog, `usePlannerStore`, DnD) — not started
+  - Phase 3: Map Inset (real Mapbox minimap in PlannerShell) — not started
+  - Phase 4: Polish + Cleanup (deprecate ListPlanner/WorkspaceContainer, E2E, docs) — not started
+- P3-E1 complete: OSRM adapter, provider wiring, useRoutingPreview hook, travel-time badges.
+- P3-E2 complete: reject/discard path and verification gate.
+- Target architecture: `AppShell` → `ExploreShell` (map+discovery) | `PlannerShell` (day grid + map inset). Shared state: `useTripStore`, `useNavStore`. Shell-specific: `useDiscoveryStore` (Explore), `usePlannerStore` (Plan).
 
 ## ✅ P2-E1 Remaining Plan (Tracking)
 - Spec: `docs/PHASE_2_KANBAN_SPEC.md`.

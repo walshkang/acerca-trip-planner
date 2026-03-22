@@ -38,6 +38,7 @@ export type ActiveListItemState = {
   scheduled_date: string | null
   scheduled_start_time: string | null
   completed_at: string | null
+  day_index: number | null
 }
 
 type Bounds = { sw: LatLng; ne: LatLng }
