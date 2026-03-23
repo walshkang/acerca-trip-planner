@@ -12,6 +12,28 @@ export type TripListItem = {
   day_index: number | null
 }
 
+function tripListItemsShallowEqual(a: TripListItem[], b: TripListItem[]): boolean {
+  if (a.length !== b.length) return false
+  for (let i = 0; i < a.length; i++) {
+    const x = a[i]!
+    const y = b[i]!
+    if (
+      x.id !== y.id ||
+      x.list_id !== y.list_id ||
+      x.place_id !== y.place_id ||
+      x.scheduled_date !== y.scheduled_date ||
+      x.scheduled_start_time !== y.scheduled_start_time ||
+      x.completed_at !== y.completed_at ||
+      x.day_index !== y.day_index ||
+      x.tags.length !== y.tags.length ||
+      !x.tags.every((t, j) => t === y.tags[j])
+    ) {
+      return false
+    }
+  }
+  return true
+}
+
 type TripState = {
   /** Currently selected list UUID, or null */
   activeListId: string | null
@@ -23,12 +45,18 @@ type TripState = {
   activeListTypeFilters: CategoryEnum[]
   /** Refresh key for list items — bump to trigger refetch in consumers */
   listItemsRefreshKey: number
+  /** Day selected in ListPlanner day grid (ISO date), for MapInset sync */
+  plannerSelectedDay: string | null
+  /** MapInset pin click → scroll highlight target in day detail (place id) */
+  focusedPlannerPlaceId: string | null
 
   setActiveListId: (id: string | null) => void
   setActiveListPlaceIds: (ids: string[]) => void
   setActiveListItems: (items: TripListItem[]) => void
   setActiveListTypeFilters: (filters: CategoryEnum[]) => void
   bumpListItemsRefresh: () => void
+  setPlannerSelectedDay: (day: string | null) => void
+  setFocusedPlannerPlaceId: (id: string | null) => void
   /** Clear list-scoped state (place IDs, items, filters) */
   clearListState: () => void
 }
@@ -39,6 +67,8 @@ export const useTripStore = create<TripState>((set) => ({
   activeListItems: [],
   activeListTypeFilters: [],
   listItemsRefreshKey: 0,
+  plannerSelectedDay: null,
+  focusedPlannerPlaceId: null,
 
   setActiveListId: (id) => {
     set({
@@ -46,6 +76,8 @@ export const useTripStore = create<TripState>((set) => ({
       activeListPlaceIds: [],
       activeListItems: [],
       activeListTypeFilters: [],
+      plannerSelectedDay: null,
+      focusedPlannerPlaceId: null,
     })
   },
 
@@ -59,15 +91,26 @@ export const useTripStore = create<TripState>((set) => ({
       return { activeListPlaceIds: ids }
     }),
 
-  setActiveListItems: (items) => set({ activeListItems: items }),
+  setActiveListItems: (items) =>
+    set((state) => {
+      if (tripListItemsShallowEqual(state.activeListItems, items)) return state
+      return { activeListItems: items }
+    }),
   setActiveListTypeFilters: (filters) =>
     set({ activeListTypeFilters: filters }),
   bumpListItemsRefresh: () =>
     set((state) => ({ listItemsRefreshKey: state.listItemsRefreshKey + 1 })),
+  setPlannerSelectedDay: (day) =>
+    set((state) => {
+      if (state.plannerSelectedDay === day) return state
+      return { plannerSelectedDay: day }
+    }),
+  setFocusedPlannerPlaceId: (id) => set({ focusedPlannerPlaceId: id }),
   clearListState: () =>
     set({
       activeListPlaceIds: [],
       activeListItems: [],
       activeListTypeFilters: [],
+      focusedPlannerPlaceId: null,
     }),
 }))

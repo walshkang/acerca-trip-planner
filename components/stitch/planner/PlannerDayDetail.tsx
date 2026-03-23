@@ -123,6 +123,7 @@ export default function PlannerDayDetail({
                 </div>
               ) : null}
               <div
+                data-place-id={place.id}
                 draggable={canDrag}
                 onDragStart={() => onDragStartItem(item.id)}
                 onDragEnd={onDragEndItem}

@@ -5,6 +5,7 @@
 - DoD: tests updated/added; verification steps; migrations + `npm run db:types` if schema changed; no TODO placeholders in Decisions / Rationale or Next Steps.
 - Pointers: `roadmap.json` for phases, `supabase/migrations` for schema, `docs/reports` for learning reports.
 - Starting a new task/chat? Use `prompts/agent_task.md`.
+- Routing preview (Plan mode): set `ROUTING_PROVIDER` and `OSRM_BASE_URL` per [`.env.example`](.env.example); otherwise the API returns `501` / `provider_unavailable` by design.
 
 ## Active Context
 

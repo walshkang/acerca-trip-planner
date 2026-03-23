@@ -1,6 +1,13 @@
 'use client'
 
-import { type DragEvent, useCallback, useEffect, useMemo, useState } from 'react'
+import {
+  type DragEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import { useCategoryIconOverrides } from '@/lib/icons/useCategoryIconOverrides'
 import type { CategoryEnum } from '@/lib/types/enums'
 import type { ListItemRow, ListSummary } from '@/components/stitch/ListDetailBody'
@@ -19,6 +26,7 @@ import PlannerDayDetail from './planner/PlannerDayDetail'
 import PlannerBacklog from './planner/PlannerBacklog'
 import PlannerMovePicker from './planner/PlannerMovePicker'
 import { formatDayLabelFull } from './planner/planner-utils'
+import { useTripStore } from '@/lib/state/useTripStore'
 
 type Props = {
   listId: string | null
@@ -42,6 +50,8 @@ type MoveDestination =
 type ScheduleSource = 'tap_move' | 'drag'
 
 const MAX_TRIP_DAYS_RENDER = 21
+
+const EMPTY_SCHEDULED_DAY_ITEMS: ListItemRow[] = []
 
 function sortByCreatedAtAsc(a: { created_at: string }, b: { created_at: string }) {
   return a.created_at.localeCompare(b.created_at)
@@ -96,6 +106,13 @@ export default function ListPlanner({
 
   // ── Day grid state ──
   const [selectedDay, setSelectedDay] = useState<string | null>(null)
+  /** Keep Zustand in sync without a useEffect (effect + subscriber caused max update depth). */
+  const setSelectedDayAndStore = useCallback((day: string | null) => {
+    setSelectedDay(day)
+    useTripStore.getState().setPlannerSelectedDay(day)
+  }, [])
+  const plannerSelectedDayFromStore = useTripStore((s) => s.plannerSelectedDay)
+  const focusedPlannerPlaceId = useTripStore((s) => s.focusedPlannerPlaceId)
   const [doneCollapsed, setDoneCollapsed] = useState(true)
 
   // ── Derived data ──
@@ -115,6 +132,14 @@ export default function ListPlanner({
     if (tripDaysCount > MAX_TRIP_DAYS_RENDER) return null
     return enumerateIsoDatesInclusive(tripRange.start, tripRange.end)
   }, [tripDaysCount, tripRange])
+
+  /** Stable key so store-sync effect does not re-run on a new tripDates array with the same dates. */
+  const tripDatesKey = useMemo(
+    () => (tripDates?.join('\0') ?? ''),
+    [tripDates]
+  )
+  const tripDatesRef = useRef(tripDates)
+  tripDatesRef.current = tripDates
 
   const todayIso = useMemo(
     () => isoDateInTimezone(list?.timezone ?? null),
@@ -176,6 +201,17 @@ export default function ListPlanner({
     return map
   }, [items, tripRange])
 
+  const selectedDayItems = useMemo(() => {
+    if (!selectedDay) return EMPTY_SCHEDULED_DAY_ITEMS
+    return scheduledItemsByDate.get(selectedDay) ?? EMPTY_SCHEDULED_DAY_ITEMS
+  }, [scheduledItemsByDate, selectedDay])
+
+  /** Remount day detail when list/day or routing eligibility changes — resets preview hook and breaks stuck loops. */
+  const plannerDayDetailKey = useMemo(() => {
+    if (!listId || !selectedDay) return 'none'
+    return `${listId}:${selectedDay}:${selectedDayItems.length >= 2 ? '1' : '0'}`
+  }, [listId, selectedDay, selectedDayItems.length])
+
   // ── Data fetching ──
   const fetchPlan = useCallback(async () => {
     if (!listId) {
@@ -213,12 +249,12 @@ export default function ListPlanner({
       setTripTimezone('')
       setMoveItemId(null)
       setSavingItemId(null)
-      setSelectedDay(null)
+      setSelectedDayAndStore(null)
       return
     }
     setMoveItemId(null)
     setSavingItemId(null)
-  }, [listId])
+  }, [listId, setSelectedDayAndStore])
 
   useEffect(() => {
     if (!list) return
@@ -235,9 +271,95 @@ export default function ListPlanner({
   // Auto-select first trip day when trip dates load
   useEffect(() => {
     if (tripDates && tripDates.length > 0 && !selectedDay) {
-      setSelectedDay(tripDates[0])
+      setSelectedDayAndStore(tripDates[0])
     }
-  }, [tripDates, selectedDay])
+  }, [tripDates, selectedDay, setSelectedDayAndStore])
+
+  useEffect(() => {
+    return () => {
+      useTripStore.getState().setPlannerSelectedDay(null)
+    }
+  }, [])
+
+  // Shell / MapInset: when planner day is set externally, align local grid selection
+  useEffect(() => {
+    if (!plannerSelectedDayFromStore) return
+    if (plannerSelectedDayFromStore === selectedDay) return
+    const td = tripDatesRef.current
+    // Without a trip date list we cannot validate the store day — avoid setState ping-pong.
+    if (!td?.length || !td.includes(plannerSelectedDayFromStore)) return
+    setSelectedDay(plannerSelectedDayFromStore)
+  }, [plannerSelectedDayFromStore, selectedDay, tripDatesKey])
+
+  // MapInset pin → scroll to card in day detail (wait until selected day matches item)
+  useEffect(() => {
+    if (!focusedPlannerPlaceId) return
+
+    const bailout = window.setTimeout(() => {
+      useTripStore.getState().setFocusedPlannerPlaceId(null)
+    }, 2000)
+
+    const tripItems = useTripStore.getState().activeListItems
+    const row = tripItems.find((i) => i.place_id === focusedPlannerPlaceId)
+    if (!row?.scheduled_date || row.scheduled_date !== selectedDay) {
+      return () => {
+        window.clearTimeout(bailout)
+      }
+    }
+
+    const timer = window.setTimeout(() => {
+      window.clearTimeout(bailout)
+      const root = document.querySelector('[data-testid="list-planner"]')
+      const id =
+        typeof CSS !== 'undefined' && typeof CSS.escape === 'function'
+          ? CSS.escape(focusedPlannerPlaceId)
+          : focusedPlannerPlaceId
+      const el = root?.querySelector<HTMLElement>(`[data-place-id="${id}"]`)
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        el.classList.add('ring-2', 'ring-sky-400', 'ring-offset-2', 'transition-shadow')
+        window.setTimeout(() => {
+          el.classList.remove('ring-2', 'ring-sky-400', 'ring-offset-2', 'transition-shadow')
+        }, 1600)
+      }
+      useTripStore.getState().setFocusedPlannerPlaceId(null)
+    }, 150)
+
+    return () => {
+      window.clearTimeout(timer)
+      window.clearTimeout(bailout)
+    }
+  }, [focusedPlannerPlaceId, selectedDay])
+
+  // Mirror ListDrawer: keep place IDs and list items in store for Plan mode map
+  useEffect(() => {
+    if (!listId) {
+      useTripStore.getState().setActiveListPlaceIds([])
+      useTripStore.getState().setActiveListItems([])
+      return
+    }
+    const placeIds = items
+      .map((item) => item.place?.id)
+      .filter((id): id is string => Boolean(id))
+    useTripStore.getState().setActiveListPlaceIds(placeIds)
+
+    const mapped = items
+      .map((item) => ({
+        id: item.id,
+        list_id: listId,
+        place_id: item.place?.id,
+        tags: item.tags ?? [],
+        scheduled_date: item.scheduled_date ?? null,
+        scheduled_start_time: item.scheduled_start_time ?? null,
+        completed_at: item.completed_at ?? null,
+        day_index: item.day_index ?? null,
+      }))
+      .filter(
+        (row): row is NonNullable<typeof row> & { place_id: string } =>
+          Boolean(row.place_id)
+      )
+    useTripStore.getState().setActiveListItems(mapped)
+  }, [listId, items])
 
   // ── Drag setup ──
   useEffect(() => {
@@ -549,13 +671,21 @@ export default function ListPlanner({
       else await fetchPlan()
       onPlanMutated?.()
       setEditingTripDates(false)
-      setSelectedDay(null) // reset selection so it auto-selects first day
+      setSelectedDayAndStore(null) // reset selection so it auto-selects first day
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Save failed')
     } finally {
       setSavingTripDates(false)
     }
-  }, [fetchPlan, listId, onPlanMutated, tripEnd, tripStart, tripTimezone])
+  }, [
+    fetchPlan,
+    listId,
+    onPlanMutated,
+    setSelectedDayAndStore,
+    tripEnd,
+    tripStart,
+    tripTimezone,
+  ])
 
   const clearTripDates = useCallback(async () => {
     if (!listId) return
@@ -573,13 +703,13 @@ export default function ListPlanner({
       setList(updated ?? null)
       onPlanMutated?.()
       setEditingTripDates(false)
-      setSelectedDay(null)
+      setSelectedDayAndStore(null)
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Save failed')
     } finally {
       setSavingTripDates(false)
     }
-  }, [listId, onPlanMutated])
+  }, [listId, onPlanMutated, setSelectedDayAndStore])
 
   // ── Move picker handlers ──
   const handleMoveToDay = useCallback(
@@ -715,7 +845,7 @@ export default function ListPlanner({
         canDrag={canDrag}
         dropTargetKey={dropTargetKey}
         tone={tone}
-        onSelectDay={setSelectedDay}
+        onSelectDay={setSelectedDayAndStore}
         onDragOverDay={(e, date) => onDragOverTarget(e, `day:${date}`)}
         onDropDay={onDropDay}
         onDragStartItem={onDragStart}
@@ -725,8 +855,9 @@ export default function ListPlanner({
       {/* In column mode, day detail renders inline below grid */}
       {!isSplit && selectedDay ? (
         <PlannerDayDetail
+          key={plannerDayDetailKey}
           date={selectedDay}
-          items={scheduledItemsByDate.get(selectedDay) ?? []}
+          items={selectedDayItems}
           listId={listId}
           canDrag={canDrag}
           dropTargetKey={dropTargetKey}
@@ -734,7 +865,7 @@ export default function ListPlanner({
           resolveCategoryEmoji={resolveCategoryEmoji}
           onPlaceSelect={(id) => onPlaceSelect?.(id)}
           onMoveItem={setMoveItemId}
-          onBack={() => setSelectedDay(null)}
+          onBack={() => setSelectedDayAndStore(null)}
           onDragOverItem={onDragOverTarget}
           onDropReorder={onDropReorder}
           onDragStartItem={onDragStart}
@@ -850,8 +981,9 @@ export default function ListPlanner({
                 </div>
               </header>
               <PlannerDayDetail
+                key={plannerDayDetailKey}
                 date={selectedDay}
-                items={scheduledItemsByDate.get(selectedDay) ?? []}
+                items={selectedDayItems}
                 listId={listId}
                 canDrag={canDrag}
                 dropTargetKey={dropTargetKey}
@@ -859,7 +991,7 @@ export default function ListPlanner({
                 resolveCategoryEmoji={resolveCategoryEmoji}
                 onPlaceSelect={(id) => onPlaceSelect?.(id)}
                 onMoveItem={setMoveItemId}
-                onBack={() => setSelectedDay(null)}
+                onBack={() => setSelectedDayAndStore(null)}
                 showBackButton={false}
                 onDragOverItem={onDragOverTarget}
                 onDropReorder={onDropReorder}

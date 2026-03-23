@@ -1,22 +1,32 @@
 'use client'
 
+import { useCallback, useEffect, useState } from 'react'
 import { useTripStore } from '@/lib/state/useTripStore'
 import { useNavStore } from '@/lib/state/useNavStore'
 import { useMediaQuery } from '@/components/ui/useMediaQuery'
 import ListPlanner from '@/components/stitch/ListPlanner'
+import MapInset from '@/components/map/MapInset.dynamic'
+import type { MapPlace } from '@/components/map/MapView.types'
+import type { CategoryEnum } from '@/lib/types/enums'
+import { supabase } from '@/lib/supabase/client'
+
+type PlacesRow = {
+  id: string
+  name: string
+  category: CategoryEnum
+  lat: number | null
+  lng: number | null
+}
 
 /**
  * PlannerShell — the Plan journey shell.
  *
- * Desktop (≥1024px): split layout — grid/backlog left, day detail right.
- * Mobile (<1024px): single scrollable column with inline day detail.
- * Future: MapInset (real Mapbox minimap).
+ * Desktop (≥1024px): MapInset minimap strip + split ListPlanner.
+ * Mobile (<1024px): single scrollable column with inline day detail (no inset).
  */
 export default function PlannerShell() {
   const activeListId = useTripStore((s) => s.activeListId)
-  const bumpListItemsRefresh = useTripStore((s) => s.bumpListItemsRefresh)
   const setMode = useNavStore((s) => s.setMode)
-  const isDesktop = useMediaQuery('(min-width: 1024px)')
 
   if (!activeListId) {
     return (
@@ -40,12 +50,80 @@ export default function PlannerShell() {
     )
   }
 
+  return <PlannerShellWithList activeListId={activeListId} />
+}
+
+function PlannerShellWithList({ activeListId }: { activeListId: string }) {
+  const bumpListItemsRefresh = useTripStore((s) => s.bumpListItemsRefresh)
+  const activeListPlaceIds = useTripStore((s) => s.activeListPlaceIds)
+  const activeListItems = useTripStore((s) => s.activeListItems)
+  const plannerSelectedDay = useTripStore((s) => s.plannerSelectedDay)
+  const listItemsRefreshKey = useTripStore((s) => s.listItemsRefreshKey)
+  const isDesktop = useMediaQuery('(min-width: 1024px)')
+
+  const [mapPlaces, setMapPlaces] = useState<MapPlace[]>([])
+
+  useEffect(() => {
+    const placeIds = activeListPlaceIds
+    if (!placeIds.length) {
+      setMapPlaces([])
+      return
+    }
+
+    let cancelled = false
+    void supabase
+      .from('places_view')
+      .select('id, name, category, lat, lng')
+      .in('id', placeIds)
+      .then(({ data, error }) => {
+        if (cancelled) return
+        if (error) {
+          console.error('[PlannerShell] places_view fetch failed:', error)
+          setMapPlaces([])
+          return
+        }
+        const next: MapPlace[] = ((data ?? []) as PlacesRow[])
+          .filter((p) => p.lat != null && p.lng != null)
+          .map((p) => ({
+            id: p.id,
+            name: p.name,
+            category: p.category,
+            lat: p.lat as number,
+            lng: p.lng as number,
+          }))
+        setMapPlaces(next)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [activeListId, activeListPlaceIds, listItemsRefreshKey])
+
+  const onPinClick = useCallback((placeId: string) => {
+    const state = useTripStore.getState()
+    const item = state.activeListItems.find((i) => i.place_id === placeId)
+    if (!item?.scheduled_date) return
+    if (item.scheduled_date !== state.plannerSelectedDay) {
+      state.setPlannerSelectedDay(item.scheduled_date)
+    }
+    state.setFocusedPlannerPlaceId(placeId)
+  }, [])
+
   if (isDesktop) {
     return (
       <div
         className="flex h-screen w-full flex-col bg-slate-50 dark:bg-slate-900"
         data-map-tone="light"
       >
+        <div className="h-[240px] shrink-0 overflow-hidden rounded-lg px-3 pt-3">
+          <MapInset
+            className="h-full w-full"
+            places={mapPlaces}
+            activeListItems={activeListItems}
+            selectedDay={plannerSelectedDay}
+            onPinClick={onPinClick}
+          />
+        </div>
         <div className="flex-1 min-h-0">
           <ListPlanner
             listId={activeListId}

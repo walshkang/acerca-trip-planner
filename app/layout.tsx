@@ -4,6 +4,9 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "AI Travel Itinerary Manager",
   description: "A local-first, map-centric travel planner",
+  icons: {
+    icon: [{ url: "/icons/sights.svg", type: "image/svg+xml" }],
+  },
 };
 
 export default function RootLayout({

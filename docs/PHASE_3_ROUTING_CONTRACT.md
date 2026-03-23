@@ -133,6 +133,19 @@
   - `legs` (deterministic adjacent pairs)
   - `summary` (`total_distance_m`/`total_duration_s` are `null`)
 
+#### Configuration (local / deployment)
+- Server reads `ROUTING_PROVIDER` and (for `osrm`) `OSRM_BASE_URL`. See [`.env.example`](../.env.example) and [`PHASE_3_ROUTING_ADAPTER_BOUNDARY.md`](./PHASE_3_ROUTING_ADAPTER_BOUNDARY.md).
+- Until a working provider is configured, `501` + `provider_unavailable` is **expected** for days with two or more routeable items.
+
+#### Client: `useRoutingPreview` (Plan mode)
+- Requests are **debounced** (~300ms) so brief `listId` / `date` / `enabled` churn does not spam the endpoint.
+- After a `provider_unavailable` response for a given `(listId, date)`, the hook **does not repeat POSTs** for that pair until a full page load (module reload clears the in-memory guard) or until a later **`status: "ok"`** response for the same pair clears the guard.
+- Transient provider failures (`502` / `routing_provider_bad_gateway`) are **not** cached; the client may refetch on the next effect run.
+
+#### Debugging effect churn (development only)
+- In the browser console: `localStorage.setItem('acerca_debug_routing_preview','1')` then reload.
+- The hook emits `console.debug` lines for debounce, cache hits, and disabled skips (no logs in production).
+
 ### 502: Provider Bad Gateway
 - Condition:
   - provider returns `provider_error`, or
