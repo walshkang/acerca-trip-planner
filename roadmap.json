@@ -1,7 +1,7 @@
 {
   "project_name": "AI_Travel_Itinerary_Manager",
-  "version": "2.3.0-p3e1-routing-impl",
-  "last_updated": "2026-03-02",
+  "version": "3.0.0-p3e3-ux-pivot",
+  "last_updated": "2026-03-23",
   "development_principles": [
     "LLMs label and translate intent; deterministic systems retrieve and compute.",
     "Only approved pins are truth (Map is the interface).",
@@ -10,6 +10,24 @@
     "User edits never overwrite frozen AI enrichment."
   ],
   "pr_history": [
+    {
+      "id": "doc-cleanup",
+      "date": "2026-03-23",
+      "title": "Consolidate docs into single source of truth",
+      "summary": "Rewrote CONTEXT.md as single source of truth. Deleted superseded IMPLEMENTATION.md, PHASE_2_UI_UX_REFACTOR_PLAN.md, UX_PIVOT_PLAN.md. Updated roadmap.json with P3-E3 completion statuses."
+    },
+    {
+      "id": "split-panel",
+      "date": "2026-03-23",
+      "title": "Desktop split-panel layout for planner",
+      "summary": "Added layout prop (column/split) to ListPlanner. Desktop split: grid/backlog left, day detail right (400px). Responsive via useMediaQuery. Sticky header, showBackButton prop on PlannerDayDetail."
+    },
+    {
+      "id": "planner-wiring",
+      "date": "2026-03-23",
+      "title": "Wire ListPlanner into PlannerShell + bug fixes",
+      "summary": "Wired existing ListPlanner into PlannerShell full-screen. Fixed unicode back button, slot label tooltips, orphan-items warning, tone system (data-map-tone). Visual polish via Cursor Composer."
+    },
     {
       "id": "46e9d05",
       "date": "2026-02-02",
@@ -678,7 +696,7 @@
         {
           "id": "P3-E3",
           "title": "UX Pivot — Two-Journey Architecture (Explore / Plan)",
-          "description": "Replace single WorkspaceContainer shell with Explore/Plan dual-journey architecture. ExploreShell wraps existing map+discovery flow. PlannerShell gets its own day grid, map inset, and toolbar. See docs/UX_PIVOT_PLAN.md for full spec.",
+          "description": "Replace single WorkspaceContainer shell with Explore/Plan dual-journey architecture. ExploreShell wraps existing map+discovery flow. PlannerShell gets full-screen day grid planner with desktop split-panel layout. Architecture decisions documented in CONTEXT.md.",
           "features": [
             "Two-journey architecture: Explore (map + discovery) and Plan (day grid + map inset) as separate shells.",
             "AppShell with NavRail (desktop) / NavFooter (mobile) for mode switching.",
@@ -707,36 +725,36 @@
             {
               "id": "3.3",
               "task": "Phase 0 — Foundation (schema + state extraction + API updates).",
-              "details": "Add day_index column to list_items (nullable integer, backfill, CHECK constraint). Extract useTripStore from WorkspaceContainer. Create useNavStore. Update PATCH /api/lists/[id]/items/[itemId] to accept day_index. Update PATCH /api/lists/[id] to backfill day_index ↔ scheduled_date on date add/remove. See docs/UX_PIVOT_PLAN.md Phase 0.",
-              "status": "not_started",
+              "details": "Added day_index column to list_items (nullable integer, backfill, CHECK constraint). Extracted useTripStore from WorkspaceContainer. Created useNavStore. Updated PATCH /api/lists/[id]/items/[itemId] to accept day_index. Updated PATCH /api/lists/[id] to backfill day_index ↔ scheduled_date on date add/remove.",
+              "status": "completed",
               "tier": "deep"
             },
             {
               "id": "3.4",
               "task": "Phase 1 — Shell Split (AppShell + ExploreShell + PlannerShell + navigation).",
-              "details": "Create AppShell routing between ExploreShell (renamed WorkspaceContainer) and PlannerShell (skeleton). Add NavRail (desktop) and NavFooter (mobile). Wire URL state (?mode=explore|plan). See docs/UX_PIVOT_PLAN.md Phase 1.",
-              "status": "not_started",
+              "details": "Created AppShell routing between ExploreShell (renamed WorkspaceContainer) and PlannerShell. Added NavRail (desktop) and NavFooter (mobile). Wired URL state (?mode=explore|plan).",
+              "status": "completed",
               "tier": "deep+bounded"
             },
             {
               "id": "3.5",
-              "task": "Phase 2 — Planner Core (PlannerGrid + DnD + scheduling).",
-              "details": "Create usePlannerStore. Build PlannerGrid, DayCell, DayDetail, Backlog in components/planner/. Wire @dnd-kit drag-and-drop between cells and backlog. Mobile tap-to-move fallback. See docs/UX_PIVOT_PLAN.md Phase 2.",
-              "status": "not_started",
+              "task": "Phase 2 — Planner Core (wired ListPlanner + desktop split-panel).",
+              "details": "Wired existing ListPlanner into PlannerShell full-screen. Added layout prop (column/split) for responsive desktop split-panel (grid left, day detail right, 400px). Fixed unicode bug, slot labels, orphan warning, visual polish. Pragmatic reuse of existing ListPlanner instead of clean-sheet rebuild.",
+              "status": "completed",
               "tier": "deep+bounded"
             },
             {
               "id": "3.6",
               "task": "Phase 3 — Map Inset (Mapbox minimap in PlannerShell).",
-              "details": "Create MapInset component with real Mapbox GL instance. Pins colored by day, selected day fitBounds, pin click scrolls to item in planner. Lazy mount/destroy on mode switch. See docs/UX_PIVOT_PLAN.md Phase 3.",
+              "details": "Create MapInset component with real Mapbox GL instance. Pins colored by day, selected day fitBounds, pin click scrolls to item in planner. Lazy mount/destroy on mode switch.",
               "status": "not_started",
               "tier": "deep+bounded"
             },
             {
               "id": "3.7",
               "task": "Phase 4 — Polish + Cleanup (deprecate old components, E2E, doc updates).",
-              "details": "Deprecate ListPlanner and WorkspaceContainer. Visual polish pass. Playwright E2E tests for two-journey architecture. Update DESIGN.md, CONTEXT.md, roadmap.json. See docs/UX_PIVOT_PLAN.md Phase 4.",
-              "status": "not_started",
+              "details": "Deprecate old ListPlanner path from ExploreShell, remove WorkspaceContainer alias. Playwright E2E tests for two-journey architecture. Doc alignment.",
+              "status": "partial",
               "tier": "deep+bounded"
             }
           ]
