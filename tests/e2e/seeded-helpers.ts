@@ -154,6 +154,32 @@ export async function addPlaceToList(
   }
 }
 
+export type SetTripDatesOptions = {
+  start_date: string
+  end_date: string
+  timezone?: string
+}
+
+export async function setTripDates(
+  page: Page,
+  listId: string,
+  options: SetTripDatesOptions
+) {
+  const timezone = options.timezone ?? 'America/New_York'
+  const res = await page.request.patch(`/api/lists/${listId}`, {
+    headers: { 'content-type': 'application/json' },
+    data: {
+      start_date: options.start_date,
+      end_date: options.end_date,
+      timezone,
+    },
+  })
+  if (!res.ok()) {
+    const body = await res.text().catch(() => '')
+    throw new Error(`Failed to set trip dates (${res.status()}): ${body}`)
+  }
+}
+
 export async function setListItemTags(
   page: Page,
   listId: string,

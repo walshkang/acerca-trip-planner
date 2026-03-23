@@ -13,31 +13,22 @@ import {
   cleanupSeededData,
   ensureSignedIn,
   seedListWithPlace,
+  setTripDates,
   visibleByTestId,
 } from './seeded-helpers'
 
 applySeededPrerequisiteSkips(test)
 
-async function setTripDates(page: Page, listId: string, date: string) {
-  const res = await page.request.patch(`/api/lists/${listId}`, {
-    headers: { 'content-type': 'application/json' },
-    data: {
-      start_date: date,
-      end_date: date,
-      timezone: 'America/New_York',
-    },
-  })
-  if (!res.ok()) {
-    const body = await res.text().catch(() => '')
-    throw new Error(`Failed to set trip dates (${res.status()}): ${body}`)
-  }
-}
+const NY_TZ = 'America/New_York'
 
 async function openPlanTab(page: Page) {
-  const planTab = page
-    .locator('button.glass-tab:visible', { hasText: /^Plan$/ })
-    .first()
-  await planTab.click()
+  const rail = page.getByTestId('nav-rail')
+  const footer = page.getByTestId('nav-footer')
+  if (await rail.isVisible()) {
+    await rail.getByRole('button', { name: 'Plan' }).click()
+  } else {
+    await footer.getByRole('button', { name: 'Plan' }).click()
+  }
 }
 
 function waitForPlannerPatch(page: Page, listId: string, timeout = 20_000) {
@@ -190,7 +181,11 @@ test('planner move picker schedules and completes list items', async ({ page }) 
     seeds.push(seed)
 
     const today = new Date().toISOString().slice(0, 10)
-    await setTripDates(page, seed.list.id, today)
+    await setTripDates(page, seed.list.id, {
+      start_date: today,
+      end_date: today,
+      timezone: NY_TZ,
+    })
     await page.goto(`/?list=${encodeURIComponent(seed.list.id)}`)
     await ensureSignedIn(page)
 
@@ -293,7 +288,11 @@ test.describe('desktop dnd planner', () => {
       seeds.push(seed)
 
       const today = new Date().toISOString().slice(0, 10)
-      await setTripDates(page, seed.list.id, today)
+      await setTripDates(page, seed.list.id, {
+        start_date: today,
+        end_date: today,
+        timezone: NY_TZ,
+      })
       await page.goto(`/?list=${encodeURIComponent(seed.list.id)}`)
       await ensureSignedIn(page)
 
@@ -347,7 +346,11 @@ test.describe('desktop dnd planner', () => {
       await addPlaceToList(page, seedA.list.id, seedB.place_id)
 
       const today = new Date().toISOString().slice(0, 10)
-      await setTripDates(page, seedA.list.id, today)
+      await setTripDates(page, seedA.list.id, {
+        start_date: today,
+        end_date: today,
+        timezone: NY_TZ,
+      })
       await page.goto(`/?list=${encodeURIComponent(seedA.list.id)}`)
       await ensureSignedIn(page)
 
@@ -449,7 +452,11 @@ test.describe('desktop dnd planner', () => {
       seeds.push(seed)
 
       const today = new Date().toISOString().slice(0, 10)
-      await setTripDates(page, seed.list.id, today)
+      await setTripDates(page, seed.list.id, {
+        start_date: today,
+        end_date: today,
+        timezone: NY_TZ,
+      })
       await page.goto(`/?list=${encodeURIComponent(seed.list.id)}`)
       await ensureSignedIn(page)
 
@@ -513,7 +520,11 @@ test.describe('desktop dnd planner', () => {
       seeds.push(seed)
 
       const today = new Date().toISOString().slice(0, 10)
-      await setTripDates(page, seed.list.id, today)
+      await setTripDates(page, seed.list.id, {
+        start_date: today,
+        end_date: today,
+        timezone: NY_TZ,
+      })
       await page.goto(`/?list=${encodeURIComponent(seed.list.id)}`)
       await ensureSignedIn(page)
 
@@ -621,7 +632,11 @@ test.describe('desktop dnd planner', () => {
       seeds.push(seed)
 
       const today = new Date().toISOString().slice(0, 10)
-      await setTripDates(page, seed.list.id, today)
+      await setTripDates(page, seed.list.id, {
+        start_date: today,
+        end_date: today,
+        timezone: NY_TZ,
+      })
       await page.goto(`/?list=${encodeURIComponent(seed.list.id)}`)
       await ensureSignedIn(page)
 
@@ -677,7 +692,11 @@ test.describe('desktop dnd planner', () => {
       await addPlaceToList(page, seedA.list.id, seedB.place_id)
 
       const today = new Date().toISOString().slice(0, 10)
-      await setTripDates(page, seedA.list.id, today)
+      await setTripDates(page, seedA.list.id, {
+        start_date: today,
+        end_date: today,
+        timezone: NY_TZ,
+      })
 
       // Schedule both items via API
       const items = await fetchListItems(page, seedA.list.id)
@@ -705,6 +724,141 @@ test.describe('desktop dnd planner', () => {
       // Verify both place names are visible in the cell
       await expect(dayCell.getByText(seedA.place_name)).toBeVisible()
       await expect(dayCell.getByText(seedB.place_name)).toBeVisible()
+    } finally {
+      await cleanupSeededData(page, seeds)
+    }
+  })
+
+  test('trip date shift preserves day-relative schedule; trim moves out-of-range to backlog', async ({
+    page,
+  }) => {
+    const tripStart = '2026-03-23'
+    const tripEndInitial = '2026-03-27'
+    const day1 = '2026-03-23'
+    const day3 = '2026-03-25'
+    const tripStartShifted = '2026-03-25'
+    const tripEndShifted = '2026-03-29'
+    const day1AfterShift = '2026-03-25'
+    const day3AfterShift = '2026-03-27'
+    const tripEndTrimmed = '2026-03-26'
+
+    await page.goto('/')
+    await ensureSignedIn(page)
+
+    const seeds = [] as Awaited<ReturnType<typeof seedListWithPlace>>[]
+    try {
+      const seedA = await seedListWithPlace(page)
+      const seedB = await seedListWithPlace(page)
+      seeds.push(seedA, seedB)
+
+      await addPlaceToList(page, seedA.list.id, seedB.place_id)
+      const listId = seedA.list.id
+
+      await setTripDates(page, listId, {
+        start_date: tripStart,
+        end_date: tripEndInitial,
+        timezone: NY_TZ,
+      })
+
+      await page.goto(`/?list=${encodeURIComponent(listId)}`)
+      await ensureSignedIn(page)
+
+      const listDrawer = visibleByTestId(page, 'list-drawer')
+      await expect(listDrawer).toBeVisible()
+      await openPlanTab(page)
+
+      const planner = visibleByTestId(page, 'list-planner')
+      await expect(planner).toBeVisible()
+
+      const backlog = plannerBacklog(planner)
+      const cellDay1 = plannerDayCell(planner, day1)
+      const cellDay3 = plannerDayCell(planner, day3)
+      await cellDay1.scrollIntoViewIfNeeded()
+      await cellDay3.scrollIntoViewIfNeeded()
+
+      const cardA = draggableCardByPlaceName(backlog, seedA.place_name)
+      const cardB = draggableCardByPlaceName(backlog, seedB.place_name)
+
+      const patchA = waitForPlannerPatch(page, listId)
+      await cardA.dragTo(cellDay1)
+      await expectDragPatch(patchA)
+
+      const patchB = waitForPlannerPatch(page, listId)
+      await cardB.dragTo(cellDay3)
+      await expectDragPatch(patchB)
+
+      await expect(backlog.getByText(seedA.place_name)).toBeHidden()
+      await expect(backlog.getByText(seedB.place_name)).toBeHidden()
+
+      const shiftRes = await page.request.patch(`/api/lists/${listId}`, {
+        headers: { 'content-type': 'application/json' },
+        data: {
+          start_date: tripStartShifted,
+          end_date: tripEndShifted,
+          timezone: NY_TZ,
+        },
+      })
+      expect(shiftRes.ok()).toBe(true)
+      const shiftJson = (await shiftRes.json()) as {
+        list?: { start_date?: string | null; end_date?: string | null }
+      }
+      expect(shiftJson.list?.start_date).toBe(tripStartShifted)
+      expect(shiftJson.list?.end_date).toBe(tripEndShifted)
+
+      const itemsAfterShift = await fetchListItems(page, listId)
+      const rowA = itemsAfterShift.find((r) => r.place?.id === seedA.place_id)
+      const rowB = itemsAfterShift.find((r) => r.place?.id === seedB.place_id)
+      expect(rowA?.scheduled_date).toBe(day1AfterShift)
+      expect(rowB?.scheduled_date).toBe(day3AfterShift)
+
+      await page.goto(`/?list=${encodeURIComponent(listId)}`)
+      await ensureSignedIn(page)
+      await expect(listDrawer).toBeVisible()
+      await openPlanTab(page)
+
+      const plannerAfterShift = visibleByTestId(page, 'list-planner')
+      const backlogAfterShift = plannerBacklog(plannerAfterShift)
+      await expect(backlogAfterShift.getByText('Nothing in backlog.')).toBeVisible()
+      await expect(
+        plannerDayCell(plannerAfterShift, day1AfterShift).getByText(seedA.place_name)
+      ).toBeVisible()
+      await expect(
+        plannerDayCell(plannerAfterShift, day3AfterShift).getByText(seedB.place_name)
+      ).toBeVisible()
+
+      const trimRes = await page.request.patch(`/api/lists/${listId}`, {
+        headers: { 'content-type': 'application/json' },
+        data: { end_date: tripEndTrimmed, timezone: NY_TZ },
+      })
+      expect(trimRes.ok()).toBe(true)
+      const trimJson = (await trimRes.json()) as {
+        list?: { end_date?: string | null }
+      }
+      expect(trimJson.list?.end_date).toBe(tripEndTrimmed)
+
+      const itemsAfterTrim = await fetchListItems(page, listId)
+      const rowAAfter = itemsAfterTrim.find((r) => r.place?.id === seedA.place_id)
+      const rowBAfter = itemsAfterTrim.find((r) => r.place?.id === seedB.place_id)
+      expect(rowAAfter?.scheduled_date).toBe(day1AfterShift)
+      expect(rowBAfter?.scheduled_date).toBeNull()
+
+      await page.goto(`/?list=${encodeURIComponent(listId)}`)
+      await ensureSignedIn(page)
+      await expect(listDrawer).toBeVisible()
+      await openPlanTab(page)
+
+      const plannerAfterTrim = visibleByTestId(page, 'list-planner')
+      await expect(
+        plannerDayCell(plannerAfterTrim, day1AfterShift).getByText(seedA.place_name)
+      ).toBeVisible()
+      await expect(
+        plannerAfterTrim.locator(
+          `[data-testid="planner-day-cell"][data-day="${day3AfterShift}"]`
+        )
+      ).toHaveCount(0)
+
+      const backlogAfterTrim = plannerBacklog(plannerAfterTrim)
+      await expect(backlogAfterTrim.getByText(seedB.place_name)).toBeVisible()
     } finally {
       await cleanupSeededData(page, seeds)
     }

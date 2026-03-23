@@ -39,6 +39,7 @@ function mockAuthenticatedClient(rpcResponse: RpcResponse) {
 function mockAmbiguousRpcFallbackClient(args: {
   currentList: Record<string, unknown>
   updatedList: Record<string, unknown>
+  scheduledItems?: Array<Record<string, unknown>>
 }) {
   const getUser = vi.fn().mockResolvedValue({ data: { user: { id: 'user-1' } } })
   const rpc = vi.fn().mockReturnValue({
@@ -66,10 +67,90 @@ function mockAmbiguousRpcFallbackClient(args: {
   listsUpdateQuery.eq.mockReturnValue(listsUpdateQuery)
   listsUpdateQuery.select.mockReturnValue(listsUpdateQuery)
 
-  const from = vi
-    .fn()
-    .mockReturnValueOnce(listsFetchQuery)
-    .mockReturnValueOnce(listsUpdateQuery)
+  // Track item updates for assertions
+  const itemUpdates: Array<{ id: string; update: Record<string, unknown> }> = []
+
+  const makeItemUpdateQuery = () => {
+    const q = {
+      update: vi.fn(),
+      eq: vi.fn().mockResolvedValue({ error: null }),
+    } as any
+    q.update.mockImplementation((data: Record<string, unknown>) => {
+      // We'll capture the id from the eq call
+      const origEq = q.eq
+      q.eq = vi.fn().mockImplementation((col: string, val: string) => {
+        if (col === 'id') itemUpdates.push({ id: val, update: data })
+        return { error: null }
+      })
+      return q
+    })
+    return q
+  }
+
+  // Build a list_items select query that supports chaining .eq().is().not()
+  const makeItemsSelectQuery = (items: Array<Record<string, unknown>>) => {
+    const q = {
+      select: vi.fn(),
+      eq: vi.fn(),
+      is: vi.fn(),
+      not: vi.fn(),
+      in: vi.fn().mockResolvedValue({ error: null }),
+    } as any
+    q.select.mockReturnValue(q)
+    q.eq.mockReturnValue(q)
+    q.is.mockReturnValue(q)
+    q.not.mockReturnValue({ data: items, error: null })
+    // Also resolve directly for cases that don't chain .not()
+    q.then = undefined
+    return q
+  }
+
+  const items = args.scheduledItems ?? []
+
+  // from() call order in fallback:
+  // 1. lists (fetch current)
+  // 2. lists (update)
+  // 3+ list_items queries (shift, then trim)
+  const from = vi.fn().mockImplementation((table: string) => {
+    if (table === 'list_items') {
+      // Each list_items call gets a fresh query that returns the items
+      // or handles updates
+      const q = {
+        select: vi.fn(),
+        update: vi.fn(),
+        eq: vi.fn(),
+        is: vi.fn(),
+        not: vi.fn(),
+        in: vi.fn().mockResolvedValue({ error: null }),
+      } as any
+      q.select.mockReturnValue(q)
+      q.eq.mockReturnValue(q)
+      q.is.mockReturnValue(q)
+      q.not.mockResolvedValue({ data: items, error: null })
+      q.update.mockImplementation((data: Record<string, unknown>) => {
+        const inner = {
+          eq: vi.fn().mockImplementation((_col: string, val: string) => {
+            itemUpdates.push({ id: val, update: data })
+            return { error: null }
+          }),
+          in: vi.fn().mockResolvedValue({ error: null }),
+        }
+        return inner
+      })
+      return q
+    }
+    return null
+  })
+
+  // Override first two from() calls to return lists queries
+  const originalFrom = from.getMockImplementation()!
+  let fromCallCount = 0
+  from.mockImplementation((table: string) => {
+    fromCallCount++
+    if (fromCallCount === 1) return listsFetchQuery
+    if (fromCallCount === 2) return listsUpdateQuery
+    return originalFrom(table)
+  })
 
   createClientMock.mockResolvedValue({
     auth: { getUser },
@@ -77,7 +158,7 @@ function mockAmbiguousRpcFallbackClient(args: {
     from,
   })
 
-  return { rpc, from, listsUpdateQuery }
+  return { rpc, from, listsUpdateQuery, itemUpdates }
 }
 
 describe('PATCH /api/lists/[id]', () => {
@@ -299,6 +380,171 @@ describe('PATCH /api/lists/[id]', () => {
     expect(from).toHaveBeenNthCalledWith(2, 'lists')
     expect(listsUpdateQuery.update).toHaveBeenCalledWith({
       timezone: 'UTC',
+    })
+  })
+
+  describe('date-shift migration (fallback path)', () => {
+    it('shifts items forward when start_date moves forward +2 days', async () => {
+      const currentList = {
+        id: 'list-1',
+        name: 'Trip',
+        description: null,
+        is_default: false,
+        created_at: '2026-03-01T00:00:00.000Z',
+        start_date: '2026-03-23',
+        end_date: '2026-03-27',
+        timezone: 'Asia/Tokyo',
+      }
+      const updatedList = {
+        ...currentList,
+        start_date: '2026-03-25',
+        end_date: '2026-03-29',
+      }
+
+      const { itemUpdates } = mockAmbiguousRpcFallbackClient({
+        currentList,
+        updatedList,
+        scheduledItems: [
+          { id: 'item-1', scheduled_date: '2026-03-23' },
+          { id: 'item-2', scheduled_date: '2026-03-25' },
+        ],
+      })
+
+      const response = await PATCH(
+        makePatchRequest({
+          start_date: '2026-03-25',
+          end_date: '2026-03-29',
+        }) as any,
+        { params: { id: 'list-1' } }
+      )
+
+      expect(response.status).toBe(200)
+      // Items should be shifted by +2 days
+      const shiftUpdates = itemUpdates.filter((u) => u.update.scheduled_date)
+      expect(shiftUpdates).toContainEqual({
+        id: 'item-1',
+        update: { scheduled_date: '2026-03-25' },
+      })
+      expect(shiftUpdates).toContainEqual({
+        id: 'item-2',
+        update: { scheduled_date: '2026-03-27' },
+      })
+    })
+
+    it('shifts items backward when start_date moves backward -1 day', async () => {
+      const currentList = {
+        id: 'list-1',
+        name: 'Trip',
+        description: null,
+        is_default: false,
+        created_at: '2026-03-01T00:00:00.000Z',
+        start_date: '2026-03-25',
+        end_date: '2026-03-28',
+        timezone: 'America/New_York',
+      }
+      const updatedList = {
+        ...currentList,
+        start_date: '2026-03-24',
+        end_date: '2026-03-27',
+      }
+
+      const { itemUpdates } = mockAmbiguousRpcFallbackClient({
+        currentList,
+        updatedList,
+        scheduledItems: [
+          { id: 'item-1', scheduled_date: '2026-03-26' },
+        ],
+      })
+
+      const response = await PATCH(
+        makePatchRequest({
+          start_date: '2026-03-24',
+          end_date: '2026-03-27',
+        }) as any,
+        { params: { id: 'list-1' } }
+      )
+
+      expect(response.status).toBe(200)
+      const shiftUpdates = itemUpdates.filter((u) => u.update.scheduled_date)
+      expect(shiftUpdates).toContainEqual({
+        id: 'item-1',
+        update: { scheduled_date: '2026-03-25' },
+      })
+    })
+
+    it('does not shift items when only end_date changes', async () => {
+      const currentList = {
+        id: 'list-1',
+        name: 'Trip',
+        description: null,
+        is_default: false,
+        created_at: '2026-03-01T00:00:00.000Z',
+        start_date: '2026-03-23',
+        end_date: '2026-03-27',
+        timezone: 'UTC',
+      }
+      const updatedList = {
+        ...currentList,
+        end_date: '2026-03-25',
+      }
+
+      const { itemUpdates } = mockAmbiguousRpcFallbackClient({
+        currentList,
+        updatedList,
+        scheduledItems: [
+          { id: 'item-1', scheduled_date: '2026-03-24' },
+          { id: 'item-2', scheduled_date: '2026-03-27' },
+        ],
+      })
+
+      const response = await PATCH(
+        makePatchRequest({ end_date: '2026-03-25' }) as any,
+        { params: { id: 'list-1' } }
+      )
+
+      expect(response.status).toBe(200)
+      // No shift updates — only trim (item-2 is out of range, handled by trim step)
+      const shiftUpdates = itemUpdates.filter(
+        (u) => u.update.scheduled_date && u.update.scheduled_date !== null
+      )
+      expect(shiftUpdates).toHaveLength(0)
+    })
+
+    it('preserves dateless-to-dated transition (no shift, backfill day_index)', async () => {
+      const currentList = {
+        id: 'list-1',
+        name: 'Trip',
+        description: null,
+        is_default: false,
+        created_at: '2026-03-01T00:00:00.000Z',
+        start_date: null,
+        end_date: null,
+        timezone: null,
+      }
+      const updatedList = {
+        ...currentList,
+        start_date: '2026-03-23',
+        end_date: '2026-03-27',
+        timezone: 'UTC',
+      }
+
+      // Items with day_index should get scheduled_date backfilled
+      mockAmbiguousRpcFallbackClient({
+        currentList,
+        updatedList,
+        scheduledItems: [{ id: 'item-1', day_index: 1 }],
+      })
+
+      const response = await PATCH(
+        makePatchRequest({
+          start_date: '2026-03-23',
+          end_date: '2026-03-27',
+          timezone: 'UTC',
+        }) as any,
+        { params: { id: 'list-1' } }
+      )
+
+      expect(response.status).toBe(200)
     })
   })
 })

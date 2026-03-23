@@ -220,6 +220,34 @@ async function fallbackPatchListTripDates(args: {
             .eq('id', row.id)
         }
       }
+    } else if (oldStartDate && newStartDate && oldStartDate !== newStartDate) {
+      // Dated trip with shifted start: move scheduled_dates by offset to preserve relative positions.
+      // day_index stays unchanged since (scheduled_date + offset) - (start_date + offset) = day_index.
+      const oldMs = Date.parse(`${oldStartDate}T00:00:00Z`)
+      const newMs = Date.parse(`${newStartDate}T00:00:00Z`)
+      const offsetDays = Math.round((newMs - oldMs) / 86_400_000)
+
+      if (offsetDays !== 0) {
+        const { data: itemsToShift } = await supabase
+          .from('list_items')
+          .select('id, scheduled_date')
+          .eq('list_id', listId)
+          .is('completed_at', null)
+          .not('scheduled_date', 'is', null)
+
+        if (itemsToShift?.length) {
+          for (const row of itemsToShift) {
+            if (!row.scheduled_date) continue
+            const d = new Date(`${row.scheduled_date}T00:00:00Z`)
+            d.setUTCDate(d.getUTCDate() + offsetDays)
+            const shiftedDate = d.toISOString().slice(0, 10)
+            await supabase
+              .from('list_items')
+              .update({ scheduled_date: shiftedDate })
+              .eq('id', row.id)
+          }
+        }
+      }
     }
   }
 
