@@ -15,6 +15,7 @@ type Props = {
   onPlaceSelect: (placeId: string) => void
   onMoveItem: (itemId: string) => void
   onBack: () => void
+  showBackButton?: boolean
   onDragOverItem: (event: DragEvent, key: string) => void
   onDropReorder: (event: DragEvent, date: string, beforeItemId: string) => void
   onDragStartItem: (itemId: string) => void
@@ -41,6 +42,7 @@ export default function PlannerDayDetail({
   onPlaceSelect,
   onMoveItem,
   onBack,
+  showBackButton = true,
   onDragOverItem,
   onDropReorder,
   onDragStartItem,
@@ -72,13 +74,17 @@ export default function PlannerDayDetail({
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between gap-2">
-        <button
-          type="button"
-          onClick={onBack}
-          className={`text-[11px] ${backClass}`}
-        >
-          ← Grid
-        </button>
+        {showBackButton ? (
+          <button
+            type="button"
+            onClick={onBack}
+            className={`text-[11px] ${backClass}`}
+          >
+            ← Grid
+          </button>
+        ) : (
+          <span />
+        )}
         <h4 className={`text-xs font-semibold ${headingClass}`}>
           {formatDayLabelFull(date)}
         </h4>

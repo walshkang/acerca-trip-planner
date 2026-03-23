@@ -2,18 +2,21 @@
 
 import { useTripStore } from '@/lib/state/useTripStore'
 import { useNavStore } from '@/lib/state/useNavStore'
+import { useMediaQuery } from '@/components/ui/useMediaQuery'
 import ListPlanner from '@/components/stitch/ListPlanner'
 
 /**
  * PlannerShell — the Plan journey shell.
  *
- * Renders ListPlanner full-screen with light tone.
- * Future: MapInset (real Mapbox minimap), desktop split-panel layout.
+ * Desktop (≥1024px): split layout — grid/backlog left, day detail right.
+ * Mobile (<1024px): single scrollable column with inline day detail.
+ * Future: MapInset (real Mapbox minimap).
  */
 export default function PlannerShell() {
   const activeListId = useTripStore((s) => s.activeListId)
   const bumpListItemsRefresh = useTripStore((s) => s.bumpListItemsRefresh)
   const setMode = useNavStore((s) => s.setMode)
+  const isDesktop = useMediaQuery('(min-width: 1024px)')
 
   if (!activeListId) {
     return (
@@ -37,6 +40,24 @@ export default function PlannerShell() {
     )
   }
 
+  if (isDesktop) {
+    return (
+      <div
+        className="flex h-screen w-full flex-col bg-slate-50 dark:bg-slate-900"
+        data-map-tone="light"
+      >
+        <div className="flex-1 min-h-0">
+          <ListPlanner
+            listId={activeListId}
+            tone="light"
+            layout="split"
+            onPlanMutated={bumpListItemsRefresh}
+          />
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div
       className="flex h-screen w-full flex-col bg-slate-50 dark:bg-slate-900"
@@ -47,6 +68,7 @@ export default function PlannerShell() {
           <ListPlanner
             listId={activeListId}
             tone="light"
+            layout="column"
             onPlanMutated={bumpListItemsRefresh}
           />
         </div>

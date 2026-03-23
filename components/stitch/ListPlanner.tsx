@@ -18,12 +18,14 @@ import PlannerDayGrid from './planner/PlannerDayGrid'
 import PlannerDayDetail from './planner/PlannerDayDetail'
 import PlannerBacklog from './planner/PlannerBacklog'
 import PlannerMovePicker from './planner/PlannerMovePicker'
+import { formatDayLabelFull } from './planner/planner-utils'
 
 type Props = {
   listId: string | null
   onPlaceSelect?: (placeId: string) => void
   onPlanMutated?: () => void
   tone?: 'light' | 'dark'
+  layout?: 'column' | 'split'
 }
 
 type ItemsResponse = {
@@ -61,7 +63,9 @@ export default function ListPlanner({
   onPlaceSelect,
   onPlanMutated,
   tone = 'dark',
+  layout = 'column',
 }: Props) {
+  const isSplit = layout === 'split'
   const isDark = tone === 'dark'
   const { resolveCategoryEmoji: resolveCategoryEmojiTyped } = useCategoryIconOverrides(listId)
   const resolveCategoryEmoji = useCallback(
@@ -653,166 +657,235 @@ export default function ListPlanner({
   const isTripRangeTooLong = Boolean(tripDaysCount && tripDaysCount > MAX_TRIP_DAYS_RENDER)
   const gridDates = tripDates ?? []
 
-  // ── Main render ──
-  return (
-    <div className={`p-3 space-y-4 ${plannerToneClass}`} data-testid="list-planner">
-      <PlannerTripDates
-        list={list}
+  // ── Shared content blocks ──
+  const tripDatesBlock = (
+    <PlannerTripDates
+      list={list}
+      tone={tone}
+      editingTripDates={editingTripDates}
+      setEditingTripDates={setEditingTripDates}
+      tripStart={tripStart}
+      setTripStart={setTripStart}
+      tripEnd={tripEnd}
+      setTripEnd={setTripEnd}
+      tripTimezone={tripTimezone}
+      setTripTimezone={setTripTimezone}
+      savingTripDates={savingTripDates}
+      onSave={saveTripDates}
+      onClear={clearTripDates}
+      error={editingTripDates ? error : null}
+    />
+  )
+
+  const backlogBlock = (
+    <div className={isDark ? '' : 'border-b border-slate-200 pb-4'}>
+      <PlannerBacklog
+        items={backlogItems}
+        canDrag={canDrag}
+        isDragOver={dropTargetKey === 'backlog'}
         tone={tone}
-        editingTripDates={editingTripDates}
-        setEditingTripDates={setEditingTripDates}
-        tripStart={tripStart}
-        setTripStart={setTripStart}
-        tripEnd={tripEnd}
-        setTripEnd={setTripEnd}
-        tripTimezone={tripTimezone}
-        setTripTimezone={setTripTimezone}
-        savingTripDates={savingTripDates}
-        onSave={saveTripDates}
-        onClear={clearTripDates}
-        error={editingTripDates ? error : null}
+        resolveCategoryEmoji={resolveCategoryEmoji}
+        onPlaceSelect={(id) => onPlaceSelect?.(id)}
+        onMoveItem={setMoveItemId}
+        onDragOver={(e) => onDragOverTarget(e, 'backlog')}
+        onDrop={onDropBacklog}
+        onDragStartItem={onDragStart}
+        onDragEndItem={onDragEnd}
+        savingItemId={savingItemId}
+      />
+    </div>
+  )
+
+  const dayGridBlock = tripRange ? (
+    <section
+      className={`space-y-3${isDark ? '' : ' border-b border-slate-200 pb-4'}`}
+    >
+      {isTripRangeTooLong ? (
+        <p className={`text-[11px] ${mutedClass}`}>
+          Trip spans {tripDaysCount} days. Showing only days with scheduled
+          items to keep the planner fast.
+        </p>
+      ) : null}
+
+      <PlannerDayGrid
+        tripDates={gridDates}
+        scheduledItemsByDate={scheduledItemsByDate}
+        selectedDay={selectedDay}
+        todayIso={todayIso}
+        canDrag={canDrag}
+        dropTargetKey={dropTargetKey}
+        tone={tone}
+        onSelectDay={setSelectedDay}
+        onDragOverDay={(e, date) => onDragOverTarget(e, `day:${date}`)}
+        onDropDay={onDropDay}
+        onDragStartItem={onDragStart}
+        onDragEndItem={onDragEnd}
       />
 
-      <div className={isDark ? '' : 'border-b border-slate-200 pb-4'}>
-        <PlannerBacklog
-          items={backlogItems}
+      {/* In column mode, day detail renders inline below grid */}
+      {!isSplit && selectedDay ? (
+        <PlannerDayDetail
+          date={selectedDay}
+          items={scheduledItemsByDate.get(selectedDay) ?? []}
+          listId={listId}
           canDrag={canDrag}
-          isDragOver={dropTargetKey === 'backlog'}
+          dropTargetKey={dropTargetKey}
           tone={tone}
           resolveCategoryEmoji={resolveCategoryEmoji}
           onPlaceSelect={(id) => onPlaceSelect?.(id)}
           onMoveItem={setMoveItemId}
-          onDragOver={(e) => onDragOverTarget(e, 'backlog')}
-          onDrop={onDropBacklog}
+          onBack={() => setSelectedDay(null)}
+          onDragOverItem={onDragOverTarget}
+          onDropReorder={onDropReorder}
           onDragStartItem={onDragStart}
           onDragEndItem={onDragEnd}
           savingItemId={savingItemId}
         />
-      </div>
-
-      {tripRange ? (
-        <section
-          className={`space-y-3${isDark ? '' : ' border-b border-slate-200 pb-4'}`}
-        >
-          {isTripRangeTooLong ? (
-            <p className={`text-[11px] ${mutedClass}`}>
-              Trip spans {tripDaysCount} days. Showing only days with scheduled
-              items to keep the planner fast.
-            </p>
-          ) : null}
-
-          <PlannerDayGrid
-            tripDates={gridDates}
-            scheduledItemsByDate={scheduledItemsByDate}
-            selectedDay={selectedDay}
-            todayIso={todayIso}
-            canDrag={canDrag}
-            dropTargetKey={dropTargetKey}
-            tone={tone}
-            onSelectDay={setSelectedDay}
-            onDragOverDay={(e, date) => onDragOverTarget(e, `day:${date}`)}
-            onDropDay={onDropDay}
-            onDragStartItem={onDragStart}
-            onDragEndItem={onDragEnd}
-          />
-
-          {selectedDay ? (
-            <PlannerDayDetail
-              date={selectedDay}
-              items={scheduledItemsByDate.get(selectedDay) ?? []}
-              listId={listId}
-              canDrag={canDrag}
-              dropTargetKey={dropTargetKey}
-              tone={tone}
-              resolveCategoryEmoji={resolveCategoryEmoji}
-              onPlaceSelect={(id) => onPlaceSelect?.(id)}
-              onMoveItem={setMoveItemId}
-              onBack={() => setSelectedDay(null)}
-              onDragOverItem={onDragOverTarget}
-              onDropReorder={onDropReorder}
-              onDragStartItem={onDragStart}
-              onDragEndItem={onDragEnd}
-              savingItemId={savingItemId}
-            />
-          ) : null}
-        </section>
       ) : null}
+    </section>
+  ) : null
 
-      {/* Done section — collapsed by default */}
-      <section className="space-y-2">
-        <button
-          type="button"
-          onClick={() => setDoneCollapsed((prev) => !prev)}
-          className="flex w-full items-center justify-between gap-2"
-        >
-          <h3 className={`text-xs font-semibold ${doneHeadingClass}`}>
-            Done
-            <span className={`ml-1.5 font-normal ${doneCountClass}`}>
-              {doneItems.length}
-            </span>
-          </h3>
-          <span className={`text-[11px] ${doneCountClass}`}>
-            {doneCollapsed ? '\u25b6' : '\u25bc'}
+  const doneBlock = (
+    <section className="space-y-2">
+      <button
+        type="button"
+        onClick={() => setDoneCollapsed((prev) => !prev)}
+        className="flex w-full items-center justify-between gap-2"
+      >
+        <h3 className={`text-xs font-semibold ${doneHeadingClass}`}>
+          Done
+          <span className={`ml-1.5 font-normal ${doneCountClass}`}>
+            {doneItems.length}
           </span>
-        </button>
+        </h3>
+        <span className={`text-[11px] ${doneCountClass}`}>
+          {doneCollapsed ? '\u25b6' : '\u25bc'}
+        </span>
+      </button>
 
-        {!doneCollapsed ? (
-          <div
-            className={`space-y-1.5 rounded-md p-1 transition ${
-              dropTargetKey === 'done' ? doneDropHighlight : ''
-            }`}
-            onDragOver={(e) => onDragOverTarget(e, 'done')}
-            onDrop={onDropDone}
-          >
-            {doneItems.length ? (
-              doneItems.map((item) => {
-                const place = item.place!
-                return (
-                  <div
-                    key={item.id}
-                    draggable={canDrag}
-                    onDragStart={() => onDragStart(item.id)}
-                    onDragEnd={onDragEnd}
-                    className={`rounded-lg border px-2.5 py-1.5 ${doneCardBorder}`}
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <button
-                        type="button"
-                        className="min-w-0 text-left"
-                        onClick={() => onPlaceSelect?.(place.id)}
-                      >
-                        <p className={`truncate text-xs font-medium ${doneNameClass}`}>
-                          {place.name}
-                        </p>
-                        <p className={`mt-0.5 inline-flex items-center gap-1 text-[11px] ${doneMetaClass}`}>
-                          <span aria-hidden className="text-[12px] leading-none">
-                            {resolveCategoryEmoji(place.category)}
-                          </span>
-                          <span>{place.category}</span>
-                        </p>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setMoveItemId(item.id)}
-                        disabled={savingItemId === item.id}
-                        className={`shrink-0 rounded-md border px-2 py-1 text-[11px] disabled:opacity-60 ${doneMoveBtn}`}
-                      >
-                        Move
-                      </button>
-                    </div>
+      {!doneCollapsed ? (
+        <div
+          className={`space-y-1.5 rounded-md p-1 transition ${
+            dropTargetKey === 'done' ? doneDropHighlight : ''
+          }`}
+          onDragOver={(e) => onDragOverTarget(e, 'done')}
+          onDrop={onDropDone}
+        >
+          {doneItems.length ? (
+            doneItems.map((item) => {
+              const place = item.place!
+              return (
+                <div
+                  key={item.id}
+                  draggable={canDrag}
+                  onDragStart={() => onDragStart(item.id)}
+                  onDragEnd={onDragEnd}
+                  className={`rounded-lg border px-2.5 py-1.5 ${doneCardBorder}`}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <button
+                      type="button"
+                      className="min-w-0 text-left"
+                      onClick={() => onPlaceSelect?.(place.id)}
+                    >
+                      <p className={`truncate text-xs font-medium ${doneNameClass}`}>
+                        {place.name}
+                      </p>
+                      <p className={`mt-0.5 inline-flex items-center gap-1 text-[11px] ${doneMetaClass}`}>
+                        <span aria-hidden className="text-[12px] leading-none">
+                          {resolveCategoryEmoji(place.category)}
+                        </span>
+                        <span>{place.category}</span>
+                      </p>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setMoveItemId(item.id)}
+                      disabled={savingItemId === item.id}
+                      className={`shrink-0 rounded-md border px-2 py-1 text-[11px] disabled:opacity-60 ${doneMoveBtn}`}
+                    >
+                      Move
+                    </button>
                   </div>
-                )
-              })
-            ) : (
-              <p className={`text-[11px] ${doneEmptyClass}`}>Nothing done yet.</p>
-            )}
-          </div>
-        ) : null}
-      </section>
-
-      {error && !editingTripDates ? (
-        <p className={`text-xs ${errorClass}`}>{error}</p>
+                </div>
+              )
+            })
+          ) : (
+            <p className={`text-[11px] ${doneEmptyClass}`}>Nothing done yet.</p>
+          )}
+        </div>
       ) : null}
+    </section>
+  )
+
+  const errorBlock =
+    error && !editingTripDates ? (
+      <p className={`text-xs ${errorClass}`}>{error}</p>
+    ) : null
+
+  // ── Split layout: left column (grid) + right column (day detail) ──
+  if (isSplit) {
+    return (
+      <div className={`flex h-full ${plannerToneClass}`} data-testid="list-planner">
+        <div className="flex-1 overflow-y-auto p-3">
+          <div className="mx-auto w-full max-w-4xl space-y-4">
+            {tripDatesBlock}
+            {backlogBlock}
+            {dayGridBlock}
+            {doneBlock}
+            {errorBlock}
+          </div>
+        </div>
+        <div className="w-[400px] shrink-0 overflow-y-auto border-l border-slate-200/80 bg-white/50 p-3">
+          {selectedDay ? (
+            <>
+              <header className="sticky top-0 z-10 -mx-3 -mt-3 mb-3 border-b border-slate-200 bg-slate-50 px-3 py-2">
+                <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                  <span className="text-sm font-semibold text-slate-900">
+                    {formatDayLabelFull(selectedDay)}
+                  </span>
+                  <span className="text-xs text-slate-500">
+                    {(scheduledItemsByDate.get(selectedDay) ?? []).length} items
+                  </span>
+                </div>
+              </header>
+              <PlannerDayDetail
+                date={selectedDay}
+                items={scheduledItemsByDate.get(selectedDay) ?? []}
+                listId={listId}
+                canDrag={canDrag}
+                dropTargetKey={dropTargetKey}
+                tone={tone}
+                resolveCategoryEmoji={resolveCategoryEmoji}
+                onPlaceSelect={(id) => onPlaceSelect?.(id)}
+                onMoveItem={setMoveItemId}
+                onBack={() => setSelectedDay(null)}
+                showBackButton={false}
+                onDragOverItem={onDragOverTarget}
+                onDropReorder={onDropReorder}
+                onDragStartItem={onDragStart}
+                onDragEndItem={onDragEnd}
+                savingItemId={savingItemId}
+              />
+            </>
+          ) : (
+            <div className="flex h-full items-center justify-center">
+              <p className={`text-sm ${mutedClass}`}>Select a day to see details</p>
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  // ── Column layout (default): single scrollable column ──
+  return (
+    <div className={`p-3 space-y-4 ${plannerToneClass}`} data-testid="list-planner">
+      {tripDatesBlock}
+      {backlogBlock}
+      {dayGridBlock}
+      {doneBlock}
+      {errorBlock}
     </div>
   )
 }
