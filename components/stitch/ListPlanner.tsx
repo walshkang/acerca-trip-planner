@@ -673,23 +673,27 @@ export default function ListPlanner({
         error={editingTripDates ? error : null}
       />
 
-      <PlannerBacklog
-        items={backlogItems}
-        canDrag={canDrag}
-        isDragOver={dropTargetKey === 'backlog'}
-        tone={tone}
-        resolveCategoryEmoji={resolveCategoryEmoji}
-        onPlaceSelect={(id) => onPlaceSelect?.(id)}
-        onMoveItem={setMoveItemId}
-        onDragOver={(e) => onDragOverTarget(e, 'backlog')}
-        onDrop={onDropBacklog}
-        onDragStartItem={onDragStart}
-        onDragEndItem={onDragEnd}
-        savingItemId={savingItemId}
-      />
+      <div className={isDark ? '' : 'border-b border-slate-200 pb-4'}>
+        <PlannerBacklog
+          items={backlogItems}
+          canDrag={canDrag}
+          isDragOver={dropTargetKey === 'backlog'}
+          tone={tone}
+          resolveCategoryEmoji={resolveCategoryEmoji}
+          onPlaceSelect={(id) => onPlaceSelect?.(id)}
+          onMoveItem={setMoveItemId}
+          onDragOver={(e) => onDragOverTarget(e, 'backlog')}
+          onDrop={onDropBacklog}
+          onDragStartItem={onDragStart}
+          onDragEndItem={onDragEnd}
+          savingItemId={savingItemId}
+        />
+      </div>
 
       {tripRange ? (
-        <section className="space-y-3">
+        <section
+          className={`space-y-3${isDark ? '' : ' border-b border-slate-200 pb-4'}`}
+        >
           {isTripRangeTooLong ? (
             <p className={`text-[11px] ${mutedClass}`}>
               Trip spans {tripDaysCount} days. Showing only days with scheduled
