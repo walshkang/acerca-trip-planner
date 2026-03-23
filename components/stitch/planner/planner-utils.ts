@@ -47,4 +47,10 @@ export function formatDayLabelFull(isoDate: string): string {
   return `${weekday} ${month} ${day}`
 }
 
+export function slotLabel(slot: PlannerSlot | null): string {
+  if (slot === 'morning') return 'AM'
+  if (slot === 'evening') return 'PM'
+  return 'Mid'
+}
+
 export const DAY_CAPACITY_WARN = 5

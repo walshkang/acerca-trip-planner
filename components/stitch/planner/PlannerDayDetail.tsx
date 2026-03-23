@@ -2,7 +2,7 @@ import { type DragEvent } from 'react'
 import type { ListItemRow } from '@/components/stitch/ListDetailBody'
 import { slotFromScheduledStartTime } from '@/lib/lists/planner'
 import { useRoutingPreview } from '@/lib/routing/useRoutingPreview'
-import { formatDayLabelFull, slotDotClassName } from './planner-utils'
+import { formatDayLabelFull, slotDotClassName, slotLabel } from './planner-utils'
 
 type Props = {
   date: string
@@ -77,7 +77,7 @@ export default function PlannerDayDetail({
           onClick={onBack}
           className={`text-[11px] ${backClass}`}
         >
-          \u2190 Grid
+          ← Grid
         </button>
         <h4 className={`text-xs font-semibold ${headingClass}`}>
           {formatDayLabelFull(date)}
@@ -128,9 +128,14 @@ export default function PlannerDayDetail({
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-start gap-2 min-w-0">
-                    <span
-                      className={`mt-1 h-2 w-2 shrink-0 rounded-full ${slotDotClassName(slot, tone)}`}
-                    />
+                    <span className="mt-0.5 flex shrink-0 flex-col items-center gap-0.5">
+                      <span
+                        className={`h-2 w-2 rounded-full ${slotDotClassName(slot, tone)}`}
+                      />
+                      <span className={`text-[8px] leading-none ${mutedClass}`}>
+                        {slotLabel(slot)}
+                      </span>
+                    </span>
                     <button
                       type="button"
                       className="min-w-0 text-left"

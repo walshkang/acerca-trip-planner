@@ -5,6 +5,7 @@ import {
   DAY_CAPACITY_WARN,
   formatDayLabel,
   slotDotClassName,
+  slotLabel,
 } from './planner-utils'
 
 type Props = {
@@ -105,6 +106,7 @@ export default function PlannerDayCell({
               className="flex items-center gap-1 min-w-0"
             >
               <span
+                title={slotLabel(slot)}
                 className={`h-1.5 w-1.5 shrink-0 rounded-full ${slotDotClassName(slot, tone)}`}
               />
               <span className={`truncate text-[10px] leading-tight ${nameClass}`}>

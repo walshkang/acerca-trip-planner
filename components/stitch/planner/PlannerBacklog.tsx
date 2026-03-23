@@ -70,6 +70,17 @@ export default function PlannerBacklog({
           onDragOver={onDragOver}
           onDrop={onDrop}
         >
+          {(() => {
+            const orphanCount = items.filter((i) => i.scheduled_date).length
+            if (orphanCount > 0) {
+              return (
+                <p className={`text-[11px] ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>
+                  {orphanCount} {orphanCount === 1 ? 'item' : 'items'} fell outside your trip dates.
+                </p>
+              )
+            }
+            return null
+          })()}
           {items.length ? (
             items.map((item) => {
               const place = item.place!
