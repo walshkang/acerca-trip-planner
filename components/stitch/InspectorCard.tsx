@@ -230,7 +230,7 @@ export default function InspectorCard(props: {
 
   return (
     <div
-      className={`glass-panel pointer-events-auto w-[min(420px,92vw)] rounded-lg ${
+      className={`glass-panel pointer-events-auto w-[min(420px,92vw)] rounded-lg md:rounded-[4px] md:border-paper-tertiary-fixed md:bg-paper-surface-warm md:shadow-none md:backdrop-blur-none ${
         isDark ? 'text-slate-100' : 'text-slate-900 inspector-light'
       }`}
       onClick={(e) => e.stopPropagation()}
@@ -240,16 +240,16 @@ export default function InspectorCard(props: {
       <div className="p-4 space-y-3">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <h3 className="truncate text-sm font-semibold text-slate-100">
+            <h3 className="truncate text-sm font-semibold text-slate-100 md:font-headline md:font-extrabold md:uppercase md:tracking-tight md:text-paper-on-surface">
               {candidate.name}
             </h3>
             {candidate.address ? (
-              <p className="mt-1 truncate text-xs text-slate-300">
+              <p className="mt-1 truncate text-xs text-slate-300 md:font-body md:text-paper-on-surface-variant">
                 {candidate.address}
               </p>
             ) : null}
             {neighborhoodLabel ? (
-              <p className="mt-1 truncate text-[11px] text-slate-400">
+              <p className="mt-1 truncate text-[11px] text-slate-400 md:text-paper-on-surface-variant">
                 {neighborhoodLabel}
               </p>
             ) : null}
@@ -257,7 +257,7 @@ export default function InspectorCard(props: {
           <button
             type="button"
             onClick={props.onClose ?? clear}
-            className="glass-button px-2 py-1 text-[11px]"
+            className="glass-button px-2 py-1 text-[11px] md:rounded-[4px] md:border md:border-paper-tertiary-fixed md:bg-paper-surface-container-low md:text-paper-on-surface md:shadow-none md:backdrop-blur-none hover:md:bg-paper-tertiary-fixed"
           >
             Close
           </button>
@@ -268,19 +268,19 @@ export default function InspectorCard(props: {
             <button
               type="button"
               onClick={() => setShowMoreDetails((prev) => !prev)}
-              className="glass-button px-3 py-1 text-[11px]"
+              className="glass-button px-3 py-1 text-[11px] md:rounded-[4px] md:border md:border-paper-tertiary-fixed md:bg-paper-surface-container-low md:text-paper-on-surface md:shadow-none md:backdrop-blur-none hover:md:bg-paper-tertiary-fixed"
             >
               {showMoreDetails ? 'Hide details' : 'More details'}
             </button>
 
             {showMoreDetails ? (
-              <div className="mt-2 space-y-2 text-xs text-slate-200">
+              <div className="mt-2 space-y-2 text-xs text-slate-200 md:font-body md:text-paper-on-surface">
                 {google?.opening_hours ? (
                   <div>
-                    <p className="text-[11px] font-semibold text-slate-200">
+                    <p className="text-[11px] font-semibold text-slate-200 md:text-[10px] md:font-bold md:uppercase md:tracking-[0.2em] md:text-paper-on-surface">
                       Hours
                     </p>
-                    <p className="mt-0.5 text-[11px] text-slate-300">
+                    <p className="mt-0.5 text-[11px] text-slate-300 md:text-paper-on-surface-variant">
                       {google.opening_hours.open_now === true
                         ? 'Open now'
                         : google.opening_hours.open_now === false
@@ -288,7 +288,7 @@ export default function InspectorCard(props: {
                           : 'Hours status unavailable'}
                     </p>
                     {google.opening_hours.weekday_text?.length ? (
-                      <ul className="mt-1 space-y-0.5 text-[11px] text-slate-300">
+                      <ul className="mt-1 space-y-0.5 text-[11px] text-slate-300 md:text-paper-on-surface-variant">
                         {google.opening_hours.weekday_text
                           .slice(0, 7)
                           .map((row) => (
@@ -301,14 +301,14 @@ export default function InspectorCard(props: {
 
                 {googleTypes.length ? (
                   <div>
-                    <p className="text-[11px] font-semibold text-slate-200">
+                    <p className="text-[11px] font-semibold text-slate-200 md:text-[10px] md:font-bold md:uppercase md:tracking-[0.2em] md:text-paper-on-surface">
                       Google types
                     </p>
                     <div className="mt-1 flex flex-wrap gap-2">
                       {googleTypes.slice(0, 12).map((t) => (
                         <span
                           key={t}
-                          className="rounded-full border border-white/10 px-2 py-0.5 text-[11px] text-slate-200"
+                          className="rounded-full border border-white/10 px-2 py-0.5 text-[11px] text-slate-200 md:rounded-[2px] md:border-paper-tertiary-fixed md:bg-paper-surface-container md:text-paper-on-surface-variant"
                         >
                           {t}
                         </span>
@@ -319,11 +319,11 @@ export default function InspectorCard(props: {
 
                 {google?.website ? (
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-[11px] font-semibold text-slate-200">
+                    <span className="text-[11px] font-semibold text-slate-200 md:text-paper-on-surface">
                       Website
                     </span>
                     <a
-                      className="truncate text-[11px] text-slate-300 underline hover:text-slate-100"
+                      className="truncate text-[11px] text-slate-300 underline hover:text-slate-100 md:text-paper-primary hover:md:text-paper-primary-container"
                       href={google.website}
                       target="_blank"
                       rel="noreferrer"
@@ -335,11 +335,11 @@ export default function InspectorCard(props: {
 
                 {google?.url ? (
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-[11px] font-semibold text-slate-200">
+                    <span className="text-[11px] font-semibold text-slate-200 md:text-paper-on-surface">
                       Google Maps
                     </span>
                     <a
-                      className="truncate text-[11px] text-slate-300 underline hover:text-slate-100"
+                      className="truncate text-[11px] text-slate-300 underline hover:text-slate-100 md:text-paper-primary hover:md:text-paper-primary-container"
                       href={google.url}
                       target="_blank"
                       rel="noreferrer"
@@ -360,18 +360,18 @@ export default function InspectorCard(props: {
               <img
                 src={curated.thumbnail_url}
                 alt={curated.wikipedia_title ?? candidate.name}
-                className="h-14 w-14 shrink-0 rounded-md object-cover bg-slate-800/60"
+                className="h-14 w-14 shrink-0 rounded-md object-cover bg-slate-800/60 md:rounded-[4px] md:bg-paper-surface-container"
               />
             ) : null}
             <div className="min-w-0">
               {curated?.wikipedia_title ? (
-                <p className="text-[11px] text-slate-300">
+                <p className="text-[11px] text-slate-300 md:text-paper-on-surface-variant">
                   {curated.wikipedia_title}
                   {curated.wikidata_qid ? ` · ${curated.wikidata_qid}` : ''}
                 </p>
               ) : null}
               {curated?.summary ? (
-                <p className="mt-1 text-xs text-slate-200 line-clamp-4">
+                <p className="mt-1 text-xs text-slate-200 line-clamp-4 md:text-paper-on-surface">
                   {curated.summary}
                 </p>
               ) : null}
@@ -382,16 +382,16 @@ export default function InspectorCard(props: {
         {normalized ? (
           <div className="space-y-2">
             <div className="flex flex-wrap gap-2">
-              <span className="rounded-full border border-white/10 px-2 py-0.5 text-[11px] text-slate-200">
+              <span className="rounded-full border border-white/10 px-2 py-0.5 text-[11px] text-slate-200 md:rounded-[2px] md:border-paper-tertiary-fixed md:bg-paper-surface-container md:text-paper-on-surface-variant">
                 {normalized.category}
               </span>
               {normalized.energy ? (
-                <span className="rounded-full border border-white/10 px-2 py-0.5 text-[11px] text-slate-200">
+                <span className="rounded-full border border-white/10 px-2 py-0.5 text-[11px] text-slate-200 md:rounded-[2px] md:border-paper-tertiary-fixed md:bg-paper-surface-container md:text-paper-on-surface-variant">
                   Energy: {normalized.energy}
                 </span>
               ) : null}
               {normalized.vibe ? (
-                <span className="rounded-full border border-white/10 px-2 py-0.5 text-[11px] text-slate-200">
+                <span className="rounded-full border border-white/10 px-2 py-0.5 text-[11px] text-slate-200 md:rounded-[2px] md:border-paper-tertiary-fixed md:bg-paper-surface-container md:text-paper-on-surface-variant">
                   Vibe: {normalized.vibe}
                 </span>
               ) : null}
@@ -402,7 +402,7 @@ export default function InspectorCard(props: {
                 {normalized.tags.slice(0, 10).map((t) => (
                   <span
                     key={t}
-                    className="rounded-full bg-slate-800/70 px-2 py-0.5 text-[11px] text-slate-200"
+                    className="rounded-full bg-slate-800/70 px-2 py-0.5 text-[11px] text-slate-200 md:rounded-[2px] md:border md:border-paper-tertiary-fixed md:bg-paper-surface-container-high md:text-paper-on-surface"
                   >
                     {t}
                   </span>
@@ -420,12 +420,14 @@ export default function InspectorCard(props: {
 
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <p className={`text-xs font-medium ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+            <p
+              className={`text-xs font-medium md:text-[10px] md:font-bold md:uppercase md:tracking-[0.2em] ${isDark ? 'text-slate-300' : 'text-slate-700'} md:text-paper-on-surface`}
+            >
               List
             </p>
           </div>
           <select
-            className="glass-input w-full px-2 py-2 text-xs"
+            className="glass-input w-full px-2 py-2 text-xs md:rounded-[4px] md:border-paper-tertiary-fixed md:bg-paper-surface-container md:backdrop-blur-none md:text-paper-on-surface"
             value={selectedListId ?? ''}
             onChange={(e) => setSelectedListId(e.target.value || null)}
             disabled={listsLoading}
@@ -444,7 +446,7 @@ export default function InspectorCard(props: {
 
           <div className="flex items-center gap-2">
             <input
-              className="glass-input flex-1 text-xs"
+              className="glass-input flex-1 text-xs md:rounded-[4px] md:border-paper-tertiary-fixed md:bg-paper-surface-container md:backdrop-blur-none md:text-paper-on-surface md:placeholder:text-paper-on-surface-variant"
               value={newListName}
               onChange={(e) => setNewListName(e.target.value)}
               placeholder="New list name"
@@ -453,17 +455,17 @@ export default function InspectorCard(props: {
               type="button"
               onClick={createList}
               disabled={creatingList || !newListName.trim()}
-              className="glass-button rounded-md px-2 py-1 text-[11px] disabled:opacity-50"
+              className="glass-button rounded-md px-2 py-1 text-[11px] disabled:opacity-50 md:rounded-[4px] md:border md:border-paper-tertiary-fixed md:bg-paper-surface-container-low md:text-paper-on-surface md:shadow-none md:backdrop-blur-none hover:md:bg-paper-tertiary-fixed"
             >
               {creatingList ? 'Adding…' : 'Add'}
             </button>
           </div>
           <div>
-            <label className="block text-xs font-medium text-slate-300">
+            <label className="block text-xs font-medium text-slate-300 md:text-paper-on-surface">
               Add tags (optional)
             </label>
             <input
-              className="glass-input mt-1 w-full text-xs"
+              className="glass-input mt-1 w-full text-xs md:rounded-[4px] md:border-paper-tertiary-fixed md:bg-paper-surface-container md:backdrop-blur-none md:text-paper-on-surface md:placeholder:text-paper-on-surface-variant"
               value={tagInput}
               onChange={(e) => setTagInput(e.target.value)}
               disabled={!selectedListId}
@@ -486,7 +488,7 @@ export default function InspectorCard(props: {
           type="button"
           onClick={commit}
           disabled={isCommitting}
-          className={`w-full rounded-md px-3 py-2 text-sm shadow-sm transition-colors disabled:opacity-50 ${
+          className={`w-full rounded-md px-3 py-2 text-sm shadow-sm transition-colors disabled:opacity-50 md:!rounded-[4px] md:!border-0 md:!bg-paper-primary md:!px-4 md:!py-2.5 md:!text-xs md:!font-bold md:!uppercase md:!tracking-widest md:!text-paper-on-primary md:!shadow-none hover:md:!bg-paper-primary-container ${
             isDark
               ? 'bg-slate-100/90 text-slate-900 hover:bg-slate-100'
               : 'bg-slate-900/90 text-slate-50 hover:bg-slate-900'

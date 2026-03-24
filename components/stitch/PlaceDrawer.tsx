@@ -422,7 +422,7 @@ export default function PlaceDrawer({
       className={
         isEmbedded
           ? `${rootTextClass} ${PLACE_FOCUS_GLOW}`
-          : `glass-panel absolute right-4 z-20 w-[min(360px,90vw)] max-h-[80vh] overflow-hidden rounded-xl ${rootTextClass} ${PLACE_FOCUS_GLOW}`
+          : `glass-panel absolute right-4 z-20 w-[min(360px,90vw)] max-h-[80vh] overflow-hidden rounded-xl md:rounded-[4px] md:border-paper-tertiary-fixed md:bg-paper-surface-warm md:shadow-none md:backdrop-blur-none ${rootTextClass} ${PLACE_FOCUS_GLOW}`
       }
       style={isEmbedded ? undefined : { top: `${computedTop}px` }}
       data-testid="place-drawer"
@@ -431,10 +431,20 @@ export default function PlaceDrawer({
         className={`flex items-center justify-between border-b px-4 py-3 ${borderClass}`}
       >
         <div>
-          <p className={`text-[11px] uppercase tracking-wide ${kickerClass}`}>Place</p>
-          <h2 className={`text-sm font-semibold ${titleClass}`}>{place.name}</h2>
+          <p
+            className={`text-[11px] uppercase tracking-wide md:text-[10px] md:font-bold md:tracking-[0.2em] ${kickerClass} md:text-paper-on-surface-variant`}
+          >
+            Place
+          </p>
+          <h2
+            className={`text-sm font-semibold md:font-headline md:font-extrabold md:uppercase md:tracking-tighter ${titleClass}`}
+          >
+            {place.name}
+          </h2>
           {neighborhood ? (
-            <p className={`text-[11px] ${secondaryTextClass}`}>
+            <p
+              className={`text-[11px] md:text-paper-on-surface-variant ${secondaryTextClass}`}
+            >
               {neighborhood.name}
               {neighborhood.borough ? ` · ${neighborhood.borough}` : ''}
             </p>
@@ -454,12 +464,18 @@ export default function PlaceDrawer({
 
       <div className="space-y-4 px-4 py-3">
         <div className="space-y-1">
-          <p className={`text-[11px] font-semibold ${bodyLabelClass}`}>Place type</p>
-          <p className={`text-[11px] ${bodyMutedClass}`}>
+          <p
+            className={`text-[11px] font-semibold md:text-[10px] md:font-bold md:uppercase md:tracking-[0.2em] ${bodyLabelClass}`}
+          >
+            Place type
+          </p>
+          <p className={`text-[11px] md:font-body md:text-paper-on-surface-variant ${bodyMutedClass}`}>
             A fixed category that sets this place’s map icon.
           </p>
           <div className="flex items-center gap-2">
-            <span className={`rounded-full border px-2 py-0.5 text-[10px] ${chipClass}`}>
+            <span
+              className={`rounded-full border px-2 py-0.5 text-[10px] md:rounded-[2px] md:border-paper-tertiary-fixed md:bg-paper-surface-container md:font-bold md:uppercase md:tracking-wider ${chipClass}`}
+            >
               {place.category}
             </span>
             <button
@@ -488,8 +504,16 @@ export default function PlaceDrawer({
 
             {details?.place?.address ? (
               <div>
-                <p className={`text-[11px] font-semibold ${bodyLabelClass}`}>Address</p>
-                <p className={`mt-1 text-xs ${bodyTextClass}`}>{details.place.address}</p>
+                <p
+                  className={`text-[11px] font-semibold md:text-[10px] md:font-bold md:uppercase md:tracking-[0.2em] ${bodyLabelClass}`}
+                >
+                  Address
+                </p>
+                <p
+                  className={`mt-1 text-xs md:font-body md:text-paper-on-surface ${bodyTextClass}`}
+                >
+                  {details.place.address}
+                </p>
               </div>
             ) : null}
 
@@ -561,8 +585,8 @@ export default function PlaceDrawer({
                     <img
                       src={computedDetails.thumbnailUrl}
                       alt={computedDetails.wikiCurated?.wikipedia_title ?? place.name}
-                      className={`h-14 w-14 shrink-0 rounded-md object-cover ${
-                        isDark ? 'bg-slate-800/60' : 'bg-slate-200/80'
+                      className={`h-14 w-14 shrink-0 rounded-md object-cover md:rounded-[4px] ${
+                        isDark ? 'bg-slate-800/60' : 'bg-slate-200/80 md:bg-paper-surface-container'
                       }`}
                     />
                   ) : null}
@@ -602,7 +626,9 @@ export default function PlaceDrawer({
 
         {effectiveActiveListItem ? (
           <div className="space-y-2">
-            <p className={`text-[11px] font-semibold ${bodyLabelClass}`}>
+            <p
+              className={`text-[11px] font-semibold md:text-[10px] md:font-bold md:uppercase md:tracking-[0.2em] ${bodyLabelClass}`}
+            >
               List tags
             </p>
             {activeListTags.length ? (
@@ -610,7 +636,7 @@ export default function PlaceDrawer({
                 {activeListTags.map((tag) => (
                   <span
                     key={`list-tag:${tag}`}
-                    className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] ${tagChipClass}`}
+                    className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] md:rounded-[2px] md:border-paper-tertiary-fixed md:bg-paper-surface-container ${tagChipClass}`}
                   >
                     {tag}
                     <button
@@ -636,7 +662,7 @@ export default function PlaceDrawer({
             )}
             <form onSubmit={handleAddTag} className="flex flex-wrap items-center gap-2">
               <input
-                className="glass-input flex-1 text-xs"
+                className="glass-input flex-1 text-xs md:rounded-[4px] md:border-paper-tertiary-fixed md:bg-paper-surface-container md:backdrop-blur-none md:text-paper-on-surface md:placeholder:text-paper-on-surface-variant"
                 placeholder="Add tags (comma-separated)"
                 value={tagInput}
                 onChange={(event) => {
@@ -647,7 +673,7 @@ export default function PlaceDrawer({
               />
               <button
                 type="submit"
-                className="glass-button rounded-md px-2 py-1 text-[11px] disabled:opacity-60"
+                className="glass-button rounded-md px-2 py-1 text-[11px] disabled:opacity-60 md:rounded-[4px] md:border md:border-paper-tertiary-fixed md:bg-paper-surface-container-low md:text-paper-on-surface md:shadow-none md:backdrop-blur-none hover:md:bg-paper-tertiary-fixed"
                 disabled={tagStatus === 'saving'}
               >
                 {tagStatus === 'saving' ? 'Saving…' : 'Add'}
@@ -664,7 +690,7 @@ export default function PlaceDrawer({
                 type="button"
                 onClick={handleRemoveFromActiveList}
                 disabled={removingFromActiveList}
-                className="glass-button rounded-md px-2 py-1 text-[11px] disabled:opacity-60"
+                className="glass-button rounded-md px-2 py-1 text-[11px] disabled:opacity-60 md:rounded-[4px] md:border md:border-paper-tertiary-fixed md:bg-paper-surface-container-low md:text-paper-on-surface md:shadow-none md:backdrop-blur-none hover:md:bg-paper-tertiary-fixed"
               >
                 {removingFromActiveList
                   ? 'Removing…'

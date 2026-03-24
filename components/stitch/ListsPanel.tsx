@@ -89,17 +89,19 @@ export default function ListsPanel() {
   }
 
   return (
-    <section className="rounded-lg border border-gray-200 bg-white p-4 space-y-4">
+    <section className="paper-panel space-y-4 p-4">
       <div>
-        <h2 className="text-sm font-semibold text-gray-900">Lists</h2>
-        <p className="mt-1 text-xs text-gray-500">
+        <h2 className="font-headline text-sm font-extrabold uppercase tracking-tighter text-paper-on-surface">
+          Lists
+        </h2>
+        <p className="mt-1 font-body text-xs text-paper-on-surface-variant">
           Organize approved places into lightweight collections.
         </p>
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
         <input
-          className="w-full flex-1 rounded-md border border-gray-200 px-3 py-2 text-sm"
+          className="min-w-0 flex-1 rounded-[4px] border border-paper-tertiary-fixed bg-paper-surface-container px-3 py-2 font-body text-sm text-paper-on-surface placeholder:text-paper-on-surface-variant outline-none"
           placeholder="New list name"
           value={newName}
           onChange={(e) => setNewName(e.target.value)}
@@ -108,44 +110,48 @@ export default function ListsPanel() {
           type="button"
           onClick={createList}
           disabled={creating || !newName.trim()}
-          className="rounded-md bg-black px-3 py-2 text-xs text-white disabled:opacity-50"
+          className="paper-button-primary shrink-0 text-xs disabled:opacity-50"
         >
           {creating ? 'Creating…' : 'Create'}
         </button>
       </div>
 
-      {loading ? <p className="text-xs text-gray-500">Loading lists…</p> : null}
+      {loading ? (
+        <p className="text-xs text-paper-on-surface-variant">Loading lists…</p>
+      ) : null}
 
       {lists.length ? (
         <div className="space-y-2">
           {lists.map((list) => (
             <div
               key={list.id}
-              className="flex items-center justify-between gap-3 rounded-md border border-gray-100 px-3 py-2"
+              className="flex items-center justify-between gap-3 rounded-[4px] border border-paper-tertiary-fixed bg-paper-surface-container-low px-3 py-2"
             >
               <div className="min-w-0">
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <a
-                    className="text-sm font-medium text-gray-900 underline-offset-2 hover:underline"
+                    className="font-headline text-sm font-extrabold uppercase tracking-tight text-paper-primary underline-offset-2 hover:underline"
                     href={`/lists/${list.id}`}
                   >
                     {list.name}
                   </a>
                   {list.is_default ? (
-                    <span className="rounded-full border border-gray-200 px-2 py-0.5 text-[10px] text-gray-500">
+                    <span className="inline-flex items-center rounded-[2px] border border-paper-tertiary-fixed bg-paper-surface-container px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-paper-on-surface-variant">
                       Default
                     </span>
                   ) : null}
                 </div>
                 {list.description ? (
-                  <p className="text-xs text-gray-500">{list.description}</p>
+                  <p className="mt-1 text-xs text-paper-on-surface-variant">
+                    {list.description}
+                  </p>
                 ) : null}
               </div>
               <button
                 type="button"
                 onClick={() => deleteList(list.id)}
                 disabled={list.is_default || deletingId === list.id}
-                className="rounded-md border border-gray-200 px-2 py-1 text-xs text-gray-700 disabled:opacity-50"
+                className="shrink-0 rounded-[4px] border border-paper-tertiary-fixed bg-paper-surface-container px-2 py-1 text-xs font-bold text-paper-on-surface hover:bg-paper-tertiary-fixed disabled:opacity-50"
               >
                 {deletingId === list.id ? 'Deleting…' : 'Delete'}
               </button>
@@ -153,10 +159,10 @@ export default function ListsPanel() {
           ))}
         </div>
       ) : !loading ? (
-        <p className="text-xs text-gray-500">No lists yet.</p>
+        <p className="text-xs text-paper-on-surface-variant">No lists yet.</p>
       ) : null}
 
-      {error ? <p className="text-xs text-red-600">{error}</p> : null}
+      {error ? <p className="text-xs text-paper-error">{error}</p> : null}
     </section>
   )
 }

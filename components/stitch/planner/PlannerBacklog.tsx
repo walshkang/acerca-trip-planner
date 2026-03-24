@@ -53,7 +53,9 @@ export default function PlannerBacklog({
         onClick={() => setCollapsed((prev) => !prev)}
         className="flex w-full items-center justify-between gap-2"
       >
-        <h3 className={`text-xs font-semibold ${headingClass}`}>
+        <h3
+          className={`text-xs font-semibold md:font-headline md:font-extrabold md:uppercase md:tracking-tighter ${headingClass}`}
+        >
           Backlog
           <span className={`ml-1.5 font-normal ${countClass}`}>
             {items.length}
@@ -66,7 +68,7 @@ export default function PlannerBacklog({
 
       {!collapsed ? (
         <div
-          className={`space-y-1.5 rounded-md p-1 transition ${isDragOver ? dropHighlight : ''}`}
+          className={`space-y-1.5 rounded-md p-1 transition md:rounded-[2px] md:border md:border-paper-tertiary-fixed md:bg-paper-surface-container-low md:p-2 ${isDragOver ? dropHighlight : ''}`}
           onDragOver={onDragOver}
           onDrop={onDrop}
         >
@@ -90,7 +92,7 @@ export default function PlannerBacklog({
                   draggable={canDrag}
                   onDragStart={() => onDragStartItem(item.id)}
                   onDragEnd={onDragEndItem}
-                  className={`rounded-lg border px-2.5 py-1.5 ${cardBorder}`}
+                  className={`rounded-lg border px-2.5 py-1.5 md:rounded-[2px] ${cardBorder} md:!border-paper-tertiary-fixed md:!bg-paper-surface-container-low`}
                 >
                   <div className="flex items-center justify-between gap-2">
                     <button
@@ -98,10 +100,14 @@ export default function PlannerBacklog({
                       className="min-w-0 text-left"
                       onClick={() => onPlaceSelect(place.id)}
                     >
-                      <p className={`truncate text-xs font-medium ${nameClass}`}>
+                      <p
+                        className={`truncate text-xs font-medium md:font-headline md:font-extrabold md:uppercase md:tracking-tight ${nameClass}`}
+                      >
                         {place.name}
                       </p>
-                      <p className={`mt-0.5 inline-flex items-center gap-1 text-[11px] ${metaClass}`}>
+                      <p
+                        className={`mt-0.5 inline-flex items-center gap-1 text-[11px] md:text-paper-on-surface-variant ${metaClass}`}
+                      >
                         <span aria-hidden className="text-[12px] leading-none">
                           {resolveCategoryEmoji(place.category)}
                         </span>
@@ -112,7 +118,7 @@ export default function PlannerBacklog({
                       type="button"
                       onClick={() => onMoveItem(item.id)}
                       disabled={savingItemId === item.id}
-                      className={`shrink-0 rounded-md border px-2 py-1 text-[11px] disabled:opacity-60 ${moveBtn}`}
+                      className={`shrink-0 rounded-md border px-2 py-1 text-[11px] disabled:opacity-60 md:rounded-[4px] md:!border-paper-tertiary-fixed md:!bg-paper-surface-container md:!text-paper-on-surface hover:md:!bg-paper-tertiary-fixed ${moveBtn}`}
                     >
                       Move
                     </button>

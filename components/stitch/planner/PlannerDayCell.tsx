@@ -47,8 +47,8 @@ export default function PlannerDayCell({
 
   const baseBorder = isDark ? 'border-white/10' : 'border-slate-300'
   const selectedBorder = isDark
-    ? 'ring-2 ring-sky-400/60 border-sky-400/40'
-    : 'ring-2 ring-sky-500/50 border-sky-500/30'
+    ? 'ring-2 ring-sky-400/60 border-sky-400/40 md:ring-2 md:ring-paper-primary md:border-paper-primary'
+    : 'ring-2 ring-sky-500/50 border-sky-500/30 md:ring-2 md:ring-paper-primary md:border-paper-primary'
   const todayBorder = isDark
     ? 'border-sky-400/30'
     : 'border-sky-500/25'
@@ -56,10 +56,12 @@ export default function PlannerDayCell({
     ? 'bg-slate-100/10 ring-1 ring-slate-200/40'
     : 'bg-sky-50 ring-1 ring-sky-300/50'
   const capacityBg = isDark ? 'bg-amber-900/20' : 'bg-amber-50'
-  const bg = isDark ? 'bg-white/5' : 'bg-white shadow-sm'
+  const bg = isDark
+    ? 'bg-white/5'
+    : 'bg-white shadow-sm md:bg-paper-surface-container-lowest md:shadow-none md:border-paper-tertiary-fixed'
   const emptyBg = isDark
     ? 'border-dashed border-white/5'
-    : 'border-dashed border-slate-300 bg-slate-50/50'
+    : 'border-dashed border-slate-300 bg-slate-50/50 md:border-paper-tertiary-fixed md:bg-paper-surface-container'
   const labelClass = isDark ? 'text-slate-200' : 'text-slate-700'
   const countClass = isDark ? 'text-slate-400' : 'text-slate-500'
   const nameClass = isDark ? 'text-slate-100' : 'text-slate-800'
@@ -71,8 +73,8 @@ export default function PlannerDayCell({
     <div
       data-testid="planner-day-cell"
       data-day={date}
-      className={`rounded-lg border p-1.5 min-h-[72px] cursor-pointer transition-all ${
-        isEmpty ? emptyBg : `${bg} ${baseBorder}`
+      className={`rounded-lg border p-1.5 min-h-[72px] cursor-pointer transition-all md:rounded-[4px] ${
+        isEmpty ? emptyBg : `${bg} ${baseBorder} md:!border-paper-tertiary-fixed`
       } ${isSelected ? selectedBorder : ''} ${
         !isSelected && isToday ? todayBorder : ''
       } ${isDragOver ? dropBorder : ''} ${
@@ -84,7 +86,7 @@ export default function PlannerDayCell({
     >
       <div className="flex items-center justify-between gap-1 mb-1">
         <span
-          className={`min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-[10px] font-semibold ${labelClass}`}
+          className={`min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-[10px] font-semibold md:text-[0.65rem] md:font-black ${labelClass}`}
         >
           {formatDayLabel(date)}
         </span>
@@ -109,7 +111,7 @@ export default function PlannerDayCell({
             >
               <span
                 title={slotLabel(slot)}
-                className={`h-1.5 w-1.5 shrink-0 rounded-full ${slotDotClassName(slot, tone)}`}
+                className={`h-1.5 w-1.5 shrink-0 rounded-full ${slotDotClassName(slot, tone)} md:!bg-paper-primary`}
               />
               <span className={`truncate text-[10px] leading-tight ${nameClass}`}>
                 {item.place?.name ?? 'Unknown'}

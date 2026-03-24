@@ -846,8 +846,16 @@ export default function ListDrawer({
         className={`flex items-center justify-between border-b px-4 py-3 ${borderClass}`}
       >
         <div>
-          <h2 className={`text-sm font-semibold ${titleClass}`}>Lists</h2>
-          <p className={`text-xs ${subtitleClass}`}>Keep the map in view.</p>
+          <h2
+            className={`text-sm font-semibold md:font-headline md:text-xs md:font-extrabold md:uppercase md:tracking-tighter ${titleClass}`}
+          >
+            Lists
+          </h2>
+          <p
+            className={`text-xs md:text-[10px] md:font-bold md:uppercase md:tracking-wider md:text-paper-on-surface-variant ${subtitleClass}`}
+          >
+            Keep the map in view.
+          </p>
         </div>
         <div className="flex items-center gap-2">
           {isEmbedded ? null : (
@@ -874,7 +882,7 @@ export default function ListDrawer({
       <div className={`border-b px-4 py-3 space-y-2 ${borderClass}`}>
         <div className="flex items-center gap-2">
           <input
-            className="glass-input flex-1 text-xs"
+            className="glass-input flex-1 text-xs md:rounded-[4px] md:border-paper-tertiary-fixed md:bg-paper-surface-container md:backdrop-blur-none md:text-paper-on-surface md:placeholder:text-paper-on-surface-variant"
             placeholder="New list name"
             value={newListName}
             onChange={(e) => setNewListName(e.target.value)}
@@ -883,7 +891,7 @@ export default function ListDrawer({
             type="button"
             onClick={createList}
             disabled={creatingList || !newListName.trim()}
-            className="glass-button rounded-md px-2 py-1 text-[11px] disabled:opacity-50"
+            className="glass-button rounded-md px-2 py-1 text-[11px] disabled:opacity-50 md:rounded-[4px] md:border md:border-paper-tertiary-fixed md:bg-paper-surface-container-low md:text-paper-on-surface md:shadow-none md:backdrop-blur-none hover:md:bg-paper-tertiary-fixed"
           >
             {creatingList ? 'Creating…' : 'Create'}
           </button>
@@ -907,10 +915,10 @@ export default function ListDrawer({
                 onClick={() =>
                   onActiveListChange(selected ? null : list.id)
                 }
-                className={`rounded-full border px-3 py-1 text-xs transition ${
+                className={`rounded-full border px-3 py-1 text-xs transition md:rounded-[2px] md:px-3 md:py-1 md:text-[11px] md:font-bold md:uppercase md:tracking-wider ${
                   selected
-                    ? selectedChipClass
-                    : unselectedChipClass
+                    ? `${selectedChipClass} md:!border-paper-on-surface md:!bg-paper-on-surface md:!text-paper-surface`
+                    : `${unselectedChipClass} md:!border-paper-tertiary-fixed md:!bg-paper-surface-container md:!text-paper-on-surface hover:md:!bg-white`
                 }`}
               >
                 {list.name}

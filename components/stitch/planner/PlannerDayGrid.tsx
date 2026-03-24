@@ -36,7 +36,7 @@ export default function PlannerDayGrid({
 
   if (!tripDates.length) {
     return (
-      <p className={`text-[11px] ${emptyClass}`}>
+      <p className={`text-[11px] md:text-paper-on-surface-variant ${emptyClass}`}>
         No trip dates set. Set dates above to see the day grid.
       </p>
     )

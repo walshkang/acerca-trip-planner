@@ -40,17 +40,21 @@ export default function PlannerTripDates({
     ? 'text-slate-300 underline hover:text-slate-100'
     : 'text-slate-600 underline hover:text-slate-900'
   const dateInputClass = isDark
-    ? 'glass-input w-full text-xs [color-scheme:dark] [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:opacity-90'
-    : 'glass-input w-full text-xs [color-scheme:light]'
+    ? 'glass-input w-full text-xs [color-scheme:dark] [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:opacity-90 md:rounded-[4px] md:border-paper-tertiary-fixed md:bg-paper-surface-container md:backdrop-blur-none md:text-paper-on-surface'
+    : 'glass-input w-full text-xs [color-scheme:light] md:rounded-[4px] md:border-paper-tertiary-fixed md:bg-paper-surface-container md:backdrop-blur-none md:text-paper-on-surface'
   const panelBorderClass = isDark
     ? 'border-white/10 bg-white/5'
     : 'border-slate-200 bg-slate-50/50'
 
   return (
-    <div className={`rounded-lg border p-3 ${panelBorderClass}`}>
+    <div
+      className={`rounded-lg border p-3 md:rounded-[4px] ${panelBorderClass} md:border-paper-tertiary-fixed md:bg-paper-surface-container-low`}
+    >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className={`truncate text-sm font-semibold ${headingClass}`}>
+          <p
+            className={`truncate text-sm font-semibold md:font-headline md:text-xs md:font-extrabold md:uppercase md:tracking-tighter ${headingClass}`}
+          >
             Plan
           </p>
           {list ? (
@@ -109,7 +113,7 @@ export default function PlannerTripDates({
             <input
               value={tripTimezone}
               onChange={(e) => setTripTimezone(e.target.value)}
-              className="glass-input w-full text-xs"
+              className="glass-input w-full text-xs md:rounded-[4px] md:border-paper-tertiary-fixed md:bg-paper-surface-container md:backdrop-blur-none md:text-paper-on-surface md:placeholder:text-paper-on-surface-variant"
               placeholder="America/New_York"
               disabled={savingTripDates}
             />
@@ -119,7 +123,7 @@ export default function PlannerTripDates({
               type="button"
               onClick={onSave}
               disabled={savingTripDates}
-              className="glass-button disabled:opacity-60"
+              className="glass-button disabled:opacity-60 md:!rounded-[4px] md:!border-0 md:!bg-paper-primary md:!text-paper-on-primary md:px-4 md:py-2 md:text-xs md:font-bold md:uppercase md:tracking-widest md:shadow-none md:backdrop-blur-none hover:md:!bg-paper-primary-container"
             >
               {savingTripDates ? 'Saving...' : 'Save'}
             </button>

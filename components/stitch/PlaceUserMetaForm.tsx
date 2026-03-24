@@ -15,11 +15,11 @@ export default function PlaceUserMetaForm(props: {
   const isDark = props.tone === 'dark'
   const labelClass = isDark ? 'text-slate-200' : 'text-gray-700'
   const textareaClass = isDark
-    ? 'glass-input w-full text-sm min-h-[96px]'
-    : 'w-full rounded-md border border-gray-300 px-3 py-2 text-sm outline-none focus:border-gray-900'
+    ? 'glass-input w-full min-h-[96px] text-sm md:rounded-[4px] md:border-paper-tertiary-fixed md:bg-paper-surface-container md:backdrop-blur-none md:text-paper-on-surface md:placeholder:text-paper-on-surface-variant'
+    : 'w-full rounded-md border border-gray-300 px-3 py-2 text-sm outline-none focus:border-gray-900 md:rounded-[4px] md:border-paper-tertiary-fixed md:bg-paper-surface-container md:text-paper-on-surface md:placeholder:text-paper-on-surface-variant'
   const saveButtonClass = isDark
-    ? 'glass-button rounded-md px-3 py-2 text-xs disabled:opacity-60'
-    : 'rounded-md bg-black px-3 py-2 text-sm font-medium text-white disabled:opacity-60'
+    ? 'glass-button rounded-md px-3 py-2 text-xs disabled:opacity-60 md:rounded-[4px] md:!border-0 md:!bg-paper-primary md:!text-paper-on-primary md:font-bold md:uppercase md:tracking-widest md:shadow-none md:backdrop-blur-none hover:md:!bg-paper-primary-container'
+    : 'rounded-md bg-black px-3 py-2 text-sm font-medium text-white disabled:opacity-60 md:rounded-[4px] md:!bg-paper-primary md:!text-paper-on-primary md:font-bold md:uppercase md:tracking-widest hover:md:!bg-paper-primary-container'
   const savedClass = isDark ? 'text-emerald-300' : 'text-green-700'
   const errorClass = isDark ? 'text-red-300' : 'text-red-600'
 

@@ -1,22 +1,30 @@
 'use client'
 
 import ExploreShell from '@/components/app/ExploreShell'
+import ExploreShellPaper from '@/components/app/ExploreShellPaper'
 import NavFooter from '@/components/app/NavFooter'
 import NavRail from '@/components/app/NavRail'
 import PlannerShell from '@/components/app/PlannerShell'
+import PlannerShellPaper from '@/components/app/PlannerShellPaper'
+import { useMediaQuery } from '@/components/ui/useMediaQuery'
 import { useNavStore } from '@/lib/state/useNavStore'
 
 /**
  * AppShell — top-level journey router.
  *
- * Reads the active journey mode from useNavStore and renders
- * either ExploreShell (map + discovery) or PlannerShell (day grid + map inset).
- *
- * NavRail (desktop) and NavFooter (mobile) provide persistent mode switching.
+ * Desktop (≥768px): Paper-styled shells (no NavRail).
+ * Mobile (<768px): Glass-styled shells with NavRail/NavFooter.
  */
 export default function AppShell() {
   const mode = useNavStore((s) => s.mode)
+  const isDesktop = useMediaQuery('(min-width: 768px)')
 
+  // Desktop: Paper shells — PaperHeader handles navigation
+  if (isDesktop) {
+    return mode === 'plan' ? <PlannerShellPaper /> : <ExploreShellPaper />
+  }
+
+  // Mobile: existing glass shells with NavRail/NavFooter
   return (
     <div className="relative flex h-screen w-full flex-row">
       <NavRail />

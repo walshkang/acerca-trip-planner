@@ -63,7 +63,7 @@ export default function PlannerMovePicker({
             type="button"
             onClick={onMoveBacklog}
             disabled={isSaving}
-            className="glass-button w-full disabled:opacity-60"
+            className="glass-button w-full disabled:opacity-60 md:rounded-[4px] md:border md:border-paper-tertiary-fixed md:bg-paper-surface-container-low md:text-paper-on-surface md:shadow-none md:backdrop-blur-none hover:md:bg-paper-tertiary-fixed"
           >
             Backlog
           </button>
@@ -71,7 +71,7 @@ export default function PlannerMovePicker({
             type="button"
             onClick={onMoveDone}
             disabled={isSaving}
-            className="glass-button w-full disabled:opacity-60"
+            className="glass-button w-full disabled:opacity-60 md:rounded-[4px] md:border md:border-paper-tertiary-fixed md:bg-paper-surface-container-low md:text-paper-on-surface md:shadow-none md:backdrop-blur-none hover:md:bg-paper-tertiary-fixed"
           >
             Done
           </button>
@@ -91,8 +91,10 @@ export default function PlannerMovePicker({
                     type="button"
                     onClick={() => onMoveToDay(date)}
                     disabled={isSaving}
-                    className={`rounded-md border px-1.5 py-1.5 text-[10px] font-medium disabled:opacity-60 transition ${
-                      isCurrent ? currentDayBtn : dayBtn
+                    className={`rounded-md border px-1.5 py-1.5 text-[10px] font-medium transition disabled:opacity-60 md:rounded-[2px] ${
+                      isCurrent
+                        ? `${currentDayBtn} md:!border-paper-primary md:!bg-paper-surface md:!text-paper-primary`
+                        : `${dayBtn} md:!border-paper-tertiary-fixed md:!bg-paper-surface-container md:!text-paper-on-surface hover:md:!bg-white`
                     }`}
                   >
                     {formatDayLabel(date)}

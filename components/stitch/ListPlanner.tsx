@@ -808,7 +808,11 @@ export default function ListPlanner({
   )
 
   const backlogBlock = (
-    <div className={isDark ? '' : 'border-b border-slate-200 pb-4'}>
+    <div
+      className={
+        isDark ? '' : 'border-b border-slate-200 pb-4 md:border-paper-tertiary-fixed'
+      }
+    >
       <PlannerBacklog
         items={backlogItems}
         canDrag={canDrag}
@@ -828,7 +832,7 @@ export default function ListPlanner({
 
   const dayGridBlock = tripRange ? (
     <section
-      className={`space-y-3${isDark ? '' : ' border-b border-slate-200 pb-4'}`}
+      className={`space-y-3${isDark ? '' : ' border-b border-slate-200 pb-4 md:border-paper-tertiary-fixed'}`}
     >
       {isTripRangeTooLong ? (
         <p className={`text-[11px] ${mutedClass}`}>
@@ -883,7 +887,9 @@ export default function ListPlanner({
         onClick={() => setDoneCollapsed((prev) => !prev)}
         className="flex w-full items-center justify-between gap-2"
       >
-        <h3 className={`text-xs font-semibold ${doneHeadingClass}`}>
+        <h3
+          className={`text-xs font-semibold md:font-headline md:font-extrabold md:uppercase md:tracking-tighter ${doneHeadingClass}`}
+        >
           Done
           <span className={`ml-1.5 font-normal ${doneCountClass}`}>
             {doneItems.length}
@@ -896,7 +902,7 @@ export default function ListPlanner({
 
       {!doneCollapsed ? (
         <div
-          className={`space-y-1.5 rounded-md p-1 transition ${
+          className={`space-y-1.5 rounded-md p-1 transition md:rounded-[2px] md:border md:border-paper-tertiary-fixed md:bg-paper-surface-container-low md:p-2 ${
             dropTargetKey === 'done' ? doneDropHighlight : ''
           }`}
           onDragOver={(e) => onDragOverTarget(e, 'done')}
@@ -911,7 +917,7 @@ export default function ListPlanner({
                   draggable={canDrag}
                   onDragStart={() => onDragStart(item.id)}
                   onDragEnd={onDragEnd}
-                  className={`rounded-lg border px-2.5 py-1.5 ${doneCardBorder}`}
+                  className={`rounded-lg border px-2.5 py-1.5 md:rounded-[2px] ${doneCardBorder} md:!border-paper-tertiary-fixed md:!bg-paper-surface-container-low`}
                 >
                   <div className="flex items-center justify-between gap-2">
                     <button
@@ -919,10 +925,14 @@ export default function ListPlanner({
                       className="min-w-0 text-left"
                       onClick={() => onPlaceSelect?.(place.id)}
                     >
-                      <p className={`truncate text-xs font-medium ${doneNameClass}`}>
+                      <p
+                        className={`truncate text-xs font-medium md:font-headline md:font-extrabold md:uppercase md:tracking-tight ${doneNameClass}`}
+                      >
                         {place.name}
                       </p>
-                      <p className={`mt-0.5 inline-flex items-center gap-1 text-[11px] ${doneMetaClass}`}>
+                      <p
+                        className={`mt-0.5 inline-flex items-center gap-1 text-[11px] md:text-paper-on-surface-variant ${doneMetaClass}`}
+                      >
                         <span aria-hidden className="text-[12px] leading-none">
                           {resolveCategoryEmoji(place.category)}
                         </span>
@@ -933,7 +943,7 @@ export default function ListPlanner({
                       type="button"
                       onClick={() => setMoveItemId(item.id)}
                       disabled={savingItemId === item.id}
-                      className={`shrink-0 rounded-md border px-2 py-1 text-[11px] disabled:opacity-60 ${doneMoveBtn}`}
+                      className={`shrink-0 rounded-md border px-2 py-1 text-[11px] disabled:opacity-60 md:rounded-[4px] md:!border-paper-tertiary-fixed md:!bg-paper-surface-container md:!text-paper-on-surface hover:md:!bg-paper-tertiary-fixed ${doneMoveBtn}`}
                     >
                       Move
                     </button>
@@ -967,15 +977,15 @@ export default function ListPlanner({
             {errorBlock}
           </div>
         </div>
-        <div className="w-[400px] shrink-0 overflow-y-auto border-l border-slate-200/80 bg-white/50 p-3">
+        <div className="w-[400px] shrink-0 overflow-y-auto border-l border-slate-200/80 bg-white/50 p-3 md:border-paper-tertiary-fixed md:bg-paper-surface-warm">
           {selectedDay ? (
             <>
-              <header className="sticky top-0 z-10 -mx-3 -mt-3 mb-3 border-b border-slate-200 bg-slate-50 px-3 py-2">
+              <header className="sticky top-0 z-10 -mx-3 -mt-3 mb-3 border-b border-slate-200 bg-slate-50 px-3 py-2 md:border-paper-tertiary-fixed md:bg-paper-surface-container-low">
                 <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                  <span className="text-sm font-semibold text-slate-900">
+                  <span className="text-sm font-semibold text-slate-900 md:font-headline md:font-extrabold md:uppercase md:tracking-tight md:text-paper-on-surface">
                     {formatDayLabelFull(selectedDay)}
                   </span>
-                  <span className="text-xs text-slate-500">
+                  <span className="text-xs text-slate-500 md:text-paper-on-surface-variant">
                     {(scheduledItemsByDate.get(selectedDay) ?? []).length} items
                   </span>
                 </div>
