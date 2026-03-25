@@ -1,7 +1,7 @@
 {
   "project_name": "AI_Travel_Itinerary_Manager",
   "version": "3.0.0-p3e3-ux-pivot",
-  "last_updated": "2026-03-23",
+  "last_updated": "2026-03-25",
   "development_principles": [
     "LLMs label and translate intent; deterministic systems retrieve and compute.",
     "Only approved pins are truth (Map is the interface).",
@@ -10,6 +10,12 @@
     "User edits never overwrite frozen AI enrichment."
   ],
   "pr_history": [
+    {
+      "id": "roadmap-p3e4-import-export",
+      "date": "2026-03-25",
+      "title": "Roadmap: Phase 3 epic for list import/export interchange",
+      "summary": "Added P3-E4 (List interchange: CSV export UI, Google-backed import preview/commit, round-trip identifiers, verification) under phase_3 with explicit invariants, non-goals, and LLM future path aligned to the same row schema as file import."
+    },
     {
       "id": "doc-cleanup",
       "date": "2026-03-23",
@@ -576,6 +582,7 @@
       "name": "The Intelligent Concierge (Wedding Cake)",
       "goal": "Optimization and discovery without compromising trust.",
       "status": "in_progress",
+      "progress_summary": "Routing + discovery suggestion layers shipped. UX pivot (Explore/Plan) in progress (MapInset 3.6 not started; polish 3.7 partial). New backlog: P3-E4 list CSV/JSON interchange (export UI + Google-backed import with preview/commit).",
       "epics": [
         {
           "id": "P3-E1",
@@ -755,6 +762,73 @@
               "task": "Phase 4 — Polish + Cleanup (deprecate old components, E2E, doc updates).",
               "details": "Deprecate old ListPlanner path from ExploreShell, remove WorkspaceContainer alias. Playwright E2E tests for two-journey architecture. Doc alignment.",
               "status": "partial",
+              "tier": "deep+bounded"
+            }
+          ]
+        },
+        {
+          "id": "P3-E4",
+          "title": "List interchange (CSV export UI + Google-backed import)",
+          "description": "User-visible export and import for trip lists: low-friction input (URLs, place ids, free text) resolved through Google Places and existing ingest/enrich/promote paths; deterministic writes only after explicit confirm. Future in-app LLM uses the same structured row schema as file import.",
+          "features": [
+            "Export: surface existing POST /api/lists/[id]/export in the list/plan UI (CSV first; markdown/clipboard optional).",
+            "Export round-trip: optional CSV columns for stable ids (e.g. internal place UUID, Google place id) documented in interchange contract for re-import without text search.",
+            "Import resolution: each row resolves via Google (Maps URL, ChIJ place id, or text) using the same resolution path as /api/places/ingest (findGooglePlaceIdFromText, parsePlaceIdFromGoogleMapsUrl); users are not required to hand-normalize categories or coordinates.",
+            "Import persistence: reuse ingest → frozen enrichment → promote_place_candidate with target list_id; apply scheduled_date/slot/tags via existing PATCH /api/lists/[id]/items/[itemId] semantics (see docs/PHASE_2_KANBAN_SPEC.md for slot sentinels and trip bounds).",
+            "Import UX: two-step flow — preview returns per-row ok | ambiguous | error (with candidate matches where needed); commit applies only after user confirmation. v1 may cap row count for synchronous API; async/batch is a later scaling slice.",
+            "Dedupe: prefer attaching to existing canonical places for the user (source_id / google_place_id) instead of duplicate candidates when possible.",
+            "Non-goals (v1): LLM or client writing directly to DB; skipping enrichment; auto-committing ambiguous text matches without user pick; import as a separate source of truth from places/list_items.",
+            "Future: in-app LLM outputs strict JSON/CSV rows matching the import schema; server validates then runs the identical preview → commit pipeline (LLMs label/translate intent; deterministic systems execute)."
+          ],
+          "tasks": [
+            {
+              "id": "4.1",
+              "task": "Document list import/export interchange contract.",
+              "details": "Add docs under docs/ (e.g. PHASE_3_LIST_INTERCHANGE.md or similar): CSV/JSON row schema; column mapping to ExportRow in lib/export/contract.ts and headers in lib/export/serialize-csv.ts; scheduled_date and Morning/Afternoon/Evening slot rules vs docs/PHASE_2_KANBAN_SPEC.md; error codes for preview/commit; explicit non-goals.",
+              "status": "not_started",
+              "tier": "deep"
+            },
+            {
+              "id": "4.2",
+              "task": "Ship list CSV export in UI.",
+              "details": "Discoverable control in list or plan shell (e.g. ListDetailPanel, planner chrome, or list overflow menu). Client calls POST /api/lists/[id]/export with format csv and triggers file download; handle 401/validation errors. Non-goal: redesign export formats beyond existing contract.",
+              "status": "not_started",
+              "tier": "bounded",
+              "notes": "Server path already exists: app/api/lists/[id]/export/route.ts + lib/export/serialize-csv.ts."
+            },
+            {
+              "id": "4.3",
+              "task": "Extend export for round-trip identifiers.",
+              "details": "Optional ExportRow fields and CSV columns (e.g. place id UUID, google place id) in lib/export/contract.ts + serialize-csv.ts; update tests under tests/export/. Document in interchange doc from task 4.1.",
+              "status": "not_started",
+              "tier": "bounded"
+            },
+            {
+              "id": "4.4",
+              "task": "Implement import preview API.",
+              "details": "New POST route under app/api/lists/[id]/import/ (e.g. preview) accepting CSV or JSON body: parse rows, validate schema, resolve each row via Google (reuse ingest internals or shared server module). Response lists per-row status ok | ambiguous | error with resolved preview metadata; no promote and no list mutation in this step. Enforce row cap for v1 if needed.",
+              "status": "not_started",
+              "tier": "deep"
+            },
+            {
+              "id": "4.5",
+              "task": "Implement import commit API.",
+              "details": "New POST route (e.g. commit) taking preview token or confirmed row ids: for each row run ingest candidate path as needed, promote_place_candidate with list_id, PATCH list_items for schedule/tags. Idempotent behavior when place already on list; align with RLS and promote RPC semantics.",
+              "status": "not_started",
+              "tier": "deep"
+            },
+            {
+              "id": "4.6",
+              "task": "Ship import UI (upload / paste → preview → confirm).",
+              "details": "Wizard or modal: file upload and/or paste; call preview API; render table with errors and ambiguous pickers; confirm calls commit API; refresh list/planner state. Mobile and desktop usable; reuse design tokens from DESIGN.md.",
+              "status": "not_started",
+              "tier": "bounded"
+            },
+            {
+              "id": "4.7",
+              "task": "Verification gate for import/export interchange.",
+              "details": "Unit tests for CSV/JSON parsing and validation; API tests for preview/commit happy path and failure modes; document npm test / check commands in interchange doc. Note Google API rate limits and row caps in acceptance criteria.",
+              "status": "not_started",
               "tier": "deep+bounded"
             }
           ]

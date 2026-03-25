@@ -5,8 +5,7 @@ import type { ListItemRow } from '@/components/stitch/ListDetailBody'
 import { slotFromScheduledStartTime } from '@/lib/lists/planner'
 
 const MAX_VISIBLE_ITEMS = 5
-/** Taller cells so previews + slot bars + emoji read clearly */
-const CELL_MIN_HEIGHT = 'min-h-[148px]'
+const DEFAULT_MIN_HEIGHT = 'min-h-[148px]'
 
 export type DayCellProps = {
   date: string
@@ -16,6 +15,8 @@ export type DayCellProps = {
   isDragOver: boolean
   canDrag: boolean
   resolveCategoryEmoji: (category: string) => string
+  /** Override root min-height (e.g. 3-day vs 2-week grids). */
+  minHeightClassName?: string
   onClick: () => void
   onDragOverDay: (event: DragEvent, date: string) => void
   onDropDay: (event: DragEvent, date: string) => void
@@ -37,6 +38,7 @@ export default function DayCell({
   isDragOver,
   canDrag,
   resolveCategoryEmoji,
+  minHeightClassName = DEFAULT_MIN_HEIGHT,
   onClick,
   onDragOverDay,
   onDropDay,
@@ -79,7 +81,7 @@ export default function DayCell({
       onDrop={(e) => onDropDay(e, date)}
       className={[
         'flex w-full cursor-pointer flex-col gap-1.5 rounded-[4px] border p-2 text-left font-body transition',
-        CELL_MIN_HEIGHT,
+        minHeightClassName,
         baseBorder,
         bgClass,
         'text-paper-on-surface',

@@ -92,7 +92,7 @@ Built progressively: **Cupcake → Wedding Cake**
 
 ---
 
-### Phase 1: The Smart Repository (Current MVP) 🧁
+### Phase 1: The Smart Repository (shipped) 🧁
 
 A visual, structured database of saved places.
 
@@ -159,20 +159,27 @@ Turn saved places into an actual plan via a **two-journey architecture**: Explor
 
 ---
 
-### Phase 3: The Optimized Router 💒
+### Phase 3: The Intelligent Concierge (in progress) 💒
 
-Make plans efficient and exportable.
+Routing, discovery suggestions, two-journey Explore/Plan UX — and planned list interchange.
 
-**Features**
+**Shipped / in progress (see `roadmap.json`)**
 
-* **Route Optimization**
-  * Deterministic ordering of a day’s activities (TSP-style optimization)
-* **Live Context Awareness**
-  * Weather alerts for outdoor plans
-  * Travel-time badges between scheduled items
-* **Export**
-  * Google Maps
-  * PDF / external tools (e.g., Notion)
+* **Deterministic routing preview** — Server-side travel-time between scheduled items (e.g., OSRM adapter); badges in the planner when configured
+* **AI discovery (suggestion layer)** — Deterministic retrieval first; optional summaries that do not affect ranking; preview/approve still gates persistence
+* **Explore / Plan** — Separate shells, shared trip state; planner day grid with drag-and-drop (Map inset and polish items still on the roadmap)
+
+**Planned (P3-E4 — list interchange)**
+
+* **CSV export in the product** — List schedules exportable as CSV (and related formats); the authenticated export API already exists (`POST /api/lists/[id]/export`)
+* **Import** — Rows resolved via Google Places + existing ingest/enrich/promote pipeline; preview → confirm before writes; optional round-trip id columns
+* **Future** — In-app LLM outputs the same structured rows as file import, then the same deterministic import path
+
+**Still aspirational / deferred**
+
+* TSP-style route optimization for a day
+* Weather and richer “insights” layers
+* PDF or Notion-specific export beyond current formats
 
 ---
 

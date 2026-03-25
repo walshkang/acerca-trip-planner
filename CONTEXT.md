@@ -11,6 +11,8 @@
 
 **Current Phase:** P3-E3 — UX Pivot (Two-Journey Architecture)
 
+**Also tracked:** **P3-E4** — List interchange (CSV export UI + Google-backed import). Spec and tasks live in `roadmap.json`; not started until picked up.
+
 ### Architecture (locked decisions)
 
 The app uses a **Two-Journey Architecture**: Explore (map + discovery) and Plan (day grid planner) as separate shells.
@@ -63,10 +65,13 @@ AppShell
 2. **Date-shift migration** — When trip dates change, preserve item positions instead of silently dropping to backlog. Server-side logic in `PATCH /api/lists/:id`.
 3. **Phase 4 cleanup** — Deprecate old ListPlanner in ExploreShell, remove WorkspaceContainer alias, update E2E selectors.
 
+**Backlog (see `roadmap.json` P3-E4):**
+- **List interchange** — CSV export in UI; Google-backed import (preview → confirm) reusing ingest/promote; optional round-trip columns; future in-app LLM on the same row schema. Server export already exists: `POST /api/lists/[id]/export` (csv, markdown, clipboard, google_maps_urls).
+
 **Deferred (separate epics):**
 - Insights layer (distance warnings, closed-day alerts)
 - Gemini API integration
-- Export (Google Maps, PDF)
+- PDF export, deeper Google Maps / Notion integrations beyond current export formats
 - Multi-trip views, collaborative editing
 
 ## Completed Phases
@@ -99,6 +104,7 @@ gantt
   "P3-E1 Deterministic Routing" :done, p3e1, after p2e4, 7d
   "P3-E2 AI Discovery" :done, p3e2, after p3e1, 7d
   "P3-E3 UX Pivot (Explore/Plan)" :active, p3e3, after p3e2, 14d
+  "P3-E4 List interchange (CSV + import)" : p3e4, after p3e3, 14d
 ```
 
 ## The Constitution

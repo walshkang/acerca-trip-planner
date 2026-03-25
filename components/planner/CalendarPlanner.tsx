@@ -15,8 +15,20 @@ import {
 import PlannerTripDates from '@/components/stitch/planner/PlannerTripDates'
 import PlannerBacklog from '@/components/stitch/planner/PlannerBacklog'
 import PlannerMovePicker from '@/components/stitch/planner/PlannerMovePicker'
+import type { CalendarView } from '@/components/planner/calendar-view'
+import CalendarViewToggle from '@/components/planner/CalendarViewToggle'
 import CalendarWeekGrid from '@/components/planner/CalendarWeekGrid'
+import Calendar3DayGrid from '@/components/planner/Calendar3DayGrid'
+import Calendar2WeekGrid from '@/components/planner/Calendar2WeekGrid'
+import CalendarAgendaView from '@/components/planner/CalendarAgendaView'
 import CalendarDayDetail from '@/components/planner/CalendarDayDetail'
+import {
+  computeThreeDayWindow,
+  initialTwoWeekMonday,
+  shiftThreeDayWindow,
+  shiftTwoWeekMonday,
+  twoWeekWindowMondays,
+} from '@/lib/lists/calendar-view-window'
 import {
   nextScheduledOrderForSlot,
   sortItemsForDayCellDisplay,
@@ -89,6 +101,9 @@ export default function CalendarPlanner({ listId, onPlanMutated }: Props) {
   const [dragItemId, setDragItemId] = useState<string | null>(null)
   const [dropTargetKey, setDropTargetKey] = useState<string | null>(null)
   const [canDrag, setCanDrag] = useState(false)
+
+  const [view, setView] = useState<CalendarView>('week')
+  const [windowStart, setWindowStart] = useState<string | null>(null)
 
   const tripRange = useMemo(() => {
     if (!list?.start_date || !list?.end_date) return null
@@ -177,6 +192,29 @@ export default function CalendarPlanner({ listId, onPlanMutated }: Props) {
     return scheduledItemsByDate.get(selectedDay) ?? []
   }, [scheduledItemsByDate, selectedDay])
 
+  const twoWeekMondays = useMemo(() => {
+    if (!tripRange) return [] as string[]
+    return twoWeekWindowMondays(tripRange.start, tripRange.end)
+  }, [tripRange])
+
+  useEffect(() => {
+    const td = tripDatesRef.current
+    if (!tripRange || !td?.length) {
+      setWindowStart(null)
+      return
+    }
+    const anchor = selectedDay ?? td[0]!
+    if (view === '3day') {
+      const tc = td.length
+      const { windowStart: w } = computeThreeDayWindow(tripRange.start, tripRange.end, anchor, tc)
+      setWindowStart(w)
+    } else if (view === '2week') {
+      setWindowStart(initialTwoWeekMonday(tripRange.start, tripRange.end, anchor))
+    } else {
+      setWindowStart(null)
+    }
+  }, [view, tripDatesKey, tripRange, selectedDay])
+
   const fetchPlan = useCallback(async () => {
     setLoading(true)
     setError(null)
@@ -203,6 +241,8 @@ export default function CalendarPlanner({ listId, onPlanMutated }: Props) {
     setMoveItemId(null)
     setSavingItemId(null)
     setSelectedDayAndStore(null)
+    setView('week')
+    setWindowStart(null)
   }, [listId, setSelectedDayAndStore])
 
   useEffect(() => {
@@ -514,6 +554,28 @@ export default function CalendarPlanner({ listId, onPlanMutated }: Props) {
     useTripStore.getState().setFocusedPlannerPlaceId(placeId)
   }, [])
 
+  const onShiftThreeDayWindow = useCallback(
+    (direction: 'prev' | 'next') => {
+      if (!tripRange || !tripDates?.length) return
+      const tc = tripDates.length
+      setWindowStart((prev) => {
+        const cur = prev ?? tripDates[0]!
+        return shiftThreeDayWindow(tripRange.start, tripRange.end, cur, direction, tc)
+      })
+    },
+    [tripDates, tripRange]
+  )
+
+  const onShiftTwoWeekWindow = useCallback(
+    (direction: 'prev' | 'next') => {
+      setWindowStart((prev) => {
+        if (!prev) return prev
+        return shiftTwoWeekMonday(prev, direction, twoWeekMondays)
+      })
+    },
+    [twoWeekMondays]
+  )
+
   const onDragStart = useCallback((itemId: string) => {
     setDragItemId(itemId)
     setMoveItemId(null)
@@ -651,6 +713,17 @@ export default function CalendarPlanner({ listId, onPlanMutated }: Props) {
     />
   )
 
+  const tripDayCount = tripDates?.length ?? 0
+  const threeDayWindowStart =
+    tripDates?.length && tripDayCount >= 3
+      ? (windowStart ?? tripDates[0]!)
+      : (tripDates?.[0] ?? windowStart ?? '')
+  const threeDayVisibleCount = tripDayCount >= 3 ? 3 : tripDayCount
+  const threeDayCanShift = tripDayCount > 3
+
+  const twoWeekMonday =
+    windowStart ?? (twoWeekMondays[0] ?? tripRange?.start ?? '')
+
   const weekGridBlock = tripRange ? (
     <section className="space-y-3 border-b border-slate-200 pb-4 md:border-paper-tertiary-fixed">
       {isTripRangeTooLong ? (
@@ -659,23 +732,88 @@ export default function CalendarPlanner({ listId, onPlanMutated }: Props) {
           fast.
         </p>
       ) : null}
-      {!isTripRangeTooLong ? (
-        <CalendarWeekGrid
-          tripStart={tripRange.start}
-          tripEnd={tripRange.end}
-          itemsByDate={scheduledItemsByDate}
-          selectedDay={selectedDay}
-          todayIso={todayIso}
-          onSelectDay={setSelectedDayAndStore}
-          resolveCategoryEmoji={resolveCategoryEmoji}
-          canDrag={canDrag}
-          dropTargetKey={dropTargetKey}
-          onDragOverDay={(e, date) => onDragOverTarget(e, `day:${date}`)}
-          onDropDay={onDropDay}
-          onDragStartItem={onDragStart}
-          onDragEndItem={onDragEnd}
-          dragItemId={dragItemId}
-        />
+      {!isTripRangeTooLong && tripDates ? (
+        <>
+          {view === 'week' ? (
+            <CalendarWeekGrid
+              tripStart={tripRange.start}
+              tripEnd={tripRange.end}
+              itemsByDate={scheduledItemsByDate}
+              selectedDay={selectedDay}
+              todayIso={todayIso}
+              onSelectDay={setSelectedDayAndStore}
+              resolveCategoryEmoji={resolveCategoryEmoji}
+              canDrag={canDrag}
+              dropTargetKey={dropTargetKey}
+              onDragOverDay={(e, date) => onDragOverTarget(e, `day:${date}`)}
+              onDropDay={onDropDay}
+              onDragStartItem={onDragStart}
+              onDragEndItem={onDragEnd}
+              dragItemId={dragItemId}
+            />
+          ) : null}
+          {view === '3day' && threeDayWindowStart && tripDayCount > 0 ? (
+            <Calendar3DayGrid
+              tripStart={tripRange.start}
+              tripEnd={tripRange.end}
+              windowStart={threeDayWindowStart}
+              visibleDayCount={threeDayVisibleCount}
+              tripDayCount={tripDayCount}
+              canShift={threeDayCanShift}
+              onShiftWindow={onShiftThreeDayWindow}
+              itemsByDate={scheduledItemsByDate}
+              selectedDay={selectedDay}
+              todayIso={todayIso}
+              onSelectDay={setSelectedDayAndStore}
+              resolveCategoryEmoji={resolveCategoryEmoji}
+              canDrag={canDrag}
+              dropTargetKey={dropTargetKey}
+              onDragOverDay={(e, date) => onDragOverTarget(e, `day:${date}`)}
+              onDropDay={onDropDay}
+              onDragStartItem={onDragStart}
+              onDragEndItem={onDragEnd}
+              dragItemId={dragItemId}
+            />
+          ) : null}
+          {view === '2week' && twoWeekMonday ? (
+            <Calendar2WeekGrid
+              tripStart={tripRange.start}
+              tripEnd={tripRange.end}
+              windowStartMonday={twoWeekMonday}
+              allowedMondays={twoWeekMondays}
+              itemsByDate={scheduledItemsByDate}
+              selectedDay={selectedDay}
+              todayIso={todayIso}
+              onSelectDay={setSelectedDayAndStore}
+              resolveCategoryEmoji={resolveCategoryEmoji}
+              canDrag={canDrag}
+              dropTargetKey={dropTargetKey}
+              onDragOverDay={(e, date) => onDragOverTarget(e, `day:${date}`)}
+              onDropDay={onDropDay}
+              onDragStartItem={onDragStart}
+              onDragEndItem={onDragEnd}
+              dragItemId={dragItemId}
+              onShiftWindow={onShiftTwoWeekWindow}
+            />
+          ) : null}
+          {view === 'agenda' ? (
+            <CalendarAgendaView
+              tripDates={tripDates}
+              itemsByDate={scheduledItemsByDate}
+              selectedDay={selectedDay}
+              todayIso={todayIso}
+              onSelectDay={setSelectedDayAndStore}
+              resolveCategoryEmoji={resolveCategoryEmoji}
+              canDrag={canDrag}
+              dropTargetKey={dropTargetKey}
+              onDragOverDay={(e, date) => onDragOverTarget(e, `day:${date}`)}
+              onDropDay={onDropDay}
+              onDragStartItem={onDragStart}
+              onDragEndItem={onDragEnd}
+              dragItemId={dragItemId}
+            />
+          ) : null}
+        </>
       ) : null}
     </section>
   ) : null
@@ -827,7 +965,12 @@ export default function CalendarPlanner({ listId, onPlanMutated }: Props) {
     <div className="flex h-full planner-light" data-testid="calendar-planner">
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-3">
         <div className="w-full space-y-4">
-          {tripDatesBlock}
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+            {tripDatesBlock}
+            {tripRange && !isTripRangeTooLong ? (
+              <CalendarViewToggle view={view} onViewChange={setView} />
+            ) : null}
+          </div>
           {weekGridBlock}
           {backlogBlock}
           {doneBlock}
