@@ -1,6 +1,6 @@
 import { inferCategoryFromGoogleTypes } from '@/lib/places/infer-category-from-google-types'
 import { frozenGoogleReviewStatsFromSnapshot } from '@/lib/server/enrichment/google-review-stats'
-import { adminSupabase } from '@/lib/supabase/admin'
+import { getAdminSupabase } from '@/lib/supabase/admin'
 import {
   EnrichmentInput,
   EnrichmentOutput,
@@ -196,7 +196,7 @@ async function normalizeWithOpenAI(
 export async function normalizeEnrichment(
   input: EnrichmentInput
 ): Promise<EnrichmentOutput> {
-  const supabase = adminSupabase
+  const supabase = getAdminSupabase()
   
   // Compute canonicalized hash
   const sourceHash = await computeSourceHash(input.rawSourceSnapshot)

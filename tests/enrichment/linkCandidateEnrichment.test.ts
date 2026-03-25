@@ -25,9 +25,9 @@ const {
 })
 
 vi.mock('@/lib/supabase/admin', () => ({
-  adminSupabase: {
+  getAdminSupabase: () => ({
     from: fromMock,
-  },
+  }),
 }))
 
 import { linkCandidateEnrichment } from '@/lib/server/enrichment/linkCandidateEnrichment'

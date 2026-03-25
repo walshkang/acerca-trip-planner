@@ -5,9 +5,9 @@ const { rpcMock } = vi.hoisted(() => ({
 }))
 
 vi.mock('@/lib/supabase/admin', () => ({
-  adminSupabase: {
+  getAdminSupabase: () => ({
     rpc: rpcMock,
-  },
+  }),
 }))
 
 import {

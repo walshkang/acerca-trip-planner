@@ -1,4 +1,4 @@
-import { adminSupabase } from '@/lib/supabase/admin'
+import { getAdminSupabase } from '@/lib/supabase/admin'
 
 const MONITOR_THRESHOLD = 0.01
 const BACKFILL_THRESHOLD = 0.05
@@ -68,7 +68,7 @@ export async function recordOpenNowUtcFallbackTelemetry({
   let data: unknown = null
   let error: { message: string } | null = null
   try {
-    const response = await adminSupabase.rpc('record_open_now_filter_telemetry', {
+    const response = await getAdminSupabase().rpc('record_open_now_filter_telemetry', {
       p_day: day,
       p_mode: mode,
       p_expected: expected,

@@ -1,4 +1,4 @@
-import { adminSupabase } from '@/lib/supabase/admin'
+import { getAdminSupabase } from '@/lib/supabase/admin'
 
 type LinkCandidateEnrichmentInput = {
   candidateId: string
@@ -11,7 +11,7 @@ export async function linkCandidateEnrichment({
   userId,
   enrichmentId,
 }: LinkCandidateEnrichmentInput): Promise<void> {
-  const { data, error } = await adminSupabase
+  const { data, error } = await getAdminSupabase()
     .from('place_candidates')
     .update({
       enrichment_id: enrichmentId,

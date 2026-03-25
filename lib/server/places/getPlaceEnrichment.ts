@@ -1,4 +1,4 @@
-import { adminSupabase } from '@/lib/supabase/admin'
+import { getAdminSupabase } from '@/lib/supabase/admin'
 
 export async function getEnrichmentById(enrichmentId: string): Promise<{
   id: string
@@ -10,7 +10,7 @@ export async function getEnrichmentById(enrichmentId: string): Promise<{
   prompt_version: string
   created_at: string
 } | null> {
-  const { data, error } = await adminSupabase
+  const { data, error } = await getAdminSupabase()
     .from('enrichments')
     .select(
       'id, normalized_data, curated_data, raw_sources, model, temperature, prompt_version, created_at'
