@@ -35,7 +35,54 @@ A list represents a single trip. Each list has its own start/end dates, timezone
 
 ## B. App shell & layout
 
-### Desktop (>= 768px)
+### Paper shell (canonical — all viewports)
+
+The product shell is **paper-themed** on every breakpoint. `AppShell` routes by `useNavStore.mode` only:
+
+- **Explore:** `ExploreShellPaper` — full-viewport map + fixed `PaperHeader` (Map/Itinerary + **centered** `Omnibox` + `PlannerListSwitcher` on the row below) + `PaperExplorePanel`
+- **Plan:** `PlannerShellPaper` — `PaperHeader` (tabs + `PlannerListSwitcher` in `bottomSlot`) + map inset + `CalendarPlanner`
+
+**Journey switch**
+
+- **Map** / **Itinerary** tabs live in `PaperHeader` on all screen sizes (not `NavRail` / `NavFooter`).
+- URL `?mode=explore|plan` stays in sync with the store for deep links and reloads.
+- Header uses safe-area insets (`env(safe-area-inset-*)`) on notched devices.
+
+**Explore chrome parity**
+
+- **Search:** `Omnibox` inside `PaperHeader` top row — **center column** of a 3-column grid (brand + tabs | search | settings/account). Placeholder **Search** on paper; `inputWidth="fluid"`.
+- **Trip lists:** `PlannerListSwitcher` in `PaperHeader` **`bottomSlot`** (row below tabs/search), separated by a light top border. Horizontal tabs + **More** on `md+`; full-width dropdown on small screens. List chips in `ListDrawer` stay hidden when this toolbar is present.
+- **Panel title:** active list name; **subtitle** uses formatted trip dates via `lib/lists/date-display.ts` when `start_date` / `end_date` exist.
+- **Category chips:** `PaperExplorePanel` exposes type filters wired to `useTripStore.activeListTypeFilters` (same semantics as list query filters).
+
+**Desktop (md+, ≥768px) — Explore**
+
+- Map full viewport; **right rail** ~400px (`PaperExplorePanel`), warm paper surface, scrollable list / detail / preview inside.
+- `PaperHeader` spans the full viewport width (inset by safe areas); the centered Omnibox is the **true center** of the header, not inset for the rail. The right rail scrolls beneath/ beside the header card as today; tune spacing if overlap is distracting.
+
+**Mobile (< md) — Explore**
+
+- **Bottom sheet** (`PaperExplorePanel` mobile variant): snap heights **half (default)** → **peek** → **expanded** (cycle via the top handle). Aligns with map `fitBounds` bottom padding driven by snap state.
+- Opening **place detail** or **discovery preview** forces **expanded**; returning to the list view drops from expanded to **half**.
+- **Peek** shows a title strip only; body chrome and list content appear at half and above.
+
+**Mobile — Plan**
+
+- `PlannerShellPaper` stacks **map inset** (responsive height) above **calendar**; horizontal padding tightens on small screens.
+
+**Z-index (paper)**
+
+1. Map canvas (z-0)
+2. `PaperExplorePanel` / mobile sheet (z-40)
+3. `PaperMapControls` (z-40, bottom offset clears sheet)
+4. `PaperHeader` (z-50)
+5. Transient overlays / toasts (highest)
+
+### Legacy UI (superseded)
+
+The following described the **glass** Explore experience with `ContextPanel`, `NavRail` / `NavFooter`, and combined workspace tabs. **`AppShell` no longer mounts this tree**; use the paper shell above. Components may remain in the codebase for reference until removed.
+
+### Desktop (>= 768px) — legacy glass
 
 ```
 ┌──────────────────────────────────────────────────┬──────────────────────┐
@@ -58,7 +105,7 @@ A list represents a single trip. Each list has its own start/end dates, timezone
   - Internal split: left pane (list) + right pane (details/plan)
 - When the planner is active, it can take over more screen real estate (see Section C)
 
-### Mobile (< 768px)
+### Mobile (< 768px) — legacy glass
 
 ```
 ┌──────────────────────────┐
@@ -81,7 +128,7 @@ A list represents a single trip. Each list has its own start/end dates, timezone
 - Only one overlay at a time: Context Panel OR Tools Sheet (never both)
 - URL-driven state (`?place=`, `?list=`) takes priority over local Tools state
 
-### Overlay stack (z-index budget)
+### Overlay stack (z-index budget) — legacy glass
 1. Map canvas (z-0)
 2. Map overlay left — Omnibox (z-70)
 3. Map overlay right — Tools + Workspace buttons (z-80)
@@ -89,13 +136,15 @@ A list represents a single trip. Each list has its own start/end dates, timezone
 5. Tools Sheet (transient, above Context Panel)
 6. Toasts (highest)
 
+For the canonical paper shell, use the z-index list under **Paper shell** above.
+
 ### Planning mode (planner active)
 
-When the user enters the Plan tab:
-- **Desktop:** the planner grid can expand to take more horizontal space. The map remains visible but may be narrower. Consider allowing the context panel to grow beyond 760px, or offering a "focus" mode where the planner occupies ~70% of the viewport with the map as a narrow strip or small inset.
-- **Mobile:** the planner occupies the full sheet body. The map peeks above the sheet. The compact day grid is designed to fit on a phone screen.
+**Paper shell (`PlannerShellPaper`):** Map **inset** stays visible beside or above `CalendarPlanner` depending on breakpoint (`xl+` side-by-side; smaller viewports stack). The user switches from Explore via **Itinerary** in `PaperHeader`.
 
-The map is still useful during planning as a spatial reference (seeing where Tuesday's places cluster geographically), so it should remain accessible — not hidden entirely.
+**Legacy glass:** When the user entered Plan via the old bottom sheet, the planner occupied the sheet body and the map peeked above. That path is superseded by the paper planner layout.
+
+The map remains useful as a spatial reference during planning — it should not be hidden entirely.
 
 ---
 
@@ -312,7 +361,7 @@ Used via `getByRole`, `getByLabel`, `getByPlaceholder`:
 
 - Buttons: **Workspace**, **Hide workspace**, **Tools**, **Close**
 - Checkboxes: **Transit lines**, **Neighborhoods**, **Stations** (when applicable)
-- Placeholder: **Add tags (comma-separated)**, **Search approved places**, Omnibox: **Paste Google Maps link or search...**
+- Placeholder: **Add tags (comma-separated)**, **Search approved places**, Omnibox default: **Paste Google Maps link or search…**; Explore paper uses **Search**
 
 ### Structure / ARIA
 

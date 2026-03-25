@@ -48,6 +48,7 @@ LLMs are used only to **label and normalize information**, never to calculate or
 - `AGENTS.md` is the single source of truth for invariants + DoD (humans and agents).
 - `docs/VIBE_PLAYBOOK.md` is the execution checklist for every task.
 - `CONTEXT.md` has the current phase, blockers, and pointers.
+- `DESIGN.md` **Section B** describes the canonical **paper shell** (all viewports) and legacy glass layout.
 - Use the PR template and run `npm run check` when possible.
 
 ---
@@ -131,12 +132,13 @@ Turn saved places into an actual plan via a **two-journey architecture**: Explor
 **Features**
 
 * **Two-Journey Architecture**
-  * Explicit Explore / Plan mode switch via NavRail (desktop) or NavFooter (mobile)
-  * ExploreShell: full map with Omnibox, discovery, and place inspection
-  * PlannerShell: dedicated day grid planner with its own Mapbox minimap inset
+  * Explicit Explore / Plan mode switch via **PaperHeader** tabs (Map / Itinerary) on **all screen sizes**, with URL `?mode=` sync
+  * `ExploreShellPaper`: full map, Omnibox, discovery, `PaperExplorePanel` (right rail on desktop, bottom sheet on phone)
+  * `PlannerShellPaper`: `CalendarPlanner` plus Mapbox **MapInset** for spatial context
   * Shared state layer (`useTripStore`) keeps both journeys in sync
+  * Legacy glass shells (`ExploreShell`, `PlannerShell`, `NavRail`, `NavFooter`) are not mounted from `AppShell` but may remain in the repo until removed
 
-* **Day Grid Planner** (in PlannerShell)
+* **Day Grid Planner** (in `PlannerShellPaper` / `CalendarPlanner`)
   * Compact calendar-like grid: each trip day is a cell, rows of up to 7 days
   * Dateless trips supported via `day_index` (Day 1, Day 2, etc.)
   * Drag places between day cells or to/from a filterable backlog
@@ -144,7 +146,7 @@ Turn saved places into an actual plan via a **two-journey architecture**: Explor
   * Desktop: grid overview on left + selected day detail on right
   * Mobile: compact grid with tap-to-move fallback
 
-* **Map Inset** (in PlannerShell)
+* **Map Inset** (in `PlannerShellPaper`)
   * Real Mapbox minimap with clickable pins colored by day assignment
   * Pin click scrolls to item in planner; day selection updates map bounds
   * Lightweight: no Omnibox, no discovery chrome

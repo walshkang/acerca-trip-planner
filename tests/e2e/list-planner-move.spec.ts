@@ -23,6 +23,11 @@ applySeededPrerequisiteSkips(test)
 const NY_TZ = 'America/New_York'
 
 async function openPlanTab(page: Page) {
+  const paperItinerary = page.getByTestId('paper-header-tab-itinerary')
+  if (await paperItinerary.isVisible()) {
+    await paperItinerary.click()
+    return
+  }
   const rail = page.getByTestId('nav-rail')
   const footer = page.getByTestId('nav-footer')
   if (await rail.isVisible()) {

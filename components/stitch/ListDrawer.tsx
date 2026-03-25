@@ -52,6 +52,8 @@ type Props = {
   onTagsUpdated?: () => void
   variant?: 'floating' | 'embedded'
   tone?: 'light' | 'dark'
+  /** Hide per-list chip row when an external toolbar handles list switching (e.g. paper Explore). */
+  hideListSelectionChips?: boolean
 }
 
 type ListsResponse = {
@@ -141,6 +143,7 @@ export default function ListDrawer({
   onTagsUpdated,
   variant = 'floating',
   tone = 'dark',
+  hideListSelectionChips = false,
 }: Props) {
   const [lists, setLists] = useState<ListSummary[]>([])
   const [listsLoading, setListsLoading] = useState(false)
@@ -905,27 +908,29 @@ export default function ListDrawer({
         {!listsLoading && !lists.length ? (
           <p className={`text-xs ${helperClass}`}>No lists yet.</p>
         ) : null}
-        <div className="flex flex-wrap gap-2">
-          {lists.map((list) => {
-            const selected = selectedListIds.has(list.id)
-            return (
-              <button
-                key={list.id}
-                type="button"
-                onClick={() =>
-                  onActiveListChange(selected ? null : list.id)
-                }
-                className={`rounded-full border px-3 py-1 text-xs transition md:rounded-[2px] md:px-3 md:py-1 md:text-[11px] md:font-bold md:uppercase md:tracking-wider ${
-                  selected
-                    ? `${selectedChipClass} md:!border-paper-on-surface md:!bg-paper-on-surface md:!text-paper-surface`
-                    : `${unselectedChipClass} md:!border-paper-tertiary-fixed md:!bg-paper-surface-container md:!text-paper-on-surface hover:md:!bg-white`
-                }`}
-              >
-                {list.name}
-              </button>
-            )
-          })}
-        </div>
+        {!hideListSelectionChips ? (
+          <div className="flex flex-wrap gap-2">
+            {lists.map((list) => {
+              const selected = selectedListIds.has(list.id)
+              return (
+                <button
+                  key={list.id}
+                  type="button"
+                  onClick={() =>
+                    onActiveListChange(selected ? null : list.id)
+                  }
+                  className={`rounded-full border px-3 py-1 text-xs transition md:rounded-[2px] md:px-3 md:py-1 md:text-[11px] md:font-bold md:uppercase md:tracking-wider ${
+                    selected
+                      ? `${selectedChipClass} md:!border-paper-on-surface md:!bg-paper-on-surface md:!text-paper-surface`
+                      : `${unselectedChipClass} md:!border-paper-tertiary-fixed md:!bg-paper-surface-container md:!text-paper-on-surface hover:md:!bg-white`
+                  }`}
+                >
+                  {list.name}
+                </button>
+              )
+            })}
+          </div>
+        ) : null}
       </div>
 
       <div className="max-h-[50vh] overflow-y-auto px-4 py-3">

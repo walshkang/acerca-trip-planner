@@ -19,8 +19,8 @@ The app uses a **Two-Journey Architecture**: Explore (map + discovery) and Plan 
 
 | Decision | Choice |
 |----------|--------|
-| Journey transition | Explicit mode switch (Explore ↔ Plan) via NavRail (desktop) / NavFooter (mobile) |
-| Map in planning mode | Real Mapbox minimap inset with clickable pins (not yet built) |
+| Journey transition | Explicit mode switch (Explore ↔ Plan) via **PaperHeader** tabs (Map / Itinerary) on all viewports; URL `?mode=` |
+| Map in planning mode | Mapbox **MapInset** in `PlannerShellPaper` with day-colored pins and day selection sync |
 | Date mode | Real dates primary, Day 1/2/3 fallback when dateless |
 | Schema for dateless trips | `day_index` nullable integer on `list_items` |
 | Refactor strategy | Moderate: ExploreShell + PlannerShell, shared state layer |
@@ -29,41 +29,44 @@ The app uses a **Two-Journey Architecture**: Explore (map + discovery) and Plan 
 ### Component tree (current)
 ```
 AppShell
-├── NavRail (desktop ≥768px) / NavFooter (mobile <768px)
-├── ExploreShell (mode='explore')
+├── ExploreShellPaper (mode='explore')
 │   ├── MapShell (full viewport map)
-│   ├── Omnibox (search)
-│   ├── InspectorCard (preview/approve)
-│   ├── ContextPanel (lists + place details)
-│   └── ToolsSheet (layers, style)
-└── PlannerShell (mode='plan')
-    └── ListPlanner (layout='split' on desktop, 'column' on mobile)
-        ├── Left: PlannerTripDates + PlannerBacklog + PlannerDayGrid + Done
-        └── Right (desktop): PlannerDayDetail (persistent panel, 400px)
+│   ├── PaperHeader (Map | Itinerary + Omnibox)
+│   ├── PlannerListSwitcher (trip toolbar; URL list sync)
+│   ├── PaperExplorePanel — md+: right rail; <md: bottom sheet (peek / half / expanded)
+│   │   └── ListDrawer (embedded) | PlaceDrawer | InspectorCard
+│   └── PaperMapControls
+└── PlannerShellPaper (mode='plan')
+    ├── PaperHeader
+    ├── PlannerListSwitcher
+    ├── MapInset (Mapbox minimap)
+    └── CalendarPlanner (+ day detail / DnD)
 ```
+
+**Unmounted legacy (still in repo):** `ExploreShell`, `PlannerShell`, `NavRail`, `NavFooter`, `ContextPanel` — not used by `AppShell`; see `DESIGN.md` legacy section.
 
 ### State stores
 - `useTripStore` — shared: `activeListId`, items, placeIds, type filters, refresh key
 - `useNavStore` — `mode: 'explore' | 'plan'`, URL sync (`?mode=`)
 - `useDiscoveryStore` — Explore only: search, preview, enrichment state
-- ListPlanner manages its own data fetch + scheduling state internally
+- `CalendarPlanner` coordinates planner UI; scheduling mutations go through existing list item APIs
 
 ### P3-E3 Phase Status
 
 | Phase | Status | What shipped |
 |-------|--------|-------------|
 | 0 — Foundation | **Done** | `day_index` migration, `useTripStore`, `useNavStore`, API `day_index` support |
-| 1 — Shell Split | **Done** | `AppShell`, `ExploreShell`, `PlannerShell`, `NavRail`, `NavFooter`, URL mode switching |
-| 2 — Planner Core | **Done** | ListPlanner wired into PlannerShell full-screen, desktop split-panel layout, bug fixes (unicode, slot labels, orphan warning, visual polish) |
-| 3 — Map Inset | Not started | Real Mapbox minimap in PlannerShell with clickable pins |
-| 4 — Polish + Cleanup | Partial | Bug fixes done. Remaining: deprecate old ListPlanner path from ExploreShell, remove WorkspaceContainer alias, E2E updates, doc alignment |
+| 1 — Shell Split | **Done** | `AppShell`, journey shells, URL mode switching (evolved to paper-only routing) |
+| 2 — Planner Core | **Done** | `CalendarPlanner` in `PlannerShellPaper`; prior ListPlanner path legacy only |
+| 3 — Map Inset | **Done (paper)** | `MapInset` in `PlannerShellPaper` with day-colored pins and selection sync |
+| 4 — Polish + Cleanup | Partial | Paper on all viewports, Explore parity toolbar/filters/dates, E2E tab selectors. Remaining: delete or quarantine legacy glass shells if desired, WorkspaceContainer alias, broader Playwright refresh |
 
 ### What's Next
 
 **Immediate options (pick one per session):**
-1. **MapInset** — Add real Mapbox minimap to PlannerShell. Pins colored by day, fitBounds on day select, pin click scrolls to item. Lazy mount/destroy on mode switch.
-2. **Date-shift migration** — When trip dates change, preserve item positions instead of silently dropping to backlog. Server-side logic in `PATCH /api/lists/:id`.
-3. **Phase 4 cleanup** — Deprecate old ListPlanner in ExploreShell, remove WorkspaceContainer alias, update E2E selectors.
+1. **Date-shift migration** — When trip dates change, preserve item positions instead of silently dropping to backlog. Server-side logic in `PATCH /api/lists/:id`.
+2. **Phase 4 cleanup** — Remove unused `ExploreShell` / `PlannerShell` / `NavRail` / `NavFooter` imports from any remaining entry points; remove `WorkspaceContainer` alias; expand Playwright coverage for mobile paper sheet.
+3. **Plan polish** — Routing badges, capacity warnings, or agenda view refinements per `docs/PLAN_PAGE_SLICES.md`.
 
 **Backlog (see `roadmap.json` P3-E4):**
 - **List interchange** — CSV export in UI; Google-backed import (preview → confirm) reusing ingest/promote; optional round-trip columns; future in-app LLM on the same row schema. Server export already exists: `POST /api/lists/[id]/export` (csv, markdown, clipboard, google_maps_urls).

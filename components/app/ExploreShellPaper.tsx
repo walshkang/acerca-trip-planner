@@ -14,19 +14,30 @@ import PlaceDrawer from '@/components/stitch/PlaceDrawer'
 import PaperHeader from '@/components/paper/PaperHeader'
 import PaperExplorePanel from '@/components/paper/PaperExplorePanel'
 import PaperMapControls from '@/components/paper/PaperMapControls'
+import PlannerListSwitcher from '@/components/app/PlannerListSwitcher'
+import type { MobileSnapState } from '@/components/ui/ContextPanel'
+import { useMediaQuery } from '@/components/ui/useMediaQuery'
 import { useDiscoveryStore } from '@/lib/state/useDiscoveryStore'
 import { useTripStore } from '@/lib/state/useTripStore'
 import { useNavStore } from '@/lib/state/useNavStore'
+import { formatDateRange } from '@/lib/lists/date-display'
 import { derivePreviewMode } from '@/lib/ui/previewMode'
+import { CATEGORY_ENUM_VALUES, type CategoryEnum } from '@/lib/types/enums'
 
 const LAST_ACTIVE_LIST_KEY = 'acerca:lastActiveListId'
 const LAST_ADDED_PLACE_KEY = 'acerca:lastAddedPlaceId'
 
+type ListSummaryRow = {
+  id: string
+  name: string
+  start_date: string | null
+  end_date: string | null
+}
+
 /**
- * ExploreShellPaper — Paper-styled Explore mode (desktop only).
+ * ExploreShellPaper — Paper-styled Explore mode (all viewports).
  *
- * Full-screen Mapbox map + PaperHeader + right-docked PaperExplorePanel (400px).
- * Reads the same Zustand stores as ExploreShell but with simpler UI state.
+ * Full-screen map + PaperHeader + list toolbar + PaperExplorePanel (right rail on md+, bottom sheet on small screens).
  */
 export default function ExploreShellPaper() {
   // ── Map state ──
@@ -41,6 +52,11 @@ export default function ExploreShellPaper() {
   const [focusedListPlaceId, setFocusedListPlaceId] = useState<string | null>(null)
   const [listTagRefreshKey, setListTagRefreshKey] = useState(0)
   const [placeTagRefreshKey, setPlaceTagRefreshKey] = useState(0)
+  const [mobileExploreSnap, setMobileExploreSnap] = useState<MobileSnapState>('half')
+  const [viewportH, setViewportH] = useState(667)
+
+  const [listSummaries, setListSummaries] = useState<ListSummaryRow[]>([])
+  const isNarrow = useMediaQuery('(max-width: 767px)')
 
   // ── Trip store ──
   const activeListId = useTripStore((s) => s.activeListId)
@@ -52,7 +68,6 @@ export default function ExploreShellPaper() {
   const setActiveListTypeFilters = useTripStore((s) => s.setActiveListTypeFilters)
   const setActiveListItems = useTripStore((s) => s.setActiveListItems)
   const listItemsRefreshKey = useTripStore((s) => s.listItemsRefreshKey)
-  const bumpListItemsRefresh = useTripStore((s) => s.bumpListItemsRefresh)
 
   // ── Discovery store ──
   const ghostLocation = useDiscoveryStore((s) => s.ghostLocation)
@@ -103,6 +118,26 @@ export default function ExploreShellPaper() {
     return `/auth/sign-in?next=${encodeURIComponent(next)}`
   }, [pathname, searchParams])
 
+  useEffect(() => {
+    const upd = () => setViewportH(window.innerHeight)
+    upd()
+    window.addEventListener('resize', upd)
+    return () => window.removeEventListener('resize', upd)
+  }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    void fetch('/api/lists')
+      .then((r) => r.json())
+      .then((data: { lists?: ListSummaryRow[] }) => {
+        if (!cancelled && data.lists) setListSummaries(data.lists)
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [listItemsRefreshKey])
+
   // ── Derived state ──
   const activeListPlaceIdSet = useMemo(() => new Set(activeListPlaceIds), [activeListPlaceIds])
   const activeListItemByPlaceId = useMemo(() => {
@@ -129,11 +164,69 @@ export default function ExploreShellPaper() {
     activeListId || selectedPlaceId || previewCandidate || previewSelectedResultId
   )
 
+  const mobileBottomPad = useMemo(() => {
+    switch (mobileExploreSnap) {
+      case 'peek':
+        return 120
+      case 'half':
+        return Math.round(viewportH * 0.5)
+      case 'expanded':
+        return Math.round(viewportH * 0.85)
+      default:
+        return 120
+    }
+  }, [mobileExploreSnap, viewportH])
+
   const fitBoundsPadding = useMemo(() => {
-    const base = { top: 80, bottom: 80, left: 80, right: 80 }
-    if (isPanelOpen) return { ...base, right: 448 } // 400px panel + 48px margin
+    // PaperHeader: top row (tabs + centered Omnibox) + list switcher row
+    const baseTop = 120
+    const base = { top: baseTop, bottom: 96, left: 24, right: 24 }
+    if (isNarrow) {
+      return { ...base, bottom: mobileBottomPad + 24, right: 24 }
+    }
+    if (isPanelOpen) return { ...base, right: 448 }
     return base
-  }, [isPanelOpen])
+  }, [isNarrow, isPanelOpen, mobileBottomPad])
+
+  const panelTitle = !activeListId
+    ? 'Explore'
+    : (listSummaries.find((l) => l.id === activeListId)?.name ?? 'Trip list')
+
+  const panelSubtitle = useMemo(() => {
+    if (!activeListId) return null
+    const row = listSummaries.find((l) => l.id === activeListId)
+    if (!row) return null
+    if (row.start_date && row.end_date) return formatDateRange(row.start_date, row.end_date)
+    if (row.start_date || row.end_date) return 'Partial trip dates'
+    return 'No trip dates set — add them in Plan'
+  }, [activeListId, listSummaries])
+
+  const typeFilterChips = useMemo(
+    () =>
+      CATEGORY_ENUM_VALUES.map((cat) => ({
+        id: cat,
+        label: cat,
+        active: activeListTypeFilters.includes(cat),
+      })),
+    [activeListTypeFilters]
+  )
+
+  const onTypeFilterChange = useCallback(
+    (filterId: string) => {
+      const cat = filterId as CategoryEnum
+      if (!CATEGORY_ENUM_VALUES.includes(cat)) return
+      const next = activeListTypeFilters.includes(cat)
+        ? activeListTypeFilters.filter((c) => c !== cat)
+        : [...activeListTypeFilters, cat]
+      setActiveListTypeFilters(next)
+    },
+    [activeListTypeFilters, setActiveListTypeFilters]
+  )
+
+  const preferExpanded =
+    panelMode === 'details' || previewMode !== 'none'
+
+  const mapControlsBottomPx = isNarrow ? mobileBottomPad + 16 : undefined
 
   // ── Init: restore active list from URL or localStorage ──
   const didInit = useRef(false)
@@ -230,7 +323,6 @@ export default function ExploreShellPaper() {
 
   // ── Panel content ──
   const panelContent = (() => {
-    // Preview loading
     if (previewMode === 'loading') {
       return (
         <div className="p-4">
@@ -245,7 +337,6 @@ export default function ExploreShellPaper() {
       )
     }
 
-    // Preview error
     if (previewMode === 'error') {
       return (
         <div className="p-4">
@@ -260,7 +351,6 @@ export default function ExploreShellPaper() {
       )
     }
 
-    // Preview ready (inspector card)
     if (previewMode === 'ready') {
       return (
         <div className="p-3">
@@ -269,7 +359,6 @@ export default function ExploreShellPaper() {
       )
     }
 
-    // Place details
     if (panelMode === 'details' && selectedPlace) {
       return (
         <div className="p-3">
@@ -288,12 +377,12 @@ export default function ExploreShellPaper() {
       )
     }
 
-    // Default: list view
     return (
       <ListDrawer
         open
         variant="embedded"
         tone="light"
+        hideListSelectionChips
         onClose={() => {}}
         activeListId={activeListId}
         onActiveListChange={(id) => {
@@ -319,7 +408,6 @@ export default function ExploreShellPaper() {
 
   return (
     <div className="relative h-screen w-screen bg-paper-surface">
-      {/* Full-screen map */}
       <MapShell
         ref={mapShellRef}
         signInHref={signInHref}
@@ -351,20 +439,31 @@ export default function ExploreShellPaper() {
 
       {mapReady && (
         <>
-          {/* Header */}
           <PaperHeader
             activeTab="map"
             onTabChange={(tab) => {
               if (tab === 'itinerary') setMode('plan')
             }}
+            clearRightRail={!isNarrow}
             searchSlot={
-              <Omnibox tone="light" onCanonicalPlaceSelect={handleCanonicalSuggestionSelect} />
+              <Omnibox
+                tone="light"
+                placeholder="Search"
+                inputWidth="fluid"
+                onCanonicalPlaceSelect={handleCanonicalSuggestionSelect}
+              />
+            }
+            bottomSlot={
+              <PlannerListSwitcher
+                labelPrefix="Trip:"
+                listsCaption="Your lists"
+                onListSelect={(id) => setListParam(id)}
+              />
             }
           />
 
-          {/* Fallback notice */}
           {mapFallbackNotice && (
-            <div className="absolute left-4 top-24 z-[60] max-w-[320px] rounded-[4px] border border-paper-tertiary-fixed bg-paper-surface p-3">
+            <div className="absolute left-4 top-28 z-[60] max-w-[320px] rounded-[4px] border border-paper-tertiary-fixed bg-paper-surface p-3 max-md:top-40">
               <p className="text-[11px] text-paper-on-surface-variant">{mapFallbackNotice}</p>
               <button
                 type="button"
@@ -376,24 +475,20 @@ export default function ExploreShellPaper() {
             </div>
           )}
 
-          {/* Right context panel */}
           <PaperExplorePanel
-            locationName={activeListId ? 'Trip List' : 'Explore'}
-            filters={undefined}
-            footerAction={
-              <button
-                type="button"
-                className="paper-button-primary w-full font-headline font-black tracking-widest"
-              >
-                Plan Route from Current Location
-              </button>
-            }
+            locationName={panelTitle}
+            subtitle={activeListId ? panelSubtitle : null}
+            filters={activeListId ? typeFilterChips : undefined}
+            onFilterChange={activeListId ? onTypeFilterChange : undefined}
+            preferExpanded={preferExpanded}
+            onMobileSnapChange={setMobileExploreSnap}
           >
             {panelContent}
           </PaperExplorePanel>
 
-          {/* Map controls — zoom wiring deferred until MapShellHandle exposes getMap() */}
-          <PaperMapControls />
+          <PaperMapControls
+            style={mapControlsBottomPx != null ? { bottom: mapControlsBottomPx } : undefined}
+          />
         </>
       )}
     </div>

@@ -106,34 +106,33 @@ function PlannerShellPaperWithList({ activeListId }: { activeListId: string }) {
   }, [])
 
   return (
-    <div className="flex h-screen flex-col bg-paper-surface">
-      {/* Header */}
+    <div
+      className="flex h-screen flex-col bg-paper-surface"
+      style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+    >
+      {/* Header: tabs + list switcher row */}
       <PaperHeader
         activeTab="itinerary"
         onTabChange={(tab) => {
           if (tab === 'map') setMode('explore')
         }}
+        bottomSlot={<PlannerListSwitcher listsCaption="Your lists" />}
       />
 
-      {/* List switcher toolbar */}
-      <div className="flex items-center px-6 pt-20 pb-2">
-        <PlannerListSwitcher />
-      </div>
-
-      {/* Mini map inset */}
-      <div className="mx-6 h-[180px] shrink-0 overflow-hidden rounded-[4px] border border-paper-tertiary-fixed">
-        <MapInset
-          className="h-full w-full"
-          places={mapPlaces}
-          activeListItems={activeListItems}
-          selectedDay={plannerSelectedDay}
-          onPinClick={onPinClick}
-        />
-      </div>
-
-      {/* Planner content */}
-      <div className="flex-1 min-h-0">
-        <CalendarPlanner listId={activeListId} onPlanMutated={bumpListItemsRefresh} />
+      {/* Map | planner: strip below xl, left column at xl+ */}
+      <div className="flex min-h-0 flex-1 flex-col gap-3 px-4 pb-4 pt-[max(6.25rem,calc(env(safe-area-inset-top,0px)+5.25rem))] sm:gap-4 sm:px-6 xl:flex-row">
+        <div className="h-[min(200px,28vh)] w-full shrink-0 overflow-hidden rounded-[4px] border border-paper-tertiary-fixed min-[480px]:h-[180px] xl:h-auto xl:w-[350px] xl:min-h-0 xl:shrink-0">
+          <MapInset
+            className="h-full w-full"
+            places={mapPlaces}
+            activeListItems={activeListItems}
+            selectedDay={plannerSelectedDay}
+            onPinClick={onPinClick}
+          />
+        </div>
+        <div className="min-h-0 min-w-0 flex-1">
+          <CalendarPlanner listId={activeListId} onPlanMutated={bumpListItemsRefresh} />
+        </div>
       </div>
     </div>
   )
