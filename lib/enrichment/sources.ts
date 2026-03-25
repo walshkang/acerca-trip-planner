@@ -1,6 +1,12 @@
 // Google Places + Wikipedia/Wikidata fetching (server-side)
 // This module is intentionally deterministic: explicit inputs, bounded retries, explicit timeouts.
 
+export interface GooglePlacesAddressComponent {
+  long_name: string
+  short_name: string
+  types: string[]
+}
+
 export interface GooglePlacesResult {
   place_id: string
   name: string
@@ -18,6 +24,10 @@ export interface GooglePlacesResult {
   types?: string[]
   website?: string
   url?: string
+  rating?: number
+  price_level?: number
+  user_ratings_total?: number
+  address_components?: GooglePlacesAddressComponent[]
   [key: string]: any // Preserve raw payload (Google adds fields over time).
 }
 
@@ -287,6 +297,10 @@ export async function fetchGooglePlace(placeId: string): Promise<GooglePlacesRes
     'types',
     'website',
     'url',
+    'rating',
+    'price_level',
+    'user_ratings_total',
+    'address_components',
   ].join(',')
 
   const u = new URL('https://maps.googleapis.com/maps/api/place/details/json')

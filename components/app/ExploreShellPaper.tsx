@@ -20,7 +20,7 @@ import { useMediaQuery } from '@/components/ui/useMediaQuery'
 import { useDiscoveryStore } from '@/lib/state/useDiscoveryStore'
 import { useTripStore } from '@/lib/state/useTripStore'
 import { useNavStore } from '@/lib/state/useNavStore'
-import { formatDateRange } from '@/lib/lists/date-display'
+import { sortTags, uniqueStrings } from '@/lib/lists/filter-client'
 import { derivePreviewMode } from '@/lib/ui/previewMode'
 import { CATEGORY_ENUM_VALUES, type CategoryEnum } from '@/lib/types/enums'
 
@@ -46,6 +46,8 @@ export default function ExploreShellPaper() {
   const mapShellRef = useRef<MapShellHandle>(null)
   const [pendingFocusPlaceId, setPendingFocusPlaceId] = useState<string | null>(null)
   const [mapFallbackNotice, setMapFallbackNotice] = useState<string | null>(null)
+  const [showTransit, setShowTransit] = useState(false)
+  const [showNeighborhoods, setShowNeighborhoods] = useState(false)
 
   // ── Panel state ──
   const [panelMode, setPanelMode] = useState<'lists' | 'details'>('lists')
@@ -63,9 +65,11 @@ export default function ExploreShellPaper() {
   const activeListPlaceIds = useTripStore((s) => s.activeListPlaceIds)
   const activeListItems = useTripStore((s) => s.activeListItems)
   const activeListTypeFilters = useTripStore((s) => s.activeListTypeFilters)
+  const activeListTagFilters = useTripStore((s) => s.activeListTagFilters)
   const setActiveListId = useTripStore((s) => s.setActiveListId)
   const setActiveListPlaceIds = useTripStore((s) => s.setActiveListPlaceIds)
   const setActiveListTypeFilters = useTripStore((s) => s.setActiveListTypeFilters)
+  const setActiveListTagFilters = useTripStore((s) => s.setActiveListTagFilters)
   const setActiveListItems = useTripStore((s) => s.setActiveListItems)
   const listItemsRefreshKey = useTripStore((s) => s.listItemsRefreshKey)
 
@@ -117,6 +121,22 @@ export default function ExploreShellPaper() {
     const next = `${pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`
     return `/auth/sign-in?next=${encodeURIComponent(next)}`
   }, [pathname, searchParams])
+
+  const handleLocate = useCallback(() => {
+    if (!navigator.geolocation) return
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        mapShellRef.current?.flyTo({
+          center: [pos.coords.longitude, pos.coords.latitude],
+          zoom: 15,
+        })
+      },
+      (err) => {
+        console.warn('Geolocation error:', err.message)
+      },
+      { enableHighAccuracy: true, timeout: 10_000 }
+    )
+  }, [])
 
   useEffect(() => {
     const upd = () => setViewportH(window.innerHeight)
@@ -192,14 +212,15 @@ export default function ExploreShellPaper() {
     ? 'Explore'
     : (listSummaries.find((l) => l.id === activeListId)?.name ?? 'Trip list')
 
-  const panelSubtitle = useMemo(() => {
-    if (!activeListId) return null
-    const row = listSummaries.find((l) => l.id === activeListId)
-    if (!row) return null
-    if (row.start_date && row.end_date) return formatDateRange(row.start_date, row.end_date)
-    if (row.start_date || row.end_date) return 'Partial trip dates'
-    return 'No trip dates set — add them in Plan'
-  }, [activeListId, listSummaries])
+  const exploreDistinctTags = useMemo(() => {
+    const acc: string[] = []
+    for (const item of activeListItems) {
+      for (const t of item.tags ?? []) {
+        if (typeof t === 'string') acc.push(t)
+      }
+    }
+    return sortTags(uniqueStrings(acc))
+  }, [activeListItems])
 
   const typeFilterChips = useMemo(
     () =>
@@ -221,6 +242,26 @@ export default function ExploreShellPaper() {
       setActiveListTypeFilters(next)
     },
     [activeListTypeFilters, setActiveListTypeFilters]
+  )
+
+  const tagFilterChips = useMemo(
+    () =>
+      exploreDistinctTags.map((tag) => ({
+        id: tag,
+        label: tag.startsWith('#') ? tag : `#${tag}`,
+        active: activeListTagFilters.includes(tag),
+      })),
+    [activeListTagFilters, exploreDistinctTags]
+  )
+
+  const onTagFilterChange = useCallback(
+    (tagId: string) => {
+      const next = activeListTagFilters.includes(tagId)
+        ? activeListTagFilters.filter((t) => t !== tagId)
+        : [...activeListTagFilters, tagId]
+      setActiveListTagFilters(sortTags(uniqueStrings(next)))
+    },
+    [activeListTagFilters, setActiveListTagFilters]
   )
 
   const preferExpanded =
@@ -391,6 +432,8 @@ export default function ExploreShellPaper() {
         }}
         onPlaceIdsChange={setActiveListPlaceIds}
         onActiveTypeFiltersChange={setActiveListTypeFilters}
+        onActiveTagFiltersChange={setActiveListTagFilters}
+        syncedExploreTagFilters={activeListTagFilters}
         onActiveListItemsChange={setActiveListItems}
         focusedPlaceId={focusedListPlaceId}
         onPlaceSelect={(placeId) => {
@@ -428,9 +471,9 @@ export default function ExploreShellPaper() {
         ghostLocation={ghostLocation}
         discardPreview={discardPreview}
         mapStyleMode="light"
-        showTransit={false}
-        showTransitStations={false}
-        showNeighborhoodBoundaries={false}
+        showTransit={showTransit}
+        showTransitStations={showTransit}
+        showNeighborhoodBoundaries={showNeighborhoods}
         setMapFallbackNotice={setMapFallbackNotice}
         setSearchBias={setSearchBias}
         onReadyChange={setMapReady}
@@ -445,6 +488,10 @@ export default function ExploreShellPaper() {
               if (tab === 'itinerary') setMode('plan')
             }}
             clearRightRail={!isNarrow}
+            showTransit={showTransit}
+            onShowTransitChange={setShowTransit}
+            showNeighborhoods={showNeighborhoods}
+            onShowNeighborhoodsChange={setShowNeighborhoods}
             searchSlot={
               <Omnibox
                 tone="light"
@@ -477,9 +524,12 @@ export default function ExploreShellPaper() {
 
           <PaperExplorePanel
             locationName={panelTitle}
-            subtitle={activeListId ? panelSubtitle : null}
+            subtitle={null}
+            activeListId={activeListId}
             filters={activeListId ? typeFilterChips : undefined}
             onFilterChange={activeListId ? onTypeFilterChange : undefined}
+            tags={activeListId && tagFilterChips.length > 0 ? tagFilterChips : undefined}
+            onTagChange={activeListId ? onTagFilterChange : undefined}
             preferExpanded={preferExpanded}
             onMobileSnapChange={setMobileExploreSnap}
           >
@@ -487,6 +537,7 @@ export default function ExploreShellPaper() {
           </PaperExplorePanel>
 
           <PaperMapControls
+            onLocate={handleLocate}
             style={mapControlsBottomPx != null ? { bottom: mapControlsBottomPx } : undefined}
           />
         </>

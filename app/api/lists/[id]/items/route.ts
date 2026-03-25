@@ -10,7 +10,7 @@ import { distinctTagsFromItems, normalizeTag, normalizeTagList } from '@/lib/lis
 const LIST_FIELDS =
   'id, name, description, is_default, created_at, start_date, end_date, timezone'
 const ITEM_FIELDS =
-  'id, created_at, scheduled_date, scheduled_start_time, scheduled_end_time, scheduled_order, completed_at, day_index, tags, place:places(id, name, category, address, created_at, user_notes)'
+  'id, created_at, scheduled_date, scheduled_start_time, scheduled_end_time, scheduled_order, completed_at, day_index, tags, place:places(id, name, category, address, created_at, user_notes, enrichment:enrichments(normalized_data))'
 
 const TYPE_TAG_BLOCKLIST = new Set([
   'food',
@@ -94,6 +94,37 @@ function parseFiltersFromSearchParams(searchParams: URLSearchParams) {
   if (typeof slot === 'string') payload.slot = slot
 
   return parseListFilterPayload(payload)
+}
+
+function finiteNumberOrNull(v: unknown): number | null {
+  if (typeof v !== 'number' || !Number.isFinite(v)) return null
+  return v
+}
+
+/** Flatten frozen Google stats from embedded enrichment onto place for the client. */
+function mapListItemPlaceForResponse(item: Record<string, unknown>): Record<string, unknown> {
+  const place = item.place
+  if (!place || typeof place !== 'object' || Array.isArray(place)) {
+    return item
+  }
+  const p = place as Record<string, unknown>
+  const enrichment = p.enrichment as { normalized_data?: unknown } | null | undefined
+  const nd = enrichment?.normalized_data as
+    | { google_rating?: unknown; google_review_count?: unknown }
+    | null
+    | undefined
+
+  const placeRest = { ...p }
+  delete placeRest.enrichment
+
+  return {
+    ...item,
+    place: {
+      ...placeRest,
+      google_rating: finiteNumberOrNull(nd?.google_rating),
+      google_review_count: finiteNumberOrNull(nd?.google_review_count),
+    },
+  }
 }
 
 export async function GET(
@@ -210,7 +241,8 @@ export async function GET(
       return NextResponse.json({ error: itemsError.message }, { status: 500 })
     }
 
-    const resolvedItems = (items ?? []) as Array<{
+    const rawItems = (items ?? []) as Array<Record<string, unknown>>
+    const resolvedItems = rawItems.map(mapListItemPlaceForResponse) as Array<{
       tags?: string[] | null
       place?: { category?: string | null } | null
       scheduled_date?: string | null

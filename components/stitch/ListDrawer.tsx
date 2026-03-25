@@ -33,6 +33,9 @@ type Props = {
   onActiveListChange: (id: string | null) => void
   onPlaceIdsChange: (placeIds: string[]) => void
   onActiveTypeFiltersChange?: (types: CategoryEnum[]) => void
+  /** When provided (Paper Explore), keeps drawer list query tag filters in sync with panel chips. */
+  syncedExploreTagFilters?: string[]
+  onActiveTagFiltersChange?: (tags: string[]) => void
   onPlaceSelect: (placeId: string) => void
   onActiveListItemsChange?: (
     items: Array<{
@@ -135,6 +138,8 @@ export default function ListDrawer({
   onActiveListChange,
   onPlaceIdsChange,
   onActiveTypeFiltersChange,
+  syncedExploreTagFilters,
+  onActiveTagFiltersChange,
   onPlaceSelect,
   onActiveListItemsChange,
   focusedPlaceId = null,
@@ -447,9 +452,9 @@ export default function ListDrawer({
   }, [activeListId, fetchItems, fetchItemsViaQuery])
 
   useEffect(() => {
-    if (!open) return
+    if (!open || hideListSelectionChips) return
     void fetchLists()
-  }, [fetchLists, open])
+  }, [fetchLists, hideListSelectionChips, open])
 
   useEffect(() => {
     if (!activeListId) {
@@ -500,6 +505,10 @@ export default function ListDrawer({
   useEffect(() => {
     onActiveTypeFiltersChange?.(appliedFilters.categories)
   }, [appliedFilters.categories, onActiveTypeFiltersChange])
+
+  useEffect(() => {
+    onActiveTagFiltersChange?.(appliedFilters.tags)
+  }, [appliedFilters.tags, onActiveTagFiltersChange])
 
   useEffect(() => {
     if (!items.length) {
@@ -586,6 +595,23 @@ export default function ListDrawer({
     },
     [activeListId, fetchItemsViaQuery]
   )
+
+  useEffect(() => {
+    if (syncedExploreTagFilters === undefined || !activeListId) return
+    const current = appliedFiltersRef.current
+    const nextTags = sortTags(uniqueStrings(syncedExploreTagFilters))
+    const curTags = sortTags(uniqueStrings(current.tags))
+    if (
+      curTags.length === nextTags.length &&
+      curTags.every((t, i) => t === nextTags[i])
+    ) {
+      return
+    }
+    void applyFiltersImmediately({
+      ...current,
+      tags: nextTags,
+    })
+  }, [activeListId, applyFiltersImmediately, syncedExploreTagFilters])
 
   const handleTagToggle = useCallback(
     (tag: string) => {
@@ -823,7 +849,6 @@ export default function ListDrawer({
   const rootTextClass = isDark ? 'text-slate-100' : 'text-slate-900'
   const borderClass = isDark ? 'border-white/10' : 'border-slate-300/60'
   const titleClass = isDark ? 'text-slate-100' : 'text-slate-900'
-  const subtitleClass = isDark ? 'text-slate-300' : 'text-slate-600'
   const actionClass = isDark
     ? 'text-slate-300 hover:text-slate-100'
     : 'text-slate-600 hover:text-slate-900'
@@ -854,11 +879,6 @@ export default function ListDrawer({
           >
             Lists
           </h2>
-          <p
-            className={`text-xs md:text-[10px] md:font-bold md:uppercase md:tracking-wider md:text-paper-on-surface-variant ${subtitleClass}`}
-          >
-            Keep the map in view.
-          </p>
         </div>
         <div className="flex items-center gap-2">
           {isEmbedded ? null : (
@@ -882,33 +902,33 @@ export default function ListDrawer({
         </div>
       </div>
 
-      <div className={`border-b px-4 py-3 space-y-2 ${borderClass}`}>
-        <div className="flex items-center gap-2">
-          <input
-            className="glass-input flex-1 text-xs md:rounded-[4px] md:border-paper-tertiary-fixed md:bg-paper-surface-container md:backdrop-blur-none md:text-paper-on-surface md:placeholder:text-paper-on-surface-variant"
-            placeholder="New list name"
-            value={newListName}
-            onChange={(e) => setNewListName(e.target.value)}
-          />
-          <button
-            type="button"
-            onClick={createList}
-            disabled={creatingList || !newListName.trim()}
-            className="glass-button rounded-md px-2 py-1 text-[11px] disabled:opacity-50 md:rounded-[4px] md:border md:border-paper-tertiary-fixed md:bg-paper-surface-container-low md:text-paper-on-surface md:shadow-none md:backdrop-blur-none hover:md:bg-paper-tertiary-fixed"
-          >
-            {creatingList ? 'Creating…' : 'Create'}
-          </button>
-        </div>
-        {listsLoading ? (
-          <p className={`text-xs ${helperClass}`}>Loading lists…</p>
-        ) : null}
-        {listsError ? (
-          <p className={`text-xs ${errorClass}`}>{listsError}</p>
-        ) : null}
-        {!listsLoading && !lists.length ? (
-          <p className={`text-xs ${helperClass}`}>No lists yet.</p>
-        ) : null}
-        {!hideListSelectionChips ? (
+      {!hideListSelectionChips ? (
+        <div className={`border-b px-4 py-3 space-y-2 ${borderClass}`}>
+          <div className="flex items-center gap-2">
+            <input
+              className="glass-input flex-1 text-xs md:rounded-[4px] md:border-paper-tertiary-fixed md:bg-paper-surface-container md:backdrop-blur-none md:text-paper-on-surface md:placeholder:text-paper-on-surface-variant"
+              placeholder="New list name"
+              value={newListName}
+              onChange={(e) => setNewListName(e.target.value)}
+            />
+            <button
+              type="button"
+              onClick={createList}
+              disabled={creatingList || !newListName.trim()}
+              className="glass-button rounded-md px-2 py-1 text-[11px] disabled:opacity-50 md:rounded-[4px] md:border md:border-paper-tertiary-fixed md:bg-paper-surface-container-low md:text-paper-on-surface md:shadow-none md:backdrop-blur-none hover:md:bg-paper-tertiary-fixed"
+            >
+              {creatingList ? 'Creating…' : 'Create'}
+            </button>
+          </div>
+          {listsLoading ? (
+            <p className={`text-xs ${helperClass}`}>Loading lists…</p>
+          ) : null}
+          {listsError ? (
+            <p className={`text-xs ${errorClass}`}>{listsError}</p>
+          ) : null}
+          {!listsLoading && !lists.length ? (
+            <p className={`text-xs ${helperClass}`}>No lists yet.</p>
+          ) : null}
           <div className="flex flex-wrap gap-2">
             {lists.map((list) => {
               const selected = selectedListIds.has(list.id)
@@ -930,8 +950,8 @@ export default function ListDrawer({
               )
             })}
           </div>
-        ) : null}
-      </div>
+        </div>
+      ) : null}
 
       <div className="max-h-[50vh] overflow-y-auto px-4 py-3">
         <ListDetailBody
@@ -987,6 +1007,7 @@ export default function ListDrawer({
           translateIntentHint={translateHint}
           onTagsUpdate={handleTagsUpdate}
           tone={tone}
+          compactChrome={hideListSelectionChips}
         />
       </div>
     </aside>

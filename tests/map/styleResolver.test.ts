@@ -200,13 +200,63 @@ describe('resolveOverlayBeforeId', () => {
     ).toBe('poi')
   })
 
-  it('falls back to first symbol label layer when no candidate matches', () => {
+  it('falls back to the topmost text symbol layer when no candidate matches', () => {
     expect(
       resolveOverlayBeforeId({
         layers,
         candidates: ['missing-id'],
       })
     ).toBe('city-labels')
+  })
+
+  it('prefers the last matching candidate so overlays sit above mid-stack roads', () => {
+    const stacked = [
+      { id: 'road', type: 'line' as const },
+      {
+        id: 'settlement-subdivision-label',
+        type: 'symbol' as const,
+        layout: { 'text-field': ['get', 'name'] },
+      },
+      { id: 'bridge', type: 'line' as const },
+      {
+        id: 'road-label',
+        type: 'symbol' as const,
+        layout: { 'text-field': ['get', 'name'] },
+      },
+    ]
+    expect(
+      resolveOverlayBeforeId({
+        layers: stacked,
+        preferredId: 'missing',
+        candidates: [
+          'settlement-subdivision-label',
+          'settlement-major-label',
+          'road-label',
+        ],
+      })
+    ).toBe('road-label')
+  })
+
+  it('uses the last text symbol in the style when there are several', () => {
+    const stacked = [
+      {
+        id: 'early-place',
+        type: 'symbol' as const,
+        layout: { 'text-field': ['get', 'name'] },
+      },
+      { id: 'roads', type: 'line' as const },
+      {
+        id: 'late-place',
+        type: 'symbol' as const,
+        layout: { 'text-field': ['get', 'name'] },
+      },
+    ]
+    expect(
+      resolveOverlayBeforeId({
+        layers: stacked,
+        candidates: ['nope'],
+      })
+    ).toBe('late-place')
   })
 })
 

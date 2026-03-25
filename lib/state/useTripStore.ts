@@ -43,6 +43,8 @@ type TripState = {
   activeListItems: TripListItem[]
   /** Active category type filters */
   activeListTypeFilters: CategoryEnum[]
+  /** Active tag filters (Paper Explore panel / list query) */
+  activeListTagFilters: string[]
   /** Refresh key for list items — bump to trigger refetch in consumers */
   listItemsRefreshKey: number
   /** Day selected in ListPlanner day grid (ISO date), for MapInset sync */
@@ -54,6 +56,7 @@ type TripState = {
   setActiveListPlaceIds: (ids: string[]) => void
   setActiveListItems: (items: TripListItem[]) => void
   setActiveListTypeFilters: (filters: CategoryEnum[]) => void
+  setActiveListTagFilters: (tags: string[]) => void
   bumpListItemsRefresh: () => void
   setPlannerSelectedDay: (day: string | null) => void
   setFocusedPlannerPlaceId: (id: string | null) => void
@@ -66,6 +69,7 @@ export const useTripStore = create<TripState>((set) => ({
   activeListPlaceIds: [],
   activeListItems: [],
   activeListTypeFilters: [],
+  activeListTagFilters: [],
   listItemsRefreshKey: 0,
   plannerSelectedDay: null,
   focusedPlannerPlaceId: null,
@@ -76,6 +80,7 @@ export const useTripStore = create<TripState>((set) => ({
       activeListPlaceIds: [],
       activeListItems: [],
       activeListTypeFilters: [],
+      activeListTagFilters: [],
       plannerSelectedDay: null,
       focusedPlannerPlaceId: null,
     })
@@ -98,6 +103,14 @@ export const useTripStore = create<TripState>((set) => ({
     }),
   setActiveListTypeFilters: (filters) =>
     set({ activeListTypeFilters: filters }),
+  setActiveListTagFilters: (tags) =>
+    set((state) => {
+      const prev = state.activeListTagFilters
+      if (prev.length === tags.length && prev.every((t, i) => t === tags[i])) {
+        return state
+      }
+      return { activeListTagFilters: tags }
+    }),
   bumpListItemsRefresh: () =>
     set((state) => ({ listItemsRefreshKey: state.listItemsRefreshKey + 1 })),
   setPlannerSelectedDay: (day) =>
@@ -111,6 +124,7 @@ export const useTripStore = create<TripState>((set) => ({
       activeListPlaceIds: [],
       activeListItems: [],
       activeListTypeFilters: [],
+      activeListTagFilters: [],
       focusedPlannerPlaceId: null,
     }),
 }))

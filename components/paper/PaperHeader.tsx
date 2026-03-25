@@ -1,6 +1,13 @@
 'use client'
 
-import { type ReactNode } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react'
 
 export interface PaperHeaderProps {
   /** Centered in the top row (e.g. Omnibox on Explore). */
@@ -15,6 +22,11 @@ export interface PaperHeaderProps {
    * Use on Explore desktop only.
    */
   clearRightRail?: boolean
+  /** Map overlay toggles (Explore). When both change handlers are set, settings opens a popover. */
+  showTransit?: boolean
+  onShowTransitChange?: (value: boolean) => void
+  showNeighborhoods?: boolean
+  onShowNeighborhoodsChange?: (value: boolean) => void
 }
 
 const tabs = [
@@ -22,15 +34,96 @@ const tabs = [
   { id: 'itinerary' as const, label: 'Itinerary', testId: 'paper-header-tab-itinerary' as const },
 ] as const
 
-function HeaderActions() {
+type HeaderActionsProps = Pick<
+  PaperHeaderProps,
+  | 'showTransit'
+  | 'onShowTransitChange'
+  | 'showNeighborhoods'
+  | 'onShowNeighborhoodsChange'
+>
+
+function HeaderActions({
+  showTransit = false,
+  onShowTransitChange,
+  showNeighborhoods = false,
+  onShowNeighborhoodsChange,
+}: HeaderActionsProps) {
+  const [open, setOpen] = useState(false)
+  const rootRef = useRef<HTMLDivElement>(null)
+  const mapSettingsId = useId()
+  const hasMapSettings =
+    onShowTransitChange != null && onShowNeighborhoodsChange != null
+
+  const close = useCallback(() => setOpen(false), [])
+
+  useEffect(() => {
+    if (!open || !hasMapSettings) return
+
+    const onPointerDown = (e: PointerEvent) => {
+      const root = rootRef.current
+      if (root && !root.contains(e.target as Node)) close()
+    }
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') close()
+    }
+
+    document.addEventListener('pointerdown', onPointerDown, true)
+    document.addEventListener('keydown', onKeyDown)
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown, true)
+      document.removeEventListener('keydown', onKeyDown)
+    }
+  }, [open, hasMapSettings, close])
+
   return (
     <>
-      <button
-        type="button"
-        className="material-symbols-outlined rounded-[4px] p-1.5 text-xl text-paper-primary transition-colors hover:bg-paper-tertiary-fixed sm:text-[22px]"
-      >
-        settings
-      </button>
+      <div ref={rootRef} className="relative">
+        <button
+          type="button"
+          className="material-symbols-outlined rounded-[4px] p-1.5 text-xl text-paper-primary transition-colors hover:bg-paper-tertiary-fixed sm:text-[22px]"
+          aria-label={hasMapSettings ? 'Map settings' : 'Settings'}
+          aria-expanded={hasMapSettings ? open : undefined}
+          aria-haspopup={hasMapSettings ? 'dialog' : undefined}
+          aria-controls={hasMapSettings && open ? mapSettingsId : undefined}
+          onClick={() => {
+            if (hasMapSettings) setOpen((v) => !v)
+          }}
+        >
+          settings
+        </button>
+        {hasMapSettings && open ? (
+          <div
+            id={mapSettingsId}
+            role="dialog"
+            aria-label="Map settings"
+            className="absolute right-0 top-full z-[60] mt-1 min-w-[220px] rounded-[4px] border border-paper-tertiary-fixed bg-paper-surface p-3 shadow-lg"
+          >
+            <p className="font-headline text-xs font-bold text-paper-primary">Map Settings</p>
+            <div className="mt-3 flex flex-col gap-3">
+              <label className="flex cursor-pointer items-center gap-2 text-left">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4 shrink-0 rounded border-paper-tertiary-fixed text-paper-primary focus:ring-paper-primary"
+                  checked={showTransit}
+                  onChange={(e) => onShowTransitChange(e.target.checked)}
+                  data-testid="paper-header-map-settings-transit"
+                />
+                <span className="text-[13px] text-paper-on-surface">Show subway lines</span>
+              </label>
+              <label className="flex cursor-pointer items-center gap-2 text-left">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4 shrink-0 rounded border-paper-tertiary-fixed text-paper-primary focus:ring-paper-primary"
+                  checked={showNeighborhoods}
+                  onChange={(e) => onShowNeighborhoodsChange(e.target.checked)}
+                  data-testid="paper-header-map-settings-neighborhoods"
+                />
+                <span className="text-[13px] text-paper-on-surface">Show neighborhoods</span>
+              </label>
+            </div>
+          </div>
+        ) : null}
+      </div>
       <button
         type="button"
         className="material-symbols-outlined rounded-[4px] p-1.5 text-xl text-paper-primary transition-colors hover:bg-paper-tertiary-fixed sm:text-[22px]"
@@ -82,6 +175,10 @@ export default function PaperHeader({
   searchSlot,
   bottomSlot,
   clearRightRail = false,
+  showTransit,
+  onShowTransitChange,
+  showNeighborhoods,
+  onShowNeighborhoodsChange,
 }: PaperHeaderProps) {
   const hasBottom = Boolean(bottomSlot)
   const hasSearch = Boolean(searchSlot)
@@ -107,7 +204,12 @@ export default function PaperHeader({
             {searchSlot}
           </div>
           <div className="flex shrink-0 items-center justify-end gap-1 justify-self-end sm:gap-2">
-            <HeaderActions />
+            <HeaderActions
+              showTransit={showTransit}
+              onShowTransitChange={onShowTransitChange}
+              showNeighborhoods={showNeighborhoods}
+              onShowNeighborhoodsChange={onShowNeighborhoodsChange}
+            />
           </div>
         </div>
       ) : (
@@ -116,7 +218,12 @@ export default function PaperHeader({
             <BrandAndTabs activeTab={activeTab} onTabChange={onTabChange} />
           </div>
           <div className="flex shrink-0 items-center gap-1 sm:gap-2">
-            <HeaderActions />
+            <HeaderActions
+              showTransit={showTransit}
+              onShowTransitChange={onShowTransitChange}
+              showNeighborhoods={showNeighborhoods}
+              onShowNeighborhoodsChange={onShowNeighborhoodsChange}
+            />
           </div>
         </div>
       )}

@@ -69,17 +69,24 @@ export function resolveOverlayBeforeId({
     return preferredId
   }
 
-  for (const candidate of candidates) {
+  // Insert overlays *before* this layer (so they paint underneath it). Pick the
+  // topmost anchor: the first matching candidate is often an early place label,
+  // leaving roads and fills drawn above the overlay. Prefer the last candidate
+  // that exists, and otherwise the last text symbol in the stack.
+  for (let i = candidates.length - 1; i >= 0; i--) {
+    const candidate = candidates[i]
     if (layers.some((layer) => hasLayerId(layer, candidate))) {
       return candidate
     }
   }
 
-  const firstLabelSymbol = layers.find(isLabelSymbolLayer)
-  if (firstLabelSymbol) return firstLabelSymbol.id
+  const labelSymbols = layers.filter(isLabelSymbolLayer)
+  const lastLabelSymbol = labelSymbols[labelSymbols.length - 1]
+  if (lastLabelSymbol) return lastLabelSymbol.id
 
-  const firstSymbolLayer = layers.find((layer) => layer.type === 'symbol')
-  return firstSymbolLayer?.id
+  const symbolLayers = layers.filter((layer) => layer.type === 'symbol')
+  const lastSymbolLayer = symbolLayers[symbolLayers.length - 1]
+  return lastSymbolLayer?.id
 }
 
 function extractErrorTextFromObject(error: Record<string, unknown>): string {

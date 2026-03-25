@@ -1,16 +1,10 @@
 'use client'
 
 import { type FormEvent, useEffect, useMemo, useState } from 'react'
-import EmojiPicker from '@/components/ui/EmojiPicker'
 import { useCategoryIconOverrides } from '@/lib/icons/useCategoryIconOverrides'
 import type { ListFilterFieldErrors } from '@/lib/lists/filters'
 import { normalizeTagList } from '@/lib/lists/tags'
-import {
-  CATEGORY_ENUM_VALUES,
-  type CategoryEnum,
-  type EnergyEnum,
-} from '@/lib/types/enums'
-import { CATEGORY_ICON_CHOICES } from '@/lib/icons/preferences'
+import { type CategoryEnum, type EnergyEnum } from '@/lib/types/enums'
 import { PLACE_FOCUS_GLOW } from '@/lib/ui/glow'
 
 export type ListSummary = {
@@ -31,6 +25,8 @@ export type PlaceSummary = {
   address: string | null
   created_at: string
   user_notes: string | null
+  google_rating: number | null
+  google_review_count: number | null
 }
 
 export type ListItemRow = {
@@ -86,6 +82,8 @@ type Props = {
   onTagsUpdate?: (itemId: string, tags: string[]) => Promise<string[]>
   focusedPlaceId?: string | null
   tone?: 'light' | 'dark'
+  /** Paper Explore: hide summary dates, filter UI, and list header extras (types/tags live in panel chrome). */
+  compactChrome?: boolean
 }
 
 function formatDateRange(list: ListSummary) {
@@ -273,16 +271,9 @@ export default function ListDetailBody({
   onTagsUpdate,
   focusedPlaceId = null,
   tone = 'light',
+  compactChrome = false,
 }: Props) {
-  const {
-    categoryIconOverrides,
-    setCategoryIcon,
-    resetCategoryIcons,
-    resolveCategoryEmoji,
-  } = useCategoryIconOverrides(list?.id ?? null)
-  const [iconEditorOpen, setIconEditorOpen] = useState(false)
-  const [pickerCategory, setPickerCategory] =
-    useState<CategoryEnum | null>(null)
+  const { resolveCategoryEmoji } = useCategoryIconOverrides(list?.id ?? null)
   const rangeLabel = useMemo(
     () => (list ? formatDateRange(list) : null),
     [list]
@@ -311,7 +302,6 @@ export default function ListDetailBody({
     'md:rounded-[2px] md:border-paper-tertiary-fixed md:bg-paper-surface-container md:text-paper-on-surface hover:md:bg-white'
   const filterChipActiveMd =
     'md:!border-paper-on-surface md:!bg-paper-on-surface md:!text-paper-surface'
-  const rowBorder = isDark ? 'border-white/10' : 'border-gray-100'
   const errorText = isDark ? 'text-red-300' : 'text-red-600'
   const actionPrimaryMd =
     'md:!rounded-[4px] md:!border-0 md:!bg-paper-primary md:!text-paper-on-primary md:px-3 md:py-1.5 md:font-bold md:uppercase md:tracking-widest hover:md:!bg-paper-primary-container md:shadow-none md:backdrop-blur-none'
@@ -330,12 +320,13 @@ export default function ListDetailBody({
     ? 'glass-button rounded-md px-2 py-1 text-[11px] disabled:opacity-60 md:rounded-[4px] md:border md:border-paper-tertiary-fixed md:bg-paper-surface-container-low md:text-paper-on-surface md:shadow-none md:backdrop-blur-none hover:md:bg-paper-tertiary-fixed'
     : 'rounded-md border border-slate-300 px-2 py-1 text-[11px] text-slate-700 disabled:opacity-60 md:rounded-[4px] md:border-paper-tertiary-fixed md:bg-paper-surface-container-low md:text-paper-on-surface hover:md:bg-paper-tertiary-fixed'
   const showFilters =
-    availableTypes.length > 0 ||
-    availableTags.length > 0 ||
-    activeTypeFilters.length > 0 ||
-    activeTagFilters.length > 0 ||
-    activeEnergyFilters.length > 0 ||
-    openNowFilter !== null
+    !compactChrome &&
+    (availableTypes.length > 0 ||
+      availableTags.length > 0 ||
+      activeTypeFilters.length > 0 ||
+      activeTagFilters.length > 0 ||
+      activeEnergyFilters.length > 0 ||
+      openNowFilter !== null)
   const isTypeFiltering = activeTypeFilters.length > 0
   const hasAnyDraftFilters =
     activeTypeFilters.length > 0 ||
@@ -345,13 +336,6 @@ export default function ListDetailBody({
   const focusedRowClass = isDark
     ? `border-white/60 bg-white/5 animate-[pulse_1.2s_ease-in-out_1] ${PLACE_FOCUS_GLOW}`
     : `border-slate-200/80 bg-gray-50 animate-[pulse_1.2s_ease-in-out_1] ${PLACE_FOCUS_GLOW}`
-  const iconEditorPanelClass = isDark
-    ? 'mt-3 space-y-2 rounded-md border border-white/10 bg-white/5 p-3'
-    : 'mt-3 space-y-2 rounded-md border border-slate-200 bg-slate-50/80 p-3'
-  const iconActionClass = isDark
-    ? 'rounded-md border border-white/20 px-2 py-1 text-[11px] text-slate-200 hover:border-white/35'
-    : 'rounded-md border border-slate-300 px-2 py-1 text-[11px] text-slate-700 hover:border-slate-500'
-  const hasCustomListIcons = Object.keys(categoryIconOverrides).length > 0
 
   const selectedFilterChips = useMemo(() => {
     const chips: Array<{
@@ -396,23 +380,6 @@ export default function ListDetailBody({
     }
   }, [focusedPlaceId, items.length])
 
-  useEffect(() => {
-    setIconEditorOpen(false)
-    setPickerCategory(null)
-  }, [list?.id])
-
-  const beginIconEdit = (category: CategoryEnum) => {
-    setIconEditorOpen(true)
-    setPickerCategory(category)
-  }
-
-  const clearListIcon = (category: CategoryEnum) => {
-    setCategoryIcon(category, null)
-    if (pickerCategory === category) {
-      setPickerCategory(null)
-    }
-  }
-
   if (loading && !list) {
     return <p className={`text-sm ${mutedText}`}>Loading list…</p>
   }
@@ -442,7 +409,7 @@ export default function ListDetailBody({
           {list.description ? (
             <p className={`mt-1 text-sm md:font-body ${bodyText}`}>{list.description}</p>
           ) : null}
-          {rangeLabel ? (
+          {!compactChrome && rangeLabel ? (
             <p className={`mt-2 text-xs ${mutedText}`}>Dates: {rangeLabel}</p>
           ) : null}
           {list.timezone ? (
@@ -450,86 +417,6 @@ export default function ListDetailBody({
               Timezone: {list.timezone}
             </p>
           ) : null}
-          <div className={iconEditorPanelClass}>
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <p className={`text-[11px] font-semibold ${bodyText}`}>
-                Type icons (this list)
-              </p>
-              <div className="flex items-center gap-2">
-                {hasCustomListIcons ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      resetCategoryIcons()
-                      setPickerCategory(null)
-                    }}
-                    className={`text-[11px] underline ${mutedText}`}
-                  >
-                    Reset list
-                  </button>
-                ) : null}
-                <button
-                  type="button"
-                  onClick={() => setIconEditorOpen((prev) => !prev)}
-                  className={iconActionClass}
-                >
-                  {iconEditorOpen ? 'Hide' : 'Customize'}
-                </button>
-              </div>
-            </div>
-            <p className={`text-[11px] ${mutedText}`}>
-              Click Change to open emoji input for each category.
-            </p>
-            {iconEditorOpen ? (
-              <div className="space-y-2">
-                {CATEGORY_ENUM_VALUES.map((category) => {
-                  const isPicking = pickerCategory === category
-                  const hasOverride = Boolean(categoryIconOverrides[category])
-                  return (
-                    <div
-                      key={`icon-${list.id}-${category}`}
-                      className={`rounded-md border px-2 py-2 ${
-                        isPicking
-                          ? isDark
-                            ? 'border-sky-300/60 bg-sky-500/10'
-                            : 'border-sky-400/60 bg-sky-100/80'
-                          : isDark
-                          ? 'border-white/10 bg-slate-900/30'
-                          : 'border-slate-200 bg-white/70'
-                      }`}
-                    >
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <span className="inline-flex items-center gap-1.5 text-xs">
-                          <span aria-hidden className="text-base leading-none">
-                            {resolveCategoryEmoji(category)}
-                          </span>
-                          <span className={titleClass}>{category}</span>
-                        </span>
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => beginIconEdit(category)}
-                            className={iconActionClass}
-                          >
-                            {isPicking ? 'Picking…' : 'Change'}
-                          </button>
-                          {hasOverride ? (
-                            <button
-                              type="button"
-                              onClick={() => clearListIcon(category)}
-                              className={`text-[11px] underline ${mutedText}`}
-                            >
-                              Default
-                            </button>
-                          ) : null}
-                        </div>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            ) : null}
-          </div>
         </div>
       ) : null}
 
@@ -839,7 +726,7 @@ export default function ListDetailBody({
           </div>
         ) : null}
 
-        <div className="space-y-3 md:space-y-0 md:divide-y-0">
+        <div className="space-y-3">
           {items.map((item) => {
             const place = item.place
             if (!place) return null
@@ -850,8 +737,8 @@ export default function ListDetailBody({
               <div
                 key={item.id}
                 data-place-id={place.id}
-                className={`rounded-md border px-3 py-2 ${rowBorder} md:rounded-none md:border-0 md:border-b md:border-dotted md:border-paper-tertiary-fixed md:px-0 md:py-3 md:last:border-b-0 ${
-                  isFocused ? `${focusedRowClass} md:!border-paper-primary` : ''
+                className={`rounded-[4px] border border-paper-tertiary-fixed bg-paper-surface-warm p-3 ${
+                  isFocused ? `${focusedRowClass} !border-paper-primary` : ''
                 }`}
               >
                 {onPlaceSelect ? (
@@ -862,7 +749,7 @@ export default function ListDetailBody({
                   >
                     <span
                       aria-hidden
-                      className="hidden h-8 w-8 shrink-0 items-center justify-center rounded-[2px] border border-paper-tertiary-fixed bg-paper-surface-container text-base leading-none md:inline-flex"
+                      className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[2px] border border-paper-tertiary-fixed bg-paper-surface-container text-base leading-none"
                     >
                       {resolveCategoryEmoji(place.category)}
                     </span>
@@ -892,7 +779,7 @@ export default function ListDetailBody({
                   <div className="flex flex-wrap items-center gap-2 md:items-start md:gap-3">
                     <span
                       aria-hidden
-                      className="hidden h-8 w-8 shrink-0 items-center justify-center rounded-[2px] border border-paper-tertiary-fixed bg-paper-surface-container text-base leading-none md:inline-flex"
+                      className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[2px] border border-paper-tertiary-fixed bg-paper-surface-container text-base leading-none"
                     >
                       {resolveCategoryEmoji(place.category)}
                     </span>
@@ -926,6 +813,19 @@ export default function ListDetailBody({
                     {place.address}
                   </p>
                 ) : null}
+                {place.google_rating != null ? (
+                  <p className="mt-1 flex items-center gap-1 text-xs text-paper-on-surface-variant">
+                    <span className="text-amber-500">★</span>
+                    <span className="font-medium">
+                      {place.google_rating.toFixed(1)}
+                    </span>
+                    {place.google_review_count != null ? (
+                      <span>
+                        ({place.google_review_count.toLocaleString()} reviews)
+                      </span>
+                    ) : null}
+                  </p>
+                ) : null}
                 <TagEditor
                   itemId={item.id}
                   tags={item.tags ?? []}
@@ -939,26 +839,6 @@ export default function ListDetailBody({
 
         {error ? <p className={`text-xs ${errorText}`}>{error}</p> : null}
       </div>
-
-      <EmojiPicker
-        open={Boolean(iconEditorOpen && pickerCategory)}
-        title={
-          pickerCategory
-            ? `Choose icon for ${pickerCategory}`
-            : 'Choose icon'
-        }
-        suggestedEmojis={
-          pickerCategory ? CATEGORY_ICON_CHOICES[pickerCategory] : []
-        }
-        includeCatalog={false}
-        restrictToOptions={false}
-        onClose={() => setPickerCategory(null)}
-        onSelect={(emoji) => {
-          if (!pickerCategory) return
-          setCategoryIcon(pickerCategory, emoji)
-          setPickerCategory(null)
-        }}
-      />
     </section>
   )
 }

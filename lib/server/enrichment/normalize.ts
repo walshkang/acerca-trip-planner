@@ -1,3 +1,5 @@
+import { inferCategoryFromGoogleTypes } from '@/lib/places/infer-category-from-google-types'
+import { frozenGoogleReviewStatsFromSnapshot } from '@/lib/server/enrichment/google-review-stats'
 import { adminSupabase } from '@/lib/supabase/admin'
 import {
   EnrichmentInput,
@@ -23,7 +25,7 @@ function isEnergyEnum(v: unknown): v is EnergyEnum {
   return typeof v === 'string' && (ENERGY_ENUM as string[]).includes(v)
 }
 
-function assertValidNormalizedData(data: unknown): asserts data is NormalizedData {
+function assertLlmNormalizedPayload(data: unknown): void {
   if (typeof data !== 'object' || data === null || Array.isArray(data)) {
     throw new Error('Normalized data must be an object')
   }
@@ -45,6 +47,44 @@ function assertValidNormalizedData(data: unknown): asserts data is NormalizedDat
   if (d.vibe !== undefined && d.vibe !== null && typeof d.vibe !== 'string') {
     throw new Error('Normalized data vibe must be a string when provided')
   }
+
+  if ('google_rating' in d || 'google_review_count' in d) {
+    const gr = d.google_rating
+    const gc = d.google_review_count
+    if (
+      gr !== undefined &&
+      gr !== null &&
+      (typeof gr !== 'number' || !Number.isFinite(gr))
+    ) {
+      throw new Error('Normalized data google_rating must be a finite number or null when provided')
+    }
+    if (
+      gc !== undefined &&
+      gc !== null &&
+      (typeof gc !== 'number' || !Number.isFinite(gc))
+    ) {
+      throw new Error(
+        'Normalized data google_review_count must be a finite number or null when provided'
+      )
+    }
+  }
+}
+
+function assertFinalNormalizedData(data: unknown): asserts data is NormalizedData {
+  assertLlmNormalizedPayload(data)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const d = data as any
+  const gr = d.google_rating
+  const gc = d.google_review_count
+  if (!('google_rating' in d) || !('google_review_count' in d)) {
+    throw new Error('Normalized data must include google_rating and google_review_count')
+  }
+  if (gr !== null && (typeof gr !== 'number' || !Number.isFinite(gr))) {
+    throw new Error('Normalized data google_rating must be a finite number or null')
+  }
+  if (gc !== null && (typeof gc !== 'number' || !Number.isFinite(gc))) {
+    throw new Error('Normalized data google_review_count must be a finite number or null')
+  }
 }
 
 function normalizeTagsFromGoogleTypes(types?: unknown): string[] {
@@ -65,46 +105,13 @@ function deterministicFallbackNormalize(
   const google = snapshot.googlePlaces ?? {}
   const types = (google as any)?.types as unknown
   const tags = normalizeTagsFromGoogleTypes(types)
+  const category = inferCategoryFromGoogleTypes(types)
 
-  const tset = new Set(Array.isArray(types) ? (types as any[]) : [])
-  const has = (k: string) => tset.has(k)
-
-  let category: CategoryEnum = 'Activity'
-  if (has('cafe') || has('coffee_shop')) category = 'Coffee'
-  else if (
-    has('restaurant') ||
-    has('meal_takeaway') ||
-    has('meal_delivery') ||
-    has('bakery')
-  )
-    category = 'Food'
-  else if (
-    has('bar') ||
-    has('night_club') ||
-    has('wine_bar') ||
-    has('cocktail_bar')
-  )
-    category = 'Drinks'
-  else if (
-    has('tourist_attraction') ||
-    has('museum') ||
-    has('park') ||
-    has('art_gallery') ||
-    has('church') ||
-    has('place_of_worship') ||
-    has('natural_feature')
-  )
-    category = 'Sights'
-  else if (
-    has('store') ||
-    has('shopping_mall') ||
-    has('clothing_store') ||
-    has('department_store') ||
-    has('book_store')
-  )
-    category = 'Shop'
-
-  return { category, tags }
+  return {
+    category,
+    tags,
+    ...frozenGoogleReviewStatsFromSnapshot(snapshot),
+  }
 }
 
 async function normalizeWithOpenAI(
@@ -157,14 +164,27 @@ async function normalizeWithOpenAI(
     throw new Error('OpenAI response missing message content')
   }
 
-  let normalizedData: unknown
+  let parsed: unknown
   try {
-    normalizedData = JSON.parse(content)
+    parsed = JSON.parse(content)
   } catch {
     throw new Error('OpenAI response was not valid JSON')
   }
 
-  assertValidNormalizedData(normalizedData)
+  if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
+    const o = parsed as Record<string, unknown>
+    delete o.google_rating
+    delete o.google_review_count
+  }
+
+  assertLlmNormalizedPayload(parsed)
+
+  const normalizedData: NormalizedData = {
+    ...(parsed as Omit<NormalizedData, 'google_rating' | 'google_review_count'>),
+    ...frozenGoogleReviewStatsFromSnapshot(snapshot),
+  }
+
+  assertFinalNormalizedData(normalizedData)
 
   return { normalizedData, model, promptVersion }
 }
@@ -210,7 +230,9 @@ export async function normalizeEnrichment(
         model: 'deterministic-fallback',
         promptVersion: 'fallback-v1',
       }
-  
+
+  assertFinalNormalizedData(normalizedData)
+
   // Store new enrichment
   const { data: enrichment, error } = await supabase
     .from('enrichments')

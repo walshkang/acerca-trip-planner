@@ -19,6 +19,9 @@ export interface EnrichmentOutput {
     energy?: string;        // EnergyEnum
     tags: string[];         // AI-generated tags (validated against schema)
     vibe?: string;
+    /** Frozen from Google Places at ingest; null when absent or legacy enrichment */
+    google_rating: number | null;
+    google_review_count: number | null;
   };
   sourceHash: string;      // Hash of **canonicalized** rawSourceSnapshot
   model: string;            // LLM model identifier

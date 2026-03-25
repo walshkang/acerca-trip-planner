@@ -58,8 +58,14 @@ type PlacesRow = {
   lng: number | null
 }
 
+export type MapShellFlyToOptions = {
+  center: [number, number]
+  zoom?: number
+}
+
 export type MapShellHandle = {
   fetchPlaces: () => Promise<void>
+  flyTo: (options: MapShellFlyToOptions) => void
 }
 
 export type MapShellProps = {
@@ -325,7 +331,15 @@ const MapShell = forwardRef<MapShellHandle, MapShellProps>(function MapShell(
     }
   }, [])
 
-  useImperativeHandle(ref, () => ({ fetchPlaces }), [fetchPlaces])
+  const flyTo = useCallback((options: MapShellFlyToOptions) => {
+    mapRef.current?.flyTo(options)
+  }, [])
+
+  useImperativeHandle(
+    ref,
+    () => ({ fetchPlaces, flyTo }),
+    [fetchPlaces, flyTo]
+  )
 
   const mapInteractive =
     !loading &&
