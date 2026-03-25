@@ -1,45 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import {
-  fetchGooglePlace,
-  fetchWikipediaPages,
-  fetchWikidataData,
-  selectBestWikipediaMatch,
   findGooglePlaceIdFromText,
-  fetchWikipediaSummary,
-  fetchWikidataLabels,
 } from '@/lib/enrichment/sources'
-import { normalizeEnrichment } from '@/lib/server/enrichment/normalize'
-import { linkCandidateEnrichment } from '@/lib/server/enrichment/linkCandidateEnrichment'
-import { extractPrimaryWikidataFactPairs } from '@/lib/enrichment/curation'
 import {
-  WIKI_CURATED_VERSION,
-  assertValidWikiCuratedData,
-} from '@/lib/enrichment/wikiCurated'
-
-function parsePlaceIdFromGoogleMapsUrl(raw: string): string | null {
-  try {
-    const u = new URL(raw)
-    const placeId =
-      u.searchParams.get('place_id') ??
-      u.searchParams.get('query_place_id') ??
-      u.searchParams.get('q')
-    if (placeId && placeId.startsWith('ChI')) return placeId
-    return null
-  } catch {
-    return null
-  }
-}
-
-function looksLikeGooglePlaceId(raw: string): boolean {
-  const s = raw.trim()
-  return s.startsWith('ChI') && s.length >= 20 && s.length <= 200
-}
-
-function toGeographyPointWkt(lat: number, lng: number): string {
-  // PostgREST/PostGIS accepts EWKT for geography columns.
-  return `SRID=4326;POINT(${lng} ${lat})`
-}
+  looksLikeGooglePlaceId,
+  parsePlaceIdFromGoogleMapsUrl,
+} from '@/lib/places/google-place-input'
+import {
+  IngestGooglePlaceError,
+  ingestGooglePlaceAsCandidate,
+} from '@/lib/server/places/ingest-google-place'
 
 export async function POST(request: NextRequest) {
   try {
@@ -83,125 +54,32 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const googlePlaces = await fetchGooglePlace(placeId)
-
-    const lat = googlePlaces.geometry?.location?.lat
-    const lng = googlePlaces.geometry?.location?.lng
-    if (typeof lat !== 'number' || typeof lng !== 'number') {
-      return NextResponse.json(
-        { error: 'Google Places response missing geometry.' },
-        { status: 502 }
-      )
-    }
-
-    let wikipedia: unknown = null
-    let wikidata: unknown = null
-
-    if (includeWikipedia) {
-      const pages = await fetchWikipediaPages(lat, lng)
-      const best = selectBestWikipediaMatch({
-        placeName: googlePlaces.name,
-        candidates: pages,
+    let result
+    try {
+      result = await ingestGooglePlaceAsCandidate({
+        supabase,
+        userId: user.id,
+        googlePlaceId: placeId,
+        includeWikipedia,
+        schemaVersion,
       })
-
-      wikipedia = {
-        geosearch: pages,
-        bestMatch: best,
-      }
-
-      if (best?.title) {
-        wikidata = await fetchWikidataData(best.title)
-      }
-    }
-
-    const raw_payload = {
-      ...googlePlaces,
-      wikipedia,
-      wikidata,
-    }
-
-    const { data: candidate, error } = await supabase
-      .from('place_candidates')
-      .insert({
-        user_id: user.id,
-        source: 'google',
-        source_id: `google:${googlePlaces.place_id}`,
-        raw_payload,
-        name: googlePlaces.name,
-        address: googlePlaces.formatted_address ?? null,
-        location: toGeographyPointWkt(lat, lng),
-        status: 'new',
-      })
-      .select('id, status, name, address, source, source_id, created_at, enrichment_id')
-      .single()
-
-    if (error || !candidate) {
-      return NextResponse.json(
-        { error: error?.message || 'Failed to insert candidate.' },
-        { status: 500 }
-      )
-    }
-
-    // Immediately enrich for preview (Search -> Preview -> Commit UX loop).
-    const wikipediaTitle =
-      typeof (wikipedia as any)?.bestMatch?.title === 'string'
-        ? (wikipedia as any).bestMatch.title
-        : null
-
-    const wikiSummary = wikipediaTitle
-      ? await fetchWikipediaSummary(wikipediaTitle)
-      : {
-          wikipediaTitle: null,
-          pageid: null,
-          summary: null,
-          thumbnail_url: null,
-          raw: null,
+    } catch (e) {
+      if (e instanceof IngestGooglePlaceError) {
+        if (e.code === 'missing_geometry') {
+          return NextResponse.json({ error: e.message }, { status: 502 })
         }
-
-    const prelim = extractPrimaryWikidataFactPairs({
-      entity: (wikidata as any)?.entity ?? null,
-      labelsByQid: {},
-    })
-    const labels =
-      prelim.referencedQids.length ? await fetchWikidataLabels(prelim.referencedQids) : {}
-    const facts = extractPrimaryWikidataFactPairs({
-      entity: (wikidata as any)?.entity ?? null,
-      labelsByQid: labels,
-    }).pairs
-
-    const wikipediaCurated = {
-      version: WIKI_CURATED_VERSION,
-      wikipedia_title: wikipediaTitle,
-      wikidata_qid: typeof (wikidata as any)?.qid === 'string' ? (wikidata as any).qid : null,
-      summary: wikiSummary.summary ?? null,
-      thumbnail_url: wikiSummary.thumbnail_url ?? null,
-      primary_fact_pairs: facts,
+        return NextResponse.json(
+          { error: e.message },
+          { status: 500 }
+        )
+      }
+      throw e
     }
-    assertValidWikiCuratedData(wikipediaCurated)
 
-    const enrichment = await normalizeEnrichment({
-      rawSourceSnapshot: {
-        googlePlaces,
-        ...(wikipedia ? { wikipedia } : {}),
-        ...(wikidata ? { wikidata } : {}),
-        ...(wikiSummary?.raw ? { wikipediaSummary: wikiSummary } : {}),
-        wikipediaCurated,
-      },
-      schemaVersion,
-    })
-
-    await linkCandidateEnrichment({
-      candidateId: candidate.id,
-      userId: user.id,
-      enrichmentId: enrichment.id,
-    })
+    const { candidate, googlePlaces, enrichment, lat, lng } = result
 
     return NextResponse.json({
-      candidate: {
-        ...candidate,
-        enrichment_id: enrichment.id,
-        status: 'enriched',
-      },
+      candidate,
       google_place_id: googlePlaces.place_id,
       location: { lat, lng },
       google: {
@@ -213,13 +91,17 @@ export async function POST(request: NextRequest) {
         opening_hours: googlePlaces.opening_hours
           ? {
               open_now:
-                typeof (googlePlaces.opening_hours as any)?.open_now === 'boolean'
-                  ? (googlePlaces.opening_hours as any).open_now
+                typeof (googlePlaces.opening_hours as { open_now?: boolean })
+                  ?.open_now === 'boolean'
+                  ? (googlePlaces.opening_hours as { open_now: boolean }).open_now
                   : null,
-              weekday_text: Array.isArray((googlePlaces.opening_hours as any)?.weekday_text)
-                ? ((googlePlaces.opening_hours as any).weekday_text.filter(
-                    (v: unknown) => typeof v === 'string'
-                  ) as string[])
+              weekday_text: Array.isArray(
+                (googlePlaces.opening_hours as { weekday_text?: unknown })
+                  ?.weekday_text
+              )
+                ? (
+                    googlePlaces.opening_hours as { weekday_text: unknown[] }
+                  ).weekday_text.filter((v: unknown) => typeof v === 'string')
                 : null,
             }
           : null,

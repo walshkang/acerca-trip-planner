@@ -17,6 +17,8 @@ function row(
     address: null,
     created_at: '2025-01-01T00:00:00Z',
     user_notes: null,
+    google_rating: null,
+    google_review_count: null,
   }
   return {
     id: partial.id,
@@ -42,6 +44,8 @@ describe('calendar-day-detail grouping and sort', () => {
       address: null as string | null,
       created_at: '2025-01-01T00:00:00Z',
       user_notes: null as string | null,
+      google_rating: null as number | null,
+      google_review_count: null as number | null,
     })
     const items = [
       row({ id: 'a', scheduled_start_time: '14:00:00', place: miniPlace('p1', 'A') }),
@@ -65,6 +69,8 @@ describe('calendar-day-detail grouping and sort', () => {
         address: null,
         created_at: '2025-01-01T00:00:00Z',
         user_notes: null,
+        google_rating: null,
+        google_review_count: null,
       },
     })
     const b = row({
@@ -77,6 +83,8 @@ describe('calendar-day-detail grouping and sort', () => {
         address: null,
         created_at: '2025-01-01T00:00:00Z',
         user_notes: null,
+        google_rating: null,
+        google_review_count: null,
       },
     })
     const sorted = [a, b].sort(sortPlannerDetailItems)

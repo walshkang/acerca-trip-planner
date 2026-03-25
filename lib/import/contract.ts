@@ -302,7 +302,12 @@ export function parseImportPreviewRequest(input: unknown): ParseImportPreviewRes
 
 export type ParseImportCommitResult =
   | { ok: true; request: ImportCommitRequest }
-  | { ok: false; code: 'invalid_import_commit_payload'; message: string; fieldErrors: Record<string, string[]> }
+  | {
+      ok: false
+      code: 'invalid_import_commit_payload' | 'row_limit_exceeded'
+      message: string
+      fieldErrors: Record<string, string[]>
+    }
 
 export function parseImportCommitRequest(input: unknown): ParseImportCommitResult {
   if (!isRecord(input)) {
@@ -327,6 +332,13 @@ export function parseImportCommitRequest(input: unknown): ParseImportCommitResul
     fieldErrors['confirmed_rows'] = ['confirmed_rows is required and must be an array']
   } else if (input.confirmed_rows.length === 0) {
     fieldErrors['confirmed_rows'] = ['confirmed_rows must not be empty']
+  } else if (input.confirmed_rows.length > IMPORT_ROW_LIMIT_V1) {
+    return {
+      ok: false,
+      code: 'row_limit_exceeded',
+      message: `Maximum ${IMPORT_ROW_LIMIT_V1} rows allowed in v1`,
+      fieldErrors: { confirmed_rows: [`Maximum ${IMPORT_ROW_LIMIT_V1} rows allowed`] },
+    }
   } else {
     for (let i = 0; i < input.confirmed_rows.length; i++) {
       const row = input.confirmed_rows[i]
@@ -339,6 +351,14 @@ export function parseImportCommitRequest(input: unknown): ParseImportCommitResul
       }
       if (typeof row.google_place_id !== 'string' || row.google_place_id.trim().length === 0) {
         fieldErrors[`confirmed_rows[${i}].google_place_id`] = ['google_place_id is required']
+      }
+      const hasScheduledDate = row.scheduled_date !== undefined
+      const hasScheduledSlot = row.scheduled_slot !== undefined
+      if (hasScheduledDate !== hasScheduledSlot) {
+        const msg =
+          'scheduled_date and scheduled_slot must both be set when scheduling (or omit both for unscheduled)'
+        fieldErrors[`confirmed_rows[${i}].scheduled_date`] = [...(fieldErrors[`confirmed_rows[${i}].scheduled_date`] ?? []), msg]
+        fieldErrors[`confirmed_rows[${i}].scheduled_slot`] = [...(fieldErrors[`confirmed_rows[${i}].scheduled_slot`] ?? []), msg]
       }
       if (row.scheduled_date !== undefined) {
         if (typeof row.scheduled_date !== 'string' || !parseIsoDateOnly(row.scheduled_date)) {
