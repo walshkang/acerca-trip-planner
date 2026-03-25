@@ -55,13 +55,8 @@ export default function PlannerTripDates({
           <p
             className={`truncate text-sm font-semibold md:font-headline md:text-xs md:font-extrabold md:uppercase md:tracking-tighter ${headingClass}`}
           >
-            Plan
+            Trip Dates
           </p>
-          {list ? (
-            <p className={`mt-0.5 truncate text-xs ${mutedClass}`}>
-              {list.name}
-            </p>
-          ) : null}
         </div>
         <div className="flex shrink-0 items-center gap-2">
           {list?.start_date && list?.end_date ? (

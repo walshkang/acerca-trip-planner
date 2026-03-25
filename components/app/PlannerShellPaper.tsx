@@ -9,8 +9,7 @@ import type { MapPlace } from '@/components/map/MapView.types'
 import type { CategoryEnum } from '@/lib/types/enums'
 import { supabase } from '@/lib/supabase/client'
 import PaperHeader from '@/components/paper/PaperHeader'
-import PaperSidebar from '@/components/paper/PaperSidebar'
-import PaperFooterBar from '@/components/paper/PaperFooterBar'
+import PlannerListSwitcher from '@/components/app/PlannerListSwitcher'
 
 type PlacesRow = {
   id: string
@@ -23,8 +22,7 @@ type PlacesRow = {
 /**
  * PlannerShellPaper — Paper-styled Plan mode (desktop only).
  *
- * Left sidebar + PaperHeader + two-column planner layout.
- * Reuses ListPlanner for all scheduling logic.
+ * Stripped chrome: no sidebar, no footer. PaperHeader + list switcher + planner.
  */
 export default function PlannerShellPaper() {
   const activeListId = useTripStore((s) => s.activeListId)
@@ -56,29 +54,14 @@ export default function PlannerShellPaper() {
 }
 
 function PlannerShellPaperWithList({ activeListId }: { activeListId: string }) {
+  const setMode = useNavStore((s) => s.setMode)
   const bumpListItemsRefresh = useTripStore((s) => s.bumpListItemsRefresh)
   const activeListPlaceIds = useTripStore((s) => s.activeListPlaceIds)
   const activeListItems = useTripStore((s) => s.activeListItems)
   const plannerSelectedDay = useTripStore((s) => s.plannerSelectedDay)
   const listItemsRefreshKey = useTripStore((s) => s.listItemsRefreshKey)
-  const setMode = useNavStore((s) => s.setMode)
 
   const [mapPlaces, setMapPlaces] = useState<MapPlace[]>([])
-  const [listName, setListName] = useState<string>('')
-
-  // Fetch list name for sidebar title
-  useEffect(() => {
-    let cancelled = false
-    void supabase
-      .from('lists')
-      .select('name')
-      .eq('id', activeListId)
-      .single()
-      .then(({ data }) => {
-        if (!cancelled && data?.name) setListName(data.name)
-      })
-    return () => { cancelled = true }
-  }, [activeListId])
 
   // Fetch map places
   useEffect(() => {
@@ -122,66 +105,40 @@ function PlannerShellPaperWithList({ activeListId }: { activeListId: string }) {
     state.setFocusedPlannerPlaceId(placeId)
   }, [])
 
-  const sidebarNavItems = [
-    {
-      id: 'destinations',
-      label: 'Destinations',
-      icon: 'explore',
-      active: true,
-    },
-    {
-      id: 'explore',
-      label: 'Explore Map',
-      icon: 'map',
-      onClick: () => setMode('explore'),
-    },
-  ]
-
   return (
-    <div className="flex h-screen bg-paper-surface">
-      {/* Left sidebar */}
-      <PaperSidebar
-        projectTitle={listName || 'Trip'}
-        subtitle="Planning"
-        navItems={sidebarNavItems}
+    <div className="flex h-screen flex-col bg-paper-surface">
+      {/* Header */}
+      <PaperHeader
+        activeTab="itinerary"
+        onTabChange={(tab) => {
+          if (tab === 'map') setMode('explore')
+        }}
       />
 
-      {/* Main content */}
-      <div className="ml-64 flex flex-1 flex-col min-w-0">
-        {/* Header */}
-        <PaperHeader
-          activeTab="itinerary"
-          onTabChange={(tab) => {
-            if (tab === 'map') setMode('explore')
-          }}
+      {/* List switcher toolbar */}
+      <div className="flex items-center px-6 pt-20 pb-2">
+        <PlannerListSwitcher />
+      </div>
+
+      {/* Mini map inset */}
+      <div className="mx-6 h-[180px] shrink-0 overflow-hidden rounded-[4px] border border-paper-tertiary-fixed">
+        <MapInset
+          className="h-full w-full"
+          places={mapPlaces}
+          activeListItems={activeListItems}
+          selectedDay={plannerSelectedDay}
+          onPinClick={onPinClick}
         />
+      </div>
 
-        {/* Content area below header */}
-        <div className="flex flex-1 min-h-0 flex-col pt-24">
-          {/* Mini map inset */}
-          <div className="mx-6 h-[180px] shrink-0 overflow-hidden rounded-[4px] border border-paper-tertiary-fixed">
-            <MapInset
-              className="h-full w-full"
-              places={mapPlaces}
-              activeListItems={activeListItems}
-              selectedDay={plannerSelectedDay}
-              onPinClick={onPinClick}
-            />
-          </div>
-
-          {/* Planner content */}
-          <div className="flex-1 min-h-0">
-            <ListPlanner
-              listId={activeListId}
-              tone="light"
-              layout="split"
-              onPlanMutated={bumpListItemsRefresh}
-            />
-          </div>
-
-          {/* Footer */}
-          <PaperFooterBar />
-        </div>
+      {/* Planner content */}
+      <div className="flex-1 min-h-0">
+        <ListPlanner
+          listId={activeListId}
+          tone="light"
+          layout="split"
+          onPlanMutated={bumpListItemsRefresh}
+        />
       </div>
     </div>
   )

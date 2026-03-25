@@ -5,6 +5,7 @@ import { useTripStore } from '@/lib/state/useTripStore'
 import { useNavStore } from '@/lib/state/useNavStore'
 import { useMediaQuery } from '@/components/ui/useMediaQuery'
 import ListPlanner from '@/components/stitch/ListPlanner'
+import PlannerListSwitcher from '@/components/app/PlannerListSwitcher'
 import MapInset from '@/components/map/MapInset.dynamic'
 import type { MapPlace } from '@/components/map/MapView.types'
 import type { CategoryEnum } from '@/lib/types/enums'
@@ -115,7 +116,10 @@ function PlannerShellWithList({ activeListId }: { activeListId: string }) {
         className="flex h-screen w-full flex-col bg-slate-50 dark:bg-slate-900"
         data-map-tone="light"
       >
-        <div className="h-[240px] shrink-0 overflow-hidden rounded-lg px-3 pt-3">
+        <div className="flex items-center px-3 pt-3 pb-2">
+          <PlannerListSwitcher />
+        </div>
+        <div className="h-[240px] shrink-0 overflow-hidden rounded-lg px-3">
           <MapInset
             className="h-full w-full"
             places={mapPlaces}
@@ -141,6 +145,9 @@ function PlannerShellWithList({ activeListId }: { activeListId: string }) {
       className="flex h-screen w-full flex-col bg-slate-50 dark:bg-slate-900"
       data-map-tone="light"
     >
+      <div className="flex items-center px-3 pt-3 pb-2">
+        <PlannerListSwitcher />
+      </div>
       <div className="flex-1 overflow-y-auto">
         <div className="mx-auto max-w-3xl py-4">
           <ListPlanner
