@@ -2,7 +2,7 @@
 
 import { Suspense, useMemo, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { supabase } from '@/lib/supabase/client'
+import { getSupabase } from '@/lib/supabase/client'
 
 function SignInInner() {
   const router = useRouter()
@@ -28,7 +28,7 @@ function SignInInner() {
       return
     }
 
-    const { error } = await supabase.auth.signInWithOtp({
+    const { error } = await getSupabase().auth.signInWithOtp({
       email,
       options: {
         emailRedirectTo: `${origin}/auth/callback?next=${encodeURIComponent(next)}`,

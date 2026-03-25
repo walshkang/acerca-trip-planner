@@ -9,7 +9,7 @@ import {
   useRef,
   useState,
 } from 'react'
-import { supabase } from '@/lib/supabase/client'
+import { getSupabase } from '@/lib/supabase/client'
 import type { CategoryEnum } from '@/lib/types/enums'
 import MapViewMapbox from '@/components/map/MapView.mapbox'
 import MapViewMaplibre from '@/components/map/MapView.maplibre'
@@ -298,12 +298,12 @@ const MapShell = forwardRef<MapShellHandle, MapShellProps>(function MapShell(
 
       const {
         data: { user },
-      } = await supabase.auth.getUser()
+      } = await getSupabase().auth.getUser()
       setIsAuthed(Boolean(user))
       setAuthChecked(true)
       if (!user) return
 
-      const { data, error } = await supabase
+      const { data, error } = await getSupabase()
         .from('places_view')
         .select('id, name, category, lat, lng')
         .order('created_at', { ascending: false })
@@ -364,7 +364,7 @@ const MapShell = forwardRef<MapShellHandle, MapShellProps>(function MapShell(
     async function checkAuth() {
       const {
         data: { user },
-      } = await supabase.auth.getUser()
+      } = await getSupabase().auth.getUser()
       setIsAuthed(Boolean(user))
       setAuthChecked(true)
     }

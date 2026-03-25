@@ -9,7 +9,7 @@ import PlannerListSwitcher from '@/components/app/PlannerListSwitcher'
 import MapInset from '@/components/map/MapInset.dynamic'
 import type { MapPlace } from '@/components/map/MapView.types'
 import type { CategoryEnum } from '@/lib/types/enums'
-import { supabase } from '@/lib/supabase/client'
+import { getSupabase } from '@/lib/supabase/client'
 
 type PlacesRow = {
   id: string
@@ -72,7 +72,7 @@ function PlannerShellWithList({ activeListId }: { activeListId: string }) {
     }
 
     let cancelled = false
-    void supabase
+    void getSupabase()
       .from('places_view')
       .select('id, name, category, lat, lng')
       .in('id', placeIds)
