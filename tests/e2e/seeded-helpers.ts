@@ -215,6 +215,15 @@ export function visibleByTestId(page: Page, testId: string): Locator {
   return page.locator(`[data-testid="${testId}"]:visible`).first()
 }
 
+/** Plan surface: mobile `ListPlanner` or desktop Paper `CalendarPlanner`. */
+export function visiblePlanSurface(page: Page): Locator {
+  return page
+    .locator(
+      '[data-testid="list-planner"]:visible, [data-testid="calendar-planner"]:visible'
+    )
+    .first()
+}
+
 export async function waitForPlaceDrawerReady(placeDrawer: Locator, placeName: string) {
   await placeDrawer.waitFor({ state: 'visible' })
   await placeDrawer.getByRole('heading', { name: placeName }).waitFor({ state: 'visible' })

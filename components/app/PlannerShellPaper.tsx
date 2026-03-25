@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useTripStore } from '@/lib/state/useTripStore'
 import { useNavStore } from '@/lib/state/useNavStore'
-import ListPlanner from '@/components/stitch/ListPlanner'
+import CalendarPlanner from '@/components/planner/CalendarPlanner'
 import MapInset from '@/components/map/MapInset.dynamic'
 import type { MapPlace } from '@/components/map/MapView.types'
 import type { CategoryEnum } from '@/lib/types/enums'
@@ -133,12 +133,7 @@ function PlannerShellPaperWithList({ activeListId }: { activeListId: string }) {
 
       {/* Planner content */}
       <div className="flex-1 min-h-0">
-        <ListPlanner
-          listId={activeListId}
-          tone="light"
-          layout="split"
-          onPlanMutated={bumpListItemsRefresh}
-        />
+        <CalendarPlanner listId={activeListId} onPlanMutated={bumpListItemsRefresh} />
       </div>
     </div>
   )
