@@ -8,6 +8,7 @@ import type {
 import { SLOT_TIME_RANGE } from '@/lib/import/contract'
 import type { PlannerSlot } from '@/lib/lists/planner'
 import { PLANNER_SLOT_ORDER, parseIsoDateOnly } from '@/lib/lists/planner'
+import type { EnergyEnum } from '@/lib/types/enums'
 
 // ---------------------------------------------------------------------------
 // Opening hours (Google weekday lines)
