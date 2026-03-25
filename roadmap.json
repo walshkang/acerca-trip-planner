@@ -11,10 +11,10 @@
   ],
   "pr_history": [
     {
-      "id": "roadmap-p3e4-import-export",
+      "id": "roadmap-p3e4-headless-planning-api",
       "date": "2026-03-25",
-      "title": "Roadmap: Phase 3 epic for list import/export interchange",
-      "summary": "Added P3-E4 (List interchange: CSV export UI, Google-backed import preview/commit, round-trip identifiers, verification) under phase_3 with explicit invariants, non-goals, and LLM future path aligned to the same row schema as file import."
+      "title": "Roadmap: Reshape P3-E4 as model-agnostic headless planning API",
+      "summary": "Reshaped P3-E4 from CSV import/export into a model-agnostic headless planning API. Any LLM client (GPT, Gemini, Claude, in-app chat) drives a multi-pass loop: draft ImportRow[] → enriched PreviewRow[] with server-computed fields (distance, slot-hours, conflicts, energy) → LLM refines → user confirms → commit. 8 slices (A-H): contract + types, preview API, computed fields, commit API, LLM client prompt, export UI, import UI + in-app chat, verification gate."
     },
     {
       "id": "doc-cleanup",
@@ -582,7 +582,7 @@
       "name": "The Intelligent Concierge (Wedding Cake)",
       "goal": "Optimization and discovery without compromising trust.",
       "status": "in_progress",
-      "progress_summary": "Routing + discovery suggestion layers shipped. UX pivot (Explore/Plan) in progress (MapInset 3.6 not started; polish 3.7 partial). New backlog: P3-E4 list CSV/JSON interchange (export UI + Google-backed import with preview/commit).",
+      "progress_summary": "Routing + discovery suggestion layers shipped. UX pivot (Explore/Plan) in progress (MapInset 3.6 not started; polish 3.7 partial). P3-E4 reshaped as model-agnostic headless planning API: enriched import preview with server-computed fields (distance, slot-hours, conflicts) enabling any LLM client to drive a multi-pass planning loop.",
       "epics": [
         {
           "id": "P3-E1",
@@ -703,18 +703,19 @@
         {
           "id": "P3-E3",
           "title": "UX Pivot — Two-Journey Architecture (Explore / Plan)",
-          "description": "Replace single WorkspaceContainer shell with Explore/Plan dual-journey architecture. ExploreShell wraps existing map+discovery flow. PlannerShell gets full-screen day grid planner with desktop split-panel layout. Architecture decisions documented in CONTEXT.md.",
+          "description": "Replace single WorkspaceContainer shell with Explore/Plan dual-journey architecture. Canonical UI is paper-themed on all viewports: ExploreShellPaper + PlannerShellPaper, PaperHeader journey tabs, responsive Explore panel. Legacy glass shells may remain in repo until removed. Architecture decisions documented in CONTEXT.md and DESIGN.md Section B.",
           "features": [
-            "Two-journey architecture: Explore (map + discovery) and Plan (day grid + map inset) as separate shells.",
-            "AppShell with NavRail (desktop) / NavFooter (mobile) for mode switching.",
-            "PlannerGrid: calendar-like day grid (7/row dated, horizontal dateless) with drag-and-drop.",
-            "MapInset: real Mapbox minimap in PlannerShell with clickable pins that scroll to planner items.",
+            "Two-journey architecture: Explore (map + discovery) and Plan (CalendarPlanner + MapInset) as separate shells.",
+            "AppShell routes only Paper shells; mode switch via PaperHeader Map / Itinerary tabs on all breakpoints (URL ?mode=explore|plan).",
+            "CalendarPlanner: calendar-like day grid with drag-and-drop and day detail; dateless trips via day_index.",
+            "MapInset: Mapbox minimap in PlannerShellPaper with pins colored by day; pin click syncs selected day / focus.",
+            "Explore parity: PlannerListSwitcher toolbar, trip date subtitle in PaperExplorePanel, category chips tied to useTripStore.activeListTypeFilters.",
+            "Mobile Explore: PaperExplorePanel bottom sheet (peek / half / expanded) with map fitBounds padding tied to snap.",
             "day_index column on list_items for dateless trip support.",
-            "Shared state layer: useTripStore (shared), useDiscoveryStore (Explore), usePlannerStore (Plan), useNavStore (nav).",
+            "Shared state layer: useTripStore (shared + planner selection fields), useDiscoveryStore (Explore), useNavStore (nav).",
             "Color-coded time-of-day dots (warm=morning, neutral=afternoon, cool=evening).",
             "Soft capacity warning when a day exceeds ~5 items.",
-            "Backlog is filterable and shows both unassigned and assigned items.",
-            "Explicit mode switch with URL state (?mode=explore|plan)."
+            "Backlog is filterable and shows both unassigned and assigned items."
           ],
           "tasks": [
             {
@@ -753,83 +754,201 @@
             {
               "id": "3.6",
               "task": "Phase 3 — Map Inset (Mapbox minimap in PlannerShell).",
-              "details": "Create MapInset component with real Mapbox GL instance. Pins colored by day, selected day fitBounds, pin click scrolls to item in planner. Lazy mount/destroy on mode switch.",
-              "status": "not_started",
+              "details": "MapInset dynamic component in PlannerShellPaper: Mapbox GL, pins colored by scheduled day, onPinClick selects planner day and focused item. Lazy dynamic import. Glass PlannerShell path no longer primary.",
+              "status": "completed",
               "tier": "deep+bounded"
             },
             {
               "id": "3.7",
               "task": "Phase 4 — Polish + Cleanup (deprecate old components, E2E, doc updates).",
-              "details": "Deprecate old ListPlanner path from ExploreShell, remove WorkspaceContainer alias. Playwright E2E tests for two-journey architecture. Doc alignment.",
+              "details": "PaperHeader data-testid tab buttons for Playwright; list-planner-move uses paper-header-tab-itinerary. DESIGN.md / README / CONTEXT aligned. Remaining: delete unused glass shell files or entry points, WorkspaceContainer alias removal, broader E2E for mobile sheet.",
               "status": "partial",
               "tier": "deep+bounded"
+            },
+            {
+              "id": "3.8",
+              "task": "Paper shell on mobile + unified AppShell routing.",
+              "details": "AppShell always renders ExploreShellPaper / PlannerShellPaper (no NavRail/NavFooter branch). PaperHeader tabs visible on all breakpoints with safe-area insets. PaperExplorePanel: right rail md+, bottom sheet <md. PlannerShellPaper responsive padding and map strip height polish.",
+              "status": "completed",
+              "tier": "deep+bounded"
+            },
+            {
+              "id": "3.9",
+              "task": "Explore paper chrome parity.",
+              "details": "PlannerListSwitcher under header with Trip label and onListSelect URL sync. Panel title/subtitle from active list + formatDateRange. CATEGORY_ENUM_VALUES chips in PaperExplorePanel toggling activeListTypeFilters. ListDrawer hideListSelectionChips when toolbar present.",
+              "status": "completed",
+              "tier": "bounded"
             }
           ]
         },
         {
           "id": "P3-E4",
-          "title": "List interchange (CSV export UI + Google-backed import)",
-          "description": "User-visible export and import for trip lists: low-friction input (URLs, place ids, free text) resolved through Google Places and existing ingest/enrich/promote paths; deterministic writes only after explicit confirm. Future in-app LLM uses the same structured row schema as file import.",
+          "title": "Headless Planning API (model-agnostic import/export interchange)",
+          "description": "Model-agnostic headless planning API that any LLM client (custom GPT, Gemini Gem, Claude skill, in-app chat) can drive via structured JSON rows. Server owns resolution, enrichment, and deterministic computation (distance, slot-hours, conflicts). LLM clients are replaceable intent-translation layers. Two-pass loop: draft rows → enriched preview → LLM refines with real-world data → user confirms → commit. User drives iteration count.",
           "features": [
             "Export: surface existing POST /api/lists/[id]/export in the list/plan UI (CSV first; markdown/clipboard optional).",
-            "Export round-trip: optional CSV columns for stable ids (e.g. internal place UUID, Google place id) documented in interchange contract for re-import without text search.",
-            "Import resolution: each row resolves via Google (Maps URL, ChIJ place id, or text) using the same resolution path as /api/places/ingest (findGooglePlaceIdFromText, parsePlaceIdFromGoogleMapsUrl); users are not required to hand-normalize categories or coordinates.",
-            "Import persistence: reuse ingest → frozen enrichment → promote_place_candidate with target list_id; apply scheduled_date/slot/tags via existing PATCH /api/lists/[id]/items/[itemId] semantics (see docs/PHASE_2_KANBAN_SPEC.md for slot sentinels and trip bounds).",
-            "Import UX: two-step flow — preview returns per-row ok | ambiguous | error (with candidate matches where needed); commit applies only after user confirmation. v1 may cap row count for synchronous API; async/batch is a later scaling slice.",
-            "Dedupe: prefer attaching to existing canonical places for the user (source_id / google_place_id) instead of duplicate candidates when possible.",
-            "Non-goals (v1): LLM or client writing directly to DB; skipping enrichment; auto-committing ambiguous text matches without user pick; import as a separate source of truth from places/list_items.",
-            "Future: in-app LLM outputs strict JSON/CSV rows matching the import schema; server validates then runs the identical preview → commit pipeline (LLMs label/translate intent; deterministic systems execute)."
+            "Export round-trip: optional CSV columns for stable ids (e.g. internal place UUID, Google place id) for re-import without text search.",
+            "Import preview API: POST /api/lists/[id]/import/preview accepts ImportRow[] JSON. Server resolves via Google (Maps URL, ChIJ place id, or free text), enriches, and returns PreviewRow[] with enrichment data + server-computed fields. No DB writes.",
+            "Server-computed fields on preview: open_during_slot (hours vs slot check), distance_from_previous_km (haversine on sequenced day items), travel_time_minutes (walking estimate), slot_conflict detection, energy_sequence warnings. All deterministic.",
+            "Trip summary in preview response: total_days, empty_slots list, global warnings (e.g. 'Day 2 has no morning activity').",
+            "Import commit API: POST /api/lists/[id]/import/commit with confirmed row indices. Runs ingest → frozen enrichment → promote_place_candidate with list_id. Idempotent for existing canonical places.",
+            "Dedupe: prefer attaching to existing canonical places (source_id / google_place_id) instead of duplicate candidates.",
+            "Model-agnostic client contract: any LLM client needs only the ImportRow JSON schema, valid enum values, slot time ranges, and instructions to read/refine preview responses. No API keys, DB knowledge, or enrichment internals.",
+            "Non-goals (v1): LLM or client writing directly to DB; skipping enrichment; auto-committing ambiguous matches; import as separate source of truth; real-time transit APIs (use haversine + walking estimate).",
+            "In-app chat (future slice): first-party LLM chat UI wired to preview/commit, enabling conversational trip planning within the app."
           ],
-          "tasks": [
+          "invariants": [
+            "LLMs label and translate intent; deterministic systems retrieve and compute.",
+            "Preview is read-only — no DB mutations until explicit commit.",
+            "Commit reuses existing ingest → enrich → promote pipeline (no parallel write path).",
+            "Server-computed fields are deterministic and reproducible for same inputs.",
+            "Strict taxonomy: LLM-suggested categories must be valid CategoryEnum values; server corrects or rejects.",
+            "Contract is model-agnostic: no assumption about which LLM drives the loop."
+          ],
+          "slices": [
             {
-              "id": "4.1",
-              "task": "Document list import/export interchange contract.",
-              "details": "Add docs under docs/ (e.g. PHASE_3_LIST_INTERCHANGE.md or similar): CSV/JSON row schema; column mapping to ExportRow in lib/export/contract.ts and headers in lib/export/serialize-csv.ts; scheduled_date and Morning/Afternoon/Evening slot rules vs docs/PHASE_2_KANBAN_SPEC.md; error codes for preview/commit; explicit non-goals.",
-              "status": "not_started",
-              "tier": "deep"
+              "id": "A",
+              "title": "Define interchange contract",
+              "tasks": [
+                {
+                  "id": "4.1",
+                  "task": "Write contract doc (docs/PHASE_3_LIST_INTERCHANGE.md).",
+                  "details": "Full interchange contract: ImportRow schema, PreviewRow with enrichment + computed fields, CommitRequest/Response, error codes, slot time ranges, enum values, invariants, non-goals. Follow conventions from PHASE_3_ROUTING_CONTRACT.md.",
+                  "status": "in_progress",
+                  "tier": "deep",
+                  "owner": "claude-code"
+                },
+                {
+                  "id": "4.2",
+                  "task": "Write TypeScript contract types (lib/import/contract.ts).",
+                  "details": "ImportRow, ImportPreviewRequest/Response, PreviewRow, ResolvedEnrichment, ComputedFields, ImportCommitRequest/Response, error types. Follow patterns from lib/routing/contract.ts. Include request parser with unknown-key rejection.",
+                  "status": "in_progress",
+                  "tier": "deep",
+                  "owner": "claude-code"
+                }
+              ]
             },
             {
-              "id": "4.2",
-              "task": "Ship list CSV export in UI.",
-              "details": "Discoverable control in list or plan shell (e.g. ListDetailPanel, planner chrome, or list overflow menu). Client calls POST /api/lists/[id]/export with format csv and triggers file download; handle 401/validation errors. Non-goal: redesign export formats beyond existing contract.",
-              "status": "not_started",
-              "tier": "bounded",
-              "notes": "Server path already exists: app/api/lists/[id]/export/route.ts + lib/export/serialize-csv.ts."
+              "id": "B",
+              "title": "Import preview API (resolve + enrich)",
+              "tasks": [
+                {
+                  "id": "4.3",
+                  "task": "Implement import preview route.",
+                  "details": "POST /api/lists/[id]/import/preview. Parse ImportRow[] body, validate schema, resolve each row via Google (reuse findGooglePlaceIdFromText / parsePlaceIdFromGoogleMapsUrl from ingest), fetch enrichment, return PreviewRow[] without computed fields initially. Auth + RLS. Row cap for v1 (e.g. 25).",
+                  "status": "not_started",
+                  "tier": "deep",
+                  "owner": "cursor"
+                }
+              ]
             },
             {
-              "id": "4.3",
-              "task": "Extend export for round-trip identifiers.",
-              "details": "Optional ExportRow fields and CSV columns (e.g. place id UUID, google place id) in lib/export/contract.ts + serialize-csv.ts; update tests under tests/export/. Document in interchange doc from task 4.1.",
-              "status": "not_started",
-              "tier": "bounded"
+              "id": "C",
+              "title": "Server-computed fields on preview",
+              "tasks": [
+                {
+                  "id": "4.4",
+                  "task": "Add open_during_slot + distance_from_previous + travel_time to preview.",
+                  "details": "Pure functions in lib/import/compute.ts: parseOpeningHours (Google format → structured), isOpenDuringSlot (hours + date + slot → boolean), haversineDistance (coords → km), estimateWalkingTime (distance → minutes). Wire into preview response. Unit-testable, no external calls.",
+                  "status": "not_started",
+                  "tier": "bounded",
+                  "owner": "cursor"
+                },
+                {
+                  "id": "4.5",
+                  "task": "Add slot_conflict + energy_sequence + trip_summary to preview.",
+                  "details": "Detect same-slot collisions, flag 3+ consecutive high-energy items, compute empty_slots from trip date range. Add trip_summary to response. Pure functions, unit-testable.",
+                  "status": "not_started",
+                  "tier": "bounded",
+                  "owner": "cursor"
+                }
+              ]
             },
             {
-              "id": "4.4",
-              "task": "Implement import preview API.",
-              "details": "New POST route under app/api/lists/[id]/import/ (e.g. preview) accepting CSV or JSON body: parse rows, validate schema, resolve each row via Google (reuse ingest internals or shared server module). Response lists per-row status ok | ambiguous | error with resolved preview metadata; no promote and no list mutation in this step. Enforce row cap for v1 if needed.",
-              "status": "not_started",
-              "tier": "deep"
+              "id": "D",
+              "title": "Import commit API",
+              "tasks": [
+                {
+                  "id": "4.6",
+                  "task": "Implement import commit route.",
+                  "details": "POST /api/lists/[id]/import/commit with confirmed row indices or preview token. For each row: ingest candidate if needed, promote_place_candidate with list_id, PATCH list_items for scheduled_date/slot/tags. Idempotent for existing places. Auth + RLS.",
+                  "status": "not_started",
+                  "tier": "deep",
+                  "owner": "cursor"
+                }
+              ]
             },
             {
-              "id": "4.5",
-              "task": "Implement import commit API.",
-              "details": "New POST route (e.g. commit) taking preview token or confirmed row ids: for each row run ingest candidate path as needed, promote_place_candidate with list_id, PATCH list_items for schedule/tags. Idempotent behavior when place already on list; align with RLS and promote RPC semantics.",
-              "status": "not_started",
-              "tier": "deep"
+              "id": "E",
+              "title": "LLM client reference prompt",
+              "tasks": [
+                {
+                  "id": "4.7",
+                  "task": "Write reference system prompt for LLM clients (docs/LLM_PLANNING_CLIENT_PROMPT.md).",
+                  "details": "Model-agnostic system prompt / instruction doc containing: ImportRow JSON schema, valid CategoryEnum and PlannerSlot values with time ranges, slot semantics, how to read PreviewRow responses, how to reason over computed fields (distance, hours, energy), example request/response cycle. Portable to GPT Actions, Gemini extensions, Claude skills.",
+                  "status": "not_started",
+                  "tier": "bounded",
+                  "owner": "claude-code"
+                }
+              ]
             },
             {
-              "id": "4.6",
-              "task": "Ship import UI (upload / paste → preview → confirm).",
-              "details": "Wizard or modal: file upload and/or paste; call preview API; render table with errors and ambiguous pickers; confirm calls commit API; refresh list/planner state. Mobile and desktop usable; reuse design tokens from DESIGN.md.",
-              "status": "not_started",
-              "tier": "bounded"
+              "id": "F",
+              "title": "Export UI + round-trip identifiers",
+              "tasks": [
+                {
+                  "id": "4.8",
+                  "task": "Ship list CSV export in UI.",
+                  "details": "Discoverable control in list/plan shell. Client calls POST /api/lists/[id]/export with format csv and triggers file download. Server path already exists.",
+                  "status": "not_started",
+                  "tier": "bounded",
+                  "owner": "cursor",
+                  "notes": "Server path exists: app/api/lists/[id]/export/route.ts + lib/export/serialize-csv.ts."
+                },
+                {
+                  "id": "4.9",
+                  "task": "Extend export for round-trip identifiers.",
+                  "details": "Optional ExportRow fields (place_id UUID, google_place_id) in lib/export/contract.ts + serialize-csv.ts. Update tests under tests/export/.",
+                  "status": "not_started",
+                  "tier": "bounded",
+                  "owner": "cursor"
+                }
+              ]
             },
             {
-              "id": "4.7",
-              "task": "Verification gate for import/export interchange.",
-              "details": "Unit tests for CSV/JSON parsing and validation; API tests for preview/commit happy path and failure modes; document npm test / check commands in interchange doc. Note Google API rate limits and row caps in acceptance criteria.",
-              "status": "not_started",
-              "tier": "deep+bounded"
+              "id": "G",
+              "title": "Import UI + in-app chat",
+              "tasks": [
+                {
+                  "id": "4.10",
+                  "task": "Ship import UI (upload / paste → preview → confirm).",
+                  "details": "Wizard or modal: file upload and/or paste; call preview API; render table with enrichment + computed warnings; ambiguous row pickers; confirm calls commit API; refresh list/planner state. Mobile + desktop. Reuse DESIGN.md tokens.",
+                  "status": "not_started",
+                  "tier": "bounded",
+                  "owner": "cursor"
+                },
+                {
+                  "id": "4.11",
+                  "task": "In-app chat planning UI.",
+                  "details": "Chat interface wired to preview/commit APIs. System prompt from 4.7 drives the LLM. User converses naturally; LLM outputs ImportRow JSON; app calls preview and renders enriched results inline; user confirms to commit. Model-selectable or provider-agnostic backend.",
+                  "status": "not_started",
+                  "tier": "deep"
+                }
+              ]
+            },
+            {
+              "id": "H",
+              "title": "Verification gate",
+              "tasks": [
+                {
+                  "id": "4.12",
+                  "task": "Verification gate for import/export interchange.",
+                  "details": "Unit tests: CSV/JSON parsing, validation, computed fields (haversine, hours parsing, slot checks). API tests: preview happy path + error modes, commit idempotency. Document in interchange doc.",
+                  "status": "not_started",
+                  "tier": "deep+bounded",
+                  "owner": "cursor"
+                }
+              ]
             }
           ]
         }
