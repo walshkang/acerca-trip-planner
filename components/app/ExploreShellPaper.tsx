@@ -20,6 +20,7 @@ import { useMediaQuery } from '@/components/ui/useMediaQuery'
 import { useDiscoveryStore } from '@/lib/state/useDiscoveryStore'
 import { useTripStore } from '@/lib/state/useTripStore'
 import { useNavStore } from '@/lib/state/useNavStore'
+import { useMapLayerStore } from '@/lib/state/useMapLayerStore'
 import { sortTags, uniqueStrings } from '@/lib/lists/filter-client'
 import { derivePreviewMode } from '@/lib/ui/previewMode'
 import { CATEGORY_ENUM_VALUES, type CategoryEnum } from '@/lib/types/enums'
@@ -48,6 +49,7 @@ export default function ExploreShellPaper() {
   const [mapFallbackNotice, setMapFallbackNotice] = useState<string | null>(null)
   const [showTransit, setShowTransit] = useState(false)
   const [showNeighborhoods, setShowNeighborhoods] = useState(false)
+  const { activeLayer, setLayer } = useMapLayerStore()
 
   // ── Panel state ──
   const [panelMode, setPanelMode] = useState<'lists' | 'details'>('lists')
@@ -500,6 +502,8 @@ export default function ExploreShellPaper() {
             onShowTransitChange={setShowTransit}
             showNeighborhoods={showNeighborhoods}
             onShowNeighborhoodsChange={setShowNeighborhoods}
+            activeLayer={activeLayer}
+            onLayerChange={setLayer}
             searchSlot={
               <Omnibox
                 tone="light"

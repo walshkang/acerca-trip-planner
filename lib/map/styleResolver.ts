@@ -1,12 +1,17 @@
+import type { MapLayer } from '@/lib/state/useMapLayerStore'
+
 export type MapProvider = 'mapbox' | 'maplibre'
 export type MapTone = 'light' | 'dark'
 export type MaplibreStyleSource = 'carto' | 'pmtiles'
 export type ResolvedStyleSource = 'mapbox' | MaplibreStyleSource
 
+export type { MapLayer }
+
 export type ResolveMapStyleInput = {
   provider: MapProvider
   tone: MapTone
   maplibreStyleSource?: string | null
+  layer?: MapLayer
 }
 
 export type ResolveMapStyleResult = {
@@ -37,6 +42,28 @@ const PMTILES_LABEL_CANDIDATES = [
   PMTILES_LABELS_ANCHOR_ID,
   ...CARTO_LABEL_CANDIDATES,
 ]
+
+const CARTO_VOYAGER_STYLE_URL =
+  'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json'
+
+let warnedPmtilesLayerUnavailable = false
+let warnedMaptilerKeyMissing = false
+
+function warnPmtilesLayerUnavailable() {
+  if (typeof console === 'undefined' || warnedPmtilesLayerUnavailable) return
+  warnedPmtilesLayerUnavailable = true
+  console.warn(
+    '[acerca] Satellite and terrain base layers are not available for PMTiles; using the default style.'
+  )
+}
+
+function warnMaptilerKeyMissing() {
+  if (typeof console === 'undefined' || warnedMaptilerKeyMissing) return
+  warnedMaptilerKeyMissing = true
+  console.warn(
+    '[acerca] NEXT_PUBLIC_MAPTILER_KEY is not set; satellite uses the default map style.'
+  )
+}
 
 export type StyleLayerLike = {
   id: string
@@ -153,21 +180,36 @@ export function normalizeMaplibreStyleSource(
   return value === 'pmtiles' ? 'pmtiles' : 'carto'
 }
 
+function effectiveLayer(layer?: MapLayer): MapLayer {
+  return layer ?? 'default'
+}
+
 export function resolveMapStyle({
   provider,
   tone,
   maplibreStyleSource,
+  layer: layerInput,
 }: ResolveMapStyleInput): ResolveMapStyleResult {
+  const layer = effectiveLayer(layerInput)
+  const layerKey = layerInput ?? 'default'
+
   if (provider === 'mapbox') {
-    const mapStyle =
-      tone === 'dark'
-        ? 'mapbox://styles/mapbox/navigation-night-v1'
-        : 'mapbox://styles/mapbox/light-v11'
+    let mapStyle: string
+    if (layer === 'satellite') {
+      mapStyle = 'mapbox://styles/mapbox/satellite-streets-v12'
+    } else if (layer === 'terrain') {
+      mapStyle = 'mapbox://styles/mapbox/outdoors-v12'
+    } else {
+      mapStyle =
+        tone === 'dark'
+          ? 'mapbox://styles/mapbox/navigation-night-v1'
+          : 'mapbox://styles/mapbox/light-v11'
+    }
 
     return {
       mapStyle,
       styleSource: 'mapbox',
-      styleKey: `mapbox:${tone}:mapbox`,
+      styleKey: `mapbox:${tone}:mapbox:${layerKey}`,
       transitBeforeIdCandidates: MAPBOX_LABEL_CANDIDATES,
       neighborhoodBeforeIdCandidates: MAPBOX_LABEL_CANDIDATES,
     }
@@ -175,6 +217,10 @@ export function resolveMapStyle({
 
   const source = normalizeMaplibreStyleSource(maplibreStyleSource)
   if (source === 'pmtiles') {
+    if (layer === 'satellite' || layer === 'terrain') {
+      warnPmtilesLayerUnavailable()
+    }
+
     const mapStyle =
       tone === 'dark'
         ? '/map/style.maplibre.pmtiles.dark.json'
@@ -183,7 +229,7 @@ export function resolveMapStyle({
     return {
       mapStyle,
       styleSource: source,
-      styleKey: `maplibre:${tone}:${source}`,
+      styleKey: `maplibre:${tone}:${source}:${layerKey}`,
       transitBeforeId: PMTILES_LABELS_ANCHOR_ID,
       neighborhoodBeforeId: PMTILES_LABELS_ANCHOR_ID,
       transitBeforeIdCandidates: PMTILES_LABEL_CANDIDATES,
@@ -191,15 +237,31 @@ export function resolveMapStyle({
     }
   }
 
-  const mapStyle =
-    tone === 'dark'
-      ? 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json'
-      : 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json'
+  let mapStyle: string
+  if (layer === 'terrain') {
+    mapStyle = CARTO_VOYAGER_STYLE_URL
+  } else if (layer === 'satellite') {
+    const maptilerKey = process.env.NEXT_PUBLIC_MAPTILER_KEY
+    if (maptilerKey) {
+      mapStyle = `https://api.maptiler.com/maps/hybrid/style.json?key=${encodeURIComponent(maptilerKey)}`
+    } else {
+      warnMaptilerKeyMissing()
+      mapStyle =
+        tone === 'dark'
+          ? 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json'
+          : 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json'
+    }
+  } else {
+    mapStyle =
+      tone === 'dark'
+        ? 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json'
+        : 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json'
+  }
 
   return {
     mapStyle,
     styleSource: source,
-    styleKey: `maplibre:${tone}:${source}`,
+    styleKey: `maplibre:${tone}:${source}:${layerKey}`,
     transitBeforeIdCandidates: CARTO_LABEL_CANDIDATES,
     neighborhoodBeforeIdCandidates: CARTO_LABEL_CANDIDATES,
   }

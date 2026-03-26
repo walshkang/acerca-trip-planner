@@ -28,6 +28,7 @@ import {
   shouldFallbackFromPmtiles,
   type MaplibreStyleSource,
 } from '@/lib/map/styleResolver'
+import { useMapLayerStore } from '@/lib/state/useMapLayerStore'
 import { ghostMarkerGlowPulseClass } from '@/lib/ui/glow'
 import {
   boundsFromPlaces,
@@ -155,6 +156,7 @@ const MapShell = forwardRef<MapShellHandle, MapShellProps>(function MapShell(
   )
   const effectiveMaplibreStyleSource =
     runtimeMaplibreStyleSource ?? configuredMaplibreStyleSource
+  const activeLayer = useMapLayerStore((s) => s.activeLayer)
   const {
     mapStyle,
     styleSource,
@@ -169,8 +171,9 @@ const MapShell = forwardRef<MapShellHandle, MapShellProps>(function MapShell(
         provider: mapProvider,
         tone: mapStyleMode,
         maplibreStyleSource: effectiveMaplibreStyleSource,
+        layer: activeLayer,
       }),
-    [effectiveMaplibreStyleSource, mapProvider, mapStyleMode]
+    [effectiveMaplibreStyleSource, mapProvider, mapStyleMode, activeLayer]
   )
   const markerBackdropClassName =
     mapStyleMode === 'dark'

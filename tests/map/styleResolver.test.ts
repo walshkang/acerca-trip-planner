@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import {
   isLikelyPmtilesError,
@@ -19,11 +19,15 @@ describe('normalizeMaplibreStyleSource', () => {
 })
 
 describe('resolveMapStyle', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs()
+  })
+
   it('keeps mapbox styles unchanged for light and dark', () => {
     expect(resolveMapStyle({ provider: 'mapbox', tone: 'light' })).toEqual({
       mapStyle: 'mapbox://styles/mapbox/light-v11',
       styleSource: 'mapbox',
-      styleKey: 'mapbox:light:mapbox',
+      styleKey: 'mapbox:light:mapbox:default',
       transitBeforeIdCandidates: [
         'settlement-subdivision-label',
         'settlement-major-label',
@@ -41,7 +45,7 @@ describe('resolveMapStyle', () => {
     expect(resolveMapStyle({ provider: 'mapbox', tone: 'dark' })).toEqual({
       mapStyle: 'mapbox://styles/mapbox/navigation-night-v1',
       styleSource: 'mapbox',
-      styleKey: 'mapbox:dark:mapbox',
+      styleKey: 'mapbox:dark:mapbox:default',
       transitBeforeIdCandidates: [
         'settlement-subdivision-label',
         'settlement-major-label',
@@ -61,7 +65,7 @@ describe('resolveMapStyle', () => {
     expect(resolveMapStyle({ provider: 'maplibre', tone: 'light' })).toEqual({
       mapStyle: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
       styleSource: 'carto',
-      styleKey: 'maplibre:light:carto',
+      styleKey: 'maplibre:light:carto:default',
       transitBeforeIdCandidates: [
         'place_label_city',
         'place_label_town',
@@ -87,7 +91,7 @@ describe('resolveMapStyle', () => {
     ).toEqual({
       mapStyle: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
       styleSource: 'carto',
-      styleKey: 'maplibre:dark:carto',
+      styleKey: 'maplibre:dark:carto:default',
       transitBeforeIdCandidates: [
         'place_label_city',
         'place_label_town',
@@ -115,7 +119,7 @@ describe('resolveMapStyle', () => {
     ).toEqual({
       mapStyle: '/map/style.maplibre.pmtiles.light.json',
       styleSource: 'pmtiles',
-      styleKey: 'maplibre:light:pmtiles',
+      styleKey: 'maplibre:light:pmtiles:default',
       transitBeforeId: 'pmtiles-place-labels',
       neighborhoodBeforeId: 'pmtiles-place-labels',
       transitBeforeIdCandidates: [
@@ -145,7 +149,7 @@ describe('resolveMapStyle', () => {
     ).toEqual({
       mapStyle: '/map/style.maplibre.pmtiles.dark.json',
       styleSource: 'pmtiles',
-      styleKey: 'maplibre:dark:pmtiles',
+      styleKey: 'maplibre:dark:pmtiles:default',
       transitBeforeId: 'pmtiles-place-labels',
       neighborhoodBeforeId: 'pmtiles-place-labels',
       transitBeforeIdCandidates: [
@@ -165,6 +169,81 @@ describe('resolveMapStyle', () => {
         'place-label',
       ],
     })
+  })
+
+  it('uses mapbox satellite and terrain styles', () => {
+    const satellite = resolveMapStyle({
+      provider: 'mapbox',
+      tone: 'light',
+      layer: 'satellite',
+    })
+    expect(satellite.mapStyle).toBe(
+      'mapbox://styles/mapbox/satellite-streets-v12'
+    )
+    expect(satellite.styleKey).toBe('mapbox:light:mapbox:satellite')
+
+    const terrain = resolveMapStyle({
+      provider: 'mapbox',
+      tone: 'dark',
+      layer: 'terrain',
+    })
+    expect(terrain.mapStyle).toBe('mapbox://styles/mapbox/outdoors-v12')
+    expect(terrain.styleKey).toBe('mapbox:dark:mapbox:terrain')
+  })
+
+  it('uses carto voyager for maplibre terrain', () => {
+    const r = resolveMapStyle({
+      provider: 'maplibre',
+      tone: 'light',
+      layer: 'terrain',
+    })
+    expect(r.mapStyle).toBe(
+      'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json'
+    )
+    expect(r.styleKey).toBe('maplibre:light:carto:terrain')
+  })
+
+  it('uses MapTiler hybrid for maplibre satellite when key is set', () => {
+    vi.stubEnv('NEXT_PUBLIC_MAPTILER_KEY', 'test-key')
+    const r = resolveMapStyle({
+      provider: 'maplibre',
+      tone: 'dark',
+      layer: 'satellite',
+    })
+    expect(r.mapStyle).toBe(
+      'https://api.maptiler.com/maps/hybrid/style.json?key=test-key'
+    )
+    expect(r.styleKey).toBe('maplibre:dark:carto:satellite')
+  })
+
+  it('falls back to default carto style for satellite without MapTiler key', () => {
+    vi.stubEnv('NEXT_PUBLIC_MAPTILER_KEY', '')
+    const r = resolveMapStyle({
+      provider: 'maplibre',
+      tone: 'light',
+      layer: 'satellite',
+    })
+    expect(r.mapStyle).toBe(
+      'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json'
+    )
+    expect(r.styleKey).toBe('maplibre:light:carto:satellite')
+  })
+
+  it('keeps pmtiles URL for satellite/terrain but uses distinct styleKey', () => {
+    const base = resolveMapStyle({
+      provider: 'maplibre',
+      tone: 'light',
+      maplibreStyleSource: 'pmtiles',
+      layer: 'default',
+    })
+    const sat = resolveMapStyle({
+      provider: 'maplibre',
+      tone: 'light',
+      maplibreStyleSource: 'pmtiles',
+      layer: 'satellite',
+    })
+    expect(sat.mapStyle).toBe(base.mapStyle)
+    expect(sat.styleKey).toBe('maplibre:light:pmtiles:satellite')
   })
 })
 

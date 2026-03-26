@@ -11,6 +11,7 @@ import type {
 } from '@/components/map/MapView.types'
 import { useCategoryIconOverrides } from '@/lib/icons/useCategoryIconOverrides'
 import { resolveMapStyle, normalizeMaplibreStyleSource } from '@/lib/map/styleResolver'
+import { useMapLayerStore } from '@/lib/state/useMapLayerStore'
 import { boundsFromPlaces, boundsToArray } from '@/lib/map/bounds'
 import type { TripListItem } from '@/lib/state/useTripStore'
 
@@ -63,14 +64,16 @@ export default function MapInset({
     []
   )
 
+  const activeLayer = useMapLayerStore((s) => s.activeLayer)
   const { mapStyle, styleKey } = useMemo(
     () =>
       resolveMapStyle({
         provider: mapProvider,
         tone: 'light',
         maplibreStyleSource,
+        layer: activeLayer,
       }),
-    [mapProvider, maplibreStyleSource]
+    [mapProvider, maplibreStyleSource, activeLayer]
   )
 
   // Build lookup: placeId → item (for variant + dimming)

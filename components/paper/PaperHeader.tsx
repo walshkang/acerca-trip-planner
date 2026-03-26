@@ -10,6 +10,8 @@ import {
   type ReactNode,
 } from 'react'
 
+import type { MapLayer } from '@/lib/map/styleResolver'
+
 export interface PaperHeaderProps {
   /** Centered in the top row (e.g. Omnibox on Explore). */
   searchSlot?: ReactNode
@@ -23,11 +25,14 @@ export interface PaperHeaderProps {
    * Use on Explore desktop only.
    */
   clearRightRail?: boolean
-  /** Map overlay toggles (Explore). When both change handlers are set, settings opens a popover. */
+  /** Map overlay toggles (Explore). Settings opens a popover when overlay handlers are set and/or `onLayerChange` is set. */
   showTransit?: boolean
   onShowTransitChange?: (value: boolean) => void
   showNeighborhoods?: boolean
   onShowNeighborhoodsChange?: (value: boolean) => void
+  /** Base map style (Default / Satellite / Terrain). */
+  activeLayer?: MapLayer
+  onLayerChange?: (layer: MapLayer) => void
   /**
    * Fixed-header inset for scrollable content below: viewport Y of the header bottom edge
    * (`getBoundingClientRect().bottom`). Use with padding-top on the main column (e.g. Plan shell).
@@ -46,6 +51,8 @@ type HeaderActionsProps = Pick<
   | 'onShowTransitChange'
   | 'showNeighborhoods'
   | 'onShowNeighborhoodsChange'
+  | 'activeLayer'
+  | 'onLayerChange'
 >
 
 function HeaderActions({
@@ -53,17 +60,21 @@ function HeaderActions({
   onShowTransitChange,
   showNeighborhoods = false,
   onShowNeighborhoodsChange,
+  activeLayer = 'default',
+  onLayerChange,
 }: HeaderActionsProps) {
   const [open, setOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
   const mapSettingsId = useId()
-  const hasMapSettings =
+  const hasOverlayToggles =
     onShowTransitChange != null && onShowNeighborhoodsChange != null
+  const hasLayerControls = onLayerChange != null
+  const hasMapSettingsPopover = hasOverlayToggles || hasLayerControls
 
   const close = useCallback(() => setOpen(false), [])
 
   useEffect(() => {
-    if (!open || !hasMapSettings) return
+    if (!open || !hasMapSettingsPopover) return
 
     const onPointerDown = (e: PointerEvent) => {
       const root = rootRef.current
@@ -79,7 +90,7 @@ function HeaderActions({
       document.removeEventListener('pointerdown', onPointerDown, true)
       document.removeEventListener('keydown', onKeyDown)
     }
-  }, [open, hasMapSettings, close])
+  }, [open, hasMapSettingsPopover, close])
 
   return (
     <>
@@ -87,17 +98,17 @@ function HeaderActions({
         <button
           type="button"
           className="material-symbols-outlined rounded-[4px] p-1.5 text-xl text-paper-primary transition-colors hover:bg-paper-tertiary-fixed sm:text-[22px]"
-          aria-label={hasMapSettings ? 'Map settings' : 'Settings'}
-          aria-expanded={hasMapSettings ? open : undefined}
-          aria-haspopup={hasMapSettings ? 'dialog' : undefined}
-          aria-controls={hasMapSettings && open ? mapSettingsId : undefined}
+          aria-label={hasMapSettingsPopover ? 'Map settings' : 'Settings'}
+          aria-expanded={hasMapSettingsPopover ? open : undefined}
+          aria-haspopup={hasMapSettingsPopover ? 'dialog' : undefined}
+          aria-controls={hasMapSettingsPopover && open ? mapSettingsId : undefined}
           onClick={() => {
-            if (hasMapSettings) setOpen((v) => !v)
+            if (hasMapSettingsPopover) setOpen((v) => !v)
           }}
         >
           settings
         </button>
-        {hasMapSettings && open ? (
+        {hasMapSettingsPopover && open ? (
           <div
             id={mapSettingsId}
             role="dialog"
@@ -106,26 +117,65 @@ function HeaderActions({
           >
             <p className="font-headline text-xs font-bold text-paper-primary">Map Settings</p>
             <div className="mt-3 flex flex-col gap-3">
-              <label className="flex cursor-pointer items-center gap-2 text-left">
-                <input
-                  type="checkbox"
-                  className="h-4 w-4 shrink-0 rounded border-paper-tertiary-fixed text-paper-primary focus:ring-paper-primary"
-                  checked={showTransit}
-                  onChange={(e) => onShowTransitChange(e.target.checked)}
-                  data-testid="paper-header-map-settings-transit"
-                />
-                <span className="text-[13px] text-paper-on-surface">Show subway lines</span>
-              </label>
-              <label className="flex cursor-pointer items-center gap-2 text-left">
-                <input
-                  type="checkbox"
-                  className="h-4 w-4 shrink-0 rounded border-paper-tertiary-fixed text-paper-primary focus:ring-paper-primary"
-                  checked={showNeighborhoods}
-                  onChange={(e) => onShowNeighborhoodsChange(e.target.checked)}
-                  data-testid="paper-header-map-settings-neighborhoods"
-                />
-                <span className="text-[13px] text-paper-on-surface">Show neighborhoods</span>
-              </label>
+              {hasLayerControls ? (
+                <div
+                  className={
+                    hasOverlayToggles
+                      ? 'border-b border-paper-tertiary-fixed pb-3'
+                      : undefined
+                  }
+                >
+                  <p className="mb-2 text-xs font-medium text-paper-secondary">Map type</p>
+                  <div className="flex gap-2">
+                    {(['default', 'satellite', 'terrain'] as const).map((layer) => (
+                      <button
+                        key={layer}
+                        type="button"
+                        data-testid={`paper-header-map-layer-${layer}`}
+                        onClick={() => onLayerChange(layer)}
+                        className={`flex flex-col items-center gap-1 rounded-lg border p-2 text-xs transition-colors ${
+                          activeLayer === layer
+                            ? 'border-paper-primary bg-paper-primary/10 text-paper-primary'
+                            : 'border-paper-tertiary-fixed text-paper-secondary hover:bg-paper-surface-container'
+                        }`}
+                      >
+                        <span className="material-symbols-outlined text-base">
+                          {layer === 'default'
+                            ? 'map'
+                            : layer === 'satellite'
+                              ? 'satellite_alt'
+                              : 'terrain'}
+                        </span>
+                        <span className="capitalize">{layer}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+              {hasOverlayToggles ? (
+                <>
+                  <label className="flex cursor-pointer items-center gap-2 text-left">
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 shrink-0 rounded border-paper-tertiary-fixed text-paper-primary focus:ring-paper-primary"
+                      checked={showTransit}
+                      onChange={(e) => onShowTransitChange(e.target.checked)}
+                      data-testid="paper-header-map-settings-transit"
+                    />
+                    <span className="text-[13px] text-paper-on-surface">Show subway lines</span>
+                  </label>
+                  <label className="flex cursor-pointer items-center gap-2 text-left">
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 shrink-0 rounded border-paper-tertiary-fixed text-paper-primary focus:ring-paper-primary"
+                      checked={showNeighborhoods}
+                      onChange={(e) => onShowNeighborhoodsChange(e.target.checked)}
+                      data-testid="paper-header-map-settings-neighborhoods"
+                    />
+                    <span className="text-[13px] text-paper-on-surface">Show neighborhoods</span>
+                  </label>
+                </>
+              ) : null}
             </div>
           </div>
         ) : null}
@@ -185,6 +235,8 @@ export default function PaperHeader({
   onShowTransitChange,
   showNeighborhoods,
   onShowNeighborhoodsChange,
+  activeLayer,
+  onLayerChange,
   onViewportBottomChange,
 }: PaperHeaderProps) {
   const hasBottom = Boolean(bottomSlot)
@@ -238,6 +290,8 @@ export default function PaperHeader({
               onShowTransitChange={onShowTransitChange}
               showNeighborhoods={showNeighborhoods}
               onShowNeighborhoodsChange={onShowNeighborhoodsChange}
+              activeLayer={activeLayer}
+              onLayerChange={onLayerChange}
             />
           </div>
         </div>
@@ -252,6 +306,8 @@ export default function PaperHeader({
               onShowTransitChange={onShowTransitChange}
               showNeighborhoods={showNeighborhoods}
               onShowNeighborhoodsChange={onShowNeighborhoodsChange}
+              activeLayer={activeLayer}
+              onLayerChange={onLayerChange}
             />
           </div>
         </div>

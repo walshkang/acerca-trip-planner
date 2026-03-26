@@ -5,6 +5,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { downloadListCsv } from '@/lib/export/download-list-csv'
 import { useTripStore } from '@/lib/state/useTripStore'
 import { useNavStore } from '@/lib/state/useNavStore'
+import { useMapLayerStore } from '@/lib/state/useMapLayerStore'
 import CalendarPlanner from '@/components/planner/CalendarPlanner'
 import MapInset from '@/components/map/MapInset.dynamic'
 import type { MapPlace } from '@/components/map/MapView.types'
@@ -56,6 +57,7 @@ export default function PlannerShellPaper() {
 }
 
 function PlannerShellPaperWithList({ activeListId }: { activeListId: string }) {
+  const { activeLayer, setLayer } = useMapLayerStore()
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -147,6 +149,8 @@ function PlannerShellPaperWithList({ activeListId }: { activeListId: string }) {
         onTabChange={(tab) => {
           if (tab === 'map') setMode('explore')
         }}
+        activeLayer={activeLayer}
+        onLayerChange={setLayer}
         onViewportBottomChange={onPaperHeaderViewportBottom}
         bottomSlot={
           <div className="flex w-full flex-wrap items-end justify-between gap-2">
