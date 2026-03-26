@@ -136,7 +136,7 @@ Turn saved places into an actual plan via a **two-journey architecture**: Explor
   * `ExploreShellPaper`: full map, Omnibox, discovery, `PaperExplorePanel` (right rail on desktop, bottom sheet on phone)
   * `PlannerShellPaper`: `CalendarPlanner` plus Mapbox **MapInset** for spatial context
   * Shared state layer (`useTripStore`) keeps both journeys in sync
-  * Legacy glass shells (`ExploreShell`, `PlannerShell`, `NavRail`, `NavFooter`) are not mounted from `AppShell` but may remain in the repo until removed
+  * Legacy glass shells (`ExploreShell`, `PlannerShell`, `NavRail`, `NavFooter`, `ContextPanel`, `WorkspaceContainer`) have been removed
 
 * **Day Grid Planner** (in `PlannerShellPaper` / `CalendarPlanner`)
   * Compact calendar-like grid: each trip day is a cell, rows of up to 7 days

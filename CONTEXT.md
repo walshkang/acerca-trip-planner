@@ -3,7 +3,7 @@
 - For UI/UX changes, `DESIGN.md` is the source of truth for layout, interaction, visual system, and component inventory.
 - Invariants: DB is source of truth; only approved pins are truth; enrich once, read forever; strict taxonomy; user edits never overwrite frozen AI enrichment.
 - DoD: tests updated/added; verification steps; migrations + `npm run db:types` if schema changed; no TODO placeholders in Decisions / Rationale or Next Steps.
-- Pointers: `supabase/migrations` for schema, `docs/reports` for learning reports. (`roadmap.json` is deprecated — `CONTEXT.md` is the single source of truth for phase status.)
+- Pointers: `supabase/migrations` for schema, `docs/reports` for learning reports.
 - Starting a new task/chat? Use `prompts/agent_task.md`.
 - Routing preview (Plan mode): set `ROUTING_PROVIDER` and `OSRM_BASE_URL` per [`.env.example`](.env.example); otherwise the API returns `501` / `provider_unavailable` by design.
 
@@ -47,7 +47,7 @@ AppShell
     └── CalendarPlanner (+ day detail / DnD)
 ```
 
-**Unmounted legacy (still in repo):** `ExploreShell`, `PlannerShell`, `NavRail`, `NavFooter`, `ContextPanel` — not used by `AppShell`; see `DESIGN.md` legacy section.
+**Deleted legacy:** `ExploreShell`, `PlannerShell`, `NavRail`, `NavFooter`, `ContextPanel`, `WorkspaceContainer`, `MapContainer` — removed; see `DESIGN.md` legacy section for the superseded layout.
 
 ### State stores
 - `useTripStore` — shared: `activeListId`, items, placeIds, type filters, refresh key
@@ -65,7 +65,7 @@ AppShell
 | 3 — Map Inset | **Done** | `MapInset` in `PlannerShellPaper` with day-colored pins and selection sync |
 | 4 — Polish + Cleanup | **Done** | Paper on all viewports, Explore parity toolbar/filters/dates, E2E tab selectors, date-shift migration (PATCH /api/lists/:id preserves item positions on date change) |
 
-**Optional housekeeping:** delete legacy glass shells (`ExploreShell`, `PlannerShell`, `NavRail`, `NavFooter`), `WorkspaceContainer` alias, broader Playwright refresh.
+**Housekeeping done:** legacy glass shells and `WorkspaceContainer` deleted. Optional: broader Playwright coverage refresh.
 
 ### P3-E4 Slice Status
 
@@ -96,9 +96,9 @@ AppShell
 
 **Immediate options (pick one per session):**
 1. **In-app chat UI (task 4.11)** — Conversational trip planning wired to preview/commit APIs. System prompt from slice E drives the LLM. Model-selectable backend.
-2. **Legacy cleanup** — Remove unused glass shells (`ExploreShell`, `PlannerShell`, `NavRail`, `NavFooter`), `WorkspaceContainer` alias; expand Playwright coverage.
-3. **Discover ↔ Plan map sync** — Selecting a list on Discover page flies the Plan map to that list's pins.
-4. **Plan polish (continued)** — Routing badges, capacity warnings, or agenda view refinements per `docs/PLAN_PAGE_SLICES.md`.
+2. **Discover ↔ Plan map sync** — Selecting a list on Discover page flies the Plan map to that list's pins.
+3. **Plan polish (continued)** — Routing badges, capacity warnings, or agenda view refinements per `docs/PLAN_PAGE_SLICES.md`.
+4. **Playwright refresh** — Expand E2E coverage for paper shell flows (legacy glass tests may need updating).
 
 **Deferred (separate epics):**
 - Insights layer (distance warnings, closed-day alerts)

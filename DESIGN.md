@@ -78,9 +78,9 @@ The product shell is **paper-themed** on every breakpoint. `AppShell` routes by 
 4. `PaperHeader` (z-50)
 5. Transient overlays / toasts (highest)
 
-### Legacy UI (superseded)
+### Legacy UI (superseded, deleted)
 
-The following described the **glass** Explore experience with `ContextPanel`, `NavRail` / `NavFooter`, and combined workspace tabs. **`AppShell` no longer mounts this tree**; use the paper shell above. Components may remain in the codebase for reference until removed.
+The following described the **glass** Explore experience with `ContextPanel`, `NavRail` / `NavFooter`, and combined workspace tabs. **`AppShell` no longer mounts this tree**; use the paper shell above. These components (`ExploreShell`, `PlannerShell`, `NavRail`, `NavFooter`, `ContextPanel`, `WorkspaceContainer`, `MapContainer`) have been deleted from the repo.
 
 ### Desktop (>= 768px) — legacy glass
 
@@ -314,17 +314,19 @@ Each component's purpose and key affordances. When modifying a component, preser
 | `MapShell` | `components/map/MapShell.tsx` | Pure map: auth, place fetching, fly-to, bounds fitting, marker rendering. No UI chrome. Exposes `fetchPlaces()` via ref. |
 | `MapView.mapbox` / `MapView.maplibre` | `components/map/` | Map renderer (provider-specific). Receives places, overlays, and callbacks. |
 
-### Workspace shell
+### App shell (paper)
 
 | Component | Location | Purpose |
 |-----------|----------|---------|
-| `WorkspaceContainer` | `components/workspace/WorkspaceContainer.tsx` | Top-level orchestrator. Owns all app state (active list, panel mode, drawer open, map style, preview state). Mounts MapShell + all overlays. |
-| `ContextPanel` | `components/ui/ContextPanel.tsx` | The single "working surface" — docked right panel on desktop, bottom sheet on mobile. Supports split layout (left/right panes) or single layout. |
-| `ToolsSheet` | `components/ui/ToolsSheet.tsx` | Transient overlay for layers, base map style, sign out. Mutually exclusive with Context Panel on mobile. |
+| `ExploreShellPaper` | `components/app/ExploreShellPaper.tsx` | Explore journey: full-viewport map + PaperHeader + PaperExplorePanel. |
+| `PlannerShellPaper` | `components/app/PlannerShellPaper.tsx` | Plan journey: PaperHeader + MapInset + CalendarPlanner. |
+| `PaperHeader` | `components/paper/PaperHeader.tsx` | Fixed header with Map/Itinerary tabs, Omnibox, PlannerListSwitcher bottomSlot. |
+| `PaperExplorePanel` | `components/paper/PaperExplorePanel.tsx` | Right rail (md+) / bottom sheet (<md) with type filters, list/place/preview content. |
+| `ToolsSheet` | `components/ui/ToolsSheet.tsx` | Transient overlay for layers, base map style, sign out. |
 
 ### Stitch components (presentation layer)
 
-These live in `components/stitch/` and are wired by `WorkspaceContainer`. They contain both presentation and state logic.
+These live in `components/stitch/` and are wired by `ExploreShellPaper` / `PlannerShellPaper`. They contain both presentation and state logic.
 
 | Component | Purpose | Key affordances |
 |-----------|---------|-----------------|

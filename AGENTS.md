@@ -90,12 +90,12 @@ Adding a new `stitch/` component following existing ones, adding a vitest unit t
 - New database migrations and `npm run db:types` regen
 - New or modified contract docs (`docs/PHASE_3_*.md`, `lib/*/contract.ts`)
 - New API route design (request/response shape, error semantics, invariants)
-- `WorkspaceContainer` / `ContextPanel` orchestration logic (touches stores + hooks + components)
+- `ExploreShellPaper` / `PlannerShellPaper` orchestration logic (touches stores + hooks + components)
 - Multi-file refactors (e.g., moving from kanban columns → day grid architecture)
 - Test strategy design (what to test, edge cases, acceptance criteria matrix)
 - Debugging failures that span server → client → DB
 - Reviewing other agents' output for invariant violations
-- Updating `AGENTS.md`, `CONTEXT.md` when scope changes (`roadmap.json` is deprecated; `CONTEXT.md` is the single source of truth)
+- Updating `AGENTS.md`, `CONTEXT.md` when scope changes (`CONTEXT.md` is the single source of truth)
 
 #### Bounded Tier (execute against existing contracts)
 - Individual `components/stitch/` component implementation (when design spec exists in `DESIGN.md`)
