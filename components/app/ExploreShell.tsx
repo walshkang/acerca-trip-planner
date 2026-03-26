@@ -17,6 +17,7 @@ import { useMediaQuery } from '@/components/ui/useMediaQuery'
 import { useDiscoveryStore } from '@/lib/state/useDiscoveryStore'
 import { useTripStore } from '@/lib/state/useTripStore'
 import { derivePreviewMode } from '@/lib/ui/previewMode'
+import type { CategoryEnum } from '@/lib/types/enums'
 
 const PANEL_STORAGE_KEY = 'acerca:panelWidth'
 const PANEL_SNAP_VALUES = [360, 520, 760]
@@ -93,6 +94,12 @@ export default function ExploreShell() {
   const bumpPlaceTagRefresh = useCallback(() => {
     setPlaceTagRefreshKey((prev) => prev + 1)
   }, [])
+  const handlePlaceCategoryUpdated = useCallback(
+    (placeId: string, category: CategoryEnum) => {
+      setPlaces((prev) => prev.map((p) => (p.id === placeId ? { ...p, category } : p)))
+    },
+    []
+  )
   const bumpListItemsRefresh = useTripStore((s) => s.bumpListItemsRefresh)
   const setActiveListItems = useTripStore((s) => s.setActiveListItems)
   const lastActiveListKey = 'acerca:lastActiveListId'
@@ -607,6 +614,7 @@ export default function ExploreShell() {
               onClose={closePlaceDetails}
               tagsRefreshKey={placeTagRefreshKey}
               onTagsUpdated={bumpListTagRefresh}
+              onCategoryUpdated={handlePlaceCategoryUpdated}
             />
           </div>
         ) : (
@@ -758,6 +766,7 @@ export default function ExploreShell() {
                       onClose={closePlaceDetails}
                       tagsRefreshKey={placeTagRefreshKey}
                       onTagsUpdated={bumpListTagRefresh}
+                      onCategoryUpdated={handlePlaceCategoryUpdated}
                     />
                   ) : (
                     <InspectorCard

@@ -1,6 +1,6 @@
 {
   "project_name": "AI_Travel_Itinerary_Manager",
-  "version": "3.0.0-p3e3-ux-pivot",
+  "version": "3.1.0-p3e4-headless-planning-api",
   "last_updated": "2026-03-25",
   "development_principles": [
     "LLMs label and translate intent; deterministic systems retrieve and compute.",
@@ -814,7 +814,7 @@
                   "id": "4.1",
                   "task": "Write contract doc (docs/PHASE_3_LIST_INTERCHANGE.md).",
                   "details": "Full interchange contract: ImportRow schema, PreviewRow with enrichment + computed fields, CommitRequest/Response, error codes, slot time ranges, enum values, invariants, non-goals. Follow conventions from PHASE_3_ROUTING_CONTRACT.md.",
-                  "status": "in_progress",
+                  "status": "completed",
                   "tier": "deep",
                   "owner": "claude-code"
                 },
@@ -822,7 +822,7 @@
                   "id": "4.2",
                   "task": "Write TypeScript contract types (lib/import/contract.ts).",
                   "details": "ImportRow, ImportPreviewRequest/Response, PreviewRow, ResolvedEnrichment, ComputedFields, ImportCommitRequest/Response, error types. Follow patterns from lib/routing/contract.ts. Include request parser with unknown-key rejection.",
-                  "status": "in_progress",
+                  "status": "completed",
                   "tier": "deep",
                   "owner": "claude-code"
                 }
@@ -836,7 +836,7 @@
                   "id": "4.3",
                   "task": "Implement import preview route.",
                   "details": "POST /api/lists/[id]/import/preview. Parse ImportRow[] body, validate schema, resolve each row via Google (reuse findGooglePlaceIdFromText / parsePlaceIdFromGoogleMapsUrl from ingest), fetch enrichment, return PreviewRow[] without computed fields initially. Auth + RLS. Row cap for v1 (e.g. 25).",
-                  "status": "not_started",
+                  "status": "completed",
                   "tier": "deep",
                   "owner": "cursor"
                 }
@@ -850,7 +850,7 @@
                   "id": "4.4",
                   "task": "Add open_during_slot + distance_from_previous + travel_time to preview.",
                   "details": "Pure functions in lib/import/compute.ts: parseOpeningHours (Google format → structured), isOpenDuringSlot (hours + date + slot → boolean), haversineDistance (coords → km), estimateWalkingTime (distance → minutes). Wire into preview response. Unit-testable, no external calls.",
-                  "status": "not_started",
+                  "status": "completed",
                   "tier": "bounded",
                   "owner": "cursor"
                 },
@@ -858,7 +858,7 @@
                   "id": "4.5",
                   "task": "Add slot_conflict + energy_sequence + trip_summary to preview.",
                   "details": "Detect same-slot collisions, flag 3+ consecutive high-energy items, compute empty_slots from trip date range. Add trip_summary to response. Pure functions, unit-testable.",
-                  "status": "not_started",
+                  "status": "completed",
                   "tier": "bounded",
                   "owner": "cursor"
                 }
@@ -872,7 +872,7 @@
                   "id": "4.6",
                   "task": "Implement import commit route.",
                   "details": "POST /api/lists/[id]/import/commit with confirmed row indices or preview token. For each row: ingest candidate if needed, promote_place_candidate with list_id, PATCH list_items for scheduled_date/slot/tags. Idempotent for existing places. Auth + RLS.",
-                  "status": "not_started",
+                  "status": "completed",
                   "tier": "deep",
                   "owner": "cursor"
                 }
@@ -886,7 +886,7 @@
                   "id": "4.7",
                   "task": "Write reference system prompt for LLM clients (docs/LLM_PLANNING_CLIENT_PROMPT.md).",
                   "details": "Model-agnostic system prompt / instruction doc containing: ImportRow JSON schema, valid CategoryEnum and PlannerSlot values with time ranges, slot semantics, how to read PreviewRow responses, how to reason over computed fields (distance, hours, energy), example request/response cycle. Portable to GPT Actions, Gemini extensions, Claude skills.",
-                  "status": "not_started",
+                  "status": "completed",
                   "tier": "bounded",
                   "owner": "claude-code"
                 }
@@ -900,7 +900,7 @@
                   "id": "4.8",
                   "task": "Ship list CSV export in UI.",
                   "details": "Discoverable control in list/plan shell. Client calls POST /api/lists/[id]/export with format csv and triggers file download. Server path already exists.",
-                  "status": "not_started",
+                  "status": "completed",
                   "tier": "bounded",
                   "owner": "cursor",
                   "notes": "Server path exists: app/api/lists/[id]/export/route.ts + lib/export/serialize-csv.ts."
@@ -909,7 +909,7 @@
                   "id": "4.9",
                   "task": "Extend export for round-trip identifiers.",
                   "details": "Optional ExportRow fields (place_id UUID, google_place_id) in lib/export/contract.ts + serialize-csv.ts. Update tests under tests/export/.",
-                  "status": "not_started",
+                  "status": "completed",
                   "tier": "bounded",
                   "owner": "cursor"
                 }
@@ -923,7 +923,7 @@
                   "id": "4.10",
                   "task": "Ship import UI (upload / paste → preview → confirm).",
                   "details": "Wizard or modal: file upload and/or paste; call preview API; render table with enrichment + computed warnings; ambiguous row pickers; confirm calls commit API; refresh list/planner state. Mobile + desktop. Reuse DESIGN.md tokens.",
-                  "status": "not_started",
+                  "status": "completed",
                   "tier": "bounded",
                   "owner": "cursor"
                 },
@@ -944,7 +944,7 @@
                   "id": "4.12",
                   "task": "Verification gate for import/export interchange.",
                   "details": "Unit tests: CSV/JSON parsing, validation, computed fields (haversine, hours parsing, slot checks). API tests: preview happy path + error modes, commit idempotency. Document in interchange doc.",
-                  "status": "not_started",
+                  "status": "completed",
                   "tier": "deep+bounded",
                   "owner": "cursor"
                 }

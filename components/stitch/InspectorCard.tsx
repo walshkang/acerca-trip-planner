@@ -1,8 +1,16 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useDiscoveryStore } from '@/lib/state/useDiscoveryStore'
 import { assertValidWikiCuratedData, type WikiCuratedData } from '@/lib/enrichment/wikiCurated'
+import { useCategoryIconOverrides } from '@/lib/icons/useCategoryIconOverrides'
+import { isCategoryEnum } from '@/lib/lists/filters'
+import { listItemSeedTagsFromNormalizedData } from '@/lib/lists/list-item-seed-tags'
+import { normalizeTagList } from '@/lib/lists/tags'
+import {
+  CATEGORY_ENUM_VALUES,
+  type CategoryEnum,
+} from '@/lib/types/enums'
 
 type NormalizedData = {
   category: string
@@ -44,6 +52,13 @@ export default function InspectorCard(props: {
   tone?: 'light' | 'dark'
 }) {
   const isDark = (props.tone ?? 'dark') === 'dark'
+  const selectedChipClass = isDark
+    ? 'border-slate-100 bg-slate-100 text-slate-900'
+    : 'border-slate-900 bg-slate-900 text-slate-50'
+  const unselectedChipClass = isDark
+    ? 'border-white/10 text-slate-200 hover:border-white/30'
+    : 'border-slate-300 text-slate-700 hover:border-slate-500'
+  const listHelperClass = isDark ? 'text-slate-300' : 'text-slate-600'
   const candidate = useDiscoveryStore((s) => s.previewCandidate)
   const enrichment = useDiscoveryStore((s) => s.previewEnrichment)
   const google = useDiscoveryStore((s) => s.previewGoogle)
@@ -60,11 +75,24 @@ export default function InspectorCard(props: {
   const [creatingList, setCreatingList] = useState(false)
   const [tagInput, setTagInput] = useState('')
   const [showMoreDetails, setShowMoreDetails] = useState(false)
+  const [showNewListInput, setShowNewListInput] = useState(false)
+  const [commitCategory, setCommitCategory] = useState<CategoryEnum>('Activity')
+  const userPickedCommitCategoryRef = useRef(false)
+  const [includedAutoTags, setIncludedAutoTags] = useState<string[]>([])
+  const userEditedSuggestedTagsRef = useRef(false)
+
+  const { resolveCategoryEmoji } = useCategoryIconOverrides(selectedListId)
+
+  useEffect(() => {
+    userPickedCommitCategoryRef.current = false
+    userEditedSuggestedTagsRef.current = false
+  }, [candidate?.id])
 
   useEffect(() => {
     if (!candidate) return
     setTagInput('')
     setShowMoreDetails(false)
+    setShowNewListInput(false)
     let cancelled = false
     async function loadLists() {
       setListsLoading(true)
@@ -95,7 +123,31 @@ export default function InspectorCard(props: {
     return () => {
       cancelled = true
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- candidate?.id identifies preview session
   }, [candidate?.id])
+
+  useEffect(() => {
+    if (!candidate || userPickedCommitCategoryRef.current) return
+    const n = safeNormalized(enrichment?.normalizedData ?? null)
+    setCommitCategory(
+      n?.category && isCategoryEnum(n.category) ? n.category : 'Activity'
+    )
+  }, [candidate, enrichment?.normalizedData])
+
+  useEffect(() => {
+    if (!candidate || userEditedSuggestedTagsRef.current) return
+    const n = safeNormalized(enrichment?.normalizedData ?? null)
+    if (!n) {
+      setIncludedAutoTags([])
+      return
+    }
+    setIncludedAutoTags(
+      listItemSeedTagsFromNormalizedData({
+        tags: n.tags,
+        category: n.category,
+      })
+    )
+  }, [candidate, enrichment?.normalizedData])
 
   async function createList() {
     const name = newListName.trim()
@@ -118,6 +170,7 @@ export default function InspectorCard(props: {
         setLists((prev) => [...prev, list])
         setSelectedListId(list.id)
         setNewListName('')
+        setShowNewListInput(false)
       }
     } catch (e: unknown) {
       setListsError(e instanceof Error ? e.message : 'Request failed')
@@ -143,16 +196,28 @@ export default function InspectorCard(props: {
     setCommitError(null)
     setIsCommitting(true)
     try {
-      const trimmedTags = tagInput.trim()
-      if (trimmedTags.length && !selectedListId) {
+      const manualFromInput = normalizeTagList(tagInput.trim()) ?? []
+      if (manualFromInput.length && !selectedListId) {
         setCommitError('Choose a list to save list-item tags (or clear tags).')
         return
       }
-      const promotePayload = {
+      const mergedForList =
+        normalizeTagList([...includedAutoTags, ...manualFromInput]) ?? []
+
+      const promotePayload: {
+        candidate_id: string
+        list_id: string | null
+        include_automatic_tags: boolean
+        tags?: string
+      } = {
         candidate_id: candidateId,
         list_id: selectedListId ?? null,
-        tags: trimmedTags.length ? trimmedTags : undefined,
+        include_automatic_tags: false,
       }
+      if (mergedForList.length) {
+        promotePayload.tags = mergedForList.join(', ')
+      }
+
       const promoteOnce = async () => {
         const response = await fetch('/api/places/promote', {
           method: 'POST',
@@ -201,24 +266,22 @@ export default function InspectorCard(props: {
         setCommitError('Promotion succeeded but no place_id returned')
         return
       }
-      if (trimmedTags.length) {
-        const listIdForTags = resolvedListId ?? selectedListId
-        if (listIdForTags) {
-          const payload: { place_id: string; tags: string } = {
-            place_id: placeId,
-            tags: trimmedTags,
-          }
-          const tagsRes = await fetch(`/api/lists/${listIdForTags}/items`, {
-            method: 'POST',
-            headers: { 'content-type': 'application/json' },
-            body: JSON.stringify(payload),
-          })
-          if (!tagsRes.ok) {
-            const tagsJson = await tagsRes.json().catch(() => ({}))
-            console.error('Failed to save tags on approval', tagsJson)
-          }
-        }
+
+      const patchRes = await fetch(`/api/places/${placeId}`, {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ category: commitCategory }),
+      })
+      const patchJson = await patchRes.json().catch(() => ({}))
+      if (!patchRes.ok) {
+        setCommitError(
+          typeof patchJson?.error === 'string'
+            ? patchJson.error
+            : `HTTP ${patchRes.status}`
+        )
+        return
       }
+
       clear()
       props.onCommitted?.(placeId)
     } catch (e: unknown) {
@@ -379,12 +442,118 @@ export default function InspectorCard(props: {
           </div>
         ) : null}
 
-        {normalized ? (
+        <div className="space-y-1">
+          <p
+            className={`text-[11px] font-semibold md:text-[10px] md:font-bold md:uppercase md:tracking-[0.2em] ${isDark ? 'text-slate-300' : 'text-slate-600'} md:text-paper-on-surface`}
+          >
+            Place type
+          </p>
+          <p
+            className={`text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-500'} md:font-body md:text-paper-on-surface-variant`}
+          >
+            Sets the map icon before this pin is saved.
+          </p>
+          <div className="flex flex-wrap gap-2" data-testid="inspector-category-chips">
+            {CATEGORY_ENUM_VALUES.map((cat) => {
+              const selected = commitCategory === cat
+              return (
+                <button
+                  key={cat}
+                  type="button"
+                  aria-pressed={selected}
+                  disabled={isCommitting}
+                  onClick={() => {
+                    userPickedCommitCategoryRef.current = true
+                    setCommitCategory(cat)
+                  }}
+                  className={`rounded-full border px-3 py-1 text-xs transition md:rounded-[2px] md:px-3 md:py-1 md:text-[11px] md:font-bold md:uppercase md:tracking-wider disabled:opacity-50 ${
+                    selected
+                      ? `${selectedChipClass} md:!border-paper-on-surface md:!bg-paper-on-surface md:!text-paper-surface`
+                      : `${unselectedChipClass} md:!border-paper-tertiary-fixed md:!bg-paper-surface-container md:!text-paper-on-surface hover:md:!bg-white`
+                  }`}
+                >
+                  <span
+                    aria-hidden
+                    className="mr-1 inline-block text-base leading-none md:text-[13px]"
+                  >
+                    {resolveCategoryEmoji(cat)}
+                  </span>
+                  {cat}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
+        <div className="space-y-1">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p
+              className={`text-[11px] font-semibold md:text-[10px] md:font-bold md:uppercase md:tracking-[0.2em] ${isDark ? 'text-slate-300' : 'text-slate-600'} md:text-paper-on-surface`}
+            >
+              Suggested tags
+            </p>
+            {includedAutoTags.length ? (
+              <button
+                type="button"
+                disabled={isCommitting}
+                onClick={() => {
+                  userEditedSuggestedTagsRef.current = true
+                  setIncludedAutoTags([])
+                }}
+                className={`text-[11px] underline disabled:opacity-50 ${isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-600 hover:text-slate-900'} md:text-paper-on-surface-variant`}
+              >
+                Clear all suggested
+              </button>
+            ) : null}
+          </div>
+          <p
+            className={`text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-500'} md:font-body md:text-paper-on-surface-variant`}
+          >
+            From enrichment — remove any you do not want on the list.
+          </p>
+          {includedAutoTags.length ? (
+            <div className="flex flex-wrap gap-2" data-testid="inspector-suggested-tags">
+              {includedAutoTags.map((t) => (
+                <span
+                  key={t}
+                  className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] md:rounded-[2px] md:border-paper-tertiary-fixed md:bg-paper-surface-container ${
+                    isDark
+                      ? 'border-white/10 text-slate-200'
+                      : 'border-slate-300 text-slate-800'
+                  } md:text-paper-on-surface`}
+                >
+                  {t.startsWith('#') ? t : `#${t}`}
+                  <button
+                    type="button"
+                    disabled={isCommitting}
+                    onClick={() => {
+                      userEditedSuggestedTagsRef.current = true
+                      setIncludedAutoTags((prev) => prev.filter((x) => x !== t))
+                    }}
+                    className={
+                      isDark
+                        ? 'text-slate-400 hover:text-slate-200'
+                        : 'text-slate-500 hover:text-slate-900'
+                    }
+                    aria-label={`Remove suggested tag ${t}`}
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+            </div>
+          ) : (
+            <p
+              className={`text-[11px] ${isDark ? 'text-slate-500' : 'text-slate-500'} md:text-paper-on-surface-variant`}
+            >
+              No suggested tags for this pin.
+            </p>
+          )}
+        </div>
+
+        {normalized && (normalized.energy || normalized.vibe) ? (
           <div className="space-y-2">
             <div className="flex flex-wrap gap-2">
-              <span className="rounded-full border border-white/10 px-2 py-0.5 text-[11px] text-slate-200 md:rounded-[2px] md:border-paper-tertiary-fixed md:bg-paper-surface-container md:text-paper-on-surface-variant">
-                {normalized.category}
-              </span>
               {normalized.energy ? (
                 <span className="rounded-full border border-white/10 px-2 py-0.5 text-[11px] text-slate-200 md:rounded-[2px] md:border-paper-tertiary-fixed md:bg-paper-surface-container md:text-paper-on-surface-variant">
                   Energy: {normalized.energy}
@@ -396,19 +565,6 @@ export default function InspectorCard(props: {
                 </span>
               ) : null}
             </div>
-
-            {normalized.tags?.length ? (
-              <div className="flex flex-wrap gap-2">
-                {normalized.tags.slice(0, 10).map((t) => (
-                  <span
-                    key={t}
-                    className="rounded-full bg-slate-800/70 px-2 py-0.5 text-[11px] text-slate-200 md:rounded-[2px] md:border md:border-paper-tertiary-fixed md:bg-paper-surface-container-high md:text-paper-on-surface"
-                  >
-                    {t}
-                  </span>
-                ))}
-              </div>
-            ) : null}
           </div>
         ) : null}
 
@@ -426,40 +582,57 @@ export default function InspectorCard(props: {
               List
             </p>
           </div>
-          <select
-            className="glass-input w-full px-2 py-2 text-xs md:rounded-[4px] md:border-paper-tertiary-fixed md:bg-paper-surface-container md:backdrop-blur-none md:text-paper-on-surface"
-            value={selectedListId ?? ''}
-            onChange={(e) => setSelectedListId(e.target.value || null)}
-            disabled={listsLoading}
-          >
-            {listsLoading ? (
-              <option value="">Loading…</option>
-            ) : null}
-            <option value="">No list</option>
-            {lists.map((list) => (
-              <option key={list.id} value={list.id}>
-                {list.name}
-                {list.is_default ? ' (Default)' : ''}
-              </option>
-            ))}
-          </select>
-
-          <div className="flex items-center gap-2">
-            <input
-              className="glass-input flex-1 text-xs md:rounded-[4px] md:border-paper-tertiary-fixed md:bg-paper-surface-container md:backdrop-blur-none md:text-paper-on-surface md:placeholder:text-paper-on-surface-variant"
-              value={newListName}
-              onChange={(e) => setNewListName(e.target.value)}
-              placeholder="New list name"
-            />
+          {listsLoading ? (
+            <p className={`text-xs ${listHelperClass}`}>Loading lists…</p>
+          ) : null}
+          <div className="flex flex-wrap gap-2">
+            {lists.map((list) => {
+              const selected = selectedListId === list.id
+              return (
+                <button
+                  key={list.id}
+                  type="button"
+                  aria-pressed={selected}
+                  onClick={() => setSelectedListId(selected ? null : list.id)}
+                  className={`rounded-full border px-3 py-1 text-xs transition md:rounded-[2px] md:px-3 md:py-1 md:text-[11px] md:font-bold md:uppercase md:tracking-wider ${
+                    selected
+                      ? `${selectedChipClass} md:!border-paper-on-surface md:!bg-paper-on-surface md:!text-paper-surface`
+                      : `${unselectedChipClass} md:!border-paper-tertiary-fixed md:!bg-paper-surface-container md:!text-paper-on-surface hover:md:!bg-white`
+                  }`}
+                >
+                  {list.name}
+                  {list.is_default ? ' (Default)' : ''}
+                </button>
+              )
+            })}
             <button
               type="button"
-              onClick={createList}
-              disabled={creatingList || !newListName.trim()}
-              className="glass-button rounded-md px-2 py-1 text-[11px] disabled:opacity-50 md:rounded-[4px] md:border md:border-paper-tertiary-fixed md:bg-paper-surface-container-low md:text-paper-on-surface md:shadow-none md:backdrop-blur-none hover:md:bg-paper-tertiary-fixed"
+              aria-expanded={showNewListInput}
+              onClick={() => setShowNewListInput((v) => !v)}
+              className={`rounded-full border px-3 py-1 text-xs transition md:rounded-[2px] md:px-3 md:py-1 md:text-[11px] md:font-bold md:uppercase md:tracking-wider ${unselectedChipClass} md:!border-paper-tertiary-fixed md:!bg-paper-surface-container md:!text-paper-on-surface hover:md:!bg-white`}
             >
-              {creatingList ? 'Adding…' : 'Add'}
+              + New list
             </button>
           </div>
+
+          {showNewListInput ? (
+            <div className="flex items-center gap-2">
+              <input
+                className="glass-input flex-1 text-xs md:rounded-[4px] md:border-paper-tertiary-fixed md:bg-paper-surface-container md:backdrop-blur-none md:text-paper-on-surface md:placeholder:text-paper-on-surface-variant"
+                value={newListName}
+                onChange={(e) => setNewListName(e.target.value)}
+                placeholder="New list name"
+              />
+              <button
+                type="button"
+                onClick={createList}
+                disabled={creatingList || !newListName.trim()}
+                className="glass-button rounded-md px-2 py-1 text-[11px] disabled:opacity-50 md:rounded-[4px] md:border md:border-paper-tertiary-fixed md:bg-paper-surface-container-low md:text-paper-on-surface md:shadow-none md:backdrop-blur-none hover:md:bg-paper-tertiary-fixed"
+              >
+                {creatingList ? 'Adding…' : 'Add'}
+              </button>
+            </div>
+          ) : null}
           <div>
             <label className="block text-xs font-medium text-slate-300 md:text-paper-on-surface">
               Add tags (optional)

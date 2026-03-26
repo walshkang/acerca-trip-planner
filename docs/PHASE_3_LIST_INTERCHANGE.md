@@ -236,6 +236,19 @@ See `lib/import/contract.ts` for full type definitions including:
 
 ---
 
+## Verification Gate
+
+Automated coverage for import interchange: contract parsing, pure compute helpers, and preview/commit API routes (mocked Supabase / Google where applicable).
+
+- Contract parsing: `npm test -- tests/import/contract.test.ts`
+- Computed fields: `npm test -- tests/import/compute.test.ts`
+- Preview API: `npm test -- tests/import/preview-api.test.ts`
+- Commit API: `npm test -- tests/import/commit-api.test.ts`
+
+Run `npm run check` before pushing when possible.
+
+---
+
 ## LLM Client Contract
 
 Any model can drive this API with just:

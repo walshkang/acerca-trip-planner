@@ -96,6 +96,18 @@ describe('parseImportCommitRequest', () => {
     expect(result.ok).toBe(false)
   })
 
+  it('rejects omitted google_place_id on a row', () => {
+    const result = parseImportCommitRequest({
+      confirmed_rows: [{ row_index: 0 } as Record<string, unknown>],
+    })
+    expect(result.ok).toBe(false)
+    if (!result.ok) {
+      expect(result.fieldErrors['confirmed_rows[0].google_place_id']?.length).toBeGreaterThan(
+        0
+      )
+    }
+  })
+
   it('rejects scheduled_date without scheduled_slot', () => {
     const result = parseImportCommitRequest({
       confirmed_rows: [
@@ -135,6 +147,125 @@ describe('parseImportCommitRequest', () => {
 })
 
 describe('parseImportPreviewRequest', () => {
+  it('accepts a minimal valid request (one row, place_name only)', () => {
+    const result = parseImportPreviewRequest({ rows: [{ place_name: 'Cafe' }] })
+    expect(result.ok).toBe(true)
+    if (result.ok) {
+      expect(result.request.rows).toEqual([{ place_name: 'Cafe' }])
+    }
+  })
+
+  it('accepts full optional fields on rows and trip bounds', () => {
+    const result = parseImportPreviewRequest({
+      rows: [
+        {
+          place_name: ' Museum ',
+          place_category: 'Sights',
+          scheduled_date: '2026-04-01',
+          scheduled_slot: 'morning',
+          item_tags: ['must-see'],
+          notes: 'Book ahead',
+        },
+      ],
+      trip_start_date: '2026-04-01',
+      trip_end_date: '2026-04-03',
+    })
+    expect(result.ok).toBe(true)
+    if (result.ok) {
+      expect(result.request.rows[0].place_name).toBe('Museum')
+      expect(result.request.rows[0].place_category).toBe('Sights')
+      expect(result.request.trip_start_date).toBe('2026-04-01')
+      expect(result.request.trip_end_date).toBe('2026-04-03')
+    }
+  })
+
+  it('rejects missing or non-array rows', () => {
+    expect(parseImportPreviewRequest({}).ok).toBe(false)
+    const noRows = parseImportPreviewRequest({})
+    if (!noRows.ok) {
+      expect(noRows.fieldErrors.rows?.length).toBeGreaterThan(0)
+    }
+    const badRows = parseImportPreviewRequest({ rows: 'nope' as unknown as [] })
+    expect(badRows.ok).toBe(false)
+  })
+
+  it('rejects empty rows array', () => {
+    const result = parseImportPreviewRequest({ rows: [] })
+    expect(result.ok).toBe(false)
+    if (!result.ok) {
+      expect(result.fieldErrors.rows?.some((m) => m.includes('empty'))).toBe(true)
+    }
+  })
+
+  it('rejects more than IMPORT_ROW_LIMIT_V1 rows', () => {
+    const rows = Array.from({ length: IMPORT_ROW_LIMIT_V1 + 1 }, (_, i) => ({
+      place_name: `P${i}`,
+    }))
+    const result = parseImportPreviewRequest({ rows })
+    expect(result.ok).toBe(false)
+    if (!result.ok) {
+      expect(result.code).toBe('row_limit_exceeded')
+    }
+  })
+
+  it('rejects unknown top-level keys', () => {
+    const result = parseImportPreviewRequest({
+      rows: [{ place_name: 'x' }],
+      extra: 1,
+    } as Record<string, unknown>)
+    expect(result.ok).toBe(false)
+    if (!result.ok) {
+      expect(result.fieldErrors.payload?.some((m) => m.includes('Unknown field'))).toBe(true)
+    }
+  })
+
+  it('rejects row missing or empty place_name', () => {
+    const a = parseImportPreviewRequest({
+      rows: [{ place_name: '' }],
+    })
+    expect(a.ok).toBe(false)
+    if (!a.ok) {
+      expect(a.fieldErrors['rows[0].place_name']?.length).toBeGreaterThan(0)
+    }
+    const b = parseImportPreviewRequest({
+      rows: [{} as { place_name: string }],
+    })
+    expect(b.ok).toBe(false)
+  })
+
+  it('rejects invalid place_category, scheduled_date, scheduled_slot, item_tags', () => {
+    const result = parseImportPreviewRequest({
+      rows: [
+        {
+          place_name: 'x',
+          place_category: 'NotACategory' as 'Food',
+          scheduled_date: '04-01-2026',
+          scheduled_slot: 'noon' as 'morning',
+          item_tags: 'tags' as unknown as string[],
+        },
+      ],
+    })
+    expect(result.ok).toBe(false)
+    if (!result.ok) {
+      expect(result.fieldErrors['rows[0].place_category']).toBeDefined()
+      expect(result.fieldErrors['rows[0].scheduled_date']).toBeDefined()
+      expect(result.fieldErrors['rows[0].scheduled_slot']).toBeDefined()
+      expect(result.fieldErrors['rows[0].item_tags']).toBeDefined()
+    }
+  })
+
+  it('returns multiple field errors together', () => {
+    const result = parseImportPreviewRequest({
+      rows: [{ place_name: '' }],
+      bogus: true,
+    } as Record<string, unknown>)
+    expect(result.ok).toBe(false)
+    if (!result.ok) {
+      const keys = Object.keys(result.fieldErrors)
+      expect(keys.length).toBeGreaterThanOrEqual(2)
+    }
+  })
+
   it('still accepts 25 preview rows (sanity next to commit limit)', () => {
     const rows = Array.from({ length: IMPORT_ROW_LIMIT_V1 }, (_, i) => ({
       place_name: `Place ${i}`,

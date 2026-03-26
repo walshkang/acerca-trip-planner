@@ -1,6 +1,8 @@
 'use client'
 
-import { type FormEvent, useEffect, useMemo, useState } from 'react'
+import { type FormEvent, useCallback, useEffect, useMemo, useState } from 'react'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { downloadListCsv } from '@/lib/export/download-list-csv'
 import { useCategoryIconOverrides } from '@/lib/icons/useCategoryIconOverrides'
 import type { ListFilterFieldErrors } from '@/lib/lists/filters'
 import { normalizeTagList } from '@/lib/lists/tags'
@@ -82,15 +84,8 @@ type Props = {
   onTagsUpdate?: (itemId: string, tags: string[]) => Promise<string[]>
   focusedPlaceId?: string | null
   tone?: 'light' | 'dark'
-  /** Paper Explore: hide summary dates, filter UI, and list header extras (types/tags live in panel chrome). */
+  /** Paper Explore: hide filter UI and list header extras (types/tags live in panel chrome). */
   compactChrome?: boolean
-}
-
-function formatDateRange(list: ListSummary) {
-  if (!list.start_date && !list.end_date) return null
-  const start = list.start_date ?? '—'
-  const end = list.end_date ?? '—'
-  return `${start} → ${end}`
 }
 
 type TagEditorProps = {
@@ -176,12 +171,12 @@ function TagEditor({ itemId, tags, onTagsUpdate, tone = 'light' }: TagEditorProp
               key={`${itemId}-${tag}`}
               className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] md:rounded-[2px] md:border-paper-tertiary-fixed md:bg-paper-surface-container ${chipClass}`}
             >
-              {tag}
+              {tag.startsWith('#') ? tag : `#${tag}`}
               <button
                 type="button"
                 onClick={() => handleRemove(tag)}
                 className={`text-[10px] ${chipButtonClass}`}
-                aria-label={`Remove ${tag}`}
+                aria-label={`Remove ${tag.startsWith('#') ? tag : `#${tag}`}`}
               >
                 ×
               </button>
@@ -273,11 +268,13 @@ export default function ListDetailBody({
   tone = 'light',
   compactChrome = false,
 }: Props) {
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const [exportingCsv, setExportingCsv] = useState(false)
+  const [exportCsvError, setExportCsvError] = useState<string | null>(null)
+
   const { resolveCategoryEmoji } = useCategoryIconOverrides(list?.id ?? null)
-  const rangeLabel = useMemo(
-    () => (list ? formatDateRange(list) : null),
-    [list]
-  )
   const isDark = tone === 'dark'
   const panelClass = isDark
     ? 'border-white/10 bg-slate-900/40'
@@ -380,6 +377,25 @@ export default function ListDetailBody({
     }
   }, [focusedPlaceId, items.length])
 
+  const handleExportCsv = useCallback(async () => {
+    if (!list) return
+    setExportCsvError(null)
+    setExportingCsv(true)
+    try {
+      const result = await downloadListCsv(list.id)
+      if (!result.ok) {
+        if (result.kind === 'unauthorized') {
+          const next = `${pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`
+          router.push(`/auth/sign-in?next=${encodeURIComponent(next)}`)
+          return
+        }
+        setExportCsvError(result.message)
+      }
+    } finally {
+      setExportingCsv(false)
+    }
+  }, [list, pathname, router, searchParams])
+
   if (loading && !list) {
     return <p className={`text-sm ${mutedText}`}>Loading list…</p>
   }
@@ -390,42 +406,31 @@ export default function ListDetailBody({
 
   return (
     <section className="space-y-6">
-      {list ? (
-        <div className={`rounded-lg border p-4 md:rounded-[4px] ${panelClass}`}>
-          <div className="flex flex-wrap items-center gap-2">
-            <h2
-              className={`text-lg font-semibold md:font-headline md:font-extrabold md:uppercase md:tracking-tighter ${titleClass}`}
+      <div className={`rounded-lg border p-4 space-y-3 md:rounded-[4px] ${panelClass}`}>
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div className="border-l-2 border-paper-primary pl-2 md:border-l-2 md:border-paper-primary md:pl-2">
+            <h3
+              className={`text-base font-bold md:font-headline md:text-sm md:font-extrabold md:uppercase md:tracking-tighter ${titleClass}`}
             >
-              {list.name}
-            </h2>
-            {list.is_default ? (
-              <span
-                className={`rounded-full border px-2 py-0.5 text-[10px] md:rounded-[2px] md:border-paper-tertiary-fixed md:bg-paper-surface-container md:text-[10px] md:font-bold md:uppercase md:tracking-wider ${chipClass}`}
-              >
-                Default
-              </span>
-            ) : null}
+              Places
+            </h3>
           </div>
-          {list.description ? (
-            <p className={`mt-1 text-sm md:font-body ${bodyText}`}>{list.description}</p>
-          ) : null}
-          {!compactChrome && rangeLabel ? (
-            <p className={`mt-2 text-xs ${mutedText}`}>Dates: {rangeLabel}</p>
-          ) : null}
-          {list.timezone ? (
-            <p className={`mt-1 text-xs ${mutedText}`}>
-              Timezone: {list.timezone}
-            </p>
+          {list ? (
+            <button
+              type="button"
+              onClick={() => void handleExportCsv()}
+              disabled={exportingCsv}
+              className={actionSecondaryClass}
+            >
+              {exportingCsv ? 'Exporting…' : 'Export CSV'}
+            </button>
           ) : null}
         </div>
-      ) : null}
-
-      <div className={`rounded-lg border p-4 space-y-3 md:rounded-[4px] ${panelClass}`}>
-        <h3
-          className={`text-sm font-semibold md:font-headline md:text-xs md:font-extrabold md:uppercase md:tracking-tighter ${titleClass}`}
-        >
-          Places
-        </h3>
+        {list && exportCsvError ? (
+          <p className={`text-right text-[11px] ${errorText}`} role="alert">
+            {exportCsvError}
+          </p>
+        ) : null}
         {loading ? <p className={`text-xs ${mutedText}`}>Loading…</p> : null}
         {!loading && !items.length ? (
           <p className={`text-xs ${mutedText}`}>{emptyLabel}</p>
@@ -695,7 +700,7 @@ export default function ListDetailBody({
                 ) : null}
               </div>
               {availableTags.length ? (
-                <div className="flex flex-wrap gap-2">
+                <div className="flex max-h-[3.5rem] flex-wrap gap-2 overflow-y-auto">
                   {availableTags.map((tag) => {
                     const active = activeTagFilters.includes(tag)
                     return (
@@ -709,7 +714,7 @@ export default function ListDetailBody({
                             : `${tagInactiveClass} ${filterChipInactiveMd}`
                         }`}
                       >
-                        {tag}
+                        {tag.startsWith('#') ? tag : `#${tag}`}
                       </button>
                     )
                   })}

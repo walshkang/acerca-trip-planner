@@ -1,6 +1,8 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { downloadListCsv } from '@/lib/export/download-list-csv'
 import { useTripStore } from '@/lib/state/useTripStore'
 import { useNavStore } from '@/lib/state/useNavStore'
 import CalendarPlanner from '@/components/planner/CalendarPlanner'
@@ -54,6 +56,9 @@ export default function PlannerShellPaper() {
 }
 
 function PlannerShellPaperWithList({ activeListId }: { activeListId: string }) {
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
   const setMode = useNavStore((s) => s.setMode)
   const bumpListItemsRefresh = useTripStore((s) => s.bumpListItemsRefresh)
   const activeListPlaceIds = useTripStore((s) => s.activeListPlaceIds)
@@ -62,6 +67,8 @@ function PlannerShellPaperWithList({ activeListId }: { activeListId: string }) {
   const listItemsRefreshKey = useTripStore((s) => s.listItemsRefreshKey)
 
   const [mapPlaces, setMapPlaces] = useState<MapPlace[]>([])
+  const [exportingCsv, setExportingCsv] = useState(false)
+  const [exportCsvError, setExportCsvError] = useState<string | null>(null)
 
   // Fetch map places
   useEffect(() => {
@@ -105,6 +112,24 @@ function PlannerShellPaperWithList({ activeListId }: { activeListId: string }) {
     state.setFocusedPlannerPlaceId(placeId)
   }, [])
 
+  const handleExportCsv = useCallback(async () => {
+    setExportCsvError(null)
+    setExportingCsv(true)
+    try {
+      const result = await downloadListCsv(activeListId)
+      if (!result.ok) {
+        if (result.kind === 'unauthorized') {
+          const next = `${pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`
+          router.push(`/auth/sign-in?next=${encodeURIComponent(next)}`)
+          return
+        }
+        setExportCsvError(result.message)
+      }
+    } finally {
+      setExportingCsv(false)
+    }
+  }, [activeListId, pathname, router, searchParams])
+
   return (
     <div
       className="flex h-screen flex-col bg-paper-surface"
@@ -116,7 +141,31 @@ function PlannerShellPaperWithList({ activeListId }: { activeListId: string }) {
         onTabChange={(tab) => {
           if (tab === 'map') setMode('explore')
         }}
-        bottomSlot={<PlannerListSwitcher listsCaption="Your lists" />}
+        bottomSlot={
+          <div className="flex w-full flex-wrap items-end justify-between gap-2">
+            <div className="min-w-0 flex-1">
+              <PlannerListSwitcher listsCaption="Your lists" />
+            </div>
+            <div className="flex shrink-0 flex-col items-end gap-1">
+              <button
+                type="button"
+                onClick={() => void handleExportCsv()}
+                disabled={exportingCsv}
+                className="rounded-[4px] border border-paper-tertiary-fixed bg-paper-surface-container-low px-3 py-1.5 text-xs font-medium text-paper-on-surface transition hover:bg-paper-tertiary-fixed disabled:opacity-50"
+              >
+                {exportingCsv ? 'Exporting…' : 'Export CSV'}
+              </button>
+              {exportCsvError ? (
+                <p
+                  className="max-w-[240px] text-right text-[11px] text-red-600 dark:text-red-300"
+                  role="alert"
+                >
+                  {exportCsvError}
+                </p>
+              ) : null}
+            </div>
+          </div>
+        }
       />
 
       {/* Map | planner: strip below xl, left column at xl+ */}

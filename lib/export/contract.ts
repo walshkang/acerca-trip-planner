@@ -23,6 +23,10 @@ export type ExportRow = {
   place_user_tags: string[]
   place_lat: number | null
   place_lng: number | null
+  /** Internal place UUID (CSV round-trip). */
+  place_id?: string
+  /** Google Places id, e.g. ChIJ… (CSV round-trip). */
+  google_place_id?: string
   google_maps_url: string | null
   website: string | null
 

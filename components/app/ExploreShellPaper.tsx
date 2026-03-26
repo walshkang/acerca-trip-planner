@@ -317,6 +317,12 @@ export default function ExploreShellPaper() {
 
   const bumpListTagRefresh = useCallback(() => setListTagRefreshKey((k) => k + 1), [])
   const bumpPlaceTagRefresh = useCallback(() => setPlaceTagRefreshKey((k) => k + 1), [])
+  const handlePlaceCategoryUpdated = useCallback(
+    (placeId: string, category: CategoryEnum) => {
+      setPlaces((prev) => prev.map((p) => (p.id === placeId ? { ...p, category } : p)))
+    },
+    []
+  )
 
   const handlePlaceClick = useCallback(
     (placeId: string) => {
@@ -413,6 +419,7 @@ export default function ExploreShellPaper() {
             onClose={closePlaceDetails}
             tagsRefreshKey={placeTagRefreshKey}
             onTagsUpdated={bumpListTagRefresh}
+            onCategoryUpdated={handlePlaceCategoryUpdated}
           />
         </div>
       )
@@ -434,6 +441,7 @@ export default function ExploreShellPaper() {
         onActiveTypeFiltersChange={setActiveListTypeFilters}
         onActiveTagFiltersChange={setActiveListTagFilters}
         syncedExploreTagFilters={activeListTagFilters}
+        syncedExploreTypeFilters={activeListTypeFilters}
         onActiveListItemsChange={setActiveListItems}
         focusedPlaceId={focusedListPlaceId}
         onPlaceSelect={(placeId) => {

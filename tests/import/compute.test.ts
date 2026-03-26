@@ -54,13 +54,15 @@ describe('haversineDistanceKm', () => {
     expect(km).toBeCloseTo(1, 1)
   })
 
-  it('Wat Pho to Chatuchak is a plausible Bangkok hop', () => {
-    const watPho = { lat: 13.7466, lng: 100.4925 }
-    const chatuchak = { lat: 13.7998, lng: 100.5503 }
-    const km = haversineDistanceKm(watPho.lat, watPho.lng, chatuchak.lat, chatuchak.lng)
-    expect(km).toBeGreaterThan(7)
-    expect(km).toBeLessThan(10)
-    expect(km).toBe(Math.round(km * 100) / 100)
+  it('Wat Pho to Chatuchak is ~8.4 km at reference coordinates', () => {
+    const km = haversineDistanceKm(13.7463, 100.493, 13.7999, 100.5533)
+    expect(km).toBeCloseTo(8.4, 0)
+  })
+
+  it('returns ~half earth circumference for antipodal points', () => {
+    const km = haversineDistanceKm(0, 0, 0, 180)
+    expect(km).toBeGreaterThan(19_900)
+    expect(km).toBeLessThan(20_200)
   })
 })
 
@@ -98,6 +100,10 @@ describe('parseGoogleOpeningHours', () => {
     expect(parseGoogleOpeningHours(['Monday: nonsense'])).toEqual([])
     expect(parseGoogleOpeningHours(['noday: 9:00 AM – 5:00 PM'])).toEqual([])
   })
+
+  it('returns empty array for empty input', () => {
+    expect(parseGoogleOpeningHours([])).toEqual([])
+  })
 })
 
 describe('isOpenDuringSlot', () => {
@@ -130,6 +136,20 @@ describe('isOpenDuringSlot', () => {
   it('returns true for Open 24 hours', () => {
     const hours = hoursWed.map((h) =>
       h.startsWith('Wednesday:') ? 'Wednesday: Open 24 hours' : h
+    )
+    expect(isOpenDuringSlot(hours, wedMorning, 'evening')).toBe(true)
+  })
+
+  it('returns false for evening slot when venue closes at 5 PM', () => {
+    const hours = hoursWed.map((h) =>
+      h.startsWith('Wednesday:') ? 'Wednesday: 9:00 AM – 5:00 PM' : h
+    )
+    expect(isOpenDuringSlot(hours, wedMorning, 'evening')).toBe(false)
+  })
+
+  it('returns true for evening slot when venue spans evening hours', () => {
+    const hours = hoursWed.map((h) =>
+      h.startsWith('Wednesday:') ? 'Wednesday: 5:00 PM – 11:00 PM' : h
     )
     expect(isOpenDuringSlot(hours, wedMorning, 'evening')).toBe(true)
   })
@@ -200,6 +220,24 @@ describe('computeFieldsForDay', () => {
     expect(out[2].slot_conflict).toBe(false)
     expect(out[2].energy_sequence).toEqual(['High', 'High', 'Medium'])
     expect(out[2].open_during_slot).toBe(true)
+  })
+})
+
+describe('hydrateImportPreviewComputed same-day mixed status', () => {
+  it('skips unresolved rows when chaining distances between ok stops', () => {
+    const date = '2026-04-01'
+    const a = baseResolved({ place_name: 'A', lat: 0, lng: 0, energy: 'Low' })
+    const b = baseResolved({ place_name: 'B', lat: 0, lng: 0.01, energy: 'Low' })
+    const rows: PreviewRow[] = [
+      row(0, { place_name: 'a', scheduled_date: date, scheduled_slot: 'morning' }, 'ok', a),
+      row(1, { place_name: 'bad', scheduled_date: date, scheduled_slot: 'afternoon' }, 'error', null),
+      row(2, { place_name: 'b', scheduled_date: date, scheduled_slot: 'evening' }, 'ok', b),
+    ]
+    hydrateImportPreviewComputed(rows)
+    expect(rows[1].computed).toBeNull()
+    expect(rows[0].computed?.distance_from_previous_km).toBeNull()
+    expect(rows[2].computed?.distance_from_previous_km).not.toBeNull()
+    expect(rows[2].computed?.energy_sequence).toEqual(['Low', 'Low'])
   })
 })
 
@@ -281,6 +319,39 @@ describe('computeTripSummary', () => {
           w.includes('Far Spot')
       )
     ).toBe(true)
+  })
+
+  it('reports no empty slots when every day in range has all three slots filled', () => {
+    const slots = ['morning', 'afternoon', 'evening'] as const
+    const rows: PreviewRow[] = []
+    let idx = 0
+    for (const date of ['2026-04-01', '2026-04-02', '2026-04-03'] as const) {
+      for (const slot of slots) {
+        rows.push(
+          row(idx++, { place_name: `p-${date}-${slot}`, scheduled_date: date, scheduled_slot: slot }, 'ok', baseResolved())
+        )
+      }
+    }
+    hydrateImportPreviewComputed(rows)
+    const s = computeTripSummary(rows, '2026-04-01', '2026-04-03')
+    expect(s.empty_slots).toHaveLength(0)
+    expect(s.total_days).toBe(3)
+  })
+
+  it('reports three empty slots for a middle day with no scheduled items', () => {
+    const rows: PreviewRow[] = [
+      row(0, { place_name: 'a', scheduled_date: '2026-04-01', scheduled_slot: 'morning' }, 'ok', baseResolved()),
+      row(1, { place_name: 'b', scheduled_date: '2026-04-01', scheduled_slot: 'afternoon' }, 'ok', baseResolved()),
+      row(2, { place_name: 'c', scheduled_date: '2026-04-01', scheduled_slot: 'evening' }, 'ok', baseResolved()),
+      row(3, { place_name: 'd', scheduled_date: '2026-04-03', scheduled_slot: 'morning' }, 'ok', baseResolved()),
+      row(4, { place_name: 'e', scheduled_date: '2026-04-03', scheduled_slot: 'afternoon' }, 'ok', baseResolved()),
+      row(5, { place_name: 'f', scheduled_date: '2026-04-03', scheduled_slot: 'evening' }, 'ok', baseResolved()),
+    ]
+    hydrateImportPreviewComputed(rows)
+    const s = computeTripSummary(rows, '2026-04-01', '2026-04-03')
+    const day2 = s.empty_slots.filter((x) => x.date === '2026-04-02')
+    expect(day2).toHaveLength(3)
+    expect(day2.map((x) => x.slot).sort()).toEqual(['afternoon', 'evening', 'morning'])
   })
 
   it('warns on three consecutive high-energy items', () => {

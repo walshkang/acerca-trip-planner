@@ -28,7 +28,7 @@ describe('serializeCsv', () => {
     const csv = serializeCsv([])
     const firstLine = csv.split('\r\n')[0]
     expect(firstLine).toBe(
-      'Name,Category,Energy,Neighborhood,Address,Place Tags,Item Tags,Day,Slot,Status,Google Maps,Website,Notes,Lat,Lng'
+      'Name,Category,Energy,Neighborhood,Address,Place Tags,Item Tags,Day,Slot,Status,Google Maps,Website,Notes,Lat,Lng,Place ID,Google Place ID'
     )
   })
 
@@ -80,12 +80,27 @@ describe('serializeCsv', () => {
         place_lng: null,
       }),
     ])
-    // Should not throw; lat/lng columns should be empty
     const lines = csv.split('\r\n').filter(Boolean)
     expect(lines).toHaveLength(2)
-    // Lat/Lng columns are last two; they should be empty
+    const headers = lines[0].split(',')
+    const latIdx = headers.indexOf('Lat')
+    const lngIdx = headers.indexOf('Lng')
     const cols = lines[1].split(',')
-    expect(cols[cols.length - 2]).toBe('')
-    expect(cols[cols.length - 1]).toBe('')
+    expect(cols[latIdx]).toBe('')
+    expect(cols[lngIdx]).toBe('')
+  })
+
+  it('includes place_id and google_place_id when set', () => {
+    const csv = serializeCsv([
+      makeRow({
+        place_id: '11111111-1111-1111-1111-111111111111',
+        google_place_id: 'ChIJExamplePlaceIdString',
+      }),
+    ])
+    const lines = csv.split('\r\n').filter(Boolean)
+    expect(lines[0]).toContain('Place ID')
+    expect(lines[0]).toContain('Google Place ID')
+    expect(lines[1]).toContain('11111111-1111-1111-1111-111111111111')
+    expect(lines[1]).toContain('ChIJExamplePlaceIdString')
   })
 })

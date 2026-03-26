@@ -5,27 +5,13 @@ import {
 } from '@/lib/lists/filters'
 import { scheduledStartTimeFromSlot } from '@/lib/lists/planner'
 import { createClient } from '@/lib/supabase/server'
-import { distinctTagsFromItems, normalizeTag, normalizeTagList } from '@/lib/lists/tags'
+import { listItemSeedTagsFromNormalizedData } from '@/lib/lists/list-item-seed-tags'
+import { distinctTagsFromItems, normalizeTagList } from '@/lib/lists/tags'
 
 const LIST_FIELDS =
   'id, name, description, is_default, created_at, start_date, end_date, timezone'
 const ITEM_FIELDS =
   'id, created_at, scheduled_date, scheduled_start_time, scheduled_end_time, scheduled_order, completed_at, day_index, tags, place:places(id, name, category, address, created_at, user_notes, enrichment:enrichments(normalized_data))'
-
-const TYPE_TAG_BLOCKLIST = new Set([
-  'food',
-  'coffee',
-  'drinks',
-  'drink',
-  'bar',
-  'bars',
-  'sights',
-  'sight',
-  'shop',
-  'shopping',
-  'activity',
-  'activities',
-])
 
 function parseIntParam(value: string | null, fallback: number) {
   if (!value) return fallback
@@ -280,6 +266,7 @@ export async function POST(
     const body = (await request.json().catch(() => ({}))) as {
       place_id?: string
       tags?: unknown
+      include_automatic_tags?: unknown
     }
 
     const placeId = typeof body.place_id === 'string' ? body.place_id : null
@@ -330,8 +317,13 @@ export async function POST(
     }
     const providedTags = normalizedProvided ?? []
 
+    const includeAutomaticTags =
+      typeof body.include_automatic_tags === 'boolean'
+        ? body.include_automatic_tags
+        : true
+
     let seedTags: string[] = []
-    if (place.enrichment_id) {
+    if (includeAutomaticTags && place.enrichment_id) {
       const { data: enrichment } = await supabase
         .from('enrichments')
         .select('normalized_data')
@@ -342,16 +334,7 @@ export async function POST(
         | { tags?: unknown; category?: unknown }
         | null
         | undefined
-      const normalizedFromEnrichment = normalizeTagList(raw?.tags)
-      if (normalizedFromEnrichment?.length) {
-        const normalizedCategory =
-          typeof raw?.category === 'string' ? normalizeTag(raw.category) : null
-        seedTags = normalizedFromEnrichment.filter((tag) => {
-          if (TYPE_TAG_BLOCKLIST.has(tag)) return false
-          if (normalizedCategory && tag === normalizedCategory) return false
-          return true
-        })
-      }
+      seedTags = listItemSeedTagsFromNormalizedData(raw)
     }
 
     const desiredTags =

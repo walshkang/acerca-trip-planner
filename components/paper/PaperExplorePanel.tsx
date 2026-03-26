@@ -211,7 +211,7 @@ function PaperExplorePanelChrome({
       {showTagRow ? (
         <div className={showTypeRow ? 'mt-4 space-y-2' : 'space-y-2'}>
           <p className={SECTION_HEADING}>Tags</p>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex max-h-[3.5rem] flex-wrap gap-2 overflow-y-auto">
             {tags!.map((t) => (
               <button
                 key={t.id}

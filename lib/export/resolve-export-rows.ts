@@ -124,6 +124,10 @@ export async function resolveExportRows(
       place_user_tags: placeTags,
       place_lat: latLng.lat,
       place_lng: latLng.lng,
+      place_id: place.id,
+      ...(place.google_place_id
+        ? { google_place_id: place.google_place_id }
+        : {}),
       google_maps_url: mapsUrl ?? null,
       website: rawSources.googlePlaces?.website ?? null,
       item_tags: itemTags,

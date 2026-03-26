@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { listItemSeedTagsFromNormalizedData } from '@/lib/lists/list-item-seed-tags'
 import {
   normalizeLocalSearchQuery,
   rankLocalSearchMatch,
@@ -49,7 +50,9 @@ export async function GET(request: NextRequest) {
 
     const { data, error } = await supabase
       .from('places')
-      .select('id, name, category, address, name_normalized, address_normalized')
+      .select(
+        'id, name, category, address, name_normalized, address_normalized, enrichment_id'
+      )
       .or(filters.join(','))
       .limit(50)
 
@@ -64,7 +67,42 @@ export async function GET(request: NextRequest) {
       address: string | null
       name_normalized: string | null
       address_normalized: string | null
+      enrichment_id: string | null
     }>
+
+    const enrichmentIds = [
+      ...new Set(
+        rows
+          .map((r) => r.enrichment_id)
+          .filter((id): id is string => typeof id === 'string' && id.length > 0)
+      ),
+    ]
+
+    const normalizedByEnrichmentId = new Map<
+      string,
+      { tags?: unknown; category?: unknown }
+    >()
+
+    if (enrichmentIds.length) {
+      const { data: enrichRows, error: enrichError } = await supabase
+        .from('enrichments')
+        .select('id, normalized_data')
+        .in('id', enrichmentIds)
+
+      if (enrichError) {
+        return NextResponse.json({ error: enrichError.message }, { status: 500 })
+      }
+
+      for (const er of enrichRows ?? []) {
+        const nd = er.normalized_data as
+          | { tags?: unknown; category?: unknown }
+          | null
+          | undefined
+        if (nd && typeof nd === 'object') {
+          normalizedByEnrichmentId.set(er.id, nd)
+        }
+      }
+    }
 
     const results = rows
       .map((row) => ({
@@ -72,6 +110,11 @@ export async function GET(request: NextRequest) {
         name: row.name,
         category: row.category,
         display_address: row.address ?? null,
+        suggested_tags: row.enrichment_id
+          ? listItemSeedTagsFromNormalizedData(
+              normalizedByEnrichmentId.get(row.enrichment_id) ?? null
+            )
+          : [],
         _score: rankLocalSearchMatch(
           row.name,
           row.address,

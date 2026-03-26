@@ -9,9 +9,11 @@
 
 ## Active Context
 
-**Current Phase:** P3-E3 — UX Pivot (Two-Journey Architecture)
+**Current Phase:** P3-E4 — Headless Planning API (wrapping up)
 
-**Also tracked:** **P3-E4** — List interchange (CSV export UI + Google-backed import). Spec and tasks live in `roadmap.json`; not started until picked up.
+**Previous:** P3-E3 (UX Pivot) is complete — all 5 plan page slices shipped, paper shell on all viewports, MapInset wired. Phase 4 cleanup (legacy shell removal) is optional housekeeping.
+
+**P3-E4 status:** Slices A–H shipped. Contract, preview/commit APIs, computed fields, LLM client prompt, export UI + round-trip IDs, import wizard UI, verification gate — all done. Only task 4.11 (in-app chat) is deferred.
 
 ### Architecture (locked decisions)
 
@@ -51,25 +53,38 @@ AppShell
 - `useDiscoveryStore` — Explore only: search, preview, enrichment state
 - `CalendarPlanner` coordinates planner UI; scheduling mutations go through existing list item APIs
 
-### P3-E3 Phase Status
+### P3-E3 Phase Status (complete)
 
 | Phase | Status | What shipped |
 |-------|--------|-------------|
 | 0 — Foundation | **Done** | `day_index` migration, `useTripStore`, `useNavStore`, API `day_index` support |
 | 1 — Shell Split | **Done** | `AppShell`, journey shells, URL mode switching (evolved to paper-only routing) |
 | 2 — Planner Core | **Done** | `CalendarPlanner` in `PlannerShellPaper`; prior ListPlanner path legacy only |
-| 3 — Map Inset | **Done (paper)** | `MapInset` in `PlannerShellPaper` with day-colored pins and selection sync |
-| 4 — Polish + Cleanup | Partial | Paper on all viewports, Explore parity toolbar/filters/dates, E2E tab selectors. Remaining: delete or quarantine legacy glass shells if desired, WorkspaceContainer alias, broader Playwright refresh |
+| 3 — Map Inset | **Done** | `MapInset` in `PlannerShellPaper` with day-colored pins and selection sync |
+| 4 — Polish + Cleanup | **Done** | Paper on all viewports, Explore parity toolbar/filters/dates, E2E tab selectors, date-shift migration (PATCH /api/lists/:id preserves item positions on date change) |
+
+**Optional housekeeping:** delete legacy glass shells (`ExploreShell`, `PlannerShell`, `NavRail`, `NavFooter`), `WorkspaceContainer` alias, broader Playwright refresh.
+
+### P3-E4 Slice Status
+
+| Slice | Title | Status |
+|-------|-------|--------|
+| A | Contract + types | **Done** — `docs/PHASE_3_LIST_INTERCHANGE.md`, `lib/import/contract.ts` |
+| B | Preview API (resolve + enrich) | **Done** — `app/api/lists/[id]/import/preview/route.ts` |
+| C | Computed fields | **Done** — `lib/import/compute.ts` (haversine, hours, slots, energy) |
+| D | Commit API | **Done** — `app/api/lists/[id]/import/commit/route.ts` |
+| E | LLM client reference prompt | **Done** — `docs/LLM_PLANNING_CLIENT_PROMPT.md` |
+| F | Export UI + round-trip IDs | **Done** — CSV download button, `place_id`/`google_place_id` columns |
+| G | Import UI (upload/paste → preview → confirm) | **Done** — integrated into PlaceDrawer/ListDetailPanel |
+| H | Verification gate | **Done** — `tests/import/contract.test.ts`, `compute.test.ts`, `commit-api.test.ts` |
+| — | In-app chat (task 4.11) | **Deferred** — waiting on proven API usage before building chat UI |
 
 ### What's Next
 
 **Immediate options (pick one per session):**
-1. **Date-shift migration** — When trip dates change, preserve item positions instead of silently dropping to backlog. Server-side logic in `PATCH /api/lists/:id`.
-2. **Phase 4 cleanup** — Remove unused `ExploreShell` / `PlannerShell` / `NavRail` / `NavFooter` imports from any remaining entry points; remove `WorkspaceContainer` alias; expand Playwright coverage for mobile paper sheet.
+1. **In-app chat UI (task 4.11)** — Conversational trip planning wired to preview/commit APIs. System prompt from slice E drives the LLM. Model-selectable backend.
+2. **Legacy cleanup** — Remove unused glass shells (`ExploreShell`, `PlannerShell`, `NavRail`, `NavFooter`), `WorkspaceContainer` alias; expand Playwright coverage.
 3. **Plan polish** — Routing badges, capacity warnings, or agenda view refinements per `docs/PLAN_PAGE_SLICES.md`.
-
-**Backlog (see `roadmap.json` P3-E4):**
-- **List interchange** — CSV export in UI; Google-backed import (preview → confirm) reusing ingest/promote; optional round-trip columns; future in-app LLM on the same row schema. Server export already exists: `POST /api/lists/[id]/export` (csv, markdown, clipboard, google_maps_urls).
 
 **Deferred (separate epics):**
 - Insights layer (distance warnings, closed-day alerts)
@@ -106,8 +121,8 @@ gantt
   section The_Intelligent_Concierge_(Wedding_Cake)
   "P3-E1 Deterministic Routing" :done, p3e1, after p2e4, 7d
   "P3-E2 AI Discovery" :done, p3e2, after p3e1, 7d
-  "P3-E3 UX Pivot (Explore/Plan)" :active, p3e3, after p3e2, 14d
-  "P3-E4 List interchange (CSV + import)" : p3e4, after p3e3, 14d
+  "P3-E3 UX Pivot (Explore/Plan)" :done, p3e3, after p3e2, 14d
+  "P3-E4 Headless Planning API" :active, p3e4, after p3e3, 14d
 ```
 
 ## The Constitution

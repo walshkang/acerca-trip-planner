@@ -35,6 +35,8 @@ type Props = {
   onActiveTypeFiltersChange?: (types: CategoryEnum[]) => void
   /** When provided (Paper Explore), keeps drawer list query tag filters in sync with panel chips. */
   syncedExploreTagFilters?: string[]
+  /** When provided (Paper Explore), keeps drawer list query category filters in sync with panel chips. */
+  syncedExploreTypeFilters?: CategoryEnum[]
   onActiveTagFiltersChange?: (tags: string[]) => void
   onPlaceSelect: (placeId: string) => void
   onActiveListItemsChange?: (
@@ -139,6 +141,7 @@ export default function ListDrawer({
   onPlaceIdsChange,
   onActiveTypeFiltersChange,
   syncedExploreTagFilters,
+  syncedExploreTypeFilters,
   onActiveTagFiltersChange,
   onPlaceSelect,
   onActiveListItemsChange,
@@ -613,6 +616,31 @@ export default function ListDrawer({
     })
   }, [activeListId, applyFiltersImmediately, syncedExploreTagFilters])
 
+  useEffect(() => {
+    if (syncedExploreTypeFilters === undefined || !activeListId) return
+    const current = appliedFiltersRef.current
+    const nextCategories = sortCategories(
+      uniqueStrings(syncedExploreTypeFilters).filter((value): value is CategoryEnum =>
+        isCategoryEnum(value)
+      )
+    )
+    const curCategories = sortCategories(
+      uniqueStrings(current.categories).filter((value): value is CategoryEnum =>
+        isCategoryEnum(value)
+      )
+    )
+    if (
+      curCategories.length === nextCategories.length &&
+      curCategories.every((c, i) => c === nextCategories[i])
+    ) {
+      return
+    }
+    void applyFiltersImmediately({
+      ...current,
+      categories: nextCategories,
+    })
+  }, [activeListId, applyFiltersImmediately, syncedExploreTypeFilters])
+
   const handleTagToggle = useCallback(
     (tag: string) => {
       const current = appliedFiltersRef.current
@@ -874,11 +902,13 @@ export default function ListDrawer({
         className={`flex items-center justify-between border-b px-4 py-3 ${borderClass}`}
       >
         <div>
-          <h2
-            className={`text-sm font-semibold md:font-headline md:text-xs md:font-extrabold md:uppercase md:tracking-tighter ${titleClass}`}
-          >
-            Lists
-          </h2>
+          <div className="border-l-2 border-paper-primary pl-2 md:border-l-2 md:border-paper-primary md:pl-2">
+            <h2
+              className={`text-base font-bold md:font-headline md:text-sm md:font-extrabold md:uppercase md:tracking-tighter ${titleClass}`}
+            >
+              Lists
+            </h2>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           {isEmbedded ? null : (

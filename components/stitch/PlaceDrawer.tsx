@@ -3,8 +3,10 @@
 import { type FormEvent, useCallback, useEffect, useMemo, useState } from 'react'
 import PlaceListMembershipEditor from '@/components/stitch/PlaceListMembershipEditor'
 import PlaceUserMetaForm from '@/components/stitch/PlaceUserMetaForm'
+import { useCategoryIconOverrides } from '@/lib/icons/useCategoryIconOverrides'
 import { normalizeTagList } from '@/lib/lists/tags'
 import { PLACE_FOCUS_GLOW } from '@/lib/ui/glow'
+import { CATEGORY_ENUM_VALUES, type CategoryEnum } from '@/lib/types/enums'
 import {
   assertValidWikiCuratedData,
   type WikiCuratedData,
@@ -13,7 +15,7 @@ import {
 export type PlaceDrawerSummary = {
   id: string
   name: string
-  category: string
+  category: CategoryEnum
   lat?: number | null
   lng?: number | null
 }
@@ -34,6 +36,7 @@ type Props = {
   onClose: () => void
   tagsRefreshKey?: number
   onTagsUpdated?: () => void
+  onCategoryUpdated?: (placeId: string, category: CategoryEnum) => void
   variant?: 'floating' | 'embedded'
   tone?: 'light' | 'dark'
 }
@@ -104,6 +107,7 @@ export default function PlaceDrawer({
   onClose,
   tagsRefreshKey,
   onTagsUpdated,
+  onCategoryUpdated,
   variant = 'floating',
   tone = 'dark',
 }: Props) {
@@ -133,6 +137,22 @@ export default function PlaceDrawer({
   const [neighborhoodError, setNeighborhoodError] = useState<string | null>(
     null
   )
+  const [optimisticCategory, setOptimisticCategory] = useState<CategoryEnum | null>(
+    null
+  )
+  const [categoryPatchError, setCategoryPatchError] = useState<string | null>(
+    null
+  )
+  const [savingCategory, setSavingCategory] = useState(false)
+
+  const { resolveCategoryEmoji } = useCategoryIconOverrides(activeListId ?? null)
+
+  const resolvedPropCategory = useMemo((): CategoryEnum | null => {
+    if (!place) return null
+    return (CATEGORY_ENUM_VALUES as readonly string[]).includes(place.category)
+      ? place.category
+      : null
+  }, [place])
 
   const activeListItem = useMemo(() => {
     if (!activeListId) return null
@@ -201,6 +221,8 @@ export default function PlaceDrawer({
       setRemoveFromActiveListError(null)
       setNeighborhood(null)
       setNeighborhoodError(null)
+      setOptimisticCategory(null)
+      setCategoryPatchError(null)
       return
     }
 
@@ -212,6 +234,8 @@ export default function PlaceDrawer({
     setDetailsLoading(false)
     setDetailsError(null)
     setDetails(null)
+    setOptimisticCategory(null)
+    setCategoryPatchError(null)
   }, [place?.id])
 
   useEffect(() => {
@@ -282,6 +306,65 @@ export default function PlaceDrawer({
         weekdayTextFromOpeningHours(details?.google?.opening_hours),
     }
   }, [details])
+
+  const selectCategory = useCallback(
+    async (category: CategoryEnum) => {
+      if (!place || savingCategory) return
+      const current = optimisticCategory ?? resolvedPropCategory
+      if (category === current) return
+      setCategoryPatchError(null)
+      const revertOptimistic = optimisticCategory
+      setOptimisticCategory(category)
+      setSavingCategory(true)
+      try {
+        const res = await fetch(`/api/places/${place.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ category }),
+        })
+        const json = (await res.json().catch(() => ({}))) as {
+          place?: { category?: string }
+          error?: string
+        }
+        if (!res.ok) {
+          throw new Error(json?.error || `HTTP ${res.status}`)
+        }
+        const nextCat = json.place?.category
+        if (
+          typeof nextCat === 'string' &&
+          (CATEGORY_ENUM_VALUES as readonly string[]).includes(nextCat)
+        ) {
+          setOptimisticCategory(nextCat as CategoryEnum)
+        }
+        const applied =
+          typeof nextCat === 'string' &&
+          (CATEGORY_ENUM_VALUES as readonly string[]).includes(nextCat)
+            ? (nextCat as CategoryEnum)
+            : category
+        onCategoryUpdated?.(place.id, applied)
+        setDetails((d) =>
+          d?.place
+            ? {
+                ...d,
+                place: { ...d.place, category: applied },
+              }
+            : d
+        )
+      } catch (e) {
+        setOptimisticCategory(revertOptimistic)
+        setCategoryPatchError(e instanceof Error ? e.message : 'Update failed')
+      } finally {
+        setSavingCategory(false)
+      }
+    },
+    [
+      place,
+      savingCategory,
+      optimisticCategory,
+      resolvedPropCategory,
+      onCategoryUpdated,
+    ]
+  )
 
   if (!open || !place) return null
 
@@ -404,9 +487,12 @@ export default function PlaceDrawer({
   const actionClass = isDark
     ? 'text-slate-300 hover:text-slate-100'
     : 'text-slate-600 hover:text-slate-900'
-  const chipClass = isDark
-    ? 'border-white/10 text-slate-300'
-    : 'border-slate-300 text-slate-700'
+  const selectedChipClass = isDark
+    ? 'border-slate-100 bg-slate-100 text-slate-900'
+    : 'border-slate-900 bg-slate-900 text-slate-50'
+  const unselectedChipClass = isDark
+    ? 'border-white/10 text-slate-200 hover:border-white/30'
+    : 'border-slate-300 text-slate-700 hover:border-slate-500'
   const tagChipClass = isDark
     ? 'border-white/10 text-slate-200'
     : 'border-slate-300 text-slate-700'
@@ -422,13 +508,13 @@ export default function PlaceDrawer({
       className={
         isEmbedded
           ? `${rootTextClass} ${PLACE_FOCUS_GLOW}`
-          : `glass-panel absolute right-4 z-20 w-[min(360px,90vw)] max-h-[80vh] overflow-hidden rounded-xl md:rounded-[4px] md:border-paper-tertiary-fixed md:bg-paper-surface-warm md:shadow-none md:backdrop-blur-none ${rootTextClass} ${PLACE_FOCUS_GLOW}`
+          : `glass-panel absolute right-6 z-20 w-[min(360px,90vw)] max-h-[80vh] overflow-hidden rounded-xl md:rounded-[4px] md:border-paper-tertiary-fixed md:bg-paper-surface-warm md:shadow-none md:backdrop-blur-none ${rootTextClass} ${PLACE_FOCUS_GLOW}`
       }
       style={isEmbedded ? undefined : { top: `${computedTop}px` }}
       data-testid="place-drawer"
     >
       <div
-        className={`flex items-center justify-between border-b px-4 py-3 ${borderClass}`}
+        className={`flex items-center justify-between border-b px-5 py-3 ${borderClass}`}
       >
         <div>
           <p
@@ -462,7 +548,7 @@ export default function PlaceDrawer({
         </button>
       </div>
 
-      <div className="space-y-4 px-4 py-3">
+      <div className="space-y-4 px-5 py-3">
         <div className="space-y-1">
           <p
             className={`text-[11px] font-semibold md:text-[10px] md:font-bold md:uppercase md:tracking-[0.2em] ${bodyLabelClass}`}
@@ -472,25 +558,45 @@ export default function PlaceDrawer({
           <p className={`text-[11px] md:font-body md:text-paper-on-surface-variant ${bodyMutedClass}`}>
             A fixed category that sets this place’s map icon.
           </p>
-          <div className="flex items-center gap-2">
-            <span
-              className={`rounded-full border px-2 py-0.5 text-[10px] md:rounded-[2px] md:border-paper-tertiary-fixed md:bg-paper-surface-container md:font-bold md:uppercase md:tracking-wider ${chipClass}`}
-            >
-              {place.category}
-            </span>
-            <button
-              type="button"
-              onClick={async () => {
-                setDetailsOpen((prev) => !prev)
-                if (!details && !detailsLoading) {
-                  await fetchDetails()
-                }
-              }}
-              className={`text-[11px] underline ${actionClass}`}
-            >
-              {detailsOpen ? 'Hide details' : 'Show details'}
-            </button>
+          <div className="flex flex-wrap gap-2">
+            {CATEGORY_ENUM_VALUES.map((cat) => {
+              const selected =
+                (optimisticCategory ?? resolvedPropCategory) === cat
+              return (
+                <button
+                  key={cat}
+                  type="button"
+                  disabled={savingCategory}
+                  onClick={() => void selectCategory(cat)}
+                  className={`rounded-full border px-3 py-1 text-xs transition md:rounded-[2px] md:px-3 md:py-1 md:text-[11px] md:font-bold md:uppercase md:tracking-wider disabled:opacity-50 ${
+                    selected
+                      ? `${selectedChipClass} md:!border-paper-on-surface md:!bg-paper-on-surface md:!text-paper-surface`
+                      : `${unselectedChipClass} md:!border-paper-tertiary-fixed md:!bg-paper-surface-container md:!text-paper-on-surface hover:md:!bg-white`
+                  }`}
+                >
+                  <span aria-hidden className="mr-1 inline-block text-base leading-none md:text-[13px]">
+                    {resolveCategoryEmoji(cat)}
+                  </span>
+                  {cat}
+                </button>
+              )
+            })}
           </div>
+          {categoryPatchError ? (
+            <p className={`text-[11px] ${errorClass}`}>{categoryPatchError}</p>
+          ) : null}
+          <button
+            type="button"
+            onClick={async () => {
+              setDetailsOpen((prev) => !prev)
+              if (!details && !detailsLoading) {
+                await fetchDetails()
+              }
+            }}
+            className={`text-[11px] underline ${actionClass}`}
+          >
+            {detailsOpen ? 'Hide details' : 'Show details'}
+          </button>
         </div>
 
         {detailsOpen ? (
@@ -632,18 +738,18 @@ export default function PlaceDrawer({
               List tags
             </p>
             {activeListTags.length ? (
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="flex max-h-[3.5rem] flex-wrap items-center gap-2 overflow-y-auto">
                 {activeListTags.map((tag) => (
                   <span
                     key={`list-tag:${tag}`}
                     className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] md:rounded-[2px] md:border-paper-tertiary-fixed md:bg-paper-surface-container ${tagChipClass}`}
                   >
-                    {tag}
+                    {tag.startsWith('#') ? tag : `#${tag}`}
                     <button
                       type="button"
                       onClick={() => handleRemoveTag(tag)}
                       className={`text-[10px] ${tagChipButtonClass}`}
-                      aria-label={`Remove ${tag}`}
+                      aria-label={`Remove ${tag.startsWith('#') ? tag : `#${tag}`}`}
                     >
                       ×
                     </button>

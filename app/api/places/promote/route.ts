@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { listItemSeedTagsFromNormalizedData } from '@/lib/lists/list-item-seed-tags'
 import { normalizeTagList } from '@/lib/lists/tags'
 
 export async function POST(request: NextRequest) {
@@ -18,6 +19,11 @@ export async function POST(request: NextRequest) {
       list_id?: string | null
     }
     const tags = (body as { tags?: unknown })?.tags
+    const rawBody = body as { include_automatic_tags?: unknown }
+    const includeAutomaticTags =
+      typeof rawBody.include_automatic_tags === 'boolean'
+        ? rawBody.include_automatic_tags
+        : true
     
     if (!candidate_id) {
       return NextResponse.json({ error: 'candidate_id is required' }, { status: 400 })
@@ -68,7 +74,7 @@ export async function POST(request: NextRequest) {
         .eq('id', placeId)
         .single()
 
-      if (place?.enrichment_id) {
+      if (includeAutomaticTags && place?.enrichment_id) {
         const { data: enrichment } = await supabase
           .from('enrichments')
           .select('normalized_data')
@@ -76,13 +82,10 @@ export async function POST(request: NextRequest) {
           .single()
 
         const raw = enrichment?.normalized_data as
-          | { tags?: unknown }
+          | { tags?: unknown; category?: unknown }
           | null
           | undefined
-        const normalizedFromEnrichment = normalizeTagList(raw?.tags)
-        if (normalizedFromEnrichment?.length) {
-          seedTags = normalizedFromEnrichment
-        }
+        seedTags = listItemSeedTagsFromNormalizedData(raw)
       }
 
       const desiredTags =

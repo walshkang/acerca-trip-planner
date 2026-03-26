@@ -17,6 +17,8 @@ const CSV_HEADERS = [
   'Notes',
   'Lat',
   'Lng',
+  'Place ID',
+  'Google Place ID',
 ]
 
 /**
@@ -37,7 +39,7 @@ function csvField(value: string | number | null | undefined): string {
  * Serialize export rows as RFC 4180 CSV.
  *
  * Headers: Name,Category,Energy,Neighborhood,Address,Place Tags,Item Tags,
- *          Day,Slot,Status,Google Maps,Website,Notes,Lat,Lng
+ *          Day,Slot,Status,Google Maps,Website,Notes,Lat,Lng,Place ID,Google Place ID
  *
  * Tags are semicolon-separated within their cell.
  */
@@ -62,6 +64,8 @@ export function serializeCsv(rows: ExportRow[]): string {
       row.place_user_notes ?? '',
       row.place_lat != null ? row.place_lat : '',
       row.place_lng != null ? row.place_lng : '',
+      row.place_id ?? '',
+      row.google_place_id ?? '',
     ]
     outputLines.push(fields.map(csvField).join(','))
   }

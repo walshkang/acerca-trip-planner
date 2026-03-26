@@ -31,6 +31,10 @@ test('list detail local search adds approved places', async ({ page }) => {
     await expect(resultName).toBeVisible()
     const resultCard = resultName.locator('../../..')
     await expect(resultCard).toContainText('Approved')
+    await expect(resultCard.getByTestId('local-search-category-chips')).toBeVisible()
+    await expect(
+      resultCard.getByTestId('local-search-category-chips').getByRole('button')
+    ).toHaveCount(6)
     await resultCard.getByRole('button', { name: 'Add' }).click()
 
     await expect(resultCard.getByRole('button', { name: 'Added' })).toBeVisible()

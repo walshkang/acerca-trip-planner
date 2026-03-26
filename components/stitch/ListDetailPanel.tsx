@@ -11,8 +11,13 @@ import {
   isCategoryEnum,
   type ListFilterFieldErrors,
 } from '@/lib/lists/filters'
-import { distinctTagsFromItems } from '@/lib/lists/tags'
-import type { CategoryEnum, EnergyEnum } from '@/lib/types/enums'
+import { distinctTagsFromItems, normalizeTagList } from '@/lib/lists/tags'
+import { useCategoryIconOverrides } from '@/lib/icons/useCategoryIconOverrides'
+import {
+  CATEGORY_ENUM_VALUES,
+  type CategoryEnum,
+  type EnergyEnum,
+} from '@/lib/types/enums'
 import {
   areFiltersEqual,
   buildServerFiltersFromDraft,
@@ -26,6 +31,7 @@ import {
   sortTags,
   uniqueStrings,
 } from '@/lib/lists/filter-client'
+import ImportWizard from '@/components/import/ImportWizard'
 
 type ItemsResponse = {
   list?: ListSummary | null
@@ -66,6 +72,8 @@ type SearchResult = {
   name: string | null
   category: string
   display_address: string | null
+  /** Tags that would be merged from enrichment when adding with default API behavior */
+  suggested_tags?: string[]
 }
 
 type FetchItemsOptions = {
@@ -75,6 +83,10 @@ type FetchItemsOptions = {
 
 type Props = {
   listId: string
+}
+
+function defaultCategoryFromSearchResult(result: SearchResult): CategoryEnum {
+  return isCategoryEnum(result.category) ? result.category : 'Activity'
 }
 
 function buildItemsUrl(listId: string, filters: CanonicalListFilters): string {
@@ -118,6 +130,8 @@ function placeIdsFromItems(items: ListItemRow[]): string[] {
 
 export default function ListDetailPanel({ listId }: Props) {
   const router = useRouter()
+  const { resolveCategoryEmoji } = useCategoryIconOverrides(listId)
+  const [importOpen, setImportOpen] = useState(false)
   const [list, setList] = useState<ListSummary | null>(null)
   const [items, setItems] = useState<ListItemRow[]>([])
   const [distinctTags, setDistinctTags] = useState<string[]>([])
@@ -148,6 +162,12 @@ export default function ListDetailPanel({ listId }: Props) {
   const [searchTagInputs, setSearchTagInputs] = useState<Record<string, string>>(
     {}
   )
+  const [searchCategoryChoice, setSearchCategoryChoice] = useState<
+    Record<string, CategoryEnum>
+  >({})
+  const [searchIncludedSuggestedTags, setSearchIncludedSuggestedTags] = useState<
+    Record<string, string[]>
+  >({})
   const [addedResultIds, setAddedResultIds] = useState<Set<string>>(new Set())
   const [addingPlaceId, setAddingPlaceId] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -395,6 +415,8 @@ export default function ListDetailPanel({ listId }: Props) {
     setSearchLoading(false)
     setSearchError(null)
     setSearchTagInputs({})
+    setSearchCategoryChoice({})
+    setSearchIncludedSuggestedTags({})
     setAddedResultIds(new Set())
 
     void fetchItems(nextFilters, {
@@ -446,6 +468,30 @@ export default function ListDetailPanel({ listId }: Props) {
       clearTimeout(handle)
     }
   }, [searchQuery])
+
+  useEffect(() => {
+    setSearchCategoryChoice((prev) => {
+      const next = { ...prev }
+      for (const r of searchResults) {
+        if (next[r.id] === undefined) {
+          next[r.id] = defaultCategoryFromSearchResult(r)
+        }
+      }
+      return next
+    })
+  }, [searchResults])
+
+  useEffect(() => {
+    setSearchIncludedSuggestedTags((prev) => {
+      const next = { ...prev }
+      for (const r of searchResults) {
+        if (next[r.id] === undefined) {
+          next[r.id] = [...(r.suggested_tags ?? [])]
+        }
+      }
+      return next
+    })
+  }, [searchResults])
 
   const availableTags = useMemo(
     () =>
@@ -678,18 +724,73 @@ export default function ListDetailPanel({ listId }: Props) {
     setSearchTagInputs((prev) => ({ ...prev, [placeId]: value }))
   }, [])
 
+  const handleSearchCategoryChange = useCallback(
+    (placeId: string, category: CategoryEnum) => {
+      setSearchCategoryChoice((prev) => ({ ...prev, [placeId]: category }))
+    },
+    []
+  )
+
+  const handleRemoveSuggestedSearchTag = useCallback(
+    (placeId: string, tag: string) => {
+      setSearchIncludedSuggestedTags((prev) => {
+        const cur = prev[placeId]
+        if (!cur?.length) return prev
+        const filtered = cur.filter((t) => t !== tag)
+        return { ...prev, [placeId]: filtered }
+      })
+    },
+    []
+  )
+
+  const handleClearSuggestedSearchTags = useCallback((placeId: string) => {
+    setSearchIncludedSuggestedTags((prev) => ({ ...prev, [placeId]: [] }))
+  }, [])
+
   const handleAddPlace = useCallback(
     async (placeId: string) => {
       if (addingPlaceId) return
       setAddingPlaceId(placeId)
       setSearchError(null)
       try {
-        const tagsInput = searchTagInputs[placeId] ?? ''
-        const payload: { place_id: string; tags?: string } = {
-          place_id: placeId,
+        const result = searchResults.find((r) => r.id === placeId)
+        if (!result) {
+          setSearchError('Place not found in search results')
+          return
         }
-        if (tagsInput.trim().length) {
-          payload.tags = tagsInput
+        const chosen =
+          searchCategoryChoice[placeId] ?? defaultCategoryFromSearchResult(result)
+        const current = defaultCategoryFromSearchResult(result)
+        if (chosen !== current) {
+          const patchRes = await fetch(`/api/places/${placeId}`, {
+            method: 'PATCH',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ category: chosen }),
+          })
+          const patchJson = await patchRes.json().catch(() => ({}))
+          if (!patchRes.ok) {
+            setSearchError(patchJson?.error || `HTTP ${patchRes.status}`)
+            return
+          }
+        }
+
+        const tagsInput = searchTagInputs[placeId] ?? ''
+        const suggested =
+          searchIncludedSuggestedTags[placeId] ?? result.suggested_tags ?? []
+        const manualTags = normalizeTagList(tagsInput) ?? []
+        const mergedTags =
+          normalizeTagList([...suggested, ...manualTags]) ?? []
+
+        const payload: {
+          place_id: string
+          include_automatic_tags: boolean
+          tags?: string
+        } = {
+          place_id: placeId,
+          include_automatic_tags: false,
+        }
+        if (mergedTags.length) {
+          payload.tags = mergedTags.join(', ')
         }
         const listRes = await fetch(`/api/lists/${listId}/items`, {
           method: 'POST',
@@ -713,7 +814,15 @@ export default function ListDetailPanel({ listId }: Props) {
         setAddingPlaceId(null)
       }
     },
-    [addingPlaceId, listId, refreshAppliedItems, searchTagInputs]
+    [
+      addingPlaceId,
+      listId,
+      refreshAppliedItems,
+      searchCategoryChoice,
+      searchIncludedSuggestedTags,
+      searchResults,
+      searchTagInputs,
+    ]
   )
 
   const handlePlaceSelect = useCallback(
@@ -756,13 +865,23 @@ export default function ListDetailPanel({ listId }: Props) {
   return (
     <div className="space-y-6">
       <section className="rounded-lg border border-gray-200 bg-white p-4 space-y-3">
-        <div>
-          <h3 className="text-sm font-semibold text-gray-900">
-            Add places to this list
-          </h3>
-          <p className="text-xs text-gray-500">
-            Search approved places and add tags at the same time.
-          </p>
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div>
+            <h3 className="text-sm font-semibold text-gray-900">
+              Add places to this list
+            </h3>
+            <p className="text-xs text-gray-500">
+              Search approved places, adjust type and suggested tags, then add
+              optional tags of your own.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setImportOpen(true)}
+            className="shrink-0 rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-800 hover:bg-gray-50"
+          >
+            Import CSV/JSON
+          </button>
         </div>
         <input
           className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm"
@@ -789,6 +908,13 @@ export default function ListDetailPanel({ listId }: Props) {
                 addedResultIds.has(result.id) ||
                 existingPlaceIds.has(result.id)
               const tagsInput = searchTagInputs[result.id] ?? ''
+              const categoryChoice =
+                searchCategoryChoice[result.id] ??
+                defaultCategoryFromSearchResult(result)
+              const suggestedIncluded =
+                searchIncludedSuggestedTags[result.id] ??
+                result.suggested_tags ??
+                []
               return (
                 <div
                   key={result.id}
@@ -809,10 +935,96 @@ export default function ListDetailPanel({ listId }: Props) {
                       Approved
                     </span>
                   </div>
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-medium text-gray-600">
+                      Place type
+                    </p>
+                    <div
+                      className="flex flex-wrap gap-1.5"
+                      data-testid="local-search-category-chips"
+                    >
+                      {CATEGORY_ENUM_VALUES.map((cat) => {
+                        const selected = categoryChoice === cat
+                        return (
+                          <button
+                            key={cat}
+                            type="button"
+                            disabled={inList}
+                            aria-pressed={selected}
+                            onClick={() =>
+                              handleSearchCategoryChange(result.id, cat)
+                            }
+                            className={`rounded-md border px-2 py-0.5 text-[10px] transition disabled:opacity-50 ${
+                              selected
+                                ? 'border-gray-800 bg-gray-800 text-white'
+                                : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
+                            }`}
+                          >
+                            <span
+                              aria-hidden
+                              className="mr-0.5 inline-block text-xs leading-none"
+                            >
+                              {resolveCategoryEmoji(cat)}
+                            </span>
+                            {cat}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <p className="text-[10px] font-medium text-gray-600">
+                        Suggested tags
+                      </p>
+                      {suggestedIncluded.length ? (
+                        <button
+                          type="button"
+                          disabled={inList}
+                          onClick={() =>
+                            handleClearSuggestedSearchTags(result.id)
+                          }
+                          className="text-[10px] text-gray-500 underline hover:text-gray-800 disabled:opacity-50"
+                        >
+                          Clear all suggested
+                        </button>
+                      ) : null}
+                    </div>
+                    {suggestedIncluded.length ? (
+                      <div
+                        className="flex flex-wrap gap-1.5"
+                        data-testid="local-search-suggested-tags"
+                      >
+                        {suggestedIncluded.map((tag) => (
+                          <span
+                            key={`${result.id}-${tag}`}
+                            className="inline-flex items-center gap-0.5 rounded-md border border-gray-200 bg-gray-50 px-2 py-0.5 text-[10px] text-gray-800"
+                          >
+                            {tag.startsWith('#') ? tag : `#${tag}`}
+                            <button
+                              type="button"
+                              disabled={inList}
+                              onClick={() =>
+                                handleRemoveSuggestedSearchTag(result.id, tag)
+                              }
+                              className="text-gray-500 hover:text-gray-900 disabled:opacity-50"
+                              aria-label={`Remove suggested tag ${tag}`}
+                            >
+                              ×
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-[10px] text-gray-400">
+                        No suggested tags for this place.
+                      </p>
+                    )}
+                  </div>
                   <div className="flex flex-wrap items-center gap-2">
                     <input
                       className="flex-1 rounded-md border border-gray-200 px-2 py-1 text-xs"
-                      placeholder="Add tags (optional)"
+                      placeholder="Your tags (optional)"
                       value={tagsInput}
                       onChange={(e) =>
                         handleSearchTagChange(result.id, e.target.value)
@@ -888,6 +1100,15 @@ export default function ListDetailPanel({ listId }: Props) {
         translateIntentError={translateErrorMessage}
         translateIntentHint={translateHint}
         onTagsUpdate={handleTagsUpdate}
+      />
+
+      <ImportWizard
+        listId={listId}
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        tripStartDate={list?.start_date ?? null}
+        tripEndDate={list?.end_date ?? null}
+        onSuccess={() => void refreshAppliedItems()}
       />
     </div>
   )
