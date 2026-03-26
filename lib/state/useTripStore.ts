@@ -51,6 +51,8 @@ type TripState = {
   plannerSelectedDay: string | null
   /** MapInset pin click → scroll highlight target in day detail (place id) */
   focusedPlannerPlaceId: string | null
+  /** Epoch ms when list items were last successfully fetched (planner freshness) */
+  lastFetchedAt: number | null
 
   setActiveListId: (id: string | null) => void
   setActiveListPlaceIds: (ids: string[]) => void
@@ -60,6 +62,7 @@ type TripState = {
   bumpListItemsRefresh: () => void
   setPlannerSelectedDay: (day: string | null) => void
   setFocusedPlannerPlaceId: (id: string | null) => void
+  setLastFetchedAt: (t: number) => void
   /** Clear list-scoped state (place IDs, items, filters) */
   clearListState: () => void
 }
@@ -73,6 +76,7 @@ export const useTripStore = create<TripState>((set) => ({
   listItemsRefreshKey: 0,
   plannerSelectedDay: null,
   focusedPlannerPlaceId: null,
+  lastFetchedAt: null,
 
   setActiveListId: (id) => {
     set({
@@ -83,6 +87,7 @@ export const useTripStore = create<TripState>((set) => ({
       activeListTagFilters: [],
       plannerSelectedDay: null,
       focusedPlannerPlaceId: null,
+      lastFetchedAt: null,
     })
   },
 
@@ -119,6 +124,7 @@ export const useTripStore = create<TripState>((set) => ({
       return { plannerSelectedDay: day }
     }),
   setFocusedPlannerPlaceId: (id) => set({ focusedPlannerPlaceId: id }),
+  setLastFetchedAt: (t) => set({ lastFetchedAt: t }),
   clearListState: () =>
     set({
       activeListPlaceIds: [],
@@ -126,5 +132,6 @@ export const useTripStore = create<TripState>((set) => ({
       activeListTypeFilters: [],
       activeListTagFilters: [],
       focusedPlannerPlaceId: null,
+      lastFetchedAt: null,
     }),
 }))

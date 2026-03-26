@@ -47,8 +47,6 @@ export default function ExploreShellPaper() {
   const mapShellRef = useRef<MapShellHandle>(null)
   const [pendingFocusPlaceId, setPendingFocusPlaceId] = useState<string | null>(null)
   const [mapFallbackNotice, setMapFallbackNotice] = useState<string | null>(null)
-  const [showTransit, setShowTransit] = useState(false)
-  const [showNeighborhoods, setShowNeighborhoods] = useState(false)
   const { activeLayer, setLayer } = useMapLayerStore()
 
   // ── Panel state ──
@@ -481,9 +479,7 @@ export default function ExploreShellPaper() {
         ghostLocation={ghostLocation}
         discardPreview={discardPreview}
         mapStyleMode="light"
-        showTransit={showTransit}
-        showTransitStations={showTransit}
-        showNeighborhoodBoundaries={showNeighborhoods}
+        showTransit={activeLayer === 'transit'}
         setMapFallbackNotice={setMapFallbackNotice}
         setSearchBias={setSearchBias}
         onReadyChange={setMapReady}
@@ -498,10 +494,6 @@ export default function ExploreShellPaper() {
               if (tab === 'itinerary') setMode('plan')
             }}
             clearRightRail={!isNarrow}
-            showTransit={showTransit}
-            onShowTransitChange={setShowTransit}
-            showNeighborhoods={showNeighborhoods}
-            onShowNeighborhoodsChange={setShowNeighborhoods}
             activeLayer={activeLayer}
             onLayerChange={setLayer}
             searchSlot={

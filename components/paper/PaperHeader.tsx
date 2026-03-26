@@ -25,12 +25,7 @@ export interface PaperHeaderProps {
    * Use on Explore desktop only.
    */
   clearRightRail?: boolean
-  /** Map overlay toggles (Explore). Settings opens a popover when overlay handlers are set and/or `onLayerChange` is set. */
-  showTransit?: boolean
-  onShowTransitChange?: (value: boolean) => void
-  showNeighborhoods?: boolean
-  onShowNeighborhoodsChange?: (value: boolean) => void
-  /** Base map style (Default / Satellite / Terrain). */
+  /** Base map style (Default / Transit / Terrain). */
   activeLayer?: MapLayer
   onLayerChange?: (layer: MapLayer) => void
   /**
@@ -47,34 +42,23 @@ const tabs = [
 
 type HeaderActionsProps = Pick<
   PaperHeaderProps,
-  | 'showTransit'
-  | 'onShowTransitChange'
-  | 'showNeighborhoods'
-  | 'onShowNeighborhoodsChange'
   | 'activeLayer'
   | 'onLayerChange'
 >
 
 function HeaderActions({
-  showTransit = false,
-  onShowTransitChange,
-  showNeighborhoods = false,
-  onShowNeighborhoodsChange,
   activeLayer = 'default',
   onLayerChange,
 }: HeaderActionsProps) {
   const [open, setOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
   const mapSettingsId = useId()
-  const hasOverlayToggles =
-    onShowTransitChange != null && onShowNeighborhoodsChange != null
-  const hasLayerControls = onLayerChange != null
-  const hasMapSettingsPopover = hasOverlayToggles || hasLayerControls
+  const hasPopover = onLayerChange != null
 
   const close = useCallback(() => setOpen(false), [])
 
   useEffect(() => {
-    if (!open || !hasMapSettingsPopover) return
+    if (!open || !hasPopover) return
 
     const onPointerDown = (e: PointerEvent) => {
       const root = rootRef.current
@@ -90,7 +74,7 @@ function HeaderActions({
       document.removeEventListener('pointerdown', onPointerDown, true)
       document.removeEventListener('keydown', onKeyDown)
     }
-  }, [open, hasMapSettingsPopover, close])
+  }, [open, hasPopover, close])
 
   return (
     <>
@@ -98,17 +82,17 @@ function HeaderActions({
         <button
           type="button"
           className="material-symbols-outlined rounded-[4px] p-1.5 text-xl text-paper-primary transition-colors hover:bg-paper-tertiary-fixed sm:text-[22px]"
-          aria-label={hasMapSettingsPopover ? 'Map settings' : 'Settings'}
-          aria-expanded={hasMapSettingsPopover ? open : undefined}
-          aria-haspopup={hasMapSettingsPopover ? 'dialog' : undefined}
-          aria-controls={hasMapSettingsPopover && open ? mapSettingsId : undefined}
+          aria-label={hasPopover ? 'Map settings' : 'Settings'}
+          aria-expanded={hasPopover ? open : undefined}
+          aria-haspopup={hasPopover ? 'dialog' : undefined}
+          aria-controls={hasPopover && open ? mapSettingsId : undefined}
           onClick={() => {
-            if (hasMapSettingsPopover) setOpen((v) => !v)
+            if (hasPopover) setOpen((v) => !v)
           }}
         >
           settings
         </button>
-        {hasMapSettingsPopover && open ? (
+        {hasPopover && open ? (
           <div
             id={mapSettingsId}
             role="dialog"
@@ -116,66 +100,32 @@ function HeaderActions({
             className="absolute right-0 top-full z-[60] mt-1 min-w-[220px] rounded-[4px] border border-paper-tertiary-fixed bg-paper-surface p-3 shadow-lg"
           >
             <p className="font-headline text-xs font-bold text-paper-primary">Map Settings</p>
-            <div className="mt-3 flex flex-col gap-3">
-              {hasLayerControls ? (
-                <div
-                  className={
-                    hasOverlayToggles
-                      ? 'border-b border-paper-tertiary-fixed pb-3'
-                      : undefined
-                  }
-                >
-                  <p className="mb-2 text-xs font-medium text-paper-secondary">Map type</p>
-                  <div className="flex gap-2">
-                    {(['default', 'satellite', 'terrain'] as const).map((layer) => (
-                      <button
-                        key={layer}
-                        type="button"
-                        data-testid={`paper-header-map-layer-${layer}`}
-                        onClick={() => onLayerChange(layer)}
-                        className={`flex flex-col items-center gap-1 rounded-lg border p-2 text-xs transition-colors ${
-                          activeLayer === layer
-                            ? 'border-paper-primary bg-paper-primary/10 text-paper-primary'
-                            : 'border-paper-tertiary-fixed text-paper-secondary hover:bg-paper-surface-container'
-                        }`}
-                      >
-                        <span className="material-symbols-outlined text-base">
-                          {layer === 'default'
-                            ? 'map'
-                            : layer === 'satellite'
-                              ? 'satellite_alt'
-                              : 'terrain'}
-                        </span>
-                        <span className="capitalize">{layer}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ) : null}
-              {hasOverlayToggles ? (
-                <>
-                  <label className="flex cursor-pointer items-center gap-2 text-left">
-                    <input
-                      type="checkbox"
-                      className="h-4 w-4 shrink-0 rounded border-paper-tertiary-fixed text-paper-primary focus:ring-paper-primary"
-                      checked={showTransit}
-                      onChange={(e) => onShowTransitChange(e.target.checked)}
-                      data-testid="paper-header-map-settings-transit"
-                    />
-                    <span className="text-[13px] text-paper-on-surface">Show subway lines</span>
-                  </label>
-                  <label className="flex cursor-pointer items-center gap-2 text-left">
-                    <input
-                      type="checkbox"
-                      className="h-4 w-4 shrink-0 rounded border-paper-tertiary-fixed text-paper-primary focus:ring-paper-primary"
-                      checked={showNeighborhoods}
-                      onChange={(e) => onShowNeighborhoodsChange(e.target.checked)}
-                      data-testid="paper-header-map-settings-neighborhoods"
-                    />
-                    <span className="text-[13px] text-paper-on-surface">Show neighborhoods</span>
-                  </label>
-                </>
-              ) : null}
+            <div className="mt-3">
+              <p className="mb-2 text-xs font-medium text-paper-secondary">Map type</p>
+              <div className="flex gap-2">
+                {(['default', 'transit', 'terrain'] as const).map((layer) => (
+                  <button
+                    key={layer}
+                    type="button"
+                    data-testid={`paper-header-map-layer-${layer}`}
+                    onClick={() => onLayerChange(layer)}
+                    className={`flex flex-col items-center gap-1 rounded-lg border p-2 text-xs transition-colors ${
+                      activeLayer === layer
+                        ? 'border-paper-primary bg-paper-primary/10 text-paper-primary'
+                        : 'border-paper-tertiary-fixed text-paper-secondary hover:bg-paper-surface-container'
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-base">
+                      {layer === 'default'
+                        ? 'map'
+                        : layer === 'transit'
+                          ? 'directions_transit'
+                          : 'terrain'}
+                    </span>
+                    <span className="capitalize">{layer}</span>
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         ) : null}
@@ -231,10 +181,6 @@ export default function PaperHeader({
   searchSlot,
   bottomSlot,
   clearRightRail = false,
-  showTransit,
-  onShowTransitChange,
-  showNeighborhoods,
-  onShowNeighborhoodsChange,
   activeLayer,
   onLayerChange,
   onViewportBottomChange,
@@ -286,10 +232,6 @@ export default function PaperHeader({
           </div>
           <div className="flex shrink-0 items-center justify-end gap-1 justify-self-end sm:gap-2">
             <HeaderActions
-              showTransit={showTransit}
-              onShowTransitChange={onShowTransitChange}
-              showNeighborhoods={showNeighborhoods}
-              onShowNeighborhoodsChange={onShowNeighborhoodsChange}
               activeLayer={activeLayer}
               onLayerChange={onLayerChange}
             />
@@ -302,10 +244,6 @@ export default function PaperHeader({
           </div>
           <div className="flex shrink-0 items-center gap-1 sm:gap-2">
             <HeaderActions
-              showTransit={showTransit}
-              onShowTransitChange={onShowTransitChange}
-              showNeighborhoods={showNeighborhoods}
-              onShowNeighborhoodsChange={onShowNeighborhoodsChange}
               activeLayer={activeLayer}
               onLayerChange={onLayerChange}
             />

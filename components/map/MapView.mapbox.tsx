@@ -1,7 +1,7 @@
 'use client'
 
 import { forwardRef, useCallback, useEffect, useMemo, useState } from 'react'
-import MapGL, { Layer, Marker, Source } from 'react-map-gl/mapbox'
+import MapGL, { Layer, Marker } from 'react-map-gl/mapbox'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import { getCategoryEmoji } from '@/lib/icons/mapping'
 import {
@@ -13,221 +13,79 @@ import {
   PLACE_FOCUS_GLOW,
 } from '@/lib/ui/glow'
 import type { MapViewProps, MapViewRef } from './MapView.types'
-import { useGeoJson } from './useGeoJson'
 
-const transitLineColors = [
+/** Muted palette by Mapbox `type` (composite road layer) */
+const TRANSIT_LINE_COLOR = [
   'match',
-  ['get', 'LINE'],
-  '8TH AVE LINE',
-  '#0039a6',
-  'ARCHER AVE LINE',
-  '#0039a6',
-  'FULTON ST LINE',
-  '#0039a6',
-  'QUEENS BLVD LINE',
-  '#0039a6',
-  'ROCKAWAY LINE',
-  '#0039a6',
-  'STATEN ISLAND RWY LINE',
-  '#0039a6',
-  '6TH AVE LINE',
-  '#ff6319',
-  '63RD ST LINE',
-  '#ff6319',
-  'BRIGHTON/CULVER LINE',
-  '#ff6319',
-  'CULVER/6TH AVE LINE',
-  '#ff6319',
-  'CONCOURSE LINE',
-  '#ff6319',
-  'CROSSTOWN LINE',
-  '#6cbe45',
-  '14ST/CANARSIE LINE',
-  '#a7a9ac',
-  '4TH AVE LINE',
-  '#fccc0a',
-  'ASTORIA LINE',
-  '#fccc0a',
-  'ASTORIA/QUEENS LINE',
-  '#fccc0a',
-  'BRIGHTON LINE',
-  '#fccc0a',
-  'MANHATTAN BRIDGE LINE',
-  '#fccc0a',
-  'NASSAU ST LINE',
-  '#996633',
-  'HOUSTON/ESSEX ST LINE',
-  '#996633',
-  'JAMAICA LINE',
-  '#996633',
-  'MYRTLE AVE LINE',
-  '#996633',
-  'BROADWAY LINE',
-  '#fccc0a',
-  'SEA BEACH LINE',
-  '#fccc0a',
-  'WEST END/SEA BEACH LINE',
-  '#fccc0a',
-  'BROADWAY/7TH AVE LINE',
-  '#ee352e',
-  'CLARK ST LINE',
-  '#ee352e',
-  'EASTERN PKY LINE',
-  '#ee352e',
-  'LENOX AVE LINE',
-  '#ee352e',
-  'NEW LOTS LINE',
-  '#ee352e',
-  'NOSTRAND AVE LINE',
-  '#ee352e',
-  'LEXINGTON AVE',
-  '#00933c',
-  'LEXINGTON AVE LINE',
-  '#00933c',
-  'LEXINGTON AVENUE LINE',
-  '#00933c',
-  'DYRE AVE LINE',
-  '#00933c',
-  'JEROME AVE LINE',
-  '#00933c',
-  'PELHAM LINE',
-  '#00933c',
-  'WHITE PLAINS RD LINE',
-  '#00933c',
-  'FLUSHING LINE',
-  '#b933ad',
-  'FLUSHING/ASTORIA LINE',
-  '#b933ad',
-  'SECOND AVENUE LINE',
-  '#00add0',
-  '2ND AVE LINE',
-  '#00add0',
-  '42ND ST SHUTTLE LINE',
-  '#808183',
-  'FRANKLIN AVE SHUTTLE LINE',
-  '#808183',
-  'INTERBOROUGH YARD',
-  '#808183',
-  'WEST END LINE',
-  '#ff6319',
-  'CULVER LINE',
-  '#ff6319',
+  ['get', 'type'],
+  'subway',
+  '#7B61A5',
+  'rail',
+  '#8B8B8B',
+  'tram',
+  '#5A9B8F',
+  'light_rail',
+  '#5A9B8F',
+  'monorail',
+  '#8B8B8B',
+  'funicular',
+  '#8B8B8B',
+  'narrow_gauge',
+  '#8B8B8B',
   '#94a3b8',
 ] as const
 
-const buildTransitLineLayer = (lineWidth: number, lineOpacity: number) => ({
-  id: 'transit-lines',
-  type: 'line' as const,
-  source: 'transit-lines',
-  layout: {
-    'line-join': 'round' as const,
-    'line-cap': 'round' as const,
-  },
-  paint: {
-    'line-color': transitLineColors,
-    'line-width': lineWidth,
-    'line-opacity': lineOpacity,
-  },
-})
+const TRANSIT_LINE_PAINT_BASE: Record<string, unknown> = {
+  'line-width': [
+    'interpolate',
+    ['linear'],
+    ['zoom'],
+    8,
+    0.5,
+    12,
+    1.5,
+    16,
+    2.5,
+  ],
+  'line-opacity': [
+    'interpolate',
+    ['linear'],
+    ['zoom'],
+    8,
+    0.3,
+    12,
+    0.55,
+    16,
+    0.7,
+  ],
+}
 
-const buildTransitLineCasingLayer = (
-  casingColor: string,
-  casingWidth: number,
-  casingOpacity: number
-) => ({
-  id: 'transit-lines-casing',
-  type: 'line' as const,
-  source: 'transit-lines',
-  layout: {
-    'line-join': 'round' as const,
-    'line-cap': 'round' as const,
-  },
-  paint: {
-    'line-color': casingColor,
-    'line-width': casingWidth,
-    'line-opacity': casingOpacity,
-  },
-})
-
-const buildNeighborhoodFillLayer = (
-  fillColor: string,
-  fillOpacity: number
-) => ({
-  id: 'neighborhood-boundaries-fill',
-  type: 'fill' as const,
-  source: 'neighborhood-boundaries',
-  paint: {
-    'fill-color': fillColor,
-    'fill-opacity': fillOpacity,
-  },
-})
-
-const buildNeighborhoodOutlineLayer = (
-  outlineColor: string,
-  outlineOpacity: number,
-  outlineWidth: number
-) => ({
-  id: 'neighborhood-boundaries-outline',
-  type: 'line' as const,
-  source: 'neighborhood-boundaries',
-  layout: {
-    'line-join': 'round' as const,
-    'line-cap': 'round' as const,
-  },
-  paint: {
-    'line-color': outlineColor,
-    'line-opacity': outlineOpacity,
-    'line-width': outlineWidth,
-  },
-})
-
-const buildNeighborhoodLabelLayer = (
-  minZoom: number,
-  labelColor: string,
-  labelOpacity: number,
-  haloColor: string,
-  haloWidth: number
-) => ({
-  id: 'neighborhood-boundaries-labels',
-  type: 'symbol' as const,
-  source: 'neighborhood-labels',
-  minzoom: minZoom,
-  layout: {
-    'text-field': ['coalesce', ['get', 'name'], ['get', 'ntaname']],
-    'text-size': [
-      'interpolate',
-      ['linear'],
-      ['zoom'],
-      minZoom,
-      10,
-      minZoom + 2,
-      12,
-      minZoom + 4,
-      14,
-    ],
-    'text-allow-overlap': false,
-    'text-ignore-placement': false,
-    'symbol-placement': 'point' as const,
-  },
-  paint: {
-    'text-color': labelColor,
-    'text-opacity': labelOpacity,
-    'text-halo-color': haloColor,
-    'text-halo-width': haloWidth,
-  },
-})
-
-const transitStationLayer = {
-  id: 'transit-stations',
-  type: 'circle' as const,
-  source: 'transit-stations',
-  paint: {
-    'circle-color': transitLineColors,
-    'circle-radius': 3,
-    'circle-opacity': 0.9,
-    'circle-stroke-color': '#0f172a',
-    'circle-stroke-width': 1,
-  },
+const TRANSIT_STOPS_PAINT: Record<string, unknown> = {
+  'circle-color': '#7B61A5',
+  'circle-radius': [
+    'interpolate',
+    ['linear'],
+    ['zoom'],
+    10,
+    1.5,
+    14,
+    3,
+    16,
+    4,
+  ],
+  'circle-opacity': [
+    'interpolate',
+    ['linear'],
+    ['zoom'],
+    10,
+    0,
+    12,
+    0.6,
+    16,
+    0.85,
+  ],
+  'circle-stroke-color': '#ffffff',
+  'circle-stroke-width': 0.5,
 }
 
 function readStyleLayersFromMap(mapInstance: unknown): StyleLayerLike[] {
@@ -268,93 +126,23 @@ const MapViewMapbox = forwardRef<MapViewRef, MapViewProps>(function MapViewMapbo
     markerFocusClassName,
     ghostMarkerClassName,
     showTransit = false,
-    showTransitStations = false,
-    transitLinesUrl,
-    transitStationsUrl,
+    transitTileConfig,
     transitBeforeId,
     transitBeforeIdCandidates,
-    transitLineWidth = 2.5,
-    transitLineOpacity = 0.75,
-    transitCasingWidth = 4,
-    transitCasingColor = '#0f172a',
-    transitCasingOpacity = 0.25,
-    showNeighborhoodBoundaries = false,
-    neighborhoodBoundariesUrl,
-    neighborhoodLabelsUrl,
-    neighborhoodBeforeId,
-    neighborhoodBeforeIdCandidates,
-    neighborhoodFillColor = '#64748b',
-    neighborhoodFillOpacity = 0.08,
-    neighborhoodOutlineColor = '#334155',
-    neighborhoodOutlineOpacity = 0.25,
-    neighborhoodOutlineWidth = 1.2,
-    showNeighborhoodLabels = false,
-    neighborhoodLabelMinZoom = 11.5,
-    neighborhoodLabelColor = '#334155',
-    neighborhoodLabelOpacity = 0.6,
-    neighborhoodLabelHaloColor = '#f8fafc',
-    neighborhoodLabelHaloWidth = 1.25,
     markerBackdropClassName = '',
     styleKey,
     onMapError,
   },
   ref
 ) {
-  const showStations = showTransit && showTransitStations
-  const transitLines = useGeoJson(transitLinesUrl, showTransit)
-  const transitStations = useGeoJson(transitStationsUrl, showStations)
-  const neighborhoodBoundaries = useGeoJson(
-    neighborhoodBoundariesUrl,
-    showNeighborhoodBoundaries
-  )
-  const neighborhoodLabels = useGeoJson(
-    neighborhoodLabelsUrl,
-    showNeighborhoodLabels
-  )
   const [styleReady, setStyleReady] = useState(false)
   const [resolvedTransitBeforeId, setResolvedTransitBeforeId] = useState<
     string | undefined
   >(transitBeforeId)
-  const [
-    resolvedNeighborhoodBeforeId,
-    setResolvedNeighborhoodBeforeId,
-  ] = useState<string | undefined>(neighborhoodBeforeId)
-  const transitLinesKey = styleKey ? `transit-lines-${styleKey}` : 'transit-lines'
-  const transitStationsKey = styleKey
-    ? `transit-stations-${styleKey}`
-    : 'transit-stations'
-  const neighborhoodKey = styleKey
-    ? `neighborhood-boundaries-${styleKey}`
-    : 'neighborhood-boundaries'
-  const transitLineLayer = buildTransitLineLayer(transitLineWidth, transitLineOpacity)
-  const transitLineCasingLayer = buildTransitLineCasingLayer(
-    transitCasingColor,
-    transitCasingWidth,
-    transitCasingOpacity
-  )
-  const neighborhoodFillLayer = buildNeighborhoodFillLayer(
-    neighborhoodFillColor,
-    neighborhoodFillOpacity
-  )
-  const neighborhoodOutlineLayer = buildNeighborhoodOutlineLayer(
-    neighborhoodOutlineColor,
-    neighborhoodOutlineOpacity,
-    neighborhoodOutlineWidth
-  )
-  const neighborhoodLabelLayer = buildNeighborhoodLabelLayer(
-    neighborhoodLabelMinZoom,
-    neighborhoodLabelColor,
-    neighborhoodLabelOpacity,
-    neighborhoodLabelHaloColor,
-    neighborhoodLabelHaloWidth
-  )
+
   const transitCandidateKey = useMemo(
     () => (transitBeforeIdCandidates ?? []).join('|'),
     [transitBeforeIdCandidates]
-  )
-  const neighborhoodCandidateKey = useMemo(
-    () => (neighborhoodBeforeIdCandidates ?? []).join('|'),
-    [neighborhoodBeforeIdCandidates]
   )
 
   const syncBeforeIdsFromStyle = useCallback(
@@ -367,20 +155,8 @@ const MapViewMapbox = forwardRef<MapViewRef, MapViewProps>(function MapViewMapbo
           candidates: transitBeforeIdCandidates,
         })
       )
-      setResolvedNeighborhoodBeforeId(
-        resolveOverlayBeforeId({
-          layers: styleLayers,
-          preferredId: neighborhoodBeforeId,
-          candidates: neighborhoodBeforeIdCandidates,
-        })
-      )
     },
-    [
-      neighborhoodBeforeId,
-      neighborhoodBeforeIdCandidates,
-      transitBeforeId,
-      transitBeforeIdCandidates,
-    ]
+    [transitBeforeId, transitBeforeIdCandidates]
   )
 
   useEffect(() => {
@@ -389,14 +165,7 @@ const MapViewMapbox = forwardRef<MapViewRef, MapViewProps>(function MapViewMapbo
 
   useEffect(() => {
     setResolvedTransitBeforeId(transitBeforeId)
-    setResolvedNeighborhoodBeforeId(neighborhoodBeforeId)
-  }, [
-    mapStyle,
-    neighborhoodBeforeId,
-    neighborhoodCandidateKey,
-    transitBeforeId,
-    transitCandidateKey,
-  ])
+  }, [mapStyle, transitBeforeId, transitCandidateKey])
 
   return (
     <MapGL
@@ -419,71 +188,36 @@ const MapViewMapbox = forwardRef<MapViewRef, MapViewProps>(function MapViewMapbo
         onMapError?.((event as { error?: unknown }).error ?? event)
       }}
     >
-      {styleReady && showNeighborhoodBoundaries && neighborhoodBoundaries ? (
-        <Source
-          key={neighborhoodKey}
-          id="neighborhood-boundaries"
-          type="geojson"
-          data={neighborhoodBoundaries as any}
-        >
-          <Layer
-            key={`${neighborhoodKey}-fill`}
-            {...(neighborhoodFillLayer as any)}
-            beforeId={resolvedNeighborhoodBeforeId}
-          />
-          <Layer
-            key={`${neighborhoodKey}-outline`}
-            {...(neighborhoodOutlineLayer as any)}
-            beforeId={resolvedNeighborhoodBeforeId}
-          />
-        </Source>
-      ) : null}
-      {styleReady && showNeighborhoodLabels && neighborhoodLabels ? (
-        <Source
-          key={`${neighborhoodKey}-labels`}
-          id="neighborhood-labels"
-          type="geojson"
-          data={neighborhoodLabels as any}
-        >
-          <Layer
-            key={`${neighborhoodKey}-labels-layer`}
-            {...(neighborhoodLabelLayer as any)}
-            beforeId={resolvedNeighborhoodBeforeId}
-          />
-        </Source>
-      ) : null}
-      {styleReady && showTransit && transitLines ? (
-        <Source
-          key={transitLinesKey}
+      {/* Transit lines from vector tiles */}
+      {styleReady && showTransit && transitTileConfig ? (
+        <Layer
           id="transit-lines"
-          type="geojson"
-          data={transitLines as any}
-        >
-          <Layer
-            key={`${transitLinesKey}-casing`}
-            {...(transitLineCasingLayer as any)}
-            beforeId={resolvedTransitBeforeId}
-          />
-          <Layer
-            key={`${transitLinesKey}-layer`}
-            {...(transitLineLayer as any)}
-            beforeId={resolvedTransitBeforeId}
-          />
-        </Source>
+          type="line"
+          source={transitTileConfig.vectorSource}
+          source-layer={transitTileConfig.lineSourceLayer}
+          filter={transitTileConfig.lineFilter as any}
+          layout={{ 'line-join': 'round', 'line-cap': 'round' }}
+          paint={{
+            'line-color': TRANSIT_LINE_COLOR as any,
+            ...(TRANSIT_LINE_PAINT_BASE as object),
+          }}
+          beforeId={resolvedTransitBeforeId}
+        />
       ) : null}
-      {styleReady && showStations && transitStations ? (
-        <Source
-          key={transitStationsKey}
-          id="transit-stations"
-          type="geojson"
-          data={transitStations as any}
-        >
-          <Layer
-            key={`${transitStationsKey}-layer`}
-            {...(transitStationLayer as any)}
-            beforeId={resolvedTransitBeforeId}
-          />
-        </Source>
+      {/* Transit stops from vector tiles (if available) */}
+      {styleReady &&
+        showTransit &&
+        transitTileConfig?.stopSourceLayer &&
+        transitTileConfig?.stopFilter ? (
+        <Layer
+          id="transit-stops"
+          type="circle"
+          source={transitTileConfig.vectorSource}
+          source-layer={transitTileConfig.stopSourceLayer}
+          filter={transitTileConfig.stopFilter as any}
+          paint={TRANSIT_STOPS_PAINT as any}
+          beforeId={resolvedTransitBeforeId}
+        />
       ) : null}
       {ghostLocation ? (
         <Marker

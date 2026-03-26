@@ -34,12 +34,14 @@ describe('resolveMapStyle', () => {
         'airport-label',
         'road-label',
       ],
-      neighborhoodBeforeIdCandidates: [
-        'settlement-subdivision-label',
-        'settlement-major-label',
-        'airport-label',
-        'road-label',
-      ],
+      transitTileConfig: {
+        vectorSource: 'composite',
+        lineSourceLayer: 'road',
+        lineFilter: ['in', 'class', 'major_rail', 'minor_rail', 'service_rail'],
+        stopSourceLayer: 'transit_stop_label',
+        stopFilter: ['in', 'mode', 'rail', 'metro_rail', 'light_rail', 'tram'],
+        colorField: 'type',
+      },
     })
 
     expect(resolveMapStyle({ provider: 'mapbox', tone: 'dark' })).toEqual({
@@ -52,12 +54,14 @@ describe('resolveMapStyle', () => {
         'airport-label',
         'road-label',
       ],
-      neighborhoodBeforeIdCandidates: [
-        'settlement-subdivision-label',
-        'settlement-major-label',
-        'airport-label',
-        'road-label',
-      ],
+      transitTileConfig: {
+        vectorSource: 'composite',
+        lineSourceLayer: 'road',
+        lineFilter: ['in', 'class', 'major_rail', 'minor_rail', 'service_rail'],
+        stopSourceLayer: 'transit_stop_label',
+        stopFilter: ['in', 'mode', 'rail', 'metro_rail', 'light_rail', 'tram'],
+        colorField: 'type',
+      },
     })
   })
 
@@ -73,13 +77,12 @@ describe('resolveMapStyle', () => {
         'place_label_other',
         'place-label',
       ],
-      neighborhoodBeforeIdCandidates: [
-        'place_label_city',
-        'place_label_town',
-        'place_label_village',
-        'place_label_other',
-        'place-label',
-      ],
+      transitTileConfig: {
+        vectorSource: 'carto',
+        lineSourceLayer: 'transportation',
+        lineFilter: ['in', 'class', 'rail', 'transit'],
+        colorField: 'subclass',
+      },
     })
 
     expect(
@@ -99,13 +102,12 @@ describe('resolveMapStyle', () => {
         'place_label_other',
         'place-label',
       ],
-      neighborhoodBeforeIdCandidates: [
-        'place_label_city',
-        'place_label_town',
-        'place_label_village',
-        'place_label_other',
-        'place-label',
-      ],
+      transitTileConfig: {
+        vectorSource: 'carto',
+        lineSourceLayer: 'transportation',
+        lineFilter: ['in', 'class', 'rail', 'transit'],
+        colorField: 'subclass',
+      },
     })
   })
 
@@ -121,7 +123,6 @@ describe('resolveMapStyle', () => {
       styleSource: 'pmtiles',
       styleKey: 'maplibre:light:pmtiles:default',
       transitBeforeId: 'pmtiles-place-labels',
-      neighborhoodBeforeId: 'pmtiles-place-labels',
       transitBeforeIdCandidates: [
         'pmtiles-place-labels',
         'place_label_city',
@@ -130,14 +131,12 @@ describe('resolveMapStyle', () => {
         'place_label_other',
         'place-label',
       ],
-      neighborhoodBeforeIdCandidates: [
-        'pmtiles-place-labels',
-        'place_label_city',
-        'place_label_town',
-        'place_label_village',
-        'place_label_other',
-        'place-label',
-      ],
+      transitTileConfig: {
+        vectorSource: 'protomaps',
+        lineSourceLayer: 'roads',
+        lineFilter: ['in', 'pmap:kind', 'rail', 'light_rail', 'subway'],
+        colorField: 'pmap:kind',
+      },
     })
 
     expect(
@@ -151,7 +150,6 @@ describe('resolveMapStyle', () => {
       styleSource: 'pmtiles',
       styleKey: 'maplibre:dark:pmtiles:default',
       transitBeforeId: 'pmtiles-place-labels',
-      neighborhoodBeforeId: 'pmtiles-place-labels',
       transitBeforeIdCandidates: [
         'pmtiles-place-labels',
         'place_label_city',
@@ -160,28 +158,16 @@ describe('resolveMapStyle', () => {
         'place_label_other',
         'place-label',
       ],
-      neighborhoodBeforeIdCandidates: [
-        'pmtiles-place-labels',
-        'place_label_city',
-        'place_label_town',
-        'place_label_village',
-        'place_label_other',
-        'place-label',
-      ],
+      transitTileConfig: {
+        vectorSource: 'protomaps',
+        lineSourceLayer: 'roads',
+        lineFilter: ['in', 'pmap:kind', 'rail', 'light_rail', 'subway'],
+        colorField: 'pmap:kind',
+      },
     })
   })
 
-  it('uses mapbox satellite and terrain styles', () => {
-    const satellite = resolveMapStyle({
-      provider: 'mapbox',
-      tone: 'light',
-      layer: 'satellite',
-    })
-    expect(satellite.mapStyle).toBe(
-      'mapbox://styles/mapbox/satellite-streets-v12'
-    )
-    expect(satellite.styleKey).toBe('mapbox:light:mapbox:satellite')
-
+  it('uses mapbox terrain style', () => {
     const terrain = resolveMapStyle({
       provider: 'mapbox',
       tone: 'dark',
@@ -189,6 +175,26 @@ describe('resolveMapStyle', () => {
     })
     expect(terrain.mapStyle).toBe('mapbox://styles/mapbox/outdoors-v12')
     expect(terrain.styleKey).toBe('mapbox:dark:mapbox:terrain')
+  })
+
+  it('transit layer uses default base style (overlays handle visuals)', () => {
+    const transit = resolveMapStyle({
+      provider: 'mapbox',
+      tone: 'light',
+      layer: 'transit',
+    })
+    expect(transit.mapStyle).toBe('mapbox://styles/mapbox/light-v11')
+    expect(transit.styleKey).toBe('mapbox:light:mapbox:transit')
+
+    const transitCarto = resolveMapStyle({
+      provider: 'maplibre',
+      tone: 'light',
+      layer: 'transit',
+    })
+    expect(transitCarto.mapStyle).toBe(
+      'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json'
+    )
+    expect(transitCarto.styleKey).toBe('maplibre:light:carto:transit')
   })
 
   it('uses carto voyager for maplibre terrain', () => {
@@ -203,47 +209,21 @@ describe('resolveMapStyle', () => {
     expect(r.styleKey).toBe('maplibre:light:carto:terrain')
   })
 
-  it('uses MapTiler hybrid for maplibre satellite when key is set', () => {
-    vi.stubEnv('NEXT_PUBLIC_MAPTILER_KEY', 'test-key')
-    const r = resolveMapStyle({
-      provider: 'maplibre',
-      tone: 'dark',
-      layer: 'satellite',
-    })
-    expect(r.mapStyle).toBe(
-      'https://api.maptiler.com/maps/hybrid/style.json?key=test-key'
-    )
-    expect(r.styleKey).toBe('maplibre:dark:carto:satellite')
-  })
-
-  it('falls back to default carto style for satellite without MapTiler key', () => {
-    vi.stubEnv('NEXT_PUBLIC_MAPTILER_KEY', '')
-    const r = resolveMapStyle({
-      provider: 'maplibre',
-      tone: 'light',
-      layer: 'satellite',
-    })
-    expect(r.mapStyle).toBe(
-      'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json'
-    )
-    expect(r.styleKey).toBe('maplibre:light:carto:satellite')
-  })
-
-  it('keeps pmtiles URL for satellite/terrain but uses distinct styleKey', () => {
+  it('keeps pmtiles URL for transit/terrain but uses distinct styleKey', () => {
     const base = resolveMapStyle({
       provider: 'maplibre',
       tone: 'light',
       maplibreStyleSource: 'pmtiles',
       layer: 'default',
     })
-    const sat = resolveMapStyle({
+    const transit = resolveMapStyle({
       provider: 'maplibre',
       tone: 'light',
       maplibreStyleSource: 'pmtiles',
-      layer: 'satellite',
+      layer: 'transit',
     })
-    expect(sat.mapStyle).toBe(base.mapStyle)
-    expect(sat.styleKey).toBe('maplibre:light:pmtiles:satellite')
+    expect(transit.mapStyle).toBe(base.mapStyle)
+    expect(transit.styleKey).toBe('maplibre:light:pmtiles:transit')
   })
 })
 

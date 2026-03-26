@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
-const MAP_LAYERS = new Set(['default', 'satellite', 'terrain'])
+const MAP_LAYERS = new Set(['default', 'transit', 'terrain'])
 
 export async function GET() {
   try {

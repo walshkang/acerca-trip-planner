@@ -1,4 +1,5 @@
 import type { MapLayer } from '@/lib/state/useMapLayerStore'
+import type { TransitTileConfig } from '@/components/map/MapView.types'
 
 export type MapProvider = 'mapbox' | 'maplibre'
 export type MapTone = 'light' | 'dark'
@@ -19,9 +20,8 @@ export type ResolveMapStyleResult = {
   styleSource: ResolvedStyleSource
   styleKey: string
   transitBeforeId?: string
-  neighborhoodBeforeId?: string
   transitBeforeIdCandidates: string[]
-  neighborhoodBeforeIdCandidates: string[]
+  transitTileConfig: TransitTileConfig
 }
 
 const PMTILES_LABELS_ANCHOR_ID = 'pmtiles-place-labels'
@@ -46,22 +46,46 @@ const PMTILES_LABEL_CANDIDATES = [
 const CARTO_VOYAGER_STYLE_URL =
   'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json'
 
+// ── Transit tile configs per provider ──
+
+const MAPBOX_TRANSIT: TransitTileConfig = {
+  vectorSource: 'composite',
+  lineSourceLayer: 'road',
+  lineFilter: ['in', 'class', 'major_rail', 'minor_rail', 'service_rail'],
+  stopSourceLayer: 'transit_stop_label',
+  stopFilter: [
+    'in',
+    'mode',
+    'rail',
+    'metro_rail',
+    'light_rail',
+    'tram',
+  ],
+  colorField: 'type',
+}
+
+/** Carto GL basemaps (Positron, Dark Matter, Voyager) use source id `carto`, not `openmaptiles`. */
+const CARTO_VECTOR_TRANSIT: TransitTileConfig = {
+  vectorSource: 'carto',
+  lineSourceLayer: 'transportation',
+  lineFilter: ['in', 'class', 'rail', 'transit'],
+  colorField: 'subclass',
+}
+
+const PMTILES_TRANSIT: TransitTileConfig = {
+  vectorSource: 'protomaps',
+  lineSourceLayer: 'roads',
+  lineFilter: ['in', 'pmap:kind', 'rail', 'light_rail', 'subway'],
+  colorField: 'pmap:kind',
+}
+
 let warnedPmtilesLayerUnavailable = false
-let warnedMaptilerKeyMissing = false
 
 function warnPmtilesLayerUnavailable() {
   if (typeof console === 'undefined' || warnedPmtilesLayerUnavailable) return
   warnedPmtilesLayerUnavailable = true
   console.warn(
-    '[acerca] Satellite and terrain base layers are not available for PMTiles; using the default style.'
-  )
-}
-
-function warnMaptilerKeyMissing() {
-  if (typeof console === 'undefined' || warnedMaptilerKeyMissing) return
-  warnedMaptilerKeyMissing = true
-  console.warn(
-    '[acerca] NEXT_PUBLIC_MAPTILER_KEY is not set; satellite uses the default map style.'
+    '[acerca] Terrain base layer is not available for PMTiles; using the default style.'
   )
 }
 
@@ -96,10 +120,6 @@ export function resolveOverlayBeforeId({
     return preferredId
   }
 
-  // Insert overlays *before* this layer (so they paint underneath it). Pick the
-  // topmost anchor: the first matching candidate is often an early place label,
-  // leaving roads and fills drawn above the overlay. Prefer the last candidate
-  // that exists, and otherwise the last text symbol in the stack.
   for (let i = candidates.length - 1; i >= 0; i--) {
     const candidate = candidates[i]
     if (layers.some((layer) => hasLayerId(layer, candidate))) {
@@ -195,9 +215,7 @@ export function resolveMapStyle({
 
   if (provider === 'mapbox') {
     let mapStyle: string
-    if (layer === 'satellite') {
-      mapStyle = 'mapbox://styles/mapbox/satellite-streets-v12'
-    } else if (layer === 'terrain') {
+    if (layer === 'terrain') {
       mapStyle = 'mapbox://styles/mapbox/outdoors-v12'
     } else {
       mapStyle =
@@ -211,13 +229,13 @@ export function resolveMapStyle({
       styleSource: 'mapbox',
       styleKey: `mapbox:${tone}:mapbox:${layerKey}`,
       transitBeforeIdCandidates: MAPBOX_LABEL_CANDIDATES,
-      neighborhoodBeforeIdCandidates: MAPBOX_LABEL_CANDIDATES,
+      transitTileConfig: MAPBOX_TRANSIT,
     }
   }
 
   const source = normalizeMaplibreStyleSource(maplibreStyleSource)
   if (source === 'pmtiles') {
-    if (layer === 'satellite' || layer === 'terrain') {
+    if (layer === 'terrain') {
       warnPmtilesLayerUnavailable()
     }
 
@@ -231,26 +249,14 @@ export function resolveMapStyle({
       styleSource: source,
       styleKey: `maplibre:${tone}:${source}:${layerKey}`,
       transitBeforeId: PMTILES_LABELS_ANCHOR_ID,
-      neighborhoodBeforeId: PMTILES_LABELS_ANCHOR_ID,
       transitBeforeIdCandidates: PMTILES_LABEL_CANDIDATES,
-      neighborhoodBeforeIdCandidates: PMTILES_LABEL_CANDIDATES,
+      transitTileConfig: PMTILES_TRANSIT,
     }
   }
 
   let mapStyle: string
   if (layer === 'terrain') {
     mapStyle = CARTO_VOYAGER_STYLE_URL
-  } else if (layer === 'satellite') {
-    const maptilerKey = process.env.NEXT_PUBLIC_MAPTILER_KEY
-    if (maptilerKey) {
-      mapStyle = `https://api.maptiler.com/maps/hybrid/style.json?key=${encodeURIComponent(maptilerKey)}`
-    } else {
-      warnMaptilerKeyMissing()
-      mapStyle =
-        tone === 'dark'
-          ? 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json'
-          : 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json'
-    }
   } else {
     mapStyle =
       tone === 'dark'
@@ -263,6 +269,6 @@ export function resolveMapStyle({
     styleSource: source,
     styleKey: `maplibre:${tone}:${source}:${layerKey}`,
     transitBeforeIdCandidates: CARTO_LABEL_CANDIDATES,
-    neighborhoodBeforeIdCandidates: CARTO_LABEL_CANDIDATES,
+    transitTileConfig: CARTO_VECTOR_TRANSIT,
   }
 }

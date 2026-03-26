@@ -1,8 +1,8 @@
 import { create } from 'zustand'
 
-export type MapLayer = 'default' | 'satellite' | 'terrain'
+export type MapLayer = 'default' | 'transit' | 'terrain'
 
-export const MAP_LAYERS = ['default', 'satellite', 'terrain'] as const satisfies readonly MapLayer[]
+export const MAP_LAYERS = ['default', 'transit', 'terrain'] as const satisfies readonly MapLayer[]
 
 const STORAGE_KEY = 'acerca:mapLayer'
 

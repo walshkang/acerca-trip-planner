@@ -22,6 +22,7 @@ import Calendar3DayGrid from '@/components/planner/Calendar3DayGrid'
 import Calendar2WeekGrid from '@/components/planner/Calendar2WeekGrid'
 import CalendarAgendaView from '@/components/planner/CalendarAgendaView'
 import CalendarDayDetail from '@/components/planner/CalendarDayDetail'
+import PlannerFreshnessLabel from '@/components/planner/PlannerFreshnessLabel'
 import {
   computeThreeDayWindow,
   initialTwoWeekMonday,
@@ -226,6 +227,7 @@ export default function CalendarPlanner({ listId, onPlanMutated }: Props) {
       }
       setList((json?.list ?? null) as ListSummary | null)
       setItems((json?.items ?? []) as ListItemRow[])
+      useTripStore.getState().setLastFetchedAt(Date.now())
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Request failed')
     } finally {
@@ -235,6 +237,22 @@ export default function CalendarPlanner({ listId, onPlanMutated }: Props) {
 
   useEffect(() => {
     void fetchPlan()
+  }, [fetchPlan])
+
+  // Refetch on tab focus (async collab — pick up other users' changes)
+  useEffect(() => {
+    let lastRefetch = Date.now()
+    const MIN_REFETCH_INTERVAL = 30_000
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) return
+      if (Date.now() - lastRefetch < MIN_REFETCH_INTERVAL) return
+      lastRefetch = Date.now()
+      void fetchPlan()
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
   }, [fetchPlan])
 
   useEffect(() => {
@@ -287,10 +305,19 @@ export default function CalendarPlanner({ listId, onPlanMutated }: Props) {
   }, [plannerSelectedDayFromStore, selectedDay, tripDatesKey])
 
   useEffect(() => {
+    const placeIdSet = new Set(
+      items.map((item) => item.place?.id).filter((id): id is string => Boolean(id))
+    )
     const placeIds = items
       .map((item) => item.place?.id)
       .filter((id): id is string => Boolean(id))
     useTripStore.getState().setActiveListPlaceIds(placeIds)
+
+    const trip = useTripStore.getState()
+    const focused = trip.focusedPlannerPlaceId
+    if (focused && !placeIdSet.has(focused)) {
+      trip.setFocusedPlannerPlaceId(null)
+    }
 
     const mapped = items
       .map((item) => ({
@@ -967,9 +994,12 @@ export default function CalendarPlanner({ listId, onPlanMutated }: Props) {
         <div className="flex w-full min-h-full flex-col gap-4">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
             {tripDatesBlock}
-            {tripRange && !isTripRangeTooLong ? (
-              <CalendarViewToggle view={view} onViewChange={setView} />
-            ) : null}
+            <div className="flex flex-wrap items-center justify-end gap-2 sm:shrink-0">
+              <PlannerFreshnessLabel />
+              {tripRange && !isTripRangeTooLong ? (
+                <CalendarViewToggle view={view} onViewChange={setView} />
+              ) : null}
+            </div>
           </div>
           {weekGridBlock}
           {backlogBlock}

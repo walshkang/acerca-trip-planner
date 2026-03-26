@@ -90,8 +90,6 @@ export type MapShellProps = {
   discardPreview: () => void
   mapStyleMode: 'light' | 'dark'
   showTransit: boolean
-  showTransitStations: boolean
-  showNeighborhoodBoundaries: boolean
   setMapFallbackNotice: (message: string | null) => void
   setSearchBias: (bias: {
     lat: number
@@ -125,8 +123,6 @@ const MapShell = forwardRef<MapShellHandle, MapShellProps>(function MapShell(
     discardPreview,
     mapStyleMode,
     showTransit,
-    showTransitStations,
-    showNeighborhoodBoundaries,
     setMapFallbackNotice,
     setSearchBias,
     onReadyChange,
@@ -162,9 +158,8 @@ const MapShell = forwardRef<MapShellHandle, MapShellProps>(function MapShell(
     styleSource,
     styleKey,
     transitBeforeId,
-    neighborhoodBeforeId,
     transitBeforeIdCandidates,
-    neighborhoodBeforeIdCandidates,
+    transitTileConfig,
   } = useMemo(
     () =>
       resolveMapStyle({
@@ -184,32 +179,7 @@ const MapShell = forwardRef<MapShellHandle, MapShellProps>(function MapShell(
       ? 'ring-2 ring-sky-300/70 shadow-[0_0_20px_rgba(56,189,248,0.65),0_0_2px_rgba(15,23,42,0.25)]'
       : 'ring-2 ring-sky-500/55 shadow-[0_0_18px_rgba(14,165,233,0.48),0_0_2px_rgba(15,23,42,0.15)]'
   const ghostMarkerClassName = `flex h-9 w-9 items-center justify-center rounded-full ${markerBackdropClassName} ${markerFocusClassName} ${ghostMarkerGlowPulseClass(mapStyleMode)}`
-  const transitLineWidth = 2.5
-  const transitLineOpacity = 0.75
-  const transitCasingWidth = 4
-  const transitCasingOpacity = mapStyleMode === 'dark' ? 0.35 : 0.25
-  const transitCasingColor = mapStyleMode === 'dark' ? '#e2e8f0' : '#0f172a'
-  const neighborhoodFillColor =
-    mapStyleMode === 'dark' ? '#e2e8f0' : '#94a3b8'
-  const neighborhoodFillOpacity = mapStyleMode === 'dark' ? 0.08 : 0.04
-  const neighborhoodOutlineColor =
-    mapStyleMode === 'dark' ? '#e2e8f0' : '#94a3b8'
-  const neighborhoodOutlineOpacity = mapStyleMode === 'dark' ? 0.22 : 0.16
-  const neighborhoodOutlineWidth = 1
-  const neighborhoodLabelMinZoom = 11.5
-  const neighborhoodLabelColor =
-    mapStyleMode === 'dark' ? '#e2e8f0' : '#334155'
-  const neighborhoodLabelOpacity = mapStyleMode === 'dark' ? 0.7 : 0.6
-  const neighborhoodLabelHaloColor =
-    mapStyleMode === 'dark' ? '#0f172a' : '#f8fafc'
-  const neighborhoodLabelHaloWidth = 1.25
   const canRenderMap = isMapbox ? Boolean(mapboxToken) : true
-  const transitLinesUrl = '/map/overlays/nyc_subway_lines.geojson'
-  const transitStationsUrl = '/map/overlays/nyc_subway_stations.geojson'
-  const neighborhoodBoundariesUrl =
-    '/map/overlays/nyc_neighborhood_boundaries.geojson'
-  const neighborhoodLabelsUrl =
-    '/map/overlays/nyc_neighborhood_labels.geojson'
 
   const activeListPlaceIdSet = useMemo(
     () => new Set(activeListPlaceIds),
@@ -708,32 +678,9 @@ const MapShell = forwardRef<MapShellHandle, MapShellProps>(function MapShell(
       markerFocusClassName={markerFocusClassName}
       ghostMarkerClassName={ghostMarkerClassName}
       showTransit={showTransit}
-      showTransitStations={showTransitStations}
-      transitLinesUrl={transitLinesUrl}
-      transitStationsUrl={transitStationsUrl}
+      transitTileConfig={transitTileConfig}
       transitBeforeId={transitBeforeId}
       transitBeforeIdCandidates={transitBeforeIdCandidates}
-      transitLineWidth={transitLineWidth}
-      transitLineOpacity={transitLineOpacity}
-      transitCasingWidth={transitCasingWidth}
-      transitCasingColor={transitCasingColor}
-      transitCasingOpacity={transitCasingOpacity}
-      showNeighborhoodBoundaries={showNeighborhoodBoundaries}
-      neighborhoodBoundariesUrl={neighborhoodBoundariesUrl}
-      neighborhoodLabelsUrl={neighborhoodLabelsUrl}
-      neighborhoodBeforeId={neighborhoodBeforeId}
-      neighborhoodBeforeIdCandidates={neighborhoodBeforeIdCandidates}
-      neighborhoodFillColor={neighborhoodFillColor}
-      neighborhoodFillOpacity={neighborhoodFillOpacity}
-      neighborhoodOutlineColor={neighborhoodOutlineColor}
-      neighborhoodOutlineOpacity={neighborhoodOutlineOpacity}
-      neighborhoodOutlineWidth={neighborhoodOutlineWidth}
-      showNeighborhoodLabels={showNeighborhoodBoundaries}
-      neighborhoodLabelMinZoom={neighborhoodLabelMinZoom}
-      neighborhoodLabelColor={neighborhoodLabelColor}
-      neighborhoodLabelOpacity={neighborhoodLabelOpacity}
-      neighborhoodLabelHaloColor={neighborhoodLabelHaloColor}
-      neighborhoodLabelHaloWidth={neighborhoodLabelHaloWidth}
       markerBackdropClassName={markerBackdropClassName}
       styleKey={styleKey}
       onMapError={handleMapError}

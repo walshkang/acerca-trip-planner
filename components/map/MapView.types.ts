@@ -41,6 +41,21 @@ export type MapMoveEndEvent = {
   }
 }
 
+export type TransitTileConfig = {
+  /** Vector tile source ID (e.g. 'composite' for Mapbox, 'carto' for Carto GL basemaps) */
+  vectorSource: string
+  /** Source-layer for transit lines (e.g. 'road' for Mapbox, 'transportation' for OpenMapTiles) */
+  lineSourceLayer: string
+  /** Filter for transit line features */
+  lineFilter: unknown[]
+  /** Source-layer for transit stops (optional — not all tile sets have this) */
+  stopSourceLayer?: string
+  /** Filter for transit stop features */
+  stopFilter?: unknown[]
+  /** Property name for the transit-type color match (e.g. 'subclass', 'pmap:kind', 'type') */
+  colorField?: string
+}
+
 export type MapViewProps = {
   mapStyle: string
   mapboxAccessToken?: string
@@ -57,32 +72,9 @@ export type MapViewProps = {
   markerFocusClassName?: string
   ghostMarkerClassName?: string
   showTransit?: boolean
-  showTransitStations?: boolean
-  transitLinesUrl?: string
-  transitStationsUrl?: string
+  transitTileConfig?: TransitTileConfig
   transitBeforeId?: string
   transitBeforeIdCandidates?: string[]
-  transitLineWidth?: number
-  transitLineOpacity?: number
-  transitCasingWidth?: number
-  transitCasingColor?: string
-  transitCasingOpacity?: number
-  showNeighborhoodBoundaries?: boolean
-  neighborhoodBoundariesUrl?: string
-  neighborhoodLabelsUrl?: string
-  neighborhoodBeforeId?: string
-  neighborhoodBeforeIdCandidates?: string[]
-  neighborhoodFillColor?: string
-  neighborhoodFillOpacity?: number
-  neighborhoodOutlineColor?: string
-  neighborhoodOutlineOpacity?: number
-  neighborhoodOutlineWidth?: number
-  showNeighborhoodLabels?: boolean
-  neighborhoodLabelMinZoom?: number
-  neighborhoodLabelColor?: string
-  neighborhoodLabelOpacity?: number
-  neighborhoodLabelHaloColor?: string
-  neighborhoodLabelHaloWidth?: number
   markerBackdropClassName?: string
   styleKey?: string
   onMapError?: (error: unknown) => void
