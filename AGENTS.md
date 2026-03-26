@@ -132,7 +132,7 @@ When a task can be split:
 3. **Converge and verify.**
    - Deep reviews Bounded output against invariants (especially: did the agent invent a new pattern instead of following an existing one?).
    - Run `npm run check` and `npm test`.
-   - If Playwright-relevant, run seeded E2E per `docs/PLAYWRIGHT.md`.
+   - If Playwright-relevant, run seeded E2E (see Playwright guardrails below).
 
 ### Delegation Protocol
 
@@ -151,6 +151,13 @@ When delegating, produce a **handoff block** the human can paste into the other 
 - Follow [specific doc] for [specific concern]
 **Verify:** [how to check the work, e.g., `npm test -- tests/routing/`]
 ```
+
+### Playwright Guardrails
+
+- Dev server runs on **port 3010** — always `npm run dev` on that port before running E2E tests.
+- Tests run **Chromium only** — do not add other browser projects to `playwright.config.ts`.
+- Do NOT set `PLAYWRIGHT_BROWSERS_PATH=0` — the global cache (`~/Library/Caches/ms-playwright`) is shared across agents; setting that env var forces a per-project copy and wastes disk space.
+- Run E2E with: `npm run test:e2e` (uses `http://localhost:3010` by default).
 
 ### Red Lines (any agent)
 

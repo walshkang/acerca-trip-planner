@@ -17,7 +17,7 @@ if (fs.existsSync(envPath)) {
   }
 }
 
-const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:3000'
+const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:3010'
 const storageState =
   process.env.PLAYWRIGHT_STORAGE_STATE ?? 'playwright/.auth/user.json'
 
@@ -36,4 +36,7 @@ export default defineConfig({
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
   },
+  projects: [
+    { name: 'chromium', use: { browserName: 'chromium' } },
+  ],
 })
