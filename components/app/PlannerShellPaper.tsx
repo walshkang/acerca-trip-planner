@@ -69,6 +69,12 @@ function PlannerShellPaperWithList({ activeListId }: { activeListId: string }) {
   const [mapPlaces, setMapPlaces] = useState<MapPlace[]>([])
   const [exportingCsv, setExportingCsv] = useState(false)
   const [exportCsvError, setExportCsvError] = useState<string | null>(null)
+  /** px: measured header bottom + gap; null until client layout */
+  const [planContentPaddingTop, setPlanContentPaddingTop] = useState<number | null>(null)
+
+  const onPaperHeaderViewportBottom = useCallback((bottomPx: number) => {
+    setPlanContentPaddingTop(Math.ceil(bottomPx) + 12)
+  }, [])
 
   // Fetch map places
   useEffect(() => {
@@ -141,6 +147,7 @@ function PlannerShellPaperWithList({ activeListId }: { activeListId: string }) {
         onTabChange={(tab) => {
           if (tab === 'map') setMode('explore')
         }}
+        onViewportBottomChange={onPaperHeaderViewportBottom}
         bottomSlot={
           <div className="flex w-full flex-wrap items-end justify-between gap-2">
             <div className="min-w-0 flex-1">
@@ -169,7 +176,14 @@ function PlannerShellPaperWithList({ activeListId }: { activeListId: string }) {
       />
 
       {/* Map | planner: strip below xl, left column at xl+ */}
-      <div className="flex min-h-0 flex-1 flex-col gap-3 px-4 pb-4 pt-[max(6.25rem,calc(env(safe-area-inset-top,0px)+5.25rem))] sm:gap-4 sm:px-6 xl:flex-row">
+      <div
+        className="flex min-h-0 flex-1 flex-col gap-3 px-4 pb-4 pt-[max(8.5rem,calc(env(safe-area-inset-top,0px)+7.5rem))] sm:gap-4 sm:px-6 xl:flex-row"
+        style={
+          planContentPaddingTop != null
+            ? { paddingTop: planContentPaddingTop }
+            : undefined
+        }
+      >
         <div className="h-[min(200px,28vh)] w-full shrink-0 overflow-hidden rounded-[4px] border border-paper-tertiary-fixed min-[480px]:h-[180px] xl:h-auto xl:w-[350px] xl:min-h-0 xl:shrink-0">
           <MapInset
             className="h-full w-full"

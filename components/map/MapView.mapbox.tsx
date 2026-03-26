@@ -8,7 +8,10 @@ import {
   resolveOverlayBeforeId,
   type StyleLayerLike,
 } from '@/lib/map/styleResolver'
-import { PLACE_FOCUS_GLOW } from '@/lib/ui/glow'
+import {
+  GHOST_MARKER_GLOW_PULSE_CLASS_LIGHT,
+  PLACE_FOCUS_GLOW,
+} from '@/lib/ui/glow'
 import type { MapViewProps, MapViewRef } from './MapView.types'
 import { useGeoJson } from './useGeoJson'
 
@@ -496,7 +499,7 @@ const MapViewMapbox = forwardRef<MapViewRef, MapViewProps>(function MapViewMapbo
             }}
             className={
               ghostMarkerClassName ??
-              'h-8 w-8 rounded-full border-2 border-black/50 bg-white/50 shadow-sm'
+              `h-9 w-9 rounded-full border-2 border-black/50 bg-white/50 shadow-sm ${GHOST_MARKER_GLOW_PULSE_CLASS_LIGHT}`
             }
           />
         </Marker>
@@ -508,10 +511,10 @@ const MapViewMapbox = forwardRef<MapViewRef, MapViewProps>(function MapViewMapbo
         const markerVariant = getPlaceMarkerVariant?.(place) ?? 'default'
         const markerVariantClassName =
           markerVariant === 'scheduled'
-            ? 'border-2 border-emerald-500/80'
+            ? 'ring-2 ring-emerald-500/70'
             : markerVariant === 'done'
               ? 'opacity-60 grayscale'
-              : ''
+              : 'ring-2 ring-slate-400/50'
         const markerStateClassName = isFocusedMarker
           ? markerFocusClassName ?? PLACE_FOCUS_GLOW
           : markerVariantClassName
@@ -543,11 +546,11 @@ const MapViewMapbox = forwardRef<MapViewRef, MapViewProps>(function MapViewMapbo
             >
               <span
                 aria-hidden="true"
-                className={`flex h-8 w-8 items-center justify-center rounded-full ${markerBackdropClassName} ${
+                className={`flex h-9 w-9 items-center justify-center rounded-full ${markerBackdropClassName} ${
                   markerStateClassName
                 }`}
               >
-                <span className="text-[16px] leading-none">
+                <span className="text-[18px] leading-none">
                   {resolveCategoryEmoji?.(place.category) ??
                     getCategoryEmoji(place.category)}
                 </span>

@@ -267,7 +267,9 @@
     .glass-panel-interactive,
     .glass-button,
     .glass-coin-interactive,
-    .glass-tab {
+    .glass-tab,
+    .animate-ghost-glow-pulse-dark,
+    .animate-ghost-glow-pulse-light {
       transition-duration: 1ms !important;
       animation-duration: 1ms !important;
     }

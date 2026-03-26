@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import EmojiPicker from '@/components/ui/EmojiPicker'
-import type { MobileSnapState } from '@/components/ui/ContextPanel'
+import type { MobileSnapState } from '@/lib/ui/mobileSnapState'
 import { useCategoryIconOverrides } from '@/lib/icons/useCategoryIconOverrides'
 import { CATEGORY_ICON_CHOICES } from '@/lib/icons/preferences'
 import { isCategoryEnum } from '@/lib/lists/filters'

@@ -28,6 +28,7 @@ import {
   shouldFallbackFromPmtiles,
   type MaplibreStyleSource,
 } from '@/lib/map/styleResolver'
+import { ghostMarkerGlowPulseClass } from '@/lib/ui/glow'
 import {
   boundsFromPlaces,
   boundsSpan,
@@ -173,13 +174,13 @@ const MapShell = forwardRef<MapShellHandle, MapShellProps>(function MapShell(
   )
   const markerBackdropClassName =
     mapStyleMode === 'dark'
-      ? 'bg-slate-100/95 border-2 border-slate-900/20 shadow-[0_8px_20px_rgba(2,6,23,0.5)]'
-      : 'bg-white/95 border-2 border-slate-900/20 shadow-[0_8px_20px_rgba(15,23,42,0.2)]'
+      ? 'bg-slate-100/95 border-2 border-slate-900/30 shadow-[0_4px_12px_rgba(2,6,23,0.55),0_1px_3px_rgba(0,0,0,0.45)]'
+      : 'bg-white/95 border-2 border-slate-900/30 shadow-[0_4px_12px_rgba(15,23,42,0.25),0_1px_3px_rgba(15,23,42,0.15)]'
   const markerFocusClassName =
     mapStyleMode === 'dark'
       ? 'ring-2 ring-sky-300/70 shadow-[0_0_20px_rgba(56,189,248,0.65),0_0_2px_rgba(15,23,42,0.25)]'
       : 'ring-2 ring-sky-500/55 shadow-[0_0_18px_rgba(14,165,233,0.48),0_0_2px_rgba(15,23,42,0.15)]'
-  const ghostMarkerClassName = `flex h-8 w-8 items-center justify-center rounded-full ${markerBackdropClassName} ${markerFocusClassName}`
+  const ghostMarkerClassName = `flex h-9 w-9 items-center justify-center rounded-full ${markerBackdropClassName} ${markerFocusClassName} ${ghostMarkerGlowPulseClass(mapStyleMode)}`
   const transitLineWidth = 2.5
   const transitLineOpacity = 0.75
   const transitCasingWidth = 4

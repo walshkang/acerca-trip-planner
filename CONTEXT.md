@@ -3,17 +3,19 @@
 - For UI/UX changes, `DESIGN.md` is the source of truth for layout, interaction, visual system, and component inventory.
 - Invariants: DB is source of truth; only approved pins are truth; enrich once, read forever; strict taxonomy; user edits never overwrite frozen AI enrichment.
 - DoD: tests updated/added; verification steps; migrations + `npm run db:types` if schema changed; no TODO placeholders in Decisions / Rationale or Next Steps.
-- Pointers: `roadmap.json` for phases, `supabase/migrations` for schema, `docs/reports` for learning reports.
+- Pointers: `supabase/migrations` for schema, `docs/reports` for learning reports. (`roadmap.json` is deprecated — `CONTEXT.md` is the single source of truth for phase status.)
 - Starting a new task/chat? Use `prompts/agent_task.md`.
 - Routing preview (Plan mode): set `ROUTING_PROVIDER` and `OSRM_BASE_URL` per [`.env.example`](.env.example); otherwise the API returns `501` / `provider_unavailable` by design.
 
 ## Active Context
 
-**Current Phase:** P3-E4 — Headless Planning API (wrapping up)
+**Current Phase:** P3-E5 — Visual Polish (just shipped)
 
-**Previous:** P3-E3 (UX Pivot) is complete — all 5 plan page slices shipped, paper shell on all viewports, MapInset wired. Phase 4 cleanup (legacy shell removal) is optional housekeeping.
+**Previous:**
+- P3-E4 (Headless Planning API) complete — slices A–H shipped. Only task 4.11 (in-app chat) deferred.
+- P3-E3 (UX Pivot) complete — all 5 plan page slices, paper shell on all viewports, MapInset wired.
 
-**P3-E4 status:** Slices A–H shipped. Contract, preview/commit APIs, computed fields, LLM client prompt, export UI + round-trip IDs, import wizard UI, verification gate — all done. Only task 4.11 (in-app chat) is deferred.
+**P3-E5 status:** All 6 slices shipped. Cross-cutting UX refinements across Plan and Discover pages — layout fixes, map pin prominence, add-place UX.
 
 ### Architecture (locked decisions)
 
@@ -79,12 +81,24 @@ AppShell
 | H | Verification gate | **Done** — `tests/import/contract.test.ts`, `compute.test.ts`, `commit-api.test.ts` |
 | — | In-app chat (task 4.11) | **Deferred** — waiting on proven API usage before building chat UI |
 
+### P3-E5 Slice Status (Visual Polish)
+
+| Slice | Area | What | Status |
+|-------|------|------|--------|
+| VP-1 | Plan | Selected day cell visibility — inset highlight replacing clipped ring | **Done** |
+| VP-2 | Plan | PaperHeader overlap — increased/dynamic padding-top for content area | **Done** |
+| VP-3 | Plan | Calendar stretches to viewport, backlog/done pushed below fold | **Done** |
+| VP-4 | Discover | Add-place card centering — equalized padding in drawer panel | **Done** |
+| VP-5 | Discover | Ghost marker pulse animation on proposed pin | **Done** |
+| VP-6 | Both | Pin prominence — larger pins (36px), colored rings by variant, stronger shadows | **Done** |
+
 ### What's Next
 
 **Immediate options (pick one per session):**
 1. **In-app chat UI (task 4.11)** — Conversational trip planning wired to preview/commit APIs. System prompt from slice E drives the LLM. Model-selectable backend.
 2. **Legacy cleanup** — Remove unused glass shells (`ExploreShell`, `PlannerShell`, `NavRail`, `NavFooter`), `WorkspaceContainer` alias; expand Playwright coverage.
-3. **Plan polish** — Routing badges, capacity warnings, or agenda view refinements per `docs/PLAN_PAGE_SLICES.md`.
+3. **Discover ↔ Plan map sync** — Selecting a list on Discover page flies the Plan map to that list's pins.
+4. **Plan polish (continued)** — Routing badges, capacity warnings, or agenda view refinements per `docs/PLAN_PAGE_SLICES.md`.
 
 **Deferred (separate epics):**
 - Insights layer (distance warnings, closed-day alerts)
@@ -94,7 +108,7 @@ AppShell
 
 ## Completed Phases
 
-All phases below are complete. Details in `roadmap.json` and git history.
+All phases below are complete. Details in git history.
 
 - **P1 (Smart Repository):** Schema, ingestion, map, approval flow, lists
 - **P2 (Interactive Planner):** Scheduling, filters, tags, map-first context, URL deep links, MapLibre, overlays
@@ -122,7 +136,8 @@ gantt
   "P3-E1 Deterministic Routing" :done, p3e1, after p2e4, 7d
   "P3-E2 AI Discovery" :done, p3e2, after p3e1, 7d
   "P3-E3 UX Pivot (Explore/Plan)" :done, p3e3, after p3e2, 14d
-  "P3-E4 Headless Planning API" :active, p3e4, after p3e3, 14d
+  "P3-E4 Headless Planning API" :done, p3e4, after p3e3, 14d
+  "P3-E5 Visual Polish" :done, p3e5, after p3e4, 3d
 ```
 
 ## The Constitution

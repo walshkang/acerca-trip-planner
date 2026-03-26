@@ -23,7 +23,23 @@ export type MapInsetProps = {
 }
 
 const LIGHT_MARKER_BACKDROP =
-  'bg-white/95 border-2 border-slate-900/20 shadow-[0_8px_20px_rgba(15,23,42,0.2)]'
+  'bg-white/95 border-2 border-slate-900/30 shadow-[0_4px_12px_rgba(15,23,42,0.25),0_1px_3px_rgba(15,23,42,0.15)]'
+
+/** Fit viewport to places: skip empty, single pin → flyTo, else fitBounds */
+function fitMapToPlaceList(map: MapViewRef, selected: MapPlace[]) {
+  if (!selected.length) return
+  if (selected.length === 1) {
+    const p = selected[0]
+    map.flyTo({
+      center: [p.lng, p.lat],
+      zoom: Math.max(map.getZoom(), 13),
+    })
+    return
+  }
+  const bounds = boundsFromPlaces(selected)
+  if (!bounds) return
+  map.fitBounds(boundsToArray(bounds), { padding: 40, maxZoom: 15 })
+}
 
 export default function MapInset({
   places,
@@ -33,6 +49,8 @@ export default function MapInset({
   className,
 }: MapInsetProps) {
   const mapRef = useRef<MapViewRef>(null)
+  const placesRef = useRef(places)
+  placesRef.current = places
   const { resolveCategoryEmoji } = useCategoryIconOverrides()
 
   // Provider detection (matches MapShell)
@@ -115,29 +133,39 @@ export default function MapInset({
     }
   }, [places])
 
-  // fitBounds on selectedDay change
+  // Stable identity for list membership (active list / refetch)
+  const placesKey = useMemo(
+    () =>
+      [...places]
+        .map((p) => p.id)
+        .sort()
+        .join('\0'),
+    [places]
+  )
+
+  // A: When list membership changes (e.g. list switch), fit all pins — uses places only, not items
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map) return
+    fitMapToPlaceList(map, placesRef.current)
+  }, [placesKey])
+
+  // B: Narrow to selected day (runs after A in the same commit when both deps change)
   useEffect(() => {
     const map = mapRef.current
     if (!map) return
 
     if (!selectedDay) {
-      // No day selected: fit all places
-      const bounds = boundsFromPlaces(places)
-      if (bounds) {
-        map.fitBounds(boundsToArray(bounds), { padding: 40, maxZoom: 15 })
-      }
+      fitMapToPlaceList(map, places)
       return
     }
 
-    // Fit to selected day's places
     const dayPlaces = places.filter((p) => {
       const item = itemByPlaceId.get(p.id)
       return item?.scheduled_date === selectedDay
     })
     if (!dayPlaces.length) return
-    const bounds = boundsFromPlaces(dayPlaces)
-    if (!bounds) return
-    map.fitBounds(boundsToArray(bounds), { padding: 40, maxZoom: 15 })
+    fitMapToPlaceList(map, dayPlaces)
   }, [selectedDay, places, itemByPlaceId])
 
   // No-op handlers

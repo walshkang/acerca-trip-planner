@@ -95,7 +95,7 @@ Adding a new `stitch/` component following existing ones, adding a vitest unit t
 - Test strategy design (what to test, edge cases, acceptance criteria matrix)
 - Debugging failures that span server → client → DB
 - Reviewing other agents' output for invariant violations
-- Updating `AGENTS.md`, `CONTEXT.md`, `roadmap.json` when scope changes
+- Updating `AGENTS.md`, `CONTEXT.md` when scope changes (`roadmap.json` is deprecated; `CONTEXT.md` is the single source of truth)
 
 #### Bounded Tier (execute against existing contracts)
 - Individual `components/stitch/` component implementation (when design spec exists in `DESIGN.md`)

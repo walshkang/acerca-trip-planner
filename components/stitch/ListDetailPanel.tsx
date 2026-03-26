@@ -902,7 +902,10 @@ export default function ListDetailPanel({ listId }: Props) {
           <p className="text-xs text-gray-500">No matches yet.</p>
         ) : null}
         {searchResults.length ? (
-          <div className="space-y-2" data-testid="local-search-results">
+          <div
+            className="space-y-2 px-3"
+            data-testid="local-search-results"
+          >
             {searchResults.map((result) => {
               const inList =
                 addedResultIds.has(result.id) ||

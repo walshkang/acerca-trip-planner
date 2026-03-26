@@ -165,7 +165,7 @@ Turn saved places into an actual plan via a **two-journey architecture**: Explor
 
 Routing, discovery suggestions, two-journey Explore/Plan UX — and planned list interchange.
 
-**Shipped / in progress (see `roadmap.json`)**
+**Shipped / in progress (see `CONTEXT.md`)**
 
 * **Deterministic routing preview** — Server-side travel-time between scheduled items (e.g., OSRM adapter); badges in the planner when configured
 * **AI discovery (suggestion layer)** — Deterministic retrieval first; optional summaries that do not affect ranking; preview/approve still gates persistence

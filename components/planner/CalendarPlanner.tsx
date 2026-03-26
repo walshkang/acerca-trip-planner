@@ -725,7 +725,7 @@ export default function CalendarPlanner({ listId, onPlanMutated }: Props) {
     windowStart ?? (twoWeekMondays[0] ?? tripRange?.start ?? '')
 
   const weekGridBlock = tripRange ? (
-    <section className="space-y-3 border-b border-slate-200 pb-4 md:border-paper-tertiary-fixed">
+    <section className="flex min-h-0 flex-1 flex-col space-y-3">
       {isTripRangeTooLong ? (
         <p className={`text-[11px] ${mutedClass}`}>
           Trip spans {tripDaysCount} days. Showing only days with scheduled items to keep the planner
@@ -964,7 +964,7 @@ export default function CalendarPlanner({ listId, onPlanMutated }: Props) {
   return (
     <div className="flex h-full planner-light" data-testid="calendar-planner">
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-3">
-        <div className="w-full space-y-4">
+        <div className="flex w-full min-h-full flex-col gap-4">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
             {tripDatesBlock}
             {tripRange && !isTripRangeTooLong ? (

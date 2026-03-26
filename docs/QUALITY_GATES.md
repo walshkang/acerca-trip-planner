@@ -17,7 +17,7 @@ This file defines the current verification contract for daily work in this repo.
 1. Update or add tests that cover changed behavior.
 2. Run `npm run check`.
 3. If schema changed, run `npm run db:types`.
-4. Update `roadmap.json` status for the affected slice and regenerate `CONTEXT.md` via `npm run context:refresh`.
+4. Update `CONTEXT.md` status for the affected slice. (`roadmap.json` is deprecated.)
 5. If report files are changed, fill `Decisions / Rationale` and `Next Steps` with concrete content.
 
 ## Decision Table (What To Run)
@@ -45,5 +45,5 @@ This file defines the current verification contract for daily work in this repo.
 
 ## Process Sync Rule
 - If seeded suite scope changes, update both `docs/PLAYWRIGHT.md` and `CONTEXT.md` in the same PR.
-- If a PR changes shipped behavior, update `roadmap.json` and regenerate `CONTEXT.md` in the same PR to prevent status drift.
+- If a PR changes shipped behavior, update `CONTEXT.md` in the same PR to prevent status drift.
 - If routing contract semantics change, update `docs/PHASE_3_ROUTING_CONTRACT.md`, `docs/PHASE_3_ROUTING_ADAPTER_BOUNDARY.md`, and `docs/PHASE_3_ROUTING_VERIFICATION_GATE.md` together.

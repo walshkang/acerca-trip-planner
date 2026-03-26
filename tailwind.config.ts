@@ -37,6 +37,34 @@ const config: Config = {
         headline: ["var(--font-manrope)", "sans-serif"],
         body: ["var(--font-inter)", "sans-serif"],
       },
+      keyframes: {
+        ghostGlowPulseDark: {
+          "0%, 100%": {
+            boxShadow:
+              "0 0 20px rgba(56, 189, 248, 0.3), 0 0 2px rgba(15, 23, 42, 0.25)",
+          },
+          "50%": {
+            boxShadow:
+              "0 0 20px rgba(56, 189, 248, 0.7), 0 0 2px rgba(15, 23, 42, 0.25)",
+          },
+        },
+        ghostGlowPulseLight: {
+          "0%, 100%": {
+            boxShadow:
+              "0 0 18px rgba(14, 165, 233, 0.3), 0 0 2px rgba(15, 23, 42, 0.15)",
+          },
+          "50%": {
+            boxShadow:
+              "0 0 18px rgba(14, 165, 233, 0.7), 0 0 2px rgba(15, 23, 42, 0.15)",
+          },
+        },
+      },
+      animation: {
+        "ghost-glow-pulse-dark":
+          "ghostGlowPulseDark 2s ease-in-out infinite",
+        "ghost-glow-pulse-light":
+          "ghostGlowPulseLight 2s ease-in-out infinite",
+      },
     },
   },
   plugins: [],

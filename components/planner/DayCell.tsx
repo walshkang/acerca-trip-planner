@@ -55,6 +55,8 @@ export default function DayCell({
       ? 'border-paper-primary/40 border-l-2 border-l-paper-primary'
       : 'border-paper-tertiary-fixed'
 
+  const borderClass = isSelected ? 'border-2 border-paper-primary' : baseBorder
+
   const bgClass = isToday
     ? 'bg-paper-primary/10'
     : density === 'empty'
@@ -82,11 +84,10 @@ export default function DayCell({
       className={[
         'flex w-full cursor-pointer flex-col gap-1.5 rounded-[4px] border p-2 text-left font-body transition',
         minHeightClassName,
-        baseBorder,
+        borderClass,
         bgClass,
         'text-paper-on-surface',
-        isSelected ? 'ring-2 ring-paper-primary ring-offset-1 ring-offset-paper-surface' : '',
-        isDragOver ? 'ring-2 ring-paper-primary bg-paper-surface-container' : '',
+        isDragOver ? 'ring-2 ring-inset ring-paper-primary bg-paper-surface-container' : '',
         'hover:bg-paper-surface-container',
       ]
         .filter(Boolean)

@@ -4,6 +4,7 @@ import {
   useCallback,
   useEffect,
   useId,
+  useLayoutEffect,
   useRef,
   useState,
   type ReactNode,
@@ -27,6 +28,11 @@ export interface PaperHeaderProps {
   onShowTransitChange?: (value: boolean) => void
   showNeighborhoods?: boolean
   onShowNeighborhoodsChange?: (value: boolean) => void
+  /**
+   * Fixed-header inset for scrollable content below: viewport Y of the header bottom edge
+   * (`getBoundingClientRect().bottom`). Use with padding-top on the main column (e.g. Plan shell).
+   */
+  onViewportBottomChange?: (bottomPx: number) => void
 }
 
 const tabs = [
@@ -179,12 +185,35 @@ export default function PaperHeader({
   onShowTransitChange,
   showNeighborhoods,
   onShowNeighborhoodsChange,
+  onViewportBottomChange,
 }: PaperHeaderProps) {
   const hasBottom = Boolean(bottomSlot)
   const hasSearch = Boolean(searchSlot)
+  const headerRef = useRef<HTMLElement>(null)
+
+  useLayoutEffect(() => {
+    if (!onViewportBottomChange) return
+    const el = headerRef.current
+    if (!el) return
+
+    const measure = () => {
+      onViewportBottomChange(el.getBoundingClientRect().bottom)
+    }
+
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    window.addEventListener('resize', measure)
+    measure()
+
+    return () => {
+      ro.disconnect()
+      window.removeEventListener('resize', measure)
+    }
+  }, [onViewportBottomChange])
 
   return (
     <header
+      ref={headerRef}
       className={`fixed z-50 flex flex-col gap-1.5 rounded-[4px] border border-paper-tertiary-fixed bg-paper-surface px-3 py-1.5 sm:px-4 sm:py-2 ${
         hasBottom || hasSearch ? '' : 'min-h-12 sm:min-h-14 sm:flex-row sm:items-center sm:justify-between'
       }`}
