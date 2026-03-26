@@ -13,6 +13,7 @@ import type { CategoryEnum } from '@/lib/types/enums'
 import { getSupabase } from '@/lib/supabase/client'
 import PaperHeader from '@/components/paper/PaperHeader'
 import PlannerListSwitcher from '@/components/app/PlannerListSwitcher'
+import ShareListButton from '@/components/planner/ShareListButton'
 
 type PlacesRow = {
   id: string
@@ -158,14 +159,17 @@ function PlannerShellPaperWithList({ activeListId }: { activeListId: string }) {
               <PlannerListSwitcher listsCaption="Your lists" />
             </div>
             <div className="flex shrink-0 flex-col items-end gap-1">
-              <button
-                type="button"
-                onClick={() => void handleExportCsv()}
-                disabled={exportingCsv}
-                className="rounded-[4px] border border-paper-tertiary-fixed bg-paper-surface-container-low px-3 py-1.5 text-xs font-medium text-paper-on-surface transition hover:bg-paper-tertiary-fixed disabled:opacity-50"
-              >
-                {exportingCsv ? 'Exporting…' : 'Export CSV'}
-              </button>
+              <div className="flex flex-wrap items-center justify-end gap-2">
+                <ShareListButton listId={activeListId} />
+                <button
+                  type="button"
+                  onClick={() => void handleExportCsv()}
+                  disabled={exportingCsv}
+                  className="rounded-[4px] border border-paper-tertiary-fixed bg-paper-surface-container-low px-3 py-1.5 text-xs font-medium text-paper-on-surface transition hover:bg-paper-tertiary-fixed disabled:opacity-50"
+                >
+                  {exportingCsv ? 'Exporting…' : 'Export CSV'}
+                </button>
+              </div>
               {exportCsvError ? (
                 <p
                   className="max-w-[240px] text-right text-[11px] text-red-600 dark:text-red-300"

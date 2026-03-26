@@ -432,6 +432,83 @@ export type Database = {
         }
         Relationships: []
       }
+      list_shares: {
+        Row: {
+          id: string
+          list_id: string
+          token: string
+          permission: string
+          created_by: string
+          created_at: string
+          expires_at: string | null
+        }
+        Insert: {
+          id?: string
+          list_id: string
+          token?: string
+          permission?: string
+          created_by: string
+          created_at?: string
+          expires_at?: string | null
+        }
+        Update: {
+          id?: string
+          list_id?: string
+          token?: string
+          permission?: string
+          created_by?: string
+          created_at?: string
+          expires_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "list_shares_list_id_fkey"
+            columns: ["list_id"]
+            isOneToOne: false
+            referencedRelation: "lists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      list_collaborators: {
+        Row: {
+          id: string
+          list_id: string
+          user_id: string
+          joined_via_share_id: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          list_id: string
+          user_id: string
+          joined_via_share_id?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          list_id?: string
+          user_id?: string
+          joined_via_share_id?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "list_collaborators_list_id_fkey"
+            columns: ["list_id"]
+            isOneToOne: false
+            referencedRelation: "lists"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "list_collaborators_joined_via_share_id_fkey"
+            columns: ["joined_via_share_id"]
+            isOneToOne: false
+            referencedRelation: "list_shares"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_preferences: {
         Row: {
           created_at: string
