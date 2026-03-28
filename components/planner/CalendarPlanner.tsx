@@ -846,7 +846,7 @@ export default function CalendarPlanner({ listId, onPlanMutated }: Props) {
   ) : null
 
   const backlogBlock = (
-    <div className="border-b border-slate-200 pb-4 md:border-paper-tertiary-fixed">
+    <div data-onboarding="planner-backlog" className="border-b border-slate-200 pb-4 md:border-paper-tertiary-fixed">
       <PlannerBacklog
         items={backlogItems}
         canDrag={canDrag}

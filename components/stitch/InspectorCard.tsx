@@ -659,6 +659,7 @@ export default function InspectorCard(props: {
 
         <button
           type="button"
+          data-onboarding="approve-pin"
           onClick={commit}
           disabled={isCommitting}
           className={`w-full rounded-md px-3 py-2 text-sm shadow-sm transition-colors disabled:opacity-50 md:!rounded-[4px] md:!border-0 md:!bg-paper-primary md:!px-4 md:!py-2.5 md:!text-xs md:!font-bold md:!uppercase md:!tracking-widest md:!text-paper-on-primary md:!shadow-none hover:md:!bg-paper-primary-container ${

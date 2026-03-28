@@ -158,6 +158,7 @@ function BrandAndTabs({
                 key={tab.id}
                 type="button"
                 data-testid={tab.testId}
+                data-onboarding={tab.id === 'itinerary' ? 'itinerary-tab' : undefined}
                 onClick={() => onTabChange(tab.id)}
                 className={`font-headline text-[10px] font-bold uppercase tracking-tight transition-colors duration-150 sm:text-xs ${
                   isActive

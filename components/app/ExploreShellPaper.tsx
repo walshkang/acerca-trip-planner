@@ -14,6 +14,7 @@ import PlaceDrawer from '@/components/stitch/PlaceDrawer'
 import PaperHeader from '@/components/paper/PaperHeader'
 import PaperExplorePanel from '@/components/paper/PaperExplorePanel'
 import PaperMapControls from '@/components/paper/PaperMapControls'
+import OnboardingLayer from '@/components/app/OnboardingLayer'
 import PlannerListSwitcher from '@/components/app/PlannerListSwitcher'
 import type { MobileSnapState } from '@/lib/ui/mobileSnapState'
 import { useMediaQuery } from '@/components/ui/useMediaQuery'
@@ -497,12 +498,14 @@ export default function ExploreShellPaper() {
             activeLayer={activeLayer}
             onLayerChange={setLayer}
             searchSlot={
-              <Omnibox
-                tone="light"
-                placeholder="Search"
-                inputWidth="fluid"
-                onCanonicalPlaceSelect={handleCanonicalSuggestionSelect}
-              />
+              <div data-onboarding="omnibox">
+                <Omnibox
+                  tone="light"
+                  placeholder="Search"
+                  inputWidth="fluid"
+                  onCanonicalPlaceSelect={handleCanonicalSuggestionSelect}
+                />
+              </div>
             }
             bottomSlot={
               <PlannerListSwitcher
@@ -526,24 +529,28 @@ export default function ExploreShellPaper() {
             </div>
           )}
 
-          <PaperExplorePanel
-            locationName={panelTitle}
-            subtitle={null}
-            activeListId={activeListId}
-            filters={activeListId ? typeFilterChips : undefined}
-            onFilterChange={activeListId ? onTypeFilterChange : undefined}
-            tags={activeListId && tagFilterChips.length > 0 ? tagFilterChips : undefined}
-            onTagChange={activeListId ? onTagFilterChange : undefined}
-            preferExpanded={preferExpanded}
-            onMobileSnapChange={setMobileExploreSnap}
-          >
-            {panelContent}
-          </PaperExplorePanel>
+          <div data-onboarding="filter-panel">
+            <PaperExplorePanel
+              locationName={panelTitle}
+              subtitle={null}
+              activeListId={activeListId}
+              filters={activeListId ? typeFilterChips : undefined}
+              onFilterChange={activeListId ? onTypeFilterChange : undefined}
+              tags={activeListId && tagFilterChips.length > 0 ? tagFilterChips : undefined}
+              onTagChange={activeListId ? onTagFilterChange : undefined}
+              preferExpanded={preferExpanded}
+              onMobileSnapChange={setMobileExploreSnap}
+            >
+              {panelContent}
+            </PaperExplorePanel>
+          </div>
 
           <PaperMapControls
             onLocate={handleLocate}
             style={mapControlsBottomPx != null ? { bottom: mapControlsBottomPx } : undefined}
           />
+
+          <OnboardingLayer />
         </>
       )}
     </div>

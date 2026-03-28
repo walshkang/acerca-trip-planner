@@ -12,6 +12,7 @@ import type { MapPlace } from '@/components/map/MapView.types'
 import type { CategoryEnum } from '@/lib/types/enums'
 import { getSupabase } from '@/lib/supabase/client'
 import PaperHeader from '@/components/paper/PaperHeader'
+import OnboardingLayer from '@/components/app/OnboardingLayer'
 import PlannerListSwitcher from '@/components/app/PlannerListSwitcher'
 import ShareListButton from '@/components/planner/ShareListButton'
 
@@ -192,7 +193,7 @@ function PlannerShellPaperWithList({ activeListId }: { activeListId: string }) {
             : undefined
         }
       >
-        <div className="h-[min(200px,28vh)] w-full shrink-0 overflow-hidden rounded-[4px] border border-paper-tertiary-fixed min-[480px]:h-[180px] xl:h-auto xl:w-[350px] xl:min-h-0 xl:shrink-0">
+        <div data-onboarding="map-inset" className="h-[min(200px,28vh)] w-full shrink-0 overflow-hidden rounded-[4px] border border-paper-tertiary-fixed min-[480px]:h-[180px] xl:h-auto xl:w-[350px] xl:min-h-0 xl:shrink-0">
           <MapInset
             className="h-full w-full"
             places={mapPlaces}
@@ -205,6 +206,8 @@ function PlannerShellPaperWithList({ activeListId }: { activeListId: string }) {
           <CalendarPlanner listId={activeListId} onPlanMutated={bumpListItemsRefresh} />
         </div>
       </div>
+
+      <OnboardingLayer />
     </div>
   )
 }
