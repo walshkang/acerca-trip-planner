@@ -106,7 +106,11 @@ export default function Calendar3DayGrid({
           const items = itemsByDate.get(cellDate) ?? []
           const dayKey = `day:${cellDate}`
           return (
-            <div key={cellDate} className="bg-paper-surface p-px" role="gridcell">
+            <div
+              key={cellDate}
+              className="flex min-h-[200px] h-full min-w-0 flex-col bg-paper-surface p-px"
+              role="gridcell"
+            >
               <DayCell
                 date={cellDate}
                 items={items}

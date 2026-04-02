@@ -4,11 +4,8 @@ import { useCallback, useEffect, useMemo, useRef } from 'react'
 import type { ViewState } from 'react-map-gl/maplibre'
 import MapViewMapbox from '@/components/map/MapView.mapbox'
 import MapViewMaplibre from '@/components/map/MapView.maplibre'
-import type {
-  MapPlace,
-  MapViewRef,
-  PlaceMarkerVariant,
-} from '@/components/map/MapView.types'
+import type { MapPlace, MapViewRef, PlaceMarkerVariant } from '@/components/map/MapView.types'
+import { mapRingClassesForListItem } from '@/components/map/placeMarkerRing'
 import { useCategoryIconOverrides } from '@/lib/icons/useCategoryIconOverrides'
 import { resolveMapStyle, normalizeMaplibreStyleSource } from '@/lib/map/styleResolver'
 import { useMapLayerStore } from '@/lib/state/useMapLayerStore'
@@ -94,6 +91,11 @@ export default function MapInset({
       if (item.scheduled_date) return 'scheduled'
       return 'backlog'
     },
+    [itemByPlaceId]
+  )
+
+  const getPlaceMarkerRingClassName = useCallback(
+    (place: MapPlace) => mapRingClassesForListItem(itemByPlaceId.get(place.id)),
     [itemByPlaceId]
   )
 
@@ -193,6 +195,7 @@ export default function MapInset({
         isPlaceDimmed={isPlaceDimmed}
         isPlaceFocused={isPlaceFocused}
         getPlaceMarkerVariant={getPlaceMarkerVariant}
+        getPlaceMarkerRingClassName={getPlaceMarkerRingClassName}
         resolveCategoryEmoji={resolveCategoryEmoji}
         markerBackdropClassName={LIGHT_MARKER_BACKDROP}
         styleKey={styleKey}

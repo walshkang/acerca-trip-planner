@@ -68,6 +68,8 @@ export type MapViewProps = {
   isPlaceDimmed: (place: MapPlace) => boolean
   isPlaceFocused: (place: MapPlace) => boolean
   getPlaceMarkerVariant?: (place: MapPlace) => PlaceMarkerVariant
+  /** When set, used for pin ring color (slot / done / backlog). Grayscale for done still uses variant. */
+  getPlaceMarkerRingClassName?: (place: MapPlace) => string
   resolveCategoryEmoji?: (category: CategoryEnum) => string
   markerFocusClassName?: string
   ghostMarkerClassName?: string

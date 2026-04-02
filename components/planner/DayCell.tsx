@@ -3,6 +3,7 @@
 import type { DragEvent } from 'react'
 import type { ListItemRow } from '@/components/stitch/ListDetailBody'
 import { slotFromScheduledStartTime } from '@/lib/lists/planner'
+import { slotDotClassName } from '@/lib/slots'
 
 const MAX_VISIBLE_ITEMS = 5
 const DEFAULT_MIN_HEIGHT = 'min-h-[148px]'
@@ -52,10 +53,10 @@ export default function DayCell({
 
   const baseBorder =
     density === 'packed'
-      ? 'border-paper-primary/40 border-l-2 border-l-paper-primary'
-      : 'border-paper-tertiary-fixed'
+      ? 'border-2 border-paper-primary/40 border-l-4 border-l-paper-primary'
+      : 'border-2 border-paper-tertiary-fixed'
 
-  const borderClass = isSelected ? 'border-2 border-paper-primary' : baseBorder
+  const borderClass = isSelected ? 'border-2 border-black' : baseBorder
 
   const bgClass = isToday
     ? 'bg-paper-primary/10'
@@ -82,12 +83,12 @@ export default function DayCell({
       onDragOver={(e) => onDragOverDay(e, date)}
       onDrop={(e) => onDropDay(e, date)}
       className={[
-        'flex w-full cursor-pointer flex-col gap-1.5 rounded-[4px] border p-2 text-left font-body transition',
+        'flex h-full min-h-0 w-full cursor-pointer flex-col gap-1.5 rounded-[4px] border p-2 text-left font-body transition',
         minHeightClassName,
         borderClass,
         bgClass,
         'text-paper-on-surface',
-        isDragOver ? 'ring-2 ring-inset ring-paper-primary bg-paper-surface-container' : '',
+        isDragOver ? 'ring-2 ring-inset ring-black/35 bg-paper-surface-container' : '',
         'hover:bg-paper-surface-container',
       ]
         .filter(Boolean)
@@ -134,18 +135,9 @@ export default function DayCell({
                   .filter(Boolean)
                   .join(' ')}
               >
-                {/* Slot colors align with PlannerDayCell dots: morning=amber, afternoon=slate, evening=indigo */}
                 <span
                   aria-hidden
-                  className={[
-                    'h-3.5 w-[3px] shrink-0 rounded-full',
-                    slot === 'morning' && 'bg-amber-500',
-                    slot === 'afternoon' && 'bg-slate-500',
-                    slot === 'evening' && 'bg-indigo-500',
-                    !slot && 'bg-slate-400',
-                  ]
-                    .filter(Boolean)
-                    .join(' ')}
+                  className={`h-3.5 w-[3px] shrink-0 rounded-full ${slotDotClassName(slot, 'light')}`}
                 />
                 {emoji ? (
                   <span className="shrink-0 text-[12px] leading-none" aria-hidden>

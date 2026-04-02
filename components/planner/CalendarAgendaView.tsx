@@ -5,6 +5,7 @@ import type { ListItemRow } from '@/components/stitch/ListDetailBody'
 import { formatUtcLongDate } from '@/lib/lists/calendar-display'
 import { sortItemsForDayCellDisplay } from '@/lib/lists/calendar-day-detail'
 import { slotFromScheduledStartTime } from '@/lib/lists/planner'
+import { slotDotClassName } from '@/lib/slots'
 
 type Props = {
   tripDates: string[]
@@ -109,15 +110,7 @@ export default function CalendarAgendaView({
                         >
                           <span
                             aria-hidden
-                            className={[
-                              'h-3.5 w-[3px] shrink-0 rounded-full',
-                              slot === 'morning' && 'bg-amber-500',
-                              slot === 'afternoon' && 'bg-slate-500',
-                              slot === 'evening' && 'bg-indigo-500',
-                              !slot && 'bg-slate-400',
-                            ]
-                              .filter(Boolean)
-                              .join(' ')}
+                            className={`h-3.5 w-[3px] shrink-0 rounded-full ${slotDotClassName(slot, 'light')}`}
                           />
                           {emoji ? (
                             <span className="shrink-0 text-[12px] leading-none" aria-hidden>

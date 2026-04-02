@@ -529,21 +529,19 @@ export default function ExploreShellPaper() {
             </div>
           )}
 
-          <div data-onboarding="filter-panel">
-            <PaperExplorePanel
-              locationName={panelTitle}
-              subtitle={null}
-              activeListId={activeListId}
-              filters={activeListId ? typeFilterChips : undefined}
-              onFilterChange={activeListId ? onTypeFilterChange : undefined}
-              tags={activeListId && tagFilterChips.length > 0 ? tagFilterChips : undefined}
-              onTagChange={activeListId ? onTagFilterChange : undefined}
-              preferExpanded={preferExpanded}
-              onMobileSnapChange={setMobileExploreSnap}
-            >
-              {panelContent}
-            </PaperExplorePanel>
-          </div>
+          <PaperExplorePanel
+            locationName={panelTitle}
+            subtitle={null}
+            activeListId={activeListId}
+            filters={activeListId ? typeFilterChips : undefined}
+            onFilterChange={activeListId ? onTypeFilterChange : undefined}
+            tags={activeListId && tagFilterChips.length > 0 ? tagFilterChips : undefined}
+            onTagChange={activeListId ? onTagFilterChange : undefined}
+            preferExpanded={preferExpanded}
+            onMobileSnapChange={setMobileExploreSnap}
+          >
+            {panelContent}
+          </PaperExplorePanel>
 
           <PaperMapControls
             onLocate={handleLocate}

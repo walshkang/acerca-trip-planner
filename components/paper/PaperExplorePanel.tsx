@@ -102,7 +102,9 @@ function PaperExplorePanelChrome({
         ) : null}
       </div>
 
-      {showTypeRow ? (
+      {showTypeRow || showTagRow ? (
+        <div data-onboarding="filter-panel">
+          {showTypeRow ? (
         <div className="space-y-2">
           <p className={SECTION_HEADING}>Types</p>
           <div className="flex flex-wrap gap-2">
@@ -208,7 +210,7 @@ function PaperExplorePanelChrome({
         </div>
       ) : null}
 
-      {showTagRow ? (
+          {showTagRow ? (
         <div className={showTypeRow ? 'mt-4 space-y-2' : 'space-y-2'}>
           <p className={SECTION_HEADING}>Tags</p>
           <div className="flex max-h-[3.5rem] flex-wrap gap-2 overflow-y-auto">
@@ -227,6 +229,8 @@ function PaperExplorePanelChrome({
               </button>
             ))}
           </div>
+        </div>
+      ) : null}
         </div>
       ) : null}
 

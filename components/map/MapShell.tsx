@@ -37,6 +37,7 @@ import {
   haversineMeters,
 } from '@/lib/map/bounds'
 import type { ViewState } from 'react-map-gl/maplibre'
+import { mapRingClassesForListItem } from '@/components/map/placeMarkerRing'
 
 export type ActiveListItemState = {
   id: string
@@ -584,6 +585,12 @@ const MapShell = forwardRef<MapShellHandle, MapShellProps>(function MapShell(
     [activeListItemByPlaceId]
   )
 
+  const getPlaceMarkerRingClassName = useCallback(
+    (place: MapPlace) =>
+      mapRingClassesForListItem(activeListItemByPlaceId.get(place.id)),
+    [activeListItemByPlaceId]
+  )
+
   const handleMapClick = useCallback(() => {
     discardPreview()
     setFocusedListPlaceId(null)
@@ -674,6 +681,7 @@ const MapShell = forwardRef<MapShellHandle, MapShellProps>(function MapShell(
       isPlaceDimmed={isPlaceDimmed}
       isPlaceFocused={isPlaceFocused}
       getPlaceMarkerVariant={getPlaceMarkerVariant}
+      getPlaceMarkerRingClassName={getPlaceMarkerRingClassName}
       resolveCategoryEmoji={resolveCategoryEmoji}
       markerFocusClassName={markerFocusClassName}
       ghostMarkerClassName={ghostMarkerClassName}

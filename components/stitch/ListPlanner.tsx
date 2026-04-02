@@ -27,6 +27,7 @@ import PlannerBacklog from './planner/PlannerBacklog'
 import PlannerMovePicker from './planner/PlannerMovePicker'
 import { formatDayLabelFull } from './planner/planner-utils'
 import { useTripStore } from '@/lib/state/useTripStore'
+import { localCalendarDateIso } from '@/lib/dates/local-calendar'
 
 type Props = {
   listId: string | null
@@ -711,6 +712,12 @@ export default function ListPlanner({
     }
   }, [listId, onPlanMutated, setSelectedDayAndStore])
 
+  const seedEmptyTripDatesFromLocalToday = useCallback(() => {
+    const t = localCalendarDateIso()
+    setTripStart((s) => (s.trim() ? s : t))
+    setTripEnd((e) => (e.trim() ? e : t))
+  }, [])
+
   // ── Move picker handlers ──
   const handleMoveToDay = useCallback(
     (date: string) => {
@@ -804,14 +811,15 @@ export default function ListPlanner({
       onSave={saveTripDates}
       onClear={clearTripDates}
       error={editingTripDates ? error : null}
+      onBeforeOpenTripDateEdit={seedEmptyTripDatesFromLocalToday}
     />
   )
 
   const backlogBlock = (
     <div
-      className={
+      className={`max-h-[min(40vh,22rem)] min-h-0 shrink-0 overflow-y-auto ${
         isDark ? '' : 'border-b border-slate-200 pb-4 md:border-paper-tertiary-fixed'
-      }
+      }`}
     >
       <PlannerBacklog
         items={backlogItems}

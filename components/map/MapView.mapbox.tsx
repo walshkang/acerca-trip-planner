@@ -13,6 +13,7 @@ import {
   PLACE_FOCUS_GLOW,
 } from '@/lib/ui/glow'
 import type { MapViewProps, MapViewRef } from './MapView.types'
+import { fallbackMarkerRingClass } from '@/components/map/placeMarkerRing'
 
 /** Muted palette by Mapbox `type` (composite road layer) */
 const TRANSIT_LINE_COLOR = [
@@ -132,6 +133,7 @@ const MapViewMapbox = forwardRef<MapViewRef, MapViewProps>(function MapViewMapbo
     isPlaceDimmed,
     isPlaceFocused,
     getPlaceMarkerVariant,
+    getPlaceMarkerRingClassName,
     resolveCategoryEmoji,
     markerFocusClassName,
     ghostMarkerClassName,
@@ -253,15 +255,12 @@ const MapViewMapbox = forwardRef<MapViewRef, MapViewProps>(function MapViewMapbo
         const isFocusedMarker = isPlaceFocused(place)
         const isDimmedMarker = isPlaceDimmed(place)
         const markerVariant = getPlaceMarkerVariant?.(place) ?? 'default'
-        const markerVariantClassName =
-          markerVariant === 'scheduled'
-            ? 'ring-2 ring-emerald-500/70'
-            : markerVariant === 'done'
-              ? 'opacity-60 grayscale'
-              : 'ring-2 ring-slate-400/50'
+        const ringClass =
+          getPlaceMarkerRingClassName?.(place) ?? fallbackMarkerRingClass(markerVariant)
+        const doneClass = markerVariant === 'done' ? 'opacity-60 grayscale' : ''
         const markerStateClassName = isFocusedMarker
           ? markerFocusClassName ?? PLACE_FOCUS_GLOW
-          : markerVariantClassName
+          : `${ringClass} ${doneClass}`.trim()
         return (
           <Marker
             key={place.id}

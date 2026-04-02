@@ -23,6 +23,8 @@ type Props = {
   onSave: () => void
   onClear: () => void
   error: string | null
+  /** Seed empty start/end before opening the editor (e.g. user-local today). */
+  onBeforeOpenTripDateEdit?: () => void
 }
 
 const TRAVEL_TIMEZONE_GROUPS: { region: string; zones: string[] }[] = [
@@ -84,6 +86,7 @@ export default function PlannerTripDates({
   onSave,
   onClear,
   error,
+  onBeforeOpenTripDateEdit,
 }: Props) {
   const isDark = tone === 'dark'
   const headingClass = isDark ? 'text-slate-100' : 'text-slate-900'
@@ -137,7 +140,14 @@ export default function PlannerTripDates({
           {list?.start_date && list?.end_date ? (
             <button
               type="button"
-              onClick={() => setEditingTripDates(!editingTripDates)}
+              onClick={() => {
+                if (editingTripDates) {
+                  setEditingTripDates(false)
+                } else {
+                  onBeforeOpenTripDateEdit?.()
+                  setEditingTripDates(true)
+                }
+              }}
               className={`text-[11px] ${linkClass}`}
             >
               {editingTripDates ? 'Close' : 'Edit dates'}
@@ -145,7 +155,10 @@ export default function PlannerTripDates({
           ) : (
             <button
               type="button"
-              onClick={() => setEditingTripDates(true)}
+              onClick={() => {
+                onBeforeOpenTripDateEdit?.()
+                setEditingTripDates(true)
+              }}
               className={`text-[11px] ${linkClass}`}
             >
               Set dates

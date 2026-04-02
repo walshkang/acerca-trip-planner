@@ -1,4 +1,5 @@
 import type { PlannerSlot } from '@/lib/lists/planner'
+import { slotDotClassName as slotDotClassNameFromLib } from '@/lib/slots'
 
 export type SlotDotTone = 'warm' | 'neutral' | 'cool'
 
@@ -12,15 +13,7 @@ export function slotDotClassName(
   slot: PlannerSlot | null,
   tone: 'light' | 'dark'
 ): string {
-  const dotTone = slotDotTone(slot)
-  if (tone === 'dark') {
-    if (dotTone === 'warm') return 'bg-amber-400'
-    if (dotTone === 'cool') return 'bg-indigo-400'
-    return 'bg-slate-400'
-  }
-  if (dotTone === 'warm') return 'bg-amber-500'
-  if (dotTone === 'cool') return 'bg-indigo-500'
-  return 'bg-slate-500'
+  return slotDotClassNameFromLib(slot, tone)
 }
 
 export function formatDayLabel(isoDate: string): string {

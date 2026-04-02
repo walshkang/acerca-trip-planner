@@ -23,6 +23,7 @@ import Calendar2WeekGrid from '@/components/planner/Calendar2WeekGrid'
 import CalendarAgendaView from '@/components/planner/CalendarAgendaView'
 import CalendarDayDetail from '@/components/planner/CalendarDayDetail'
 import PlannerFreshnessLabel from '@/components/planner/PlannerFreshnessLabel'
+import { localCalendarDateIso } from '@/lib/dates/local-calendar'
 import {
   computeThreeDayWindow,
   initialTwoWeekMonday,
@@ -721,6 +722,12 @@ export default function CalendarPlanner({ listId, onPlanMutated }: Props) {
 
   const isTripRangeTooLong = Boolean(tripDaysCount && tripDaysCount > MAX_TRIP_DAYS_RENDER)
 
+  const seedEmptyTripDatesFromLocalToday = useCallback(() => {
+    const t = localCalendarDateIso()
+    setTripStart((s) => (s.trim() ? s : t))
+    setTripEnd((e) => (e.trim() ? e : t))
+  }, [])
+
   const tripDatesBlock = (
     <PlannerTripDates
       list={list}
@@ -737,6 +744,7 @@ export default function CalendarPlanner({ listId, onPlanMutated }: Props) {
       onSave={saveTripDates}
       onClear={clearTripDates}
       error={editingTripDates ? error : null}
+      onBeforeOpenTripDateEdit={seedEmptyTripDatesFromLocalToday}
     />
   )
 
@@ -846,7 +854,10 @@ export default function CalendarPlanner({ listId, onPlanMutated }: Props) {
   ) : null
 
   const backlogBlock = (
-    <div data-onboarding="planner-backlog" className="border-b border-slate-200 pb-4 md:border-paper-tertiary-fixed">
+    <div
+      data-onboarding="planner-backlog"
+      className="max-h-[min(40vh,22rem)] min-h-0 shrink-0 overflow-y-auto border-b border-slate-200 pb-4 md:border-paper-tertiary-fixed"
+    >
       <PlannerBacklog
         items={backlogItems}
         canDrag={canDrag}
@@ -1023,6 +1034,7 @@ export default function CalendarPlanner({ listId, onPlanMutated }: Props) {
             onDragStartItem={onDragStart}
             onDragEndItem={onDragEnd}
             savingItemId={savingItemId}
+            dragItemId={dragItemId}
           />
         ) : (
           <div className="flex h-full min-h-[120px] items-center justify-center">

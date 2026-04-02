@@ -14,6 +14,7 @@ import {
   PLACE_FOCUS_GLOW,
 } from '@/lib/ui/glow'
 import type { MapViewProps, MapViewRef } from './MapView.types'
+import { fallbackMarkerRingClass } from '@/components/map/placeMarkerRing'
 
 /** Carto/OpenMapTiles `transportation` layer — `subclass` */
 const TRANSIT_LINE_COLOR_SUBCLASS: unknown[] = [
@@ -146,6 +147,7 @@ const MapViewMaplibre = forwardRef<MapViewRef, MapViewProps>(
       isPlaceDimmed,
       isPlaceFocused,
       getPlaceMarkerVariant,
+      getPlaceMarkerRingClassName,
       resolveCategoryEmoji,
       markerFocusClassName,
       ghostMarkerClassName,
@@ -274,15 +276,12 @@ const MapViewMaplibre = forwardRef<MapViewRef, MapViewProps>(
           const isFocusedMarker = isPlaceFocused(place)
           const isDimmedMarker = isPlaceDimmed(place)
           const markerVariant = getPlaceMarkerVariant?.(place) ?? 'default'
-          const markerVariantClassName =
-            markerVariant === 'scheduled'
-              ? 'ring-2 ring-emerald-500/70'
-              : markerVariant === 'done'
-                ? 'opacity-60 grayscale'
-                : 'ring-2 ring-slate-400/50'
+          const ringClass =
+            getPlaceMarkerRingClassName?.(place) ?? fallbackMarkerRingClass(markerVariant)
+          const doneClass = markerVariant === 'done' ? 'opacity-60 grayscale' : ''
           const markerStateClassName = isFocusedMarker
             ? markerFocusClassName ?? PLACE_FOCUS_GLOW
-            : markerVariantClassName
+            : `${ringClass} ${doneClass}`.trim()
           return (
             <Marker
               key={place.id}

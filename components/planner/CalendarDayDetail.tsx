@@ -9,6 +9,11 @@ import {
   PLANNER_SLOT_ORDER,
 } from '@/lib/lists/planner'
 import { groupItemsByPlannerSlot } from '@/lib/lists/calendar-day-detail'
+import {
+  slotDayDetailSectionClassDragging,
+  slotDayDetailSectionClassRest,
+  slotDayDetailSectionDropOverRing,
+} from '@/lib/slots'
 
 type Props = {
   date: string
@@ -24,6 +29,7 @@ type Props = {
   onDragStartItem: (itemId: string) => void
   onDragEndItem: () => void
   savingItemId: string | null
+  dragItemId: string | null
 }
 
 function slotSectionKey(date: string, slot: PlannerSlot) {
@@ -48,11 +54,11 @@ export default function CalendarDayDetail({
   onDragStartItem,
   onDragEndItem,
   savingItemId,
+  dragItemId,
 }: Props) {
   const { bySlot, unscheduled } = useMemo(() => groupItemsByPlannerSlot(items), [items])
 
-  const sectionDropActive =
-    'ring-2 ring-paper-primary bg-paper-surface-container rounded-[4px]'
+  const isDragging = dragItemId != null
 
   const renderItemCard = (item: ListItemRow) => {
     const place = item.place
@@ -77,7 +83,9 @@ export default function CalendarDayDetail({
         className={[
           'rounded-[4px] border px-2.5 py-2 transition',
           'border-paper-tertiary-fixed bg-paper-surface-container-low',
-          isDropTarget ? sectionDropActive : '',
+          isDropTarget
+            ? 'ring-2 ring-paper-primary bg-paper-surface-container rounded-[4px]'
+            : '',
         ]
           .filter(Boolean)
           .join(' ')}
@@ -117,11 +125,19 @@ export default function CalendarDayDetail({
     const slotItems = bySlot[slot]
     const sectionKey = slotSectionKey(date, slot)
     const isSectionOver = dropTargetKey === sectionKey
+    const slotBorderClass = isDragging
+      ? slotDayDetailSectionClassDragging(slot)
+      : slotDayDetailSectionClassRest(slot)
 
     return (
       <div
         key={slot}
-        className={['space-y-2 rounded-[4px] p-1', isSectionOver ? sectionDropActive : '']
+        className={[
+          'space-y-2 rounded-[4px] p-1 transition-[box-shadow,background-color,border-color]',
+          slotBorderClass,
+          isSectionOver && isDragging ? slotDayDetailSectionDropOverRing(slot) : '',
+          isSectionOver && isDragging ? 'bg-paper-surface-container/70' : '',
+        ]
           .filter(Boolean)
           .join(' ')}
         onDragOver={(e) => onDragOverItem(e, sectionKey)}
