@@ -105,6 +105,33 @@ function buildGtfsRouteTypeFilter(transitModes: TransitMode[] | undefined): unkn
   return ['in', ['get', 'route_type'], ['literal', sorted]]
 }
 
+function buildBaseTileFilter(
+  lineFilter: unknown[],
+  colorField: string | undefined,
+  transitModes: TransitMode[] | undefined
+): unknown[] {
+  if (!transitModes || transitModes.length === 0) return lineFilter
+
+  const subwayValues = [
+    'subway',
+    'light_rail',
+    'tram',
+    'monorail',
+    'funicular',
+  ]
+  const railValues = ['rail', 'narrow_gauge', 'service_rail']
+
+  const allowed: string[] = []
+  if (transitModes.includes('subway')) allowed.push(...subwayValues)
+  if (transitModes.includes('rail')) allowed.push(...railValues)
+
+  if (allowed.length === 0) return ['==', '1', '0']
+
+  if (!colorField) return lineFilter
+
+  return ['in', colorField, ...allowed]
+}
+
 const TRANSIT_STOPS_PAINT: Record<string, unknown> = {
   'circle-color': '#7B61A5',
   'circle-radius': [
@@ -230,6 +257,16 @@ const MapViewMaplibre = forwardRef<MapViewRef, MapViewProps>(
       [transitModes]
     )
 
+    const baseTileFilter = useMemo(
+      () =>
+        buildBaseTileFilter(
+          transitTileConfig?.lineFilter ?? [],
+          transitTileConfig?.colorField,
+          transitModes
+        ),
+      [transitTileConfig?.lineFilter, transitTileConfig?.colorField, transitModes]
+    )
+
     return (
       <MapGL
         ref={ref as any}
@@ -251,13 +288,13 @@ const MapViewMaplibre = forwardRef<MapViewRef, MapViewProps>(
         }}
       >
         {/* Transit lines from vector tiles */}
-        {styleReady && showTransit && transitTileConfig ? (
+        {styleReady && showTransit && transitTileConfig && !gtfsData ? (
           <Layer
             id="transit-lines"
             type="line"
             source={transitTileConfig.vectorSource}
             source-layer={transitTileConfig.lineSourceLayer}
-            filter={transitTileConfig.lineFilter as any}
+            filter={baseTileFilter as any}
             layout={{ 'line-join': 'round', 'line-cap': 'round' }}
             paint={{
               'line-color': transitLineColorExpression as any,
@@ -270,7 +307,8 @@ const MapViewMaplibre = forwardRef<MapViewRef, MapViewProps>(
         {styleReady &&
           showTransit &&
           transitTileConfig?.stopSourceLayer &&
-          transitTileConfig?.stopFilter ? (
+          transitTileConfig?.stopFilter &&
+          !gtfsData ? (
           <Layer
             id="transit-stops"
             type="circle"
