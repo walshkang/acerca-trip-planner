@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
 const MAP_LAYERS = new Set(['default', 'transit', 'terrain'])
-const TRANSIT_MODES = new Set(['subway', 'bus', 'rail'])
+const TRANSIT_MODES = new Set(['subway', 'bus', 'rail', 'ferry'])
 
 export async function GET() {
   try {

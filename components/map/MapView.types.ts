@@ -1,6 +1,7 @@
 'use client'
 
 import type { ViewState } from 'react-map-gl/maplibre'
+import type { CanonicalMode } from '@/lib/transit/metroArea'
 import type { TransitMode } from '@/lib/state/useMapLayerStore'
 import type { CategoryEnum } from '@/lib/types/enums'
 
@@ -63,6 +64,7 @@ export type GtfsRouteProperties = {
   route_short_name: string | null
   route_color: string
   route_type: number
+  canonical_mode: CanonicalMode
 }
 
 export type GeoJsonFeatureCollection = {
@@ -92,7 +94,7 @@ export type MapViewProps = {
   markerFocusClassName?: string
   ghostMarkerClassName?: string
   showTransit?: boolean
-  /** GTFS line filter by logical mode; omitted/empty uses legacy metro-only (route_type 1). */
+  /** GTFS line filter by logical mode; omitted/empty uses legacy metro-only (canonical `subway`). */
   transitModes?: TransitMode[]
   gtfsData?: GeoJsonFeatureCollection | null
   transitTileConfig?: TransitTileConfig

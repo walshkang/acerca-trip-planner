@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getAdminSupabase } from '@/lib/supabase/admin'
-import { DEFAULT_ROUTE_COLOR, gridKey } from '@/lib/transit/metroArea'
+import { DEFAULT_ROUTE_COLOR, gridKey, normalizeMode } from '@/lib/transit/metroArea'
+import type { GeoJsonFeatureCollection } from '@/components/map/MapView.types'
 
 type RouteGeometry = {
   type: 'MultiLineString'
@@ -24,22 +25,8 @@ type TransitlandGeoJsonResponse = {
   features?: TransitlandFeature[]
 }
 
-type GeoJsonFeature = {
-  type: 'Feature'
-  geometry: RouteGeometry
-  properties: {
-    route_short_name: string
-    route_color: string
-    route_type: 0 | 1 | 2 | 3
-  }
-}
-
-type GeoJsonFeatureCollection = {
-  type: 'FeatureCollection'
-  features: GeoJsonFeature[]
-}
-
 const TRANSIT_CACHE_BUCKET = 'transit-cache'
+const CACHE_PATH_PREFIX = 'v2/'
 
 function parseCoordinate(raw: string | null): number | null {
   if (!raw) return null
@@ -63,6 +50,20 @@ function isCacheMiss(error: { statusCode?: string; message?: string } | null): b
   )
 }
 
+function hasCanonicalModeOnFeatures(value: unknown): boolean {
+  if (!value || typeof value !== 'object') return false
+  const fc = value as { type?: unknown; features?: unknown }
+  if (fc.type !== 'FeatureCollection' || !Array.isArray(fc.features)) return false
+  for (const f of fc.features) {
+    if (!f || typeof f !== 'object') return false
+    const props = (f as { properties?: unknown }).properties
+    if (!props || typeof props !== 'object') return false
+    const cm = (props as { canonical_mode?: unknown }).canonical_mode
+    if (typeof cm !== 'string' || cm.length === 0) return false
+  }
+  return true
+}
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const lat = parseCoordinate(searchParams.get('lat'))
@@ -75,7 +76,7 @@ export async function GET(request: Request) {
     )
   }
 
-  const cachePath = `${gridKey(lat, lng)}.geojson`
+  const cachePath = `${CACHE_PATH_PREFIX}${gridKey(lat, lng)}.geojson`
 
   try {
     const supabase = getAdminSupabase()
@@ -88,9 +89,9 @@ export async function GET(request: Request) {
     } else if (data) {
       const cachedValue = (JSON.parse(
         await data.text()
-      ) ?? null) as GeoJsonFeatureCollection | null
-      if (cachedValue?.type === 'FeatureCollection') {
-        return geoJsonResponse(cachedValue)
+      ) ?? null) as unknown
+      if (hasCanonicalModeOnFeatures(cachedValue)) {
+        return geoJsonResponse(cachedValue as GeoJsonFeatureCollection)
       }
     }
   } catch (error) {
@@ -135,15 +136,22 @@ export async function GET(request: Request) {
 
   const featureCollection: GeoJsonFeatureCollection = {
     type: 'FeatureCollection',
-    features: payload.features.map((feature) => ({
-      type: 'Feature',
-      geometry: feature.geometry,
-      properties: {
-        route_short_name: feature.properties.route_short_name,
-        route_color: feature.properties.route_color ?? DEFAULT_ROUTE_COLOR,
-        route_type: feature.properties.route_type as 0 | 1 | 2 | 3,
-      },
-    })),
+    features: payload.features.map((feature) => {
+      const routeType = feature.properties.route_type
+      const canonical = normalizeMode(
+        typeof routeType === 'number' ? routeType : Number.NaN
+      )
+      return {
+        type: 'Feature',
+        geometry: feature.geometry,
+        properties: {
+          route_short_name: feature.properties.route_short_name,
+          route_color: feature.properties.route_color ?? DEFAULT_ROUTE_COLOR,
+          route_type: typeof routeType === 'number' ? routeType : 0,
+          canonical_mode: canonical,
+        },
+      }
+    }),
   }
 
   try {

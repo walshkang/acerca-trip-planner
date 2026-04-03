@@ -13,6 +13,7 @@ import {
   GHOST_MARKER_GLOW_PULSE_CLASS_LIGHT,
   PLACE_FOCUS_GLOW,
 } from '@/lib/ui/glow'
+import type { CanonicalMode } from '@/lib/transit/metroArea'
 import type { TransitMode } from '@/lib/state/useMapLayerStore'
 import type { MapViewProps, MapViewRef } from './MapView.types'
 import { fallbackMarkerRingClass } from '@/components/map/placeMarkerRing'
@@ -84,25 +85,26 @@ const TRANSIT_LINE_PAINT_BASE: Record<string, unknown> = {
   ],
 }
 
-const ROUTE_TYPE_BY_MODE: Record<TransitMode, number[]> = {
-  subway: [0, 1],
-  bus: [3],
-  rail: [2],
+const CANONICAL_MODES_BY_TRANSIT_MODE: Record<TransitMode, CanonicalMode[]> = {
+  subway: ['subway', 'tram'],
+  bus: ['bus'],
+  rail: ['rail'],
+  ferry: ['ferry'],
 }
 
-function buildGtfsRouteTypeFilter(transitModes: TransitMode[] | undefined): unknown[] {
+function buildGtfsCanonicalModeFilter(transitModes: TransitMode[] | undefined): unknown[] {
   if (transitModes == null || transitModes.length === 0) {
-    return ['in', ['get', 'route_type'], ['literal', [1]]]
+    return ['in', ['get', 'canonical_mode'], ['literal', ['subway']]]
   }
-  const ids = new Set<number>()
+  const allowed = new Set<CanonicalMode>()
   for (const m of transitModes) {
-    const types = ROUTE_TYPE_BY_MODE[m]
-    if (types) {
-      for (const r of types) ids.add(r)
+    const list = CANONICAL_MODES_BY_TRANSIT_MODE[m]
+    if (list) {
+      for (const c of list) allowed.add(c)
     }
   }
-  const sorted = [...ids].sort((a, b) => a - b)
-  return ['in', ['get', 'route_type'], ['literal', sorted]]
+  const sorted = [...allowed].sort()
+  return ['in', ['get', 'canonical_mode'], ['literal', sorted]]
 }
 
 function buildBaseTileFilter(
@@ -111,6 +113,9 @@ function buildBaseTileFilter(
   transitModes: TransitMode[] | undefined
 ): unknown[] {
   if (!transitModes || transitModes.length === 0) return lineFilter
+
+  // Bus and ferry exist only on GTFS layers; base vector tiles have no matching
+  // subclasses — ferry (and bus) are no-ops here.
 
   const subwayValues = [
     'subway',
@@ -252,8 +257,8 @@ const MapViewMaplibre = forwardRef<MapViewRef, MapViewProps>(
       return TRANSIT_LINE_COLOR_SUBCLASS
     }, [transitTileConfig?.colorField])
 
-    const gtfsRouteTypeFilter = useMemo(
-      () => buildGtfsRouteTypeFilter(transitModes),
+    const gtfsCanonicalModeFilter = useMemo(
+      () => buildGtfsCanonicalModeFilter(transitModes),
       [transitModes]
     )
 
@@ -326,7 +331,7 @@ const MapViewMaplibre = forwardRef<MapViewRef, MapViewProps>(
               id="gtfs-transit-lines"
               type="line"
               source="gtfs-routes"
-              filter={gtfsRouteTypeFilter as any}
+              filter={gtfsCanonicalModeFilter as any}
               layout={{ 'line-join': 'round', 'line-cap': 'round' }}
               paint={{
                 'line-color': ['concat', '#', ['get', 'route_color']],

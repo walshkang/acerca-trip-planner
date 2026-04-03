@@ -4,9 +4,9 @@ export type MapLayer = 'default' | 'transit' | 'terrain'
 
 export const MAP_LAYERS = ['default', 'transit', 'terrain'] as const satisfies readonly MapLayer[]
 
-export type TransitMode = 'subway' | 'bus' | 'rail'
+export type TransitMode = 'subway' | 'bus' | 'rail' | 'ferry'
 
-export const TRANSIT_MODES = ['subway', 'bus', 'rail'] as const satisfies readonly TransitMode[]
+export const TRANSIT_MODES = ['subway', 'bus', 'rail', 'ferry'] as const satisfies readonly TransitMode[]
 
 const DEFAULT_TRANSIT_MODES: TransitMode[] = ['subway']
 
