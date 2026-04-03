@@ -33,7 +33,7 @@ Full shape: [`docs/TRANSIT_LINES_SHAPE.md`](./TRANSIT_LINES_SHAPE.md)
 
 **Known gaps / next up:**
 - Slice 3: Auto-trigger GTFS fetch when user adds a place in a new city (currently only fetches on map load)
-- Slice 5: Multi-city validation — HK has a Transitland data coverage gap: only one feed (`f-hong~kong~en`), entirely type 3 (bus). MTR, trams, Star Ferry, light rail are absent from Transitland entirely. Not a normalization bug — just missing data upstream. HK will only show bus routes.
+- Transit coverage: 6/12 top travel cities have no subway data in Transitland (HK, Paris, Delhi, Shenzhen, Istanbul, Macau). Full plan: [`docs/TRANSIT_COVERAGE_PLAN.md`](./TRANSIT_COVERAGE_PLAN.md). Next step is S1 (manual override lookup in API route) + sourcing HK MTR and Paris RATP GeoJSONs from transit authorities.
 - Bus route density at low zoom (may need zoom-level gating)
 
 ---
