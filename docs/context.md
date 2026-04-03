@@ -20,26 +20,21 @@ Seven visual/UX fixes — all landed 2026-04-02.
 
 ---
 
-## Next up: Per-Line Transit Layer
+## Recently shipped: Per-Line Transit Layer (Slices 1, 2, 4)
 
 Full shape: [`docs/TRANSIT_LINES_SHAPE.md`](./TRANSIT_LINES_SHAPE.md)
 
-**What it does:** Replaces the current "all subway is purple" transit layer with per-line rendering using official route colors (MTA blue for A/C/E, red for 1/2/3, etc.). Auto-discovers transit data via Transitland API when users add places in new cities. Adds sub-toggles for subway/bus/rail.
+**What shipped:**
+- Slice 1: GTFS proxy endpoint (`/api/transit/routes`) — Transitland fetch, per-metro Supabase Storage cache, `format=geojson` param, `lib/transit/metroArea.ts` grid key
+- Slice 2: Per-line subway rendering — `useGtfsLayer` hook, GeoJSON source + `gtfs-transit-lines` layer, data-driven `route_color`, base tile layer suppressed once GTFS loads
+- Slice 4: Mode sub-toggles — subway/bus/rail checkboxes in Map Settings, `transitModes` in Zustand store + localStorage + Supabase, `buildGtfsRouteTypeFilter` + `buildBaseTileFilter` in MapView
 
-**Key architecture decisions:**
-- **Data source:** Transitland REST API (open-source, 2,500+ GTFS feeds). Not raw GTFS parsing, not OSM.
-- **Caching:** Per metro area in Supabase Storage. One Transitland call per metro area, ever (until TTL).
-- **Rendering:** GeoJSON sources added dynamically to MapView, data-driven styling via `route_color` property.
-- **Degradation:** Cities without GTFS data fall back to existing base-tile transit layer. No error, no empty state.
+**Skipped:** Slice 3 (auto-trigger on place add) and Slice 5 (multi-city validation) still pending.
 
-**Slices (in order):**
-1. GTFS proxy endpoint — the proving ground (validate Transitland data quality)
-2. Per-line subway rendering — NYC proof of concept
-3. Auto-trigger on place add — background discovery
-4. Mode sub-toggles — subway/bus/rail independent toggles
-5. Multi-city validation — Bangkok, Singapore, HK
-
-**Open questions:** Transitland rate limits, bus route density at low zoom, metro area key strategy (grid snap vs boundaries).
+**Known gaps / next up:**
+- Slice 3: Auto-trigger GTFS fetch when user adds a place in a new city (currently only fetches on map load)
+- Slice 5: Validate Bangkok, Singapore, HK rendering
+- Bus route density at low zoom (may need zoom-level gating)
 
 ---
 
