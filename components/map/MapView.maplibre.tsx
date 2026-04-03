@@ -1,7 +1,7 @@
 'use client'
 
 import { forwardRef, useCallback, useEffect, useMemo, useState } from 'react'
-import MapGL, { Layer, Marker } from 'react-map-gl/maplibre'
+import MapGL, { Layer, Marker, Source } from 'react-map-gl/maplibre'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { getCategoryEmoji } from '@/lib/icons/mapping'
 import {
@@ -152,6 +152,7 @@ const MapViewMaplibre = forwardRef<MapViewRef, MapViewProps>(
       markerFocusClassName,
       ghostMarkerClassName,
       showTransit = false,
+      gtfsData,
       transitTileConfig,
       transitBeforeId,
       transitBeforeIdCandidates,
@@ -251,6 +252,23 @@ const MapViewMaplibre = forwardRef<MapViewRef, MapViewProps>(
             paint={TRANSIT_STOPS_PAINT as any}
             beforeId={resolvedTransitBeforeId}
           />
+        ) : null}
+        {styleReady && showTransit && gtfsData && gtfsData.features.length > 0 ? (
+          <>
+            <Source id="gtfs-routes" type="geojson" data={gtfsData as any} />
+            <Layer
+              id="gtfs-transit-lines"
+              type="line"
+              source="gtfs-routes"
+              filter={['==', ['get', 'route_type'], 1]}
+              layout={{ 'line-join': 'round', 'line-cap': 'round' }}
+              paint={{
+                'line-color': ['concat', '#', ['get', 'route_color']],
+                ...(TRANSIT_LINE_PAINT_BASE as object),
+              }}
+              beforeId={resolvedTransitBeforeId}
+            />
+          </>
         ) : null}
         {ghostLocation ? (
           <Marker

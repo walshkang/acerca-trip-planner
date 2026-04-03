@@ -56,6 +56,21 @@ export type TransitTileConfig = {
   colorField?: string
 }
 
+export type GtfsRouteProperties = {
+  route_short_name: string | null
+  route_color: string
+  route_type: number
+}
+
+export type GeoJsonFeatureCollection = {
+  type: 'FeatureCollection'
+  features: Array<{
+    type: 'Feature'
+    geometry: { type: string; coordinates: unknown }
+    properties: GtfsRouteProperties
+  }>
+}
+
 export type MapViewProps = {
   mapStyle: string
   mapboxAccessToken?: string
@@ -74,6 +89,7 @@ export type MapViewProps = {
   markerFocusClassName?: string
   ghostMarkerClassName?: string
   showTransit?: boolean
+  gtfsData?: GeoJsonFeatureCollection | null
   transitTileConfig?: TransitTileConfig
   transitBeforeId?: string
   transitBeforeIdCandidates?: string[]

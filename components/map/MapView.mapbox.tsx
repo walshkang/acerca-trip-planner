@@ -138,6 +138,7 @@ const MapViewMapbox = forwardRef<MapViewRef, MapViewProps>(function MapViewMapbo
     markerFocusClassName,
     ghostMarkerClassName,
     showTransit = false,
+    _gtfsData,
     transitTileConfig,
     transitBeforeId,
     transitBeforeIdCandidates,
@@ -147,6 +148,7 @@ const MapViewMapbox = forwardRef<MapViewRef, MapViewProps>(function MapViewMapbo
   },
   ref
 ) {
+    // TODO: Slice 2 - GTFS rendering for Mapbox
   const [styleReady, setStyleReady] = useState(false)
   const [resolvedTransitBeforeId, setResolvedTransitBeforeId] = useState<
     string | undefined

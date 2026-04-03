@@ -30,6 +30,7 @@ import {
 } from '@/lib/map/styleResolver'
 import { useMapLayerStore } from '@/lib/state/useMapLayerStore'
 import { ghostMarkerGlowPulseClass } from '@/lib/ui/glow'
+import { useGtfsLayer } from '@/lib/transit/useGtfsLayer'
 import {
   boundsFromPlaces,
   boundsSpan,
@@ -636,6 +637,9 @@ const MapShell = forwardRef<MapShellHandle, MapShellProps>(function MapShell(
   )
 
   const MapView = isMapbox ? MapViewMapbox : MapViewMaplibre
+  const gtfsCenter =
+    places.length > 0 ? { lat: places[0].lat, lng: places[0].lng } : null
+  const gtfsData = useGtfsLayer(gtfsCenter, showTransit)
 
   if (isMapbox && !mapboxToken) {
     return (
@@ -686,6 +690,7 @@ const MapShell = forwardRef<MapShellHandle, MapShellProps>(function MapShell(
       markerFocusClassName={markerFocusClassName}
       ghostMarkerClassName={ghostMarkerClassName}
       showTransit={showTransit}
+      gtfsData={gtfsData}
       transitTileConfig={transitTileConfig}
       transitBeforeId={transitBeforeId}
       transitBeforeIdCandidates={transitBeforeIdCandidates}
