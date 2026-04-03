@@ -11,6 +11,11 @@ import {
 } from 'react'
 
 import type { MapLayer } from '@/lib/map/styleResolver'
+import {
+  TRANSIT_MODES,
+  useMapLayerStore,
+  type TransitMode,
+} from '@/lib/state/useMapLayerStore'
 
 export interface PaperHeaderProps {
   /** Centered in the top row (e.g. Omnibox on Explore). */
@@ -54,6 +59,21 @@ function HeaderActions({
   const rootRef = useRef<HTMLDivElement>(null)
   const mapSettingsId = useId()
   const hasPopover = onLayerChange != null
+  const transitModes = useMapLayerStore((s) => s.transitModes)
+  const setTransitModes = useMapLayerStore((s) => s.setTransitModes)
+
+  const toggleTransitMode = useCallback(
+    (mode: TransitMode) => {
+      const has = transitModes.includes(mode)
+      if (has && transitModes.length === 1) return
+      if (has) {
+        setTransitModes(transitModes.filter((m) => m !== mode))
+      } else {
+        setTransitModes([...transitModes, mode])
+      }
+    },
+    [transitModes, setTransitModes]
+  )
 
   const close = useCallback(() => setOpen(false), [])
 
@@ -127,6 +147,28 @@ function HeaderActions({
                 ))}
               </div>
             </div>
+            {activeLayer === 'transit' ? (
+              <div className="mt-4 border-t border-paper-tertiary-fixed pt-3">
+                <p className="mb-2 text-xs font-medium text-paper-secondary">Transit modes</p>
+                <div className="flex flex-col gap-2">
+                  {TRANSIT_MODES.map((mode) => (
+                    <label
+                      key={mode}
+                      className="flex cursor-pointer items-center gap-2 text-xs text-paper-primary"
+                    >
+                      <input
+                        type="checkbox"
+                        className="h-3.5 w-3.5 rounded border-paper-tertiary-fixed text-paper-primary focus:ring-paper-primary"
+                        checked={transitModes.includes(mode)}
+                        onChange={() => toggleTransitMode(mode)}
+                        data-testid={`paper-header-transit-mode-${mode}`}
+                      />
+                      <span className="capitalize">{mode}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            ) : null}
           </div>
         ) : null}
       </div>

@@ -155,6 +155,7 @@ const MapShell = forwardRef<MapShellHandle, MapShellProps>(function MapShell(
   const effectiveMaplibreStyleSource =
     runtimeMaplibreStyleSource ?? configuredMaplibreStyleSource
   const activeLayer = useMapLayerStore((s) => s.activeLayer)
+  const transitModes = useMapLayerStore((s) => s.transitModes)
   const {
     mapStyle,
     styleSource,
@@ -690,6 +691,7 @@ const MapShell = forwardRef<MapShellHandle, MapShellProps>(function MapShell(
       markerFocusClassName={markerFocusClassName}
       ghostMarkerClassName={ghostMarkerClassName}
       showTransit={showTransit}
+      transitModes={transitModes}
       gtfsData={gtfsData}
       transitTileConfig={transitTileConfig}
       transitBeforeId={transitBeforeId}

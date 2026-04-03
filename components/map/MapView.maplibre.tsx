@@ -13,6 +13,7 @@ import {
   GHOST_MARKER_GLOW_PULSE_CLASS_LIGHT,
   PLACE_FOCUS_GLOW,
 } from '@/lib/ui/glow'
+import type { TransitMode } from '@/lib/state/useMapLayerStore'
 import type { MapViewProps, MapViewRef } from './MapView.types'
 import { fallbackMarkerRingClass } from '@/components/map/placeMarkerRing'
 
@@ -81,6 +82,27 @@ const TRANSIT_LINE_PAINT_BASE: Record<string, unknown> = {
     16,
     0.7,
   ],
+}
+
+const ROUTE_TYPE_BY_MODE: Record<TransitMode, number[]> = {
+  subway: [0, 1],
+  bus: [3],
+  rail: [2],
+}
+
+function buildGtfsRouteTypeFilter(transitModes: TransitMode[] | undefined): unknown[] {
+  if (transitModes == null || transitModes.length === 0) {
+    return ['in', ['get', 'route_type'], ['literal', [1]]]
+  }
+  const ids = new Set<number>()
+  for (const m of transitModes) {
+    const types = ROUTE_TYPE_BY_MODE[m]
+    if (types) {
+      for (const r of types) ids.add(r)
+    }
+  }
+  const sorted = [...ids].sort((a, b) => a - b)
+  return ['in', ['get', 'route_type'], ['literal', sorted]]
 }
 
 const TRANSIT_STOPS_PAINT: Record<string, unknown> = {
@@ -152,6 +174,7 @@ const MapViewMaplibre = forwardRef<MapViewRef, MapViewProps>(
       markerFocusClassName,
       ghostMarkerClassName,
       showTransit = false,
+      transitModes,
       gtfsData,
       transitTileConfig,
       transitBeforeId,
@@ -201,6 +224,11 @@ const MapViewMaplibre = forwardRef<MapViewRef, MapViewProps>(
       }
       return TRANSIT_LINE_COLOR_SUBCLASS
     }, [transitTileConfig?.colorField])
+
+    const gtfsRouteTypeFilter = useMemo(
+      () => buildGtfsRouteTypeFilter(transitModes),
+      [transitModes]
+    )
 
     return (
       <MapGL
@@ -260,7 +288,7 @@ const MapViewMaplibre = forwardRef<MapViewRef, MapViewProps>(
               id="gtfs-transit-lines"
               type="line"
               source="gtfs-routes"
-              filter={['==', ['get', 'route_type'], 1]}
+              filter={gtfsRouteTypeFilter as any}
               layout={{ 'line-join': 'round', 'line-cap': 'round' }}
               paint={{
                 'line-color': ['concat', '#', ['get', 'route_color']],

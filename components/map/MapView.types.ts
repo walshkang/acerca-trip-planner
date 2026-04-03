@@ -1,7 +1,10 @@
 'use client'
 
 import type { ViewState } from 'react-map-gl/maplibre'
+import type { TransitMode } from '@/lib/state/useMapLayerStore'
 import type { CategoryEnum } from '@/lib/types/enums'
+
+export type { TransitMode }
 
 export type MapPlace = {
   id: string
@@ -89,6 +92,8 @@ export type MapViewProps = {
   markerFocusClassName?: string
   ghostMarkerClassName?: string
   showTransit?: boolean
+  /** GTFS line filter by logical mode; omitted/empty uses legacy metro-only (route_type 1). */
+  transitModes?: TransitMode[]
   gtfsData?: GeoJsonFeatureCollection | null
   transitTileConfig?: TransitTileConfig
   transitBeforeId?: string
