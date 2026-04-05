@@ -1,40 +1,34 @@
 # Active Work Context
 
-## Recently shipped: UI Observations Polish
+## Active: Social Discovery Pipeline
 
-Seven visual/UX fixes — all landed 2026-04-02.
+Full spec: [`docs/SOCIAL_DISCOVERY_PIPELINE.md`](./SOCIAL_DISCOVERY_PIPELINE.md)
 
-**What shipped:**
-- Slot tokens: afternoon is now soft pink (`bg-rose-400`), centralized in `lib/slots.ts`
-- Onboarding anchor: filter tip targets correct DOM region
-- Trip date defaults: start/end seed to user-local today when empty
-- Backlog scroll: max-height + overflow in CalendarPlanner
-- Week grid: today cell height matches siblings (unified border/min-h box model)
-- Map pins: slot-aware rings (morning=amber, afternoon=rose, evening=indigo), completed=black/dark gray
-- Day detail: opaque per-slot outlines at rest, full slot colors while dragging
+Async ingestion of social content (vlogs, blogs, TikToks) → structured place data with persona classification → persona-filtered hype signals on the map.
 
-**New shared modules:**
-- `lib/slots.ts` — single source of truth for slot colors (dots, map rings, day-detail borders)
-- `components/map/placeMarkerRing.ts` — slot-aware map marker ring resolution
-- `lib/dates/local-calendar.ts` — user-local date utilities
+**Key architectural decisions:**
+- Reuses existing `places` table (no new place table). Social places owned by a fixed system user UUID.
+- New tables: `social_sources` (content metadata), `social_mentions` (place ↔ source join with snippets)
+- New enum: `persona_enum` (local, luxury, budget, design, foodie, adventure, family, nightlife)
+- AI strictly async (ingestion pipeline only). Map UI driven by deterministic Postgres RPC.
+
+| Slice | What | Status |
+|-------|------|--------|
+| S1 | Schema: `persona_enum`, `social_sources`, `social_mentions`, system user RLS | **TODO** |
+| S2 | Ingestion API: transcript → LLM → Google Places → upserts | **TODO** |
+| S3 | Query RPC: `discover_social_places` (counts, persona filter, snippets) | **TODO** |
+| S4 | Map UI: persona chips, mention-scaled markers, PlaceDrawer mentions section | **TODO** |
 
 ---
 
-## Recently shipped: Per-Line Transit Layer (Slices 1, 2, 4)
+## Recently shipped (reference)
 
-Full shape: [`docs/TRANSIT_LINES_SHAPE.md`](./TRANSIT_LINES_SHAPE.md)
+### UI Observations Polish (2026-04-02)
+- Slot tokens, onboarding anchor, trip date defaults, backlog scroll, week grid, map pin rings, day detail outlines
 
-**What shipped:**
-- Slice 1: GTFS proxy endpoint (`/api/transit/routes`) — Transitland fetch, per-metro Supabase Storage cache, `format=geojson` param, `lib/transit/metroArea.ts` grid key
-- Slice 2: Per-line subway rendering — `useGtfsLayer` hook, GeoJSON source + `gtfs-transit-lines` layer, data-driven `route_color`, base tile layer suppressed once GTFS loads
-- Slice 4: Mode sub-toggles — subway/bus/rail checkboxes in Map Settings, `transitModes` in Zustand store + localStorage + Supabase, `buildGtfsRouteTypeFilter` + `buildBaseTileFilter` in MapView
-
-**Skipped:** Slice 3 (auto-trigger on place add) and Slice 5 (multi-city validation) still pending.
-
-**Known gaps / next up:**
-- Slice 3: Auto-trigger GTFS fetch when user adds a place in a new city (currently only fetches on map load)
-- Transit coverage: 6/12 top travel cities have no subway data in Transitland (HK, Paris, Delhi, Shenzhen, Istanbul, Macau). Full plan: [`docs/TRANSIT_COVERAGE_PLAN.md`](./TRANSIT_COVERAGE_PLAN.md). Next step is S1 (manual override lookup in API route) + sourcing HK MTR and Paris RATP GeoJSONs from transit authorities.
-- Bus route density at low zoom (may need zoom-level gating)
+### Per-Line Transit Layer (Slices 1, 2, 4)
+- GTFS proxy, per-line subway rendering, mode sub-toggles. Shape: `docs/archive/TRANSIT_LINES_SHAPE.md`
+- Transit coverage gaps (HK, Paris, Delhi, etc.) paused — plan at `docs/TRANSIT_COVERAGE_PLAN.md`
 
 ---
 

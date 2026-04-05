@@ -9,28 +9,34 @@
 
 ## Active Context
 
-**Current Phase:** Transit Coverage — Manual Overrides + OSM Fallback
+**Current Phase:** Social Discovery Pipeline — Async social content ingestion + persona-filtered map layer
 
 **Previous (all complete):**
+- Transit Coverage (Slices 1, 2, 4) — GTFS proxy, per-line rendering, mode sub-toggles. Manual overrides + OSM fallback (S1–S5) partially complete.
 - P3-E5 (Visual Polish) — selected day visibility, header overlap, calendar viewport, pin prominence, ghost marker pulse, add-place card
 - P3-E4 (Headless Planning API) — slices A–H shipped. Task 4.11 (in-app chat) deferred.
 - P3-E3 (UX Pivot) — all 5 plan page slices, paper shell on all viewports, MapInset wired.
 - Map Layer Toggle + Transit Layer — `useMapLayerStore`, layer picker in PaperHeader, GTFS vector tile transit with per-mode sub-toggles (subway/bus/rail/ferry), canonical mode normalization, subtle per-type styling
 - Multi-User Collab P1–P3 — `list_shares` + `list_collaborators` schema, share link generation, anonymous join flow, `ShareListButton`, async sync via visibility-change refetch, `PlannerFreshnessLabel`
 
-### Transit Coverage Status
+### Social Discovery Pipeline Status
 
-6 of 12 top travel cities have no subway/metro data from Transitland (HK, Paris, Delhi, Shenzhen, Istanbul, Macau, and others). Plan: three-tier fallback — manual GeoJSON overrides → Transitland → OSM Overpass.
+Full spec: [`docs/SOCIAL_DISCOVERY_PIPELINE.md`](docs/SOCIAL_DISCOVERY_PIPELINE.md)
 
-See `docs/TRANSIT_COVERAGE_PLAN.md` for full spec.
+**Invariant — Logic over Magic:** AI runs strictly in the async ingestion pipeline. Map UI is driven by deterministic Postgres queries. No LLM calls at render time.
 
-| Step | What | Status |
-|------|------|--------|
-| S1 | Manual override lookup in transit API route | **TODO** |
-| S2 | Source + upload HK MTR GeoJSON | **TODO (manual)** |
-| S3 | Source + upload Paris RATP GeoJSON | **TODO (manual)** |
-| S4 | OSM Overpass fallback in transit API route | **TODO** |
-| S5 | Validate remaining cities | **TODO (manual)** |
+| Slice | What | Status |
+|-------|------|--------|
+| S1 | Schema: `social_sources`, `social_mentions`, `persona_enum`, system user | **TODO** |
+| S2 | Ingestion API: `POST /api/enrichment/ingest-social` (LLM extraction → Google resolve → upserts) | **TODO** |
+| S3 | Query layer: `discover_social_places` RPC (mention counts, persona filter, snippets) | **TODO** |
+| S4 | Map UI: persona toggle chips, mention-scaled markers, mention sidebar in PlaceDrawer | **TODO** |
+
+### Transit Coverage Status (paused)
+
+6 of 12 top travel cities have no subway/metro data from Transitland. Three-tier fallback plan at `docs/TRANSIT_COVERAGE_PLAN.md`.
+
+S1–S5 all TODO. Paused in favor of Social Discovery Pipeline.
 
 ### Architecture (locked decisions)
 
@@ -110,20 +116,21 @@ AppShell
 ### What's Next
 
 **Immediate (active):**
-1. **Transit coverage S1** — Add manual override bucket check (`transit-manual/{city_slug}.geojson`) at top of `app/api/transit/routes/route.ts`. See `cursor-prompts/transit-coverage-s1.md`.
-2. **Transit coverage S4** — OSM Overpass fallback after Transitland miss. See `cursor-prompts/transit-coverage-s4.md`.
-3. **Transit coverage S2/S3** — Source HK MTR + Paris RATP GeoJSON and upload to Supabase Storage `transit-manual/` bucket (manual step).
+1. **Social Discovery S1** — Migration: `persona_enum`, `social_sources`, `social_mentions` tables + system user setup
+2. **Social Discovery S2** — Ingestion API: transcript → LLM extraction → Google Places resolution → upserts
+3. **Social Discovery S3** — Query RPC: `discover_social_places` with mention counts + persona filtering
+4. **Social Discovery S4** — Map UI: persona chips, scaled markers, mention sidebar
 
 **Queued (pick next):**
-- **In-app chat UI (task 4.11)** — Conversational trip planning wired to preview/commit APIs. System prompt from slice E drives the LLM.
-- **Discover ↔ Plan map sync** — Selecting a list on Discover page flies the Plan map to that list's pins.
-- **Collab P4 (Realtime)** — Supabase Realtime Postgres Changes + Presence.
-- **Playwright refresh** — Expand E2E coverage for paper shell flows.
+- **Transit coverage S1–S5** — Manual overrides + OSM Overpass fallback (paused, not blocked)
+- **In-app chat UI (task 4.11)** — Conversational trip planning wired to preview/commit APIs
+- **Discover ↔ Plan map sync** — Selecting a list on Discover page flies the Plan map to that list's pins
+- **Collab P4 (Realtime)** — Supabase Realtime Postgres Changes + Presence
 
 **Deferred (separate epics):**
 - Insights layer (distance warnings, closed-day alerts)
-- Gemini API integration
-- PDF export, deeper Google Maps / Notion integrations beyond current export formats
+- Content fetching (YouTube transcript API, TikTok scraping) — upstream of social pipeline
+- PDF export, deeper Google Maps / Notion integrations
 
 ## Completed Phases
 
@@ -138,6 +145,7 @@ All phases below are complete. Details in git history.
 - **P3-E5:** Visual Polish — selected day cell, header overlap, calendar viewport, pin prominence, ghost marker
 - **Map Layer Toggle:** `useMapLayerStore`, layer picker (default/transit/terrain), GTFS vector tile transit, per-mode sub-toggles, subtle per-type styling, per-user persistence
 - **Multi-User Collab P1–P3:** Share links, anonymous join flow, `ShareListButton`, async sync, `PlannerFreshnessLabel`
+- **Transit Coverage (partial):** Per-line GTFS rendering (slices 1,2,4), mode sub-toggles, canonical normalization, Supabase cache
 
 ## Roadmap
 
@@ -162,6 +170,11 @@ gantt
   "P3-E3 UX Pivot (Explore/Plan)" :done, p3e3, after p3e2, 14d
   "P3-E4 Headless Planning API" :done, p3e4, after p3e3, 14d
   "P3-E5 Visual Polish" :done, p3e5, after p3e4, 3d
+  section Social_Discovery_(Layer_Cake)
+  "S1 Schema + System User" :active, s1, 2026-04-05, 3d
+  "S2 Ingestion API" :s2, after s1, 5d
+  "S3 Query RPC" :s3, after s2, 3d
+  "S4 Map UI + Persona Chips" :s4, after s3, 5d
 ```
 
 ## The Constitution
