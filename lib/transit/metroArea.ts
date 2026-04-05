@@ -64,3 +64,18 @@ export function normalizeMode(routeType: number): CanonicalMode {
 
   return 'other'
 }
+
+// Grid key → city slug for cities with manual override GeoJSON in Supabase Storage.
+// Grid keys use the same 0.5° snapping as gridKey() — snap lat/lng down to nearest 0.5.
+// Add new entries here as manual files are uploaded to transit-manual/{slug}.geojson.
+export const GRID_KEY_TO_CITY: Record<string, string> = {
+  '22.0_114.0': 'hong-kong',
+  '48.5_2.0': 'paris',
+  '28.5_77.0': 'delhi',
+  '22.5_114.0': 'shenzhen',
+  '41.0_29.0': 'istanbul',
+}
+
+export function citySlugForGrid(key: string): string | null {
+  return GRID_KEY_TO_CITY[key] ?? null
+}

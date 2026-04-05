@@ -9,13 +9,28 @@
 
 ## Active Context
 
-**Current Phase:** P3-E5 — Visual Polish (just shipped)
+**Current Phase:** Transit Coverage — Manual Overrides + OSM Fallback
 
-**Previous:**
-- P3-E4 (Headless Planning API) complete — slices A–H shipped. Only task 4.11 (in-app chat) deferred.
-- P3-E3 (UX Pivot) complete — all 5 plan page slices, paper shell on all viewports, MapInset wired.
+**Previous (all complete):**
+- P3-E5 (Visual Polish) — selected day visibility, header overlap, calendar viewport, pin prominence, ghost marker pulse, add-place card
+- P3-E4 (Headless Planning API) — slices A–H shipped. Task 4.11 (in-app chat) deferred.
+- P3-E3 (UX Pivot) — all 5 plan page slices, paper shell on all viewports, MapInset wired.
+- Map Layer Toggle + Transit Layer — `useMapLayerStore`, layer picker in PaperHeader, GTFS vector tile transit with per-mode sub-toggles (subway/bus/rail/ferry), canonical mode normalization, subtle per-type styling
+- Multi-User Collab P1–P3 — `list_shares` + `list_collaborators` schema, share link generation, anonymous join flow, `ShareListButton`, async sync via visibility-change refetch, `PlannerFreshnessLabel`
 
-**P3-E5 status:** All 6 slices shipped. Cross-cutting UX refinements across Plan and Discover pages — layout fixes, map pin prominence, add-place UX.
+### Transit Coverage Status
+
+6 of 12 top travel cities have no subway/metro data from Transitland (HK, Paris, Delhi, Shenzhen, Istanbul, Macau, and others). Plan: three-tier fallback — manual GeoJSON overrides → Transitland → OSM Overpass.
+
+See `docs/TRANSIT_COVERAGE_PLAN.md` for full spec.
+
+| Step | What | Status |
+|------|------|--------|
+| S1 | Manual override lookup in transit API route | **TODO** |
+| S2 | Source + upload HK MTR GeoJSON | **TODO (manual)** |
+| S3 | Source + upload Paris RATP GeoJSON | **TODO (manual)** |
+| S4 | OSM Overpass fallback in transit API route | **TODO** |
+| S5 | Validate remaining cities | **TODO (manual)** |
 
 ### Architecture (locked decisions)
 
@@ -94,17 +109,21 @@ AppShell
 
 ### What's Next
 
-**Immediate options (pick one per session):**
-1. **In-app chat UI (task 4.11)** — Conversational trip planning wired to preview/commit APIs. System prompt from slice E drives the LLM. Model-selectable backend.
-2. **Discover ↔ Plan map sync** — Selecting a list on Discover page flies the Plan map to that list's pins.
-3. **Plan polish (continued)** — Routing badges, capacity warnings, or agenda view refinements per `docs/PLAN_PAGE_SLICES.md`.
-4. **Playwright refresh** — Expand E2E coverage for paper shell flows (legacy glass tests may need updating).
+**Immediate (active):**
+1. **Transit coverage S1** — Add manual override bucket check (`transit-manual/{city_slug}.geojson`) at top of `app/api/transit/routes/route.ts`. See `cursor-prompts/transit-coverage-s1.md`.
+2. **Transit coverage S4** — OSM Overpass fallback after Transitland miss. See `cursor-prompts/transit-coverage-s4.md`.
+3. **Transit coverage S2/S3** — Source HK MTR + Paris RATP GeoJSON and upload to Supabase Storage `transit-manual/` bucket (manual step).
+
+**Queued (pick next):**
+- **In-app chat UI (task 4.11)** — Conversational trip planning wired to preview/commit APIs. System prompt from slice E drives the LLM.
+- **Discover ↔ Plan map sync** — Selecting a list on Discover page flies the Plan map to that list's pins.
+- **Collab P4 (Realtime)** — Supabase Realtime Postgres Changes + Presence.
+- **Playwright refresh** — Expand E2E coverage for paper shell flows.
 
 **Deferred (separate epics):**
 - Insights layer (distance warnings, closed-day alerts)
 - Gemini API integration
 - PDF export, deeper Google Maps / Notion integrations beyond current export formats
-- Multi-trip views, collaborative editing
 
 ## Completed Phases
 
@@ -114,6 +133,11 @@ All phases below are complete. Details in git history.
 - **P2 (Interactive Planner):** Scheduling, filters, tags, map-first context, URL deep links, MapLibre, overlays
 - **P3-E1:** OSRM routing adapter, travel-time badges
 - **P3-E2:** AI discovery suggest endpoint, reject/discard path
+- **P3-E3:** UX Pivot — Two-Journey Architecture (Explore/Plan), CalendarPlanner, MapInset, date-shift migration
+- **P3-E4:** Headless Planning API — import/export contract, preview/commit APIs, LLM client prompt, import UI
+- **P3-E5:** Visual Polish — selected day cell, header overlap, calendar viewport, pin prominence, ghost marker
+- **Map Layer Toggle:** `useMapLayerStore`, layer picker (default/transit/terrain), GTFS vector tile transit, per-mode sub-toggles, subtle per-type styling, per-user persistence
+- **Multi-User Collab P1–P3:** Share links, anonymous join flow, `ShareListButton`, async sync, `PlannerFreshnessLabel`
 
 ## Roadmap
 

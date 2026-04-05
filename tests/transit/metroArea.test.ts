@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { normalizeMode } from '@/lib/transit/metroArea'
+import { citySlugForGrid, gridKey, normalizeMode } from '@/lib/transit/metroArea'
 
 describe('normalizeMode', () => {
   it.each([
@@ -42,5 +42,15 @@ describe('normalizeMode', () => {
   it('maps non-finite values to other', () => {
     expect(normalizeMode(Number.NaN)).toBe('other')
     expect(normalizeMode(Number.POSITIVE_INFINITY)).toBe('other')
+  })
+})
+
+describe('citySlugForGrid', () => {
+  it('resolves HK grid key to hong-kong', () => {
+    expect(citySlugForGrid(gridKey(22.3, 114.1))).toBe('hong-kong')
+  })
+
+  it('returns null for unknown grid key', () => {
+    expect(citySlugForGrid(gridKey(35.6, 139.7))).toBeNull() // Tokyo — no override
   })
 })

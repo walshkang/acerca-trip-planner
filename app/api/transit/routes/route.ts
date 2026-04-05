@@ -1,7 +1,13 @@
 import { NextResponse } from 'next/server'
 import { getAdminSupabase } from '@/lib/supabase/admin'
-import { DEFAULT_ROUTE_COLOR, gridKey, normalizeMode } from '@/lib/transit/metroArea'
 import type { GeoJsonFeatureCollection } from '@/components/map/MapView.types'
+import {
+  DEFAULT_ROUTE_COLOR,
+  citySlugForGrid,
+  gridKey,
+  normalizeMode,
+} from '@/lib/transit/metroArea'
+import { fetchOsmTransit } from '@/lib/transit/osm'
 
 type RouteGeometry = {
   type: 'MultiLineString'
@@ -26,6 +32,7 @@ type TransitlandGeoJsonResponse = {
 }
 
 const TRANSIT_CACHE_BUCKET = 'transit-cache'
+const TRANSIT_MANUAL_BUCKET = 'transit-manual'
 const CACHE_PATH_PREFIX = 'v2/'
 
 function parseCoordinate(raw: string | null): number | null {
@@ -64,6 +71,12 @@ function hasCanonicalModeOnFeatures(value: unknown): boolean {
   return true
 }
 
+const USEFUL_TRANSIT_MODES = new Set(['subway', 'rail', 'tram', 'light_rail'])
+
+function hasUsefulTransitModes(fc: GeoJsonFeatureCollection): boolean {
+  return fc.features.some((f) => USEFUL_TRANSIT_MODES.has(f.properties.canonical_mode))
+}
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const lat = parseCoordinate(searchParams.get('lat'))
@@ -77,6 +90,27 @@ export async function GET(request: Request) {
   }
 
   const cachePath = `${CACHE_PATH_PREFIX}${gridKey(lat, lng)}.geojson`
+
+  // --- Tier 1: Manual override ---
+  const citySlug = citySlugForGrid(gridKey(lat, lng))
+  if (citySlug) {
+    try {
+      const supabase = getAdminSupabase()
+      const { data: manualData, error: manualError } = await supabase.storage
+        .from(TRANSIT_MANUAL_BUCKET)
+        .download(`${citySlug}.geojson`)
+
+      if (!manualError && manualData) {
+        const parsed = (JSON.parse(await manualData.text()) ?? null) as unknown
+        if (hasCanonicalModeOnFeatures(parsed)) {
+          return geoJsonResponse(parsed as GeoJsonFeatureCollection)
+        }
+      }
+    } catch (err) {
+      console.warn('Transit manual override lookup failed:', err)
+    }
+  }
+  // --- End Tier 1 ---
 
   try {
     const supabase = getAdminSupabase()
@@ -131,6 +165,19 @@ export async function GET(request: Request) {
   }
 
   if (!payload.features?.length) {
+    const osmResult = await fetchOsmTransit(lat, lng)
+    if (osmResult) {
+      try {
+        const supabase = getAdminSupabase()
+        await supabase.storage.from(TRANSIT_CACHE_BUCKET).upload(cachePath, JSON.stringify(osmResult), {
+          upsert: true,
+          contentType: 'application/geo+json',
+        })
+      } catch (err) {
+        console.warn('Transit OSM cache upload failed:', err)
+      }
+      return geoJsonResponse(osmResult)
+    }
     return new NextResponse(null, { status: 204 })
   }
 
@@ -152,6 +199,23 @@ export async function GET(request: Request) {
         },
       }
     }),
+  }
+
+  if (!hasUsefulTransitModes(featureCollection)) {
+    const osmResult = await fetchOsmTransit(lat, lng)
+    if (osmResult) {
+      try {
+        const supabase = getAdminSupabase()
+        await supabase.storage.from(TRANSIT_CACHE_BUCKET).upload(cachePath, JSON.stringify(osmResult), {
+          upsert: true,
+          contentType: 'application/geo+json',
+        })
+      } catch (err) {
+        console.warn('Transit OSM (useful-mode miss) cache upload failed:', err)
+      }
+      return geoJsonResponse(osmResult)
+    }
+    return new NextResponse(null, { status: 204 })
   }
 
   try {
