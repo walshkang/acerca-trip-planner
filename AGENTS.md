@@ -25,10 +25,17 @@ This file is the single source of truth for how we build here. It applies to hum
 If you must break an invariant, note it explicitly in the PR and update this file.
 
 ## Definition of Done
-- Tests updated/added for behavior changes.
+- Tests added first when changing behavior (red/green), and updated as needed.
 - Verification steps listed and run when possible.
 - Migrations + type regeneration (`npm run db:types`) when schema changes.
 - Decisions / Rationale and Next Steps are filled (no TODO placeholders).
+
+## Testing Philosophy (Red/Green TDD)
+- Red: write or extend a failing test first for behavior changes.
+- Green: implement the smallest change that makes the test pass.
+- Refactor: improve code only after tests are green; keep behavior unchanged.
+- Bug fixes should include a regression test when feasible.
+- PR verification should show failing -> passing evidence (or explain why it is not possible).
 
 ## Diff Hygiene
 - Separate behavior changes from regen/formatting churn.

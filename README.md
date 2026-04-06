@@ -50,6 +50,7 @@ LLMs are used only to **label and normalize information**, never to calculate or
 - `CONTEXT.md` has the current phase, blockers, and pointers.
 - `DESIGN.md` **Section B** describes the canonical **paper shell** (all viewports) and legacy glass layout.
 - Use the PR template and run `npm run check` when possible.
+- Testing philosophy: prefer red/green TDD for behavior changes (failing test first -> smallest passing change -> refactor with tests green).
 
 ---
 
@@ -161,26 +162,28 @@ Turn saved places into an actual plan via a **two-journey architecture**: Explor
 
 ---
 
-### Phase 3: The Intelligent Concierge (in progress) 💒
+### Phase 3: The Intelligent Concierge (active) 💒
 
-Routing, discovery suggestions, two-journey Explore/Plan UX — and planned list interchange.
+Routing + discovery core is shipped, and the current active slice is social discovery ingestion/query/map surfaces.
 
-**Shipped / in progress (see `CONTEXT.md`)**
+**Shipped (see `CONTEXT.md`)**
 
-* **Deterministic routing preview** — Server-side travel-time between scheduled items (e.g., OSRM adapter); badges in the planner when configured
-* **AI discovery (suggestion layer)** — Deterministic retrieval first; optional summaries that do not affect ranking; preview/approve still gates persistence
-* **Explore / Plan** — Separate shells, shared trip state; planner day grid with drag-and-drop (Map inset and polish items still on the roadmap)
+* **Deterministic routing preview** — server-side travel-time between scheduled items (OSRM/provider boundary) with planner badges
+* **AI discovery suggestion layer** — deterministic retrieval first; optional summaries never affect ranking
+* **Two-journey UX (Explore/Plan)** — paper shells on all viewports, shared state, planner day grid + map inset
+* **Headless planning interchange** — export + import preview/commit contracts and UI (`/api/lists/[id]/import/*`)
+* **Social Discovery S1-S4** — schema + system user, `POST /api/enrichment/ingest-social`, `discover_social_places` query layer, persona chips + mention-scaled markers + PlaceDrawer mentions
 
-**Planned (P3-E4 — list interchange)**
+**Next up**
 
-* **CSV export in the product** — List schedules exportable as CSV (and related formats); the authenticated export API already exists (`POST /api/lists/[id]/export`)
-* **Import** — Rows resolved via Google Places + existing ingest/enrich/promote pipeline; preview → confirm before writes; optional round-trip id columns
-* **Future** — In-app LLM outputs the same structured rows as file import, then the same deterministic import path
+* **Social Discovery S5 (content fetching adapters)** — source acquisition layer for transcripts/content before ingestion
+* **In-app chat UI (task 4.11)** — conversational client over the existing deterministic preview/commit APIs
+* **Transit coverage completion (S1-S5)** — manual overrides + OSM fallback for missing city feeds
 
-**Still aspirational / deferred**
+**Still deferred**
 
 * TSP-style route optimization for a day
-* Weather and richer “insights” layers
+* Weather and richer insights layers
 * PDF or Notion-specific export beyond current formats
 
 ---

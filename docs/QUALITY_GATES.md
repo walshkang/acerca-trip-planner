@@ -14,7 +14,7 @@ This file defines the current verification contract for daily work in this repo.
 - Learning reports: generation can be automated by local post-commit hook; changed/new reports must pass rationale checks.
 
 ## Required For Behavior Changes
-1. Update or add tests that cover changed behavior.
+1. Follow red/green TDD: write or extend a failing test first, implement the smallest passing change, then refactor with tests green.
 2. Run `npm run check`.
 3. If schema changed, run `npm run db:types`.
 4. Update `CONTEXT.md` status for the affected slice. (`roadmap.json` is deprecated.)
@@ -26,6 +26,8 @@ This file defines the current verification contract for daily work in this repo.
 | Any behavior change | `npm run check` and `npm test` | Baseline for deterministic logic + route contracts. |
 | Planner move flows, list detail filtering/search, place drawer behavior, map/list URL semantics | `npm run check`, `npm test`, `npm run test:e2e` | Run seeded E2E for cross-surface regressions in these high-risk flows. |
 | Routing contract/provider-boundary behavior (`/api/lists/[id]/routing/preview`) | `npm run check` and targeted routing unit/API tests | Backend-only slice; E2E is not required unless UI behavior changes. |
+| Social ingestion/query behavior (`/api/enrichment/ingest-social`, `discover_social_places`, social query wrappers) | `npm run check` and targeted social tests (`npm test -- tests/social app/api/enrichment/ingest-social`) | Validate extraction contract shape, idempotent ingestion semantics, and persona/query determinism without requiring E2E. |
+| Social UI behavior (persona chips, social marker scaling, PlaceDrawer mentions) | `npm run check`, `npm test`, and `npm run test:e2e` when planner/place-drawer/shared map flows are touched | Run E2E when social UI changes cross shared map/drawer interactions to catch regressions. |
 | Schema or migration changes | `npm run check`, `npm test`, `npm run db:types` | Keep generated types synced with schema. |
 | Reports changed in diff | Above plus rationale hygiene in changed reports | No TODO placeholders in `Decisions / Rationale` or `Next Steps`. |
 

@@ -9,7 +9,7 @@
 
 ## Active Context
 
-**Current Phase:** Social Discovery Pipeline — Async social content ingestion + persona-filtered map layer
+**Current Phase:** Social Discovery Pipeline — S1-S4 shipped (schema, ingestion API, RPC query, map UI)
 
 **Previous (all complete):**
 - Transit Coverage (Slices 1, 2, 4) — GTFS proxy, per-line rendering, mode sub-toggles. Manual overrides + OSM fallback (S1–S5) partially complete.
@@ -27,10 +27,10 @@ Full spec: [`docs/SOCIAL_DISCOVERY_PIPELINE.md`](docs/SOCIAL_DISCOVERY_PIPELINE.
 
 | Slice | What | Status |
 |-------|------|--------|
-| S1 | Schema: `social_sources`, `social_mentions`, `persona_enum`, system user | **TODO** |
-| S2 | Ingestion API: `POST /api/enrichment/ingest-social` (LLM extraction → Google resolve → upserts) | **TODO** |
-| S3 | Query layer: `discover_social_places` RPC (mention counts, persona filter, snippets) | **TODO** |
-| S4 | Map UI: persona toggle chips, mention-scaled markers, mention sidebar in PlaceDrawer | **TODO** |
+| S1 | Schema: `social_sources`, `social_mentions`, `persona_enum`, system user | **Done** |
+| S2 | Ingestion API: `POST /api/enrichment/ingest-social` (LLM extraction -> Google resolve -> upserts) | **Done** |
+| S3 | Query layer: `discover_social_places` RPC (mention counts, persona filter, snippets) | **Done** |
+| S4 | Map UI: persona toggle chips, mention-scaled markers, mention sidebar in PlaceDrawer | **Done** |
 
 ### Transit Coverage Status (paused)
 
@@ -116,13 +116,17 @@ AppShell
 ### What's Next
 
 **Immediate (active):**
-1. **Social Discovery S1** — Migration: `persona_enum`, `social_sources`, `social_mentions` tables + system user setup
-2. **Social Discovery S2** — Ingestion API: transcript → LLM extraction → Google Places resolution → upserts
-3. **Social Discovery S3** — Query RPC: `discover_social_places` with mention counts + persona filtering
-4. **Social Discovery S4** — Map UI: persona chips, scaled markers, mention sidebar
+0. **Working mode** — Social Discovery follow-ups continue red/green TDD for behavior changes; spikes must be test-backed before merge.
+1. **S4 hardening pass** — Validate persona chip interactions, marker scaling thresholds, and PlaceDrawer mention rendering on desktop/mobile.
+   - Test intent: UI/component regression coverage for persona toggles, marker-size branches, and mention empty/error states.
+2. **Ingestion reliability** — Improve resilience around extraction/resolve partial failures and observability for failed mentions.
+   - Test intent: integration tests for mixed success payloads, duplicate URL idempotency, and downstream failure semantics.
+3. **Social seed & DX** — Keep `scripts/seed-social-discovery.ts` and env docs in sync with pipeline contracts.
+   - Test intent: smoke checks for seeded data shape and RPC compatibility in local/dev environments.
 
 **Queued (pick next):**
-- **Transit coverage S1–S5** — Manual overrides + OSM Overpass fallback (paused, not blocked)
+- **Social Discovery S5 (content fetching)** — URL/content fetch adapters (YouTube transcript API, blog extraction) upstream of ingestion pipeline
+- **Transit coverage S1-S5** — Manual overrides + OSM Overpass fallback (paused, not blocked)
 - **In-app chat UI (task 4.11)** — Conversational trip planning wired to preview/commit APIs
 - **Discover ↔ Plan map sync** — Selecting a list on Discover page flies the Plan map to that list's pins
 - **Collab P4 (Realtime)** — Supabase Realtime Postgres Changes + Presence
@@ -143,6 +147,7 @@ All phases below are complete. Details in git history.
 - **P3-E3:** UX Pivot — Two-Journey Architecture (Explore/Plan), CalendarPlanner, MapInset, date-shift migration
 - **P3-E4:** Headless Planning API — import/export contract, preview/commit APIs, LLM client prompt, import UI
 - **P3-E5:** Visual Polish — selected day cell, header overlap, calendar viewport, pin prominence, ghost marker
+- **Social Discovery S1-S4:** schema + system user, ingest API, discover RPC, persona chips + scaled markers + drawer mentions
 - **Map Layer Toggle:** `useMapLayerStore`, layer picker (default/transit/terrain), GTFS vector tile transit, per-mode sub-toggles, subtle per-type styling, per-user persistence
 - **Multi-User Collab P1–P3:** Share links, anonymous join flow, `ShareListButton`, async sync, `PlannerFreshnessLabel`
 - **Transit Coverage (partial):** Per-line GTFS rendering (slices 1,2,4), mode sub-toggles, canonical normalization, Supabase cache
@@ -171,10 +176,11 @@ gantt
   "P3-E4 Headless Planning API" :done, p3e4, after p3e3, 14d
   "P3-E5 Visual Polish" :done, p3e5, after p3e4, 3d
   section Social_Discovery_(Layer_Cake)
-  "S1 Schema + System User" :active, s1, 2026-04-05, 3d
-  "S2 Ingestion API" :s2, after s1, 5d
-  "S3 Query RPC" :s3, after s2, 3d
-  "S4 Map UI + Persona Chips" :s4, after s3, 5d
+  "S1 Schema + System User" :done, s1, 2026-04-05, 3d
+  "S2 Ingestion API" :done, s2, after s1, 5d
+  "S3 Query RPC" :done, s3, after s2, 3d
+  "S4 Map UI + Persona Chips" :done, s4, after s3, 5d
+  "S5 Content Fetching Adapters" :s5, after s4, 7d
 ```
 
 ## The Constitution
