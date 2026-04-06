@@ -7,6 +7,7 @@ import { useCategoryIconOverrides } from '@/lib/icons/useCategoryIconOverrides'
 import { normalizeTagList } from '@/lib/lists/tags'
 import { PLACE_FOCUS_GLOW } from '@/lib/ui/glow'
 import { CATEGORY_ENUM_VALUES, type CategoryEnum } from '@/lib/types/enums'
+import { getSocialMentionPanelState } from '@/lib/social/ui-state'
 import {
   assertValidWikiCuratedData,
   type WikiCuratedData,
@@ -18,6 +19,7 @@ export type PlaceDrawerSummary = {
   category: CategoryEnum
   lat?: number | null
   lng?: number | null
+  mentionCount?: number | null
 }
 
 type Props = {
@@ -91,6 +93,24 @@ type PlaceDetailsResponse = {
     } | null
   }> | null
   error?: string
+}
+
+type MentionWithSource = {
+  snippet: string
+  sentiment: string | null
+  social_sources: {
+    author_name: string
+    platform: string
+    author_persona: string
+    url: string
+    title: string | null
+  }
+}
+
+function hasMentionSource(
+  mention: NonNullable<PlaceDetailsResponse['social_mentions']>[number]
+): mention is MentionWithSource {
+  return mention.social_sources != null
 }
 
 function safeWikiCurated(v: unknown): WikiCuratedData | null {
@@ -387,6 +407,15 @@ export default function PlaceDrawer({
   if (!open || !place) return null
 
   const activeListTags = effectiveActiveListItem?.tags ?? []
+  const socialMentions =
+    details?.social_mentions?.filter(hasMentionSource) ?? []
+  const mentionPanelState = getSocialMentionPanelState({
+    isSocialPlace:
+      place.mentionCount != null || details?.place?.source === 'social',
+    detailsLoading,
+    detailsError,
+    mentionCount: socialMentions.length,
+  })
 
   async function fetchDetails() {
     if (!place) return
@@ -733,41 +762,51 @@ export default function PlaceDrawer({
               </div>
             ) : null}
 
-            {details?.place?.source === 'social' &&
-            details?.social_mentions &&
-            details.social_mentions.length > 0 ? (
+            {mentionPanelState !== 'hidden' ? (
               <div>
                 <p className={`text-[11px] font-semibold ${bodyLabelClass}`}>
                   Mentioned by
                 </p>
-                <div className="mt-2 flex flex-col gap-3">
-                  {details.social_mentions.map((mention, index) => {
-                    const source = mention.social_sources
-                    if (!source) return null
-                    return (
-                      <div key={`${source.url}:${index}`} className="flex flex-col gap-1.5">
-                        <div className="flex items-center gap-2">
-                          <span className={`text-xs font-medium ${bodyTextClass}`}>
-                            {source.author_name}
-                          </span>
-                          <span
-                            className={`rounded-full border px-1.5 py-0.5 text-[10px] capitalize md:rounded-[2px] ${tagChipClass}`}
-                          >
-                            {source.platform}
-                          </span>
-                          <span
-                            className={`rounded-full border px-1.5 py-0.5 text-[10px] capitalize md:rounded-[2px] ${tagChipClass}`}
-                          >
-                            {source.author_persona}
-                          </span>
+                {mentionPanelState === 'loading' ? (
+                  <p className={`mt-2 text-xs ${bodyMutedClass}`}>Loading mentions…</p>
+                ) : null}
+                {mentionPanelState === 'error' ? (
+                  <p className={`mt-2 text-xs ${errorClass}`}>Could not load mentions.</p>
+                ) : null}
+                {mentionPanelState === 'empty' ? (
+                  <p className={`mt-2 text-xs ${bodyMutedClass}`}>
+                    No social mentions available yet.
+                  </p>
+                ) : null}
+                {mentionPanelState === 'ready' ? (
+                  <div className="mt-2 flex flex-col gap-3">
+                    {socialMentions.map((mention, index) => {
+                      const source = mention.social_sources
+                      return (
+                        <div key={`${source.url}:${index}`} className="flex flex-col gap-1.5">
+                          <div className="flex items-center gap-2">
+                            <span className={`text-xs font-medium ${bodyTextClass}`}>
+                              {source.author_name}
+                            </span>
+                            <span
+                              className={`rounded-full border px-1.5 py-0.5 text-[10px] capitalize md:rounded-[2px] ${tagChipClass}`}
+                            >
+                              {source.platform}
+                            </span>
+                            <span
+                              className={`rounded-full border px-1.5 py-0.5 text-[10px] capitalize md:rounded-[2px] ${tagChipClass}`}
+                            >
+                              {source.author_persona}
+                            </span>
+                          </div>
+                          <p className={`text-xs italic leading-relaxed ${bodyMutedClass}`}>
+                            &quot;{mention.snippet}&quot;
+                          </p>
                         </div>
-                        <p className={`text-xs italic leading-relaxed ${bodyMutedClass}`}>
-                          &quot;{mention.snippet}&quot;
-                        </p>
-                      </div>
-                    )
-                  })}
-                </div>
+                      )
+                    })}
+                  </div>
+                ) : null}
               </div>
             ) : null}
 

@@ -180,6 +180,11 @@ Routing + discovery core is shipped, and the current active slice is social disc
 * **In-app chat UI (task 4.11)** — conversational client over the existing deterministic preview/commit APIs
 * **Transit coverage completion (S1-S5)** — manual overrides + OSM fallback for missing city feeds
 
+**Social seed workflow (dev/local)**
+
+* Add `SOCIAL_SYSTEM_USER_ID`, `NEXT_PUBLIC_SUPABASE_URL`, and `SUPABASE_SERVICE_ROLE_KEY` to `.env.local`.
+* Run `npm run seed:social` to upsert reference social sources/places/mentions and run an RPC sanity check.
+
 **Still deferred**
 
 * TSP-style route optimization for a day

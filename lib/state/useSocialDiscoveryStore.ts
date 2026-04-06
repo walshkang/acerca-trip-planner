@@ -11,6 +11,11 @@ function isPersona(value: unknown): value is Persona {
   return typeof value === 'string' && ALLOWED_PERSONAS.has(value)
 }
 
+function reportStorageWarning(action: string, error: unknown): void {
+  const message = error instanceof Error ? error.message : String(error)
+  console.warn(`[social-discovery] ${action}: ${message}`)
+}
+
 type SocialDiscoveryState = {
   selectedPersonas: Set<Persona>
   minMentions: number
@@ -39,8 +44,8 @@ export const useSocialDiscoveryStore = create<SocialDiscoveryState>((set, get) =
 
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify([...current]))
-    } catch {
-      // ignore storage failures
+    } catch (error) {
+      reportStorageWarning('Failed to persist persona filters', error)
     }
 
     void get().fetchPlaces()
@@ -51,8 +56,8 @@ export const useSocialDiscoveryStore = create<SocialDiscoveryState>((set, get) =
 
     try {
       localStorage.removeItem(STORAGE_KEY)
-    } catch {
-      // ignore storage failures
+    } catch (error) {
+      reportStorageWarning('Failed to clear persisted persona filters', error)
     }
 
     void get().fetchPlaces()
@@ -101,7 +106,7 @@ export function hydrateSocialStore(): void {
 
     const valid = parsed.filter((value): value is Persona => isPersona(value))
     useSocialDiscoveryStore.setState({ selectedPersonas: new Set(valid) })
-  } catch {
-    // ignore hydration failures
+  } catch (error) {
+    reportStorageWarning('Failed to hydrate persona filters', error)
   }
 }

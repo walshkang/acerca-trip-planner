@@ -71,10 +71,9 @@ export async function GET(
     const { data: place, error: placeError } = await supabase
       .from('places')
       .select(
-        'id, name, address, category, energy, opening_hours, enrichment_id, user_notes, user_tags, enriched_at, enrichment_version, source'
+        'id, user_id, name, address, category, energy, opening_hours, enrichment_id, user_notes, user_tags, enriched_at, enrichment_version, source'
       )
       .eq('id', params.id)
-      .eq('user_id', user.id)
       .single()
 
     if (placeError || !place) {
@@ -86,16 +85,21 @@ export async function GET(
         { status: 404 }
       )
     }
+    if (place.user_id !== user.id && place.source !== 'social') {
+      return NextResponse.json({ error: 'Place not found' }, { status: 404 })
+    }
+
+    const { user_id: _placeUserId, ...placePayload } = place
 
     const enrichment =
-      typeof place.enrichment_id === 'string'
-        ? await getEnrichmentById(place.enrichment_id)
+      typeof placePayload.enrichment_id === 'string'
+        ? await getEnrichmentById(placePayload.enrichment_id)
         : null
 
     const google = enrichment ? pickGoogleDetails(enrichment.raw_sources) : null
 
     let socialMentions: SocialMentionRow[] | null = null
-    if (place.source === 'social') {
+    if (placePayload.source === 'social') {
       const { data: mentions } = await supabase
         .from('social_mentions')
         .select(
@@ -119,7 +123,7 @@ export async function GET(
     }
 
     return NextResponse.json({
-      place,
+      place: placePayload,
       enrichment: enrichment
         ? {
             curated_data: enrichment.curated_data ?? null,
@@ -140,4 +144,3 @@ export async function GET(
     )
   }
 }
-

@@ -17,6 +17,7 @@ import type { CanonicalMode } from '@/lib/transit/metroArea'
 import type { TransitMode } from '@/lib/state/useMapLayerStore'
 import type { MapViewProps, MapViewRef } from './MapView.types'
 import { fallbackMarkerRingClass } from '@/components/map/placeMarkerRing'
+import { socialMarkerSizeClass } from '@/lib/social/marker-size'
 
 /** Carto/OpenMapTiles `transportation` layer — `subclass` */
 const TRANSIT_LINE_COLOR_SUBCLASS: unknown[] = [
@@ -186,12 +187,6 @@ function readStyleLayersFromMap(mapInstance: unknown): StyleLayerLike[] {
       type: layer.type,
       layout: layer.layout as Record<string, unknown> | undefined,
     }))
-}
-
-function markerSizeClass(mentionCount?: number): string {
-  if (mentionCount == null || mentionCount <= 1) return 'h-9 w-9'
-  if (mentionCount <= 3) return 'h-11 w-11'
-  return 'h-13 w-13'
 }
 
 const MapViewMaplibre = forwardRef<MapViewRef, MapViewProps>(
@@ -407,7 +402,7 @@ const MapViewMaplibre = forwardRef<MapViewRef, MapViewProps>(
               >
                 <span
                   aria-hidden="true"
-                  className={`flex items-center justify-center rounded-full ${markerSizeClass(
+                  className={`flex items-center justify-center rounded-full ${socialMarkerSizeClass(
                     place.mentionCount
                   )} ${markerBackdropClassName} ${socialMarkerRingClassName} ${markerStateClassName}`}
                 >

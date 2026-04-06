@@ -27,12 +27,37 @@ type IngestFailure = {
   reason: string
 }
 
+type ExtractedMention = {
+  place_name: string
+  place_type?: string
+  context_snippet: string
+  sentiment: 'positive' | 'neutral' | 'mixed'
+}
+
 export type IngestSocialResult = {
   source_id: string
   places_resolved: number
   places_failed: number
   failures: IngestFailure[]
   error?: string
+}
+
+function extractedMentionKey(mention: ExtractedMention): string {
+  const name = mention.place_name.trim().toLowerCase()
+  const placeType = (mention.place_type ?? '').trim().toLowerCase()
+  return `${name}::${placeType}`
+}
+
+function dedupeExtractedMentions(mentions: ExtractedMention[]): ExtractedMention[] {
+  const seen = new Set<string>()
+  const deduped: ExtractedMention[] = []
+  for (const mention of mentions) {
+    const key = extractedMentionKey(mention)
+    if (seen.has(key)) continue
+    seen.add(key)
+    deduped.push(mention)
+  }
+  return deduped
 }
 
 function requireSocialSystemUserId(): string {
@@ -156,8 +181,11 @@ export async function ingestSocialSource(
     const supabase = getAdminSupabase()
     const failures: IngestFailure[] = []
     let placesResolved = 0
+    const extractedMentions = dedupeExtractedMentions(
+      extraction.mentioned_places as ExtractedMention[]
+    )
 
-    for (const mention of extraction.mentioned_places) {
+    for (const mention of extractedMentions) {
       try {
         const searchQuery = mention.place_type
           ? `${mention.place_name} ${mention.place_type}`
@@ -218,6 +246,13 @@ export async function ingestSocialSource(
           reason: error instanceof Error ? error.message : 'place_resolution_failed',
         })
       }
+    }
+
+    if (failures.length > 0) {
+      console.warn('[social-ingest] mention failures', {
+        source_id: sourceId,
+        failures,
+      })
     }
 
     return {

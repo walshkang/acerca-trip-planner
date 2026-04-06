@@ -134,8 +134,9 @@ async function upsertPlaces(supabaseClient: SupabaseClient<Database>, systemUser
       category: place.category,
       source: 'social' as const,
       source_id: sourceId,
-      dedupe_key: `social:${sourceId}`,
-      enrichment_source_hash: `seed:${sourceId}`,
+      google_place_id: place.google_place_id,
+      dedupe_key: sourceId,
+      enrichment_source_hash: 'social-seed',
       location: `SRID=4326;POINT(${place.lng} ${place.lat})`,
     }
 

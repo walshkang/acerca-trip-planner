@@ -117,12 +117,13 @@ AppShell
 
 **Immediate (active):**
 0. **Working mode** — Social Discovery follow-ups continue red/green TDD for behavior changes; spikes must be test-backed before merge.
-1. **S4 hardening pass** — Validate persona chip interactions, marker scaling thresholds, and PlaceDrawer mention rendering on desktop/mobile.
-   - Test intent: UI/component regression coverage for persona toggles, marker-size branches, and mention empty/error states.
-2. **Ingestion reliability** — Improve resilience around extraction/resolve partial failures and observability for failed mentions.
-   - Test intent: integration tests for mixed success payloads, duplicate URL idempotency, and downstream failure semantics.
-3. **Social seed & DX** — Keep `scripts/seed-social-discovery.ts` and env docs in sync with pipeline contracts.
-   - Test intent: smoke checks for seeded data shape and RPC compatibility in local/dev environments.
+1. **S4 hardening pass** — **Done** (persona chip persistence/visibility safeguards, shared marker-size thresholds, social mention empty/error handling, social PlaceDrawer access fix).
+   - Test intent covered: persona visibility state helpers, marker-size threshold tests, place-details route coverage for social ownership.
+2. **Ingestion reliability** — **Done** (mixed-success resilience, duplicate URL idempotency checks, mention-level persistence failure semantics, failure observability logging).
+   - Test intent covered: integration tests for lookup fallback, repeated URL ingestion, and mention insert failure continuation.
+3. **Social seed & DX** — **Done** (`npm run seed:social`, seed payload alignment with ingestion keys, `.env.example` + README social seed guidance).
+   - Note: local seed smoke execution depends on environment-specific Supabase credentials.
+   - Next session: restore valid Playwright signed-in state (`playwright/.auth/user.json`) and run `npm run test:e2e` first to clear the seeded E2E gate.
 
 **Queued (pick next):**
 - **Social Discovery S5 (content fetching)** — URL/content fetch adapters (YouTube transcript API, blog extraction) upstream of ingestion pipeline

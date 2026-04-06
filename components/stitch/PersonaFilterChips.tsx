@@ -2,6 +2,7 @@
 
 import { useSocialDiscoveryStore } from '@/lib/state/useSocialDiscoveryStore'
 import { PERSONA_VALUES, type Persona } from '@/lib/social/extraction-contract'
+import { shouldShowPersonaFilterChips } from '@/lib/social/ui-state'
 
 const PERSONA_LABELS: Record<Persona, { label: string; emoji: string }> = {
   local: { label: 'Local', emoji: '🏘️' },
@@ -19,8 +20,19 @@ export default function PersonaFilterChips() {
   const togglePersona = useSocialDiscoveryStore((state) => state.togglePersona)
   const clearPersonas = useSocialDiscoveryStore((state) => state.clearPersonas)
   const socialPlaces = useSocialDiscoveryStore((state) => state.socialPlaces)
+  const isLoading = useSocialDiscoveryStore((state) => state.isLoading)
+  const error = useSocialDiscoveryStore((state) => state.error)
 
-  if (socialPlaces.length === 0) return null
+  if (
+    !shouldShowPersonaFilterChips({
+      socialPlaceCount: socialPlaces.length,
+      selectedPersonaCount: selectedPersonas.size,
+      isLoading,
+      error,
+    })
+  ) {
+    return null
+  }
 
   return (
     <div className="border-b border-paper-tertiary-fixed px-3 py-2">
