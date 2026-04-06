@@ -31,6 +31,8 @@ Full spec: [`docs/SOCIAL_DISCOVERY_PIPELINE.md`](docs/SOCIAL_DISCOVERY_PIPELINE.
 | S2 | Ingestion API: `POST /api/enrichment/ingest-social` (LLM extraction -> Google resolve -> upserts) | **Done** |
 | S3 | Query layer: `discover_social_places` RPC (mention counts, persona filter, snippets) | **Done** |
 | S4 | Map UI: persona toggle chips, mention-scaled markers, mention sidebar in PlaceDrawer | **Done** |
+| S5a | Content fetch lib + API: `POST /api/enrichment/fetch-content` (YouTube transcript + blog extraction) | **Active** |
+| S5b | URL paste UI in ExplorePanel → chains fetch → ingest → map refresh | Blocked on S5a |
 
 ### Transit Coverage Status (paused)
 
@@ -116,17 +118,11 @@ AppShell
 ### What's Next
 
 **Immediate (active):**
-0. **Working mode** — Social Discovery follow-ups continue red/green TDD for behavior changes; spikes must be test-backed before merge.
-1. **S4 hardening pass** — **Done** (persona chip persistence/visibility safeguards, shared marker-size thresholds, social mention empty/error handling, social PlaceDrawer access fix).
-   - Test intent covered: persona visibility state helpers, marker-size threshold tests, place-details route coverage for social ownership.
-2. **Ingestion reliability** — **Done** (mixed-success resilience, duplicate URL idempotency checks, mention-level persistence failure semantics, failure observability logging).
-   - Test intent covered: integration tests for lookup fallback, repeated URL ingestion, and mention insert failure continuation.
-3. **Social seed & DX** — **Done** (`npm run seed:social`, seed payload alignment with ingestion keys, `.env.example` + README social seed guidance).
-   - Note: local seed smoke execution depends on environment-specific Supabase credentials.
-   - Next session: restore valid Playwright signed-in state (`playwright/.auth/user.json`) and run `npm run test:e2e` first to clear the seeded E2E gate.
+- **S5a — Content fetch lib + API** (`cursor-prompts/social-s5-fetch-content.md`): install `youtube-transcript` + `node-html-parser`, create `lib/server/social/fetch-content.ts` + `POST /api/enrichment/fetch-content`. Cursor task.
+- **S5b — URL ingest UI** (`cursor-prompts/social-s5-ingest-ui.md`): URL paste input in ExplorePanel that chains fetch → ingest → map refresh. Blocked on S5a.
 
 **Queued (pick next):**
-- **Social Discovery S5 (content fetching)** — URL/content fetch adapters (YouTube transcript API, blog extraction) upstream of ingestion pipeline
+- **Social Discovery S5b (ingest UI)** — URL paste input in ExplorePanel, chains fetch-content → ingest-social → map refresh (blocked on S5a)
 - **Transit coverage S1-S5** — Manual overrides + OSM Overpass fallback (paused, not blocked)
 - **In-app chat UI (task 4.11)** — Conversational trip planning wired to preview/commit APIs
 - **Discover ↔ Plan map sync** — Selecting a list on Discover page flies the Plan map to that list's pins

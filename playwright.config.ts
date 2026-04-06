@@ -12,7 +12,9 @@ if (fs.existsSync(envPath)) {
     if (idx <= 0) continue
     const key = trimmed.slice(0, idx).trim()
     if (!key || process.env[key] != null) continue
-    const value = trimmed.slice(idx + 1).trim()
+    const raw = trimmed.slice(idx + 1).trim()
+    // Strip surrounding single or double quotes (dotenv convention)
+    const value = raw.replace(/^(['"])(.*)\1$/, '$2')
     process.env[key] = value
   }
 }

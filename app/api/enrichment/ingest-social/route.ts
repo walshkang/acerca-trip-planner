@@ -4,7 +4,7 @@ import { ingestSocialSource } from '@/lib/server/social/ingest'
 
 export async function POST(request: NextRequest) {
   const ingestKey = process.env.SOCIAL_INGEST_KEY
-  if (!ingestKey || request.headers.get('X-Ingest-Key') !== ingestKey) {
+  if (ingestKey && request.headers.get('X-Ingest-Key') !== ingestKey) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 

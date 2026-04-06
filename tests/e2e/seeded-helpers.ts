@@ -12,7 +12,7 @@ export type SeededListWithPlace = {
 }
 
 const SIGN_IN_HELP =
-  'Not signed in. Create playwright/.auth/user.json via: npx playwright codegen http://localhost:3000 --save-storage=playwright/.auth/user.json'
+  'Not signed in. Create playwright/.auth/user.json via: npx playwright codegen http://localhost:3010 --save-storage=playwright/.auth/user.json'
 
 export const storageStatePath =
   process.env.PLAYWRIGHT_STORAGE_STATE ?? 'playwright/.auth/user.json'
@@ -97,7 +97,7 @@ export async function cleanupSeededData(
   const cleanupBaseUrl =
     pageUrl && pageUrl !== 'about:blank'
       ? new URL(pageUrl).origin
-      : process.env.PLAYWRIGHT_BASE_URL ?? 'http://127.0.0.1:3000'
+      : process.env.PLAYWRIGHT_BASE_URL ?? 'http://127.0.0.1:3010'
 
   let lastError = 'No cleanup attempt was made.'
   for (let attempt = 1; attempt <= CLEANUP_MAX_ATTEMPTS; attempt += 1) {

@@ -4,7 +4,18 @@ Execution prompts for Cursor Composer and Claude agents. Each file is self-conta
 
 ---
 
-## Social Discovery Pipeline (active)
+## Social Discovery S5 (active)
+
+| Prompt | Task | Agent | Depends on |
+|--------|------|-------|------------|
+| `social-s5-fetch-content.md` | `POST /api/enrichment/fetch-content` — YouTube transcript + blog extraction | **Cursor** | — |
+| `social-s5-ingest-ui.md` | URL paste input in ExplorePanel → fetch → ingest → map refresh | **Cursor** | S5a |
+
+**Run S5a first. S5b unblocks once fetch-content endpoint exists.**
+
+---
+
+## Social Discovery Pipeline (shipped S1–S4)
 
 Full spec: `docs/SOCIAL_DISCOVERY_PIPELINE.md`
 

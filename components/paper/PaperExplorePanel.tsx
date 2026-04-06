@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import EmojiPicker from '@/components/ui/EmojiPicker'
 import PersonaFilterChips from '@/components/stitch/PersonaFilterChips'
+import { SocialUrlIngest } from '@/components/stitch/SocialUrlIngest'
 import type { MobileSnapState } from '@/lib/ui/mobileSnapState'
 import { useCategoryIconOverrides } from '@/lib/icons/useCategoryIconOverrides'
 import { CATEGORY_ICON_CHOICES } from '@/lib/icons/preferences'
@@ -320,6 +321,7 @@ export default function PaperExplorePanel({
         <PaperExplorePanelChrome key="desktop-chrome" {...chromeProps} />
         <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3 sm:px-6 sm:py-4 [&::-webkit-scrollbar-thumb]:rounded-sm [&::-webkit-scrollbar-thumb]:bg-paper-tertiary-fixed [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar]:w-1">
           <PersonaFilterChips />
+          <SocialUrlIngest />
           {children}
         </div>
         {footerAction ? (
@@ -359,6 +361,7 @@ export default function PaperExplorePanel({
             <PaperExplorePanelChrome key="mobile-chrome" {...chromeProps} />
             <div className="min-h-0 flex-1 overflow-y-auto px-4 py-2 [&::-webkit-scrollbar-thumb]:rounded-sm [&::-webkit-scrollbar-thumb]:bg-paper-tertiary-fixed [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar]:w-1">
               <PersonaFilterChips />
+              <SocialUrlIngest />
               {children}
             </div>
             {footerAction ? (
