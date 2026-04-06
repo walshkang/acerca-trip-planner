@@ -120,6 +120,12 @@ function readStyleLayersFromMap(mapInstance: unknown): StyleLayerLike[] {
     }))
 }
 
+function markerSizeClass(mentionCount?: number): string {
+  if (mentionCount == null || mentionCount <= 1) return 'h-9 w-9'
+  if (mentionCount <= 3) return 'h-11 w-11'
+  return 'h-13 w-13'
+}
+
 const MapViewMapbox = forwardRef<MapViewRef, MapViewProps>(function MapViewMapbox(
   {
     mapStyle,
@@ -264,6 +270,8 @@ const MapViewMapbox = forwardRef<MapViewRef, MapViewProps>(function MapViewMapbo
         const markerStateClassName = isFocusedMarker
           ? markerFocusClassName ?? PLACE_FOCUS_GLOW
           : `${ringClass} ${doneClass}`.trim()
+        const socialMarkerRingClassName =
+          place.mentionCount == null ? '' : 'ring-2 ring-amber-400/60'
         return (
           <Marker
             key={place.id}
@@ -292,9 +300,9 @@ const MapViewMapbox = forwardRef<MapViewRef, MapViewProps>(function MapViewMapbo
             >
               <span
                 aria-hidden="true"
-                className={`flex h-9 w-9 items-center justify-center rounded-full ${markerBackdropClassName} ${
-                  markerStateClassName
-                }`}
+                className={`flex items-center justify-center rounded-full ${markerSizeClass(
+                  place.mentionCount
+                )} ${markerBackdropClassName} ${socialMarkerRingClassName} ${markerStateClassName}`}
               >
                 <span className="text-[18px] leading-none">
                   {resolveCategoryEmoji?.(place.category) ??

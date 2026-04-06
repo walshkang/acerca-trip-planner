@@ -1,6 +1,7 @@
 import path from 'node:path'
 import { config as loadEnv } from 'dotenv'
-import { createClient } from '@supabase/supabase-js'
+import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import type { Database } from '../lib/supabase/types'
 import { PERSONA_VALUES, PLATFORM_VALUES } from '../lib/social/extraction-contract'
 
 type SeedSource = {
@@ -14,7 +15,7 @@ type SeedSource = {
 
 type SeedPlace = {
   name: string
-  category: string
+  category: Database['public']['Enums']['category_enum']
   lat: number
   lng: number
   google_place_id: string
@@ -105,11 +106,11 @@ function createSeedClient() {
   const serviceRoleKey = requireEnv('SUPABASE_SERVICE_ROLE_KEY')
   const systemUserId = requireEnv('SOCIAL_SYSTEM_USER_ID')
 
-  const supabase = createClient(url, serviceRoleKey)
+  const supabase = createClient<Database>(url, serviceRoleKey)
   return { supabase, systemUserId }
 }
 
-async function upsertPlaces(supabaseClient: ReturnType<typeof createClient>, systemUserId: string) {
+async function upsertPlaces(supabaseClient: SupabaseClient<Database>, systemUserId: string) {
   const idsByIndex: Array<string | null> = new Array(places.length).fill(null)
   let successCount = 0
 
@@ -162,7 +163,7 @@ async function upsertPlaces(supabaseClient: ReturnType<typeof createClient>, sys
   return { idsByIndex, successCount }
 }
 
-async function upsertSources(supabaseClient: ReturnType<typeof createClient>) {
+async function upsertSources(supabaseClient: SupabaseClient<Database>) {
   const idsByIndex: Array<string | null> = new Array(sources.length).fill(null)
   let successCount = 0
 
@@ -185,7 +186,7 @@ async function upsertSources(supabaseClient: ReturnType<typeof createClient>) {
 }
 
 async function upsertMentions(
-  supabaseClient: ReturnType<typeof createClient>,
+  supabaseClient: SupabaseClient<Database>,
   sourceIdsByIndex: Array<string | null>,
   placeIdsByIndex: Array<string | null>
 ) {
@@ -224,8 +225,9 @@ async function upsertMentions(
   return { successCount, skippedCount }
 }
 
-async function rpcSanityCheck(supabaseClient: ReturnType<typeof createClient>) {
-  const { data, error } = await supabaseClient.rpc('discover_social_places')
+async function rpcSanityCheck(supabaseClient: SupabaseClient<Database>) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- RPC not yet in generated types
+  const { data, error } = await (supabaseClient as any).rpc('discover_social_places')
   if (error) {
     throw new Error(`RPC discover_social_places failed: ${error.message}`)
   }

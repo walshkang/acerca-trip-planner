@@ -13,6 +13,7 @@ export type MapPlace = {
   category: CategoryEnum
   lat: number
   lng: number
+  mentionCount?: number
 }
 
 export type LatLng = {

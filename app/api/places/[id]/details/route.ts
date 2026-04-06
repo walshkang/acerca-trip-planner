@@ -10,6 +10,18 @@ type GoogleDetails = {
   opening_hours?: unknown
 }
 
+type SocialMentionRow = {
+  snippet: string
+  sentiment: string | null
+  social_sources: {
+    author_name: string
+    platform: string
+    author_persona: string
+    url: string
+    title: string | null
+  } | null
+}
+
 function safeObject(v: unknown): Record<string, unknown> | null {
   if (typeof v !== 'object' || v === null || Array.isArray(v)) return null
   return v as Record<string, unknown>
@@ -59,7 +71,7 @@ export async function GET(
     const { data: place, error: placeError } = await supabase
       .from('places')
       .select(
-        'id, name, address, category, energy, opening_hours, enrichment_id, user_notes, user_tags, enriched_at, enrichment_version'
+        'id, name, address, category, energy, opening_hours, enrichment_id, user_notes, user_tags, enriched_at, enrichment_version, source'
       )
       .eq('id', params.id)
       .eq('user_id', user.id)
@@ -82,6 +94,30 @@ export async function GET(
 
     const google = enrichment ? pickGoogleDetails(enrichment.raw_sources) : null
 
+    let socialMentions: SocialMentionRow[] | null = null
+    if (place.source === 'social') {
+      const { data: mentions } = await supabase
+        .from('social_mentions')
+        .select(
+          `
+            snippet,
+            sentiment,
+            social_sources (
+              author_name,
+              platform,
+              author_persona,
+              url,
+              title
+            )
+          `
+        )
+        .eq('place_id', place.id)
+        .order('created_at', { ascending: false })
+        .limit(10)
+
+      socialMentions = (mentions as SocialMentionRow[] | null) ?? null
+    }
+
     return NextResponse.json({
       place,
       enrichment: enrichment
@@ -95,6 +131,7 @@ export async function GET(
           }
         : null,
       google,
+      social_mentions: socialMentions,
     })
   } catch (error: unknown) {
     return NextResponse.json(

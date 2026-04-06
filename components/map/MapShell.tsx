@@ -101,6 +101,7 @@ export type MapShellProps = {
   /** When true, map is interactive and workspace chrome (overlays) may render on top. */
   onReadyChange?: (ready: boolean) => void
   onPlacesChange?: (places: MapPlace[]) => void
+  socialPlaces?: MapPlace[]
   className?: string
 }
 
@@ -129,6 +130,7 @@ const MapShell = forwardRef<MapShellHandle, MapShellProps>(function MapShell(
     setSearchBias,
     onReadyChange,
     onPlacesChange,
+    socialPlaces = [],
     className,
   },
   ref
@@ -192,9 +194,14 @@ const MapShell = forwardRef<MapShellHandle, MapShellProps>(function MapShell(
     () => new Set(activeListTypeFilters),
     [activeListTypeFilters]
   )
+  const allPlaces = useMemo(() => {
+    const userPlaceIds = new Set(places.map((place) => place.id))
+    const uniqueSocialPlaces = socialPlaces.filter((place) => !userPlaceIds.has(place.id))
+    return [...places, ...uniqueSocialPlaces]
+  }, [places, socialPlaces])
   const placeIdSet = useMemo(
-    () => new Set(places.map((place) => place.id)),
-    [places]
+    () => new Set(allPlaces.map((place) => place.id)),
+    [allPlaces]
   )
   const activeListPlaces = useMemo(
     () =>
@@ -329,8 +336,8 @@ const MapShell = forwardRef<MapShellHandle, MapShellProps>(function MapShell(
   }, [mapInteractive, onReadyChange])
 
   useEffect(() => {
-    onPlacesChange?.(places)
-  }, [places, onPlacesChange])
+    onPlacesChange?.(allPlaces)
+  }, [allPlaces, onPlacesChange])
 
   useEffect(() => {
     if (isMapbox && !mapboxToken) {
@@ -474,8 +481,8 @@ const MapShell = forwardRef<MapShellHandle, MapShellProps>(function MapShell(
       }
     }
 
-    if (places.length > 0) {
-      const bounds = boundsFromPlaces(places)
+    if (allPlaces.length > 0) {
+      const bounds = boundsFromPlaces(allPlaces)
       if (bounds) {
         const { lngSpan, latSpan } = boundsSpan(bounds)
         if (lngSpan < 90 && latSpan < 45) {
@@ -498,6 +505,7 @@ const MapShell = forwardRef<MapShellHandle, MapShellProps>(function MapShell(
     defaultViewState,
     fitBoundsPadding,
     loading,
+    allPlaces,
     places,
   ])
 
@@ -639,7 +647,7 @@ const MapShell = forwardRef<MapShellHandle, MapShellProps>(function MapShell(
 
   const MapView = isMapbox ? MapViewMapbox : MapViewMaplibre
   const gtfsCenter =
-    places.length > 0 ? { lat: places[0].lat, lng: places[0].lng } : null
+    allPlaces.length > 0 ? { lat: allPlaces[0].lat, lng: allPlaces[0].lng } : null
   const gtfsData = useGtfsLayer(gtfsCenter, showTransit)
 
   if (isMapbox && !mapboxToken) {
@@ -680,7 +688,7 @@ const MapShell = forwardRef<MapShellHandle, MapShellProps>(function MapShell(
       mapStyle={mapStyle}
       onMapClick={handleMapClick}
       onMoveEnd={handleMoveEnd}
-      places={places}
+      places={allPlaces}
       ghostLocation={ghostLocation}
       onPlaceClick={handlePlaceClick}
       isPlaceDimmed={isPlaceDimmed}

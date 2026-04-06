@@ -197,7 +197,7 @@ export async function ingestSocialSource(
           googleTypes: Array.isArray(top.types) ? (top.types as string[]) : undefined,
         })
 
-        const mentionInsert = await supabase.from('social_mentions').insert(
+        const mentionInsert = await supabase.from('social_mentions').upsert(
           {
             source_id: sourceId,
             place_id: placeId,

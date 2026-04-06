@@ -59,7 +59,7 @@ vi.mock('@/lib/supabase/admin', () => ({
 
       if (table === 'social_mentions') {
         return {
-          insert: async (...args: [unknown, unknown]) => {
+          upsert: async (...args: [unknown, unknown]) => {
             mockSocialMentionsInsert(...args)
             return { data: [{ id: 'mention-uuid-1' }], error: null }
           },

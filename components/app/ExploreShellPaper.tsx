@@ -22,6 +22,7 @@ import { useDiscoveryStore } from '@/lib/state/useDiscoveryStore'
 import { useTripStore } from '@/lib/state/useTripStore'
 import { useNavStore } from '@/lib/state/useNavStore'
 import { useMapLayerStore } from '@/lib/state/useMapLayerStore'
+import { hydrateSocialStore, useSocialDiscoveryStore } from '@/lib/state/useSocialDiscoveryStore'
 import { sortTags, uniqueStrings } from '@/lib/lists/filter-client'
 import { derivePreviewMode } from '@/lib/ui/previewMode'
 import { CATEGORY_ENUM_VALUES, type CategoryEnum } from '@/lib/types/enums'
@@ -83,6 +84,8 @@ export default function ExploreShellPaper() {
   const discardPreview = useDiscoveryStore((s) => s.discardAndClear)
   const setSearchBias = useDiscoveryStore((s) => s.setSearchBias)
   const setListScopeId = useDiscoveryStore((s) => s.setListScopeId)
+  const socialPlaces = useSocialDiscoveryStore((s) => s.socialPlaces)
+  const fetchSocialPlaces = useSocialDiscoveryStore((s) => s.fetchPlaces)
 
   // ── Nav ──
   const setMode = useNavStore((s) => s.setMode)
@@ -159,6 +162,11 @@ export default function ExploreShellPaper() {
     }
   }, [listItemsRefreshKey])
 
+  useEffect(() => {
+    hydrateSocialStore()
+    void fetchSocialPlaces()
+  }, [fetchSocialPlaces])
+
   // ── Derived state ──
   const activeListPlaceIdSet = useMemo(() => new Set(activeListPlaceIds), [activeListPlaceIds])
   const activeListItemByPlaceId = useMemo(() => {
@@ -173,6 +181,20 @@ export default function ExploreShellPaper() {
   const selectedPlace = useMemo(
     () => places.find((p) => p.id === selectedPlaceId) ?? null,
     [places, selectedPlaceId]
+  )
+  const socialMapPlaces = useMemo<MapPlace[]>(
+    () =>
+      socialPlaces
+        .filter((sp) => CATEGORY_ENUM_VALUES.includes(sp.category as CategoryEnum))
+        .map((sp) => ({
+          id: sp.place_id,
+          name: sp.name,
+          category: sp.category as CategoryEnum,
+          lat: sp.lat,
+          lng: sp.lng,
+          mentionCount: sp.mention_count,
+        })),
+    [socialPlaces]
   )
 
   const previewMode = derivePreviewMode({
@@ -485,6 +507,7 @@ export default function ExploreShellPaper() {
         setSearchBias={setSearchBias}
         onReadyChange={setMapReady}
         onPlacesChange={setPlaces}
+        socialPlaces={socialMapPlaces}
       />
 
       {mapReady && (
