@@ -553,6 +553,35 @@ export type Database = {
         }
         Relationships: []
       }
+      user_social_sources: {
+        Row: {
+          created_at: string
+          id: string
+          source_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          source_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          source_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_social_sources_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "social_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       geography_columns: {
@@ -893,6 +922,10 @@ export type Database = {
       geomfromewkt: { Args: { "": string }; Returns: unknown }
       gettransactionid: { Args: never; Returns: unknown }
       is_list_owner: { Args: { p_list_id: string }; Returns: boolean }
+      list_user_social_sources: {
+        Args: Record<string, never>
+        Returns: Json
+      }
       longtransactionsenabled: { Args: never; Returns: boolean }
       patch_list_trip_dates: {
         Args: {

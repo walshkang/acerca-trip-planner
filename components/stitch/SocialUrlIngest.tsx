@@ -21,7 +21,19 @@ function mapFetchError(code: string | undefined): string {
   }
 }
 
-export function SocialUrlIngest() {
+export type SocialUrlIngestProps = {
+  /** Hide the green “N places added” line (Sources workspace shows feedback on cards). */
+  hideSuccessBanner?: boolean
+  /** Called after ingest succeeds and user-sources POST completes (if applicable). */
+  onIngestSuccess?: () => void | Promise<void>
+  dataTestIdUrlInput?: string
+}
+
+export function SocialUrlIngest({
+  hideSuccessBanner = false,
+  onIngestSuccess,
+  dataTestIdUrlInput,
+}: SocialUrlIngestProps = {}) {
   const [url, setUrl] = useState('')
   const [status, setStatus] = useState<Status>('idle')
   const [message, setMessage] = useState('')
@@ -80,6 +92,7 @@ export function SocialUrlIngest() {
       const ingestData = (await ingestRes.json()) as {
         error?: string
         places_resolved?: number
+        source_id?: string
       }
 
       if (!ingestRes.ok || ingestData.error) {
@@ -90,13 +103,29 @@ export function SocialUrlIngest() {
         throw new Error(errMsg)
       }
 
-      const n = ingestData.places_resolved ?? 0
       await fetchSocialPlaces()
 
-      setStatus('success')
-      setMessage(`${n} place${n !== 1 ? 's' : ''} added`)
+      if (typeof ingestData.source_id === 'string' && ingestData.source_id.length > 0) {
+        await fetch('/api/enrichment/user-sources', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ source_id: ingestData.source_id }),
+          credentials: 'same-origin',
+        })
+      }
+
+      await onIngestSuccess?.()
+
+      const n = ingestData.places_resolved ?? 0
       setUrl('')
-      setTimeout(() => setStatus('idle'), 4000)
+
+      if (hideSuccessBanner) {
+        setStatus('idle')
+      } else {
+        setStatus('success')
+        setMessage(`${n} place${n !== 1 ? 's' : ''} added`)
+        setTimeout(() => setStatus('idle'), 4000)
+      }
     } catch (err) {
       setStatus('error')
       setMessage(err instanceof Error ? err.message : 'Something went wrong')
@@ -113,6 +142,7 @@ export function SocialUrlIngest() {
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           disabled={status === 'loading'}
+          data-testid={dataTestIdUrlInput}
           className="min-w-0 flex-1 rounded border border-paper-tertiary-fixed bg-paper-surface-warm px-3 py-1.5 text-sm text-paper-on-surface placeholder:text-paper-on-surface-variant focus:outline-none focus:ring-1 focus:ring-paper-primary disabled:opacity-50"
         />
         <button
@@ -123,7 +153,7 @@ export function SocialUrlIngest() {
           {status === 'loading' ? '…' : 'Add'}
         </button>
       </form>
-      {status === 'success' ? (
+      {status === 'success' && !hideSuccessBanner ? (
         <p className="mt-1 text-xs text-emerald-700 dark:text-emerald-400">{message}</p>
       ) : null}
       {status === 'error' ? (

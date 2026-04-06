@@ -3,6 +3,7 @@
 import { useEffect } from 'react'
 import ExploreShellPaper from '@/components/app/ExploreShellPaper'
 import PlannerShellPaper from '@/components/app/PlannerShellPaper'
+import SourcesShellPaper from '@/components/app/SourcesShellPaper'
 import { useMapLayerStore } from '@/lib/state/useMapLayerStore'
 import { useNavStore } from '@/lib/state/useNavStore'
 
@@ -10,7 +11,7 @@ import { useNavStore } from '@/lib/state/useNavStore'
  * AppShell — top-level journey router.
  *
  * All viewports use Paper-styled shells. Map / Itinerary mode switch lives in
- * PaperHeader (?mode= stays in sync via useNavStore).
+ * PaperHeader (?mode=plan|sources stays in sync via useNavStore).
  */
 export default function AppShell() {
   const mode = useNavStore((s) => s.mode)
@@ -20,5 +21,7 @@ export default function AppShell() {
     void hydrateMapLayer()
   }, [hydrateMapLayer])
 
-  return mode === 'plan' ? <PlannerShellPaper /> : <ExploreShellPaper />
+  if (mode === 'sources') return <SourcesShellPaper />
+  if (mode === 'plan') return <PlannerShellPaper />
+  return <ExploreShellPaper />
 }

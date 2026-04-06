@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 
-export type JourneyMode = 'explore' | 'plan'
+export type JourneyMode = 'explore' | 'plan' | 'sources'
 
 type NavState = {
   mode: JourneyMode
@@ -12,6 +12,7 @@ function readInitialMode(): JourneyMode {
   const params = new URLSearchParams(window.location.search)
   const raw = params.get('mode')
   if (raw === 'plan') return 'plan'
+  if (raw === 'sources') return 'sources'
   return 'explore'
 }
 

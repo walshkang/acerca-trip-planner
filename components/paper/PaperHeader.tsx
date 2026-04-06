@@ -23,8 +23,8 @@ export interface PaperHeaderProps {
   /** Second row below Map / Itinerary / search — e.g. `PlannerListSwitcher`. */
   bottomSlot?: ReactNode
   /** Tab navigation — only shown when provided */
-  activeTab?: 'map' | 'itinerary'
-  onTabChange?: (tab: 'map' | 'itinerary') => void
+  activeTab?: 'map' | 'itinerary' | 'sources'
+  onTabChange?: (tab: 'map' | 'itinerary' | 'sources') => void
   /**
    * When true, header `right` insets by the Explore rail (~400px) + gap so the drawer stays clear.
    * Use on Explore desktop only.
@@ -43,6 +43,7 @@ export interface PaperHeaderProps {
 const tabs = [
   { id: 'map' as const, label: 'Map', testId: 'paper-header-tab-map' as const },
   { id: 'itinerary' as const, label: 'Itinerary', testId: 'paper-header-tab-itinerary' as const },
+  { id: 'sources' as const, label: 'Sources', testId: 'paper-header-tab-sources' as const },
 ] as const
 
 type HeaderActionsProps = Pick<
@@ -186,6 +187,9 @@ function BrandAndTabs({
   activeTab,
   onTabChange,
 }: Pick<PaperHeaderProps, 'activeTab' | 'onTabChange'>) {
+  const visibleTabs =
+    activeTab === 'sources' ? tabs : tabs.filter((t) => t.id !== 'sources')
+
   return (
     <div className="flex min-w-0 flex-wrap items-center gap-2 justify-self-start sm:gap-3">
       <span className="font-headline text-base font-black tracking-tighter text-paper-primary sm:text-lg">
@@ -193,7 +197,7 @@ function BrandAndTabs({
       </span>
       {activeTab && onTabChange && (
         <nav className="flex min-w-0 flex-wrap items-center gap-2 sm:gap-4" aria-label="Journey mode">
-          {tabs.map((tab) => {
+          {visibleTabs.map((tab) => {
             const isActive = activeTab === tab.id
             return (
               <button
