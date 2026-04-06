@@ -6,8 +6,12 @@ export default defineConfig({
   plugins: [react()],
   test: {
     environment: 'node',
-    include: ['tests/**/*.{test,spec}.{js,ts,tsx}'],
+    include: [
+      'tests/**/*.{test,spec}.{js,ts,tsx}',
+      'app/api/**/__tests__/*.{test,spec}.{js,ts,tsx}',
+    ],
     exclude: [...configDefaults.exclude, 'tests/e2e/**'],
+    setupFiles: ['tests/setup-env.ts'],
   },
   resolve: {
     alias: {

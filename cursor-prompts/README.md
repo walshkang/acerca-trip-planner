@@ -1,16 +1,57 @@
-# P3-E4 Cursor Prompts
+# Cursor / Agent Prompts
 
-Execution prompts for Cursor Composer, one per slice. Run in order (A → H).
+Execution prompts for Cursor Composer and Claude agents. Each file is self-contained: it states what to build, which files to read first, and explicit implementation steps.
 
-## Ownership Split
+---
 
-| Slice | Owner | Why |
-|-------|-------|-----|
-| **A — Contract** | Claude Code (done) | Contract doc + types already written: `docs/PHASE_3_LIST_INTERCHANGE.md` + `lib/import/contract.ts` |
-| **B — Preview API** | Cursor | Route wiring + Google resolution is bounded. Follows existing patterns in `app/api/places/ingest/route.ts`. Heavy but mechanical. |
-| **C — Computed fields** | Cursor | Pure functions, unit-testable, no external dependencies. Ideal for Composer. |
-| **D — Commit API** | Cursor | Reuses ingest/promote pipeline. Pattern exists in `app/api/places/ingest/route.ts` + `app/api/places/promote/route.ts`. |
-| **E — LLM client prompt** | Claude Code | Requires understanding the full contract semantically, not just code generation. Will write after B-D are implemented and the response shape is proven. |
-| **F — Export UI** | Cursor | Straightforward UI button + download. Server path already exists. |
-| **G — Import UI + chat** | Cursor (UI) / Claude Code (chat prompt design) | Cursor does the wizard/modal. Chat UI needs prompt design first (slice E). |
-| **H — Verification gate** | Cursor | Test generation from contract specs. Composer handles this well. |
+## Social Discovery Pipeline (active)
+
+Full spec: `docs/SOCIAL_DISCOVERY_PIPELINE.md`
+
+| Prompt | Task | Agent | Depends on |
+|--------|------|-------|------------|
+| `social-s1-schema.md` | Schema migration: `persona_enum`, `social_sources`, `social_mentions` | **Claude Opus** | — |
+| `social-s2-extraction-contract.md` | Zod schema for LLM structured output + request validation | **Claude Sonnet** | S1 + db:types |
+| `social-s2-ingestion-api.md` | `POST /api/enrichment/ingest-social` orchestrator | **Claude Opus** | S2.1 |
+| `social-s3-query-rpc.md` | `discover_social_places` SQL function migration | **Claude Opus** | S1 |
+| `social-s3-rpc-wrapper.md` | TypeScript wrapper for the RPC | **Claude Sonnet** | S3.1 + db:types |
+| `social-s3-seed-data.md` | Dev seed script (Bangkok social places) | **Claude Sonnet** | S3.1 |
+| `social-s4-store.md` | `useSocialDiscoveryStore` Zustand store | **Cursor** | S2.1, S3.2 |
+| `social-s4-persona-chips.md` | Persona toggle chips in PaperExplorePanel | **Cursor** | S4.1 |
+| `social-s4-map-markers.md` | Merge social pins into map, scale by mention count | **Cursor** | S4.1 |
+| `social-s4-drawer-mentions.md` | "Mentioned by" section in PlaceDrawer | **Cursor** | S4.3 |
+
+**Run S1 first. After `npm run db:types`, S2.x and S3.x can run in parallel.**
+
+---
+
+## Transit Coverage (paused)
+
+| Prompt | Task | Status |
+|--------|------|--------|
+| `transit-coverage-s1.md` | Manual override bucket check in transit API route | TODO |
+| `transit-coverage-s4.md` | OSM Overpass fallback | TODO |
+
+---
+
+## Archived (shipped)
+
+Previous P3-E4 prompts (B–H) are complete. Prompt files remain for reference.
+`docs/archive/PHASE_3_LIST_INTERCHANGE.md` has the full spec.
+
+| Prompt | What |
+|--------|------|
+| `B-preview-api.md` | Import preview API |
+| `C-computed-fields.md` | Haversine, hours, slots, energy |
+| `D-commit-api.md` | Import commit API |
+| `F-export-ui.md` | CSV download button |
+| `G-import-ui.md` | Upload/paste → preview → confirm wizard |
+| `H-verification-gate.md` | Contract + compute + API tests |
+| `map-layer-toggle.md` | Base style switcher (default/satellite/terrain) |
+| `map-layer-persistence.md` | Layer pref → Supabase user_preferences |
+| `transit-subtle-styling.md` | Per-type transit line styling |
+| `discover-place-cards.md` | Place cards with ratings |
+| `discover-drawer-cleanup.md` | Drawer cleanup |
+| `discover-map-settings.md` | Map settings popover |
+| `collab-share-ui.md` | Share link UI |
+| `collab-async-sync.md` | Async sync via visibility-change |

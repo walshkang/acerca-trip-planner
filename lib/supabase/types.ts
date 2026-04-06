@@ -53,10 +53,50 @@ export type Database = {
         }
         Relationships: []
       }
+      list_collaborators: {
+        Row: {
+          created_at: string
+          id: string
+          joined_via_share_id: string | null
+          list_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          joined_via_share_id?: string | null
+          list_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          joined_via_share_id?: string | null
+          list_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "list_collaborators_joined_via_share_id_fkey"
+            columns: ["joined_via_share_id"]
+            isOneToOne: false
+            referencedRelation: "list_shares"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "list_collaborators_list_id_fkey"
+            columns: ["list_id"]
+            isOneToOne: false
+            referencedRelation: "lists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       list_items: {
         Row: {
           completed_at: string | null
           created_at: string
+          day_index: number | null
           id: string
           last_scheduled_at: string | null
           last_scheduled_by: string | null
@@ -72,6 +112,7 @@ export type Database = {
         Insert: {
           completed_at?: string | null
           created_at?: string
+          day_index?: number | null
           id?: string
           last_scheduled_at?: string | null
           last_scheduled_by?: string | null
@@ -87,6 +128,7 @@ export type Database = {
         Update: {
           completed_at?: string | null
           created_at?: string
+          day_index?: number | null
           id?: string
           last_scheduled_at?: string | null
           last_scheduled_by?: string | null
@@ -119,6 +161,44 @@ export type Database = {
             columns: ["place_id"]
             isOneToOne: false
             referencedRelation: "places_view"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      list_shares: {
+        Row: {
+          created_at: string
+          created_by: string
+          expires_at: string | null
+          id: string
+          list_id: string
+          permission: string
+          token: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          expires_at?: string | null
+          id?: string
+          list_id: string
+          permission?: string
+          token?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          expires_at?: string | null
+          id?: string
+          list_id?: string
+          permission?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "list_shares_list_id_fkey"
+            columns: ["list_id"]
+            isOneToOne: false
+            referencedRelation: "lists"
             referencedColumns: ["id"]
           },
         ]
@@ -334,6 +414,88 @@ export type Database = {
           },
         ]
       }
+      social_mentions: {
+        Row: {
+          created_at: string
+          id: string
+          place_id: string
+          sentiment: string | null
+          snippet: string
+          source_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          place_id: string
+          sentiment?: string | null
+          snippet: string
+          source_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          place_id?: string
+          sentiment?: string | null
+          snippet?: string
+          source_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "social_mentions_place_id_fkey"
+            columns: ["place_id"]
+            isOneToOne: false
+            referencedRelation: "places"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "social_mentions_place_id_fkey"
+            columns: ["place_id"]
+            isOneToOne: false
+            referencedRelation: "places_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "social_mentions_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "social_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      social_sources: {
+        Row: {
+          author_name: string
+          author_persona: Database["public"]["Enums"]["persona_enum"]
+          id: string
+          ingested_at: string
+          platform: string
+          raw_transcript: string | null
+          title: string | null
+          url: string
+        }
+        Insert: {
+          author_name: string
+          author_persona: Database["public"]["Enums"]["persona_enum"]
+          id?: string
+          ingested_at?: string
+          platform: string
+          raw_transcript?: string | null
+          title?: string | null
+          url: string
+        }
+        Update: {
+          author_name?: string
+          author_persona?: Database["public"]["Enums"]["persona_enum"]
+          id?: string
+          ingested_at?: string
+          platform?: string
+          raw_transcript?: string | null
+          title?: string | null
+          url?: string
+        }
+        Relationships: []
+      }
       spatial_ref_sys: {
         Row: {
           auth_name: string | null
@@ -355,6 +517,39 @@ export type Database = {
           proj4text?: string | null
           srid?: number
           srtext?: string | null
+        }
+        Relationships: []
+      }
+      user_preferences: {
+        Row: {
+          created_at: string
+          dismissed_tips: string[]
+          id: string
+          map_layer: string
+          tips_disabled: boolean
+          transit_modes: string[]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          dismissed_tips?: string[]
+          id?: string
+          map_layer?: string
+          tips_disabled?: boolean
+          transit_modes?: string[]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          dismissed_tips?: string[]
+          id?: string
+          map_layer?: string
+          tips_disabled?: boolean
+          transit_modes?: string[]
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -429,110 +624,6 @@ export type Database = {
           lng?: never
           name?: string | null
           user_id?: string | null
-        }
-        Relationships: []
-      }
-      list_shares: {
-        Row: {
-          id: string
-          list_id: string
-          token: string
-          permission: string
-          created_by: string
-          created_at: string
-          expires_at: string | null
-        }
-        Insert: {
-          id?: string
-          list_id: string
-          token?: string
-          permission?: string
-          created_by: string
-          created_at?: string
-          expires_at?: string | null
-        }
-        Update: {
-          id?: string
-          list_id?: string
-          token?: string
-          permission?: string
-          created_by?: string
-          created_at?: string
-          expires_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "list_shares_list_id_fkey"
-            columns: ["list_id"]
-            isOneToOne: false
-            referencedRelation: "lists"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      list_collaborators: {
-        Row: {
-          id: string
-          list_id: string
-          user_id: string
-          joined_via_share_id: string | null
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          list_id: string
-          user_id: string
-          joined_via_share_id?: string | null
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          list_id?: string
-          user_id?: string
-          joined_via_share_id?: string | null
-          created_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "list_collaborators_list_id_fkey"
-            columns: ["list_id"]
-            isOneToOne: false
-            referencedRelation: "lists"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "list_collaborators_joined_via_share_id_fkey"
-            columns: ["joined_via_share_id"]
-            isOneToOne: false
-            referencedRelation: "list_shares"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      user_preferences: {
-        Row: {
-          created_at: string
-          id: string
-          map_layer: string
-          transit_modes: string[]
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          map_layer?: string
-          transit_modes?: string[]
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          map_layer?: string
-          transit_modes?: string[]
-          updated_at?: string
-          user_id?: string
         }
         Relationships: []
       }
@@ -666,6 +757,10 @@ export type Database = {
             Returns: string
           }
       disablelongtransactions: { Args: never; Returns: string }
+      discard_place_candidate: {
+        Args: { p_candidate_id: string }
+        Returns: undefined
+      }
       dropgeometrycolumn:
         | {
             Args: {
@@ -797,6 +892,7 @@ export type Database = {
       }
       geomfromewkt: { Args: { "": string }; Returns: unknown }
       gettransactionid: { Args: never; Returns: unknown }
+      is_list_owner: { Args: { p_list_id: string }; Returns: boolean }
       longtransactionsenabled: { Args: never; Returns: boolean }
       patch_list_trip_dates: {
         Args: {
@@ -1485,6 +1581,15 @@ export type Database = {
         | "Activity"
         | "Drinks"
       energy_enum: "Low" | "Medium" | "High"
+      persona_enum:
+        | "local"
+        | "luxury"
+        | "budget"
+        | "design"
+        | "foodie"
+        | "adventure"
+        | "family"
+        | "nightlife"
     }
     CompositeTypes: {
       geometry_dump: {
@@ -1622,6 +1727,16 @@ export const Constants = {
     Enums: {
       category_enum: ["Food", "Coffee", "Sights", "Shop", "Activity", "Drinks"],
       energy_enum: ["Low", "Medium", "High"],
+      persona_enum: [
+        "local",
+        "luxury",
+        "budget",
+        "design",
+        "foodie",
+        "adventure",
+        "family",
+        "nightlife",
+      ],
     },
   },
 } as const

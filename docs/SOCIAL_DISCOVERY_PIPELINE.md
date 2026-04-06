@@ -248,6 +248,41 @@ $$ LANGUAGE sql STABLE;
 
 ---
 
+---
+
+## Execution Plan
+
+### Agent assignments
+
+| Task | Prompt | Agent | Blocks |
+|------|--------|-------|--------|
+| S1 — Schema migration | `cursor-prompts/social-s1-schema.md` | **Claude Opus** | Everything |
+| S1 — `npm run db:types` | (manual) | **You** | S2.1, S3.2 |
+| S2.1 — Extraction contract (Zod) | `cursor-prompts/social-s2-extraction-contract.md` | **Claude Sonnet** | S2.2, S4.1 |
+| S2.2 — Ingestion API route | `cursor-prompts/social-s2-ingestion-api.md` | **Claude Opus** | S2.4 |
+| S2.4 — Ingestion unit tests | (in S2.2 prompt) | **Claude Sonnet** | — |
+| S3.1 — Query RPC migration | `cursor-prompts/social-s3-query-rpc.md` | **Claude Opus** | S3.2, S3.3 |
+| S3.2 — TypeScript RPC wrapper | `cursor-prompts/social-s3-rpc-wrapper.md` | **Claude Sonnet** | S4.1 |
+| S3.3 — Seed script | `cursor-prompts/social-s3-seed-data.md` | **Claude Sonnet** | S4 (all) |
+| S4.1 — Zustand store | `cursor-prompts/social-s4-store.md` | **Cursor** | S4.2, S4.3 |
+| S4.2 — Persona filter chips | `cursor-prompts/social-s4-persona-chips.md` | **Cursor** | — |
+| S4.3 — Map markers (scaled) | `cursor-prompts/social-s4-map-markers.md` | **Cursor** | S4.4 |
+| S4.4 — PlaceDrawer mentions | `cursor-prompts/social-s4-drawer-mentions.md` | **Cursor** | — |
+
+### Parallel execution
+
+```
+S1 (Opus) ──────────────────────────────────────────────────────────────────────
+  ↓ db:types (you, ~5 min)
+  ├─ S2.1 (Sonnet) → S2.2 (Opus) → S2.4 (Sonnet)
+  └─ S3.1 (Opus) → S3.2 (Sonnet) → S3.3 (Sonnet) → S4.1 → S4.2 + S4.3 → S4.4
+                                                     ↑
+                                      Cursor unblocked after seed data
+```
+
+S2 (ingestion) and S3 (query) are independent after S1 — run them in parallel with two agents.
+All S4 tasks unblock once S3.3 seed data is in place — Cursor can iterate on UI without real ingestion.
+
 ## What this is NOT
 
 - **Not a scraper.** The pipeline accepts pre-extracted transcripts/text. Content fetching (YouTube transcript API, TikTok scraping) is a separate concern, outside this bet.
