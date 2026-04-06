@@ -104,7 +104,7 @@ function safeWikiCurated(v: unknown): WikiCuratedData | null {
 
 function weekdayTextFromOpeningHours(v: unknown): string[] | null {
   if (typeof v !== 'object' || v === null || Array.isArray(v)) return null
-  const oh = v as any
+  const oh = v as { weekday_text?: unknown }
   const wt = oh.weekday_text
   if (!Array.isArray(wt) || wt.some((x: unknown) => typeof x !== 'string')) return null
   return wt as string[]
@@ -301,7 +301,13 @@ export default function PlaceDrawer({
 
   const computedDetails = useMemo(() => {
     const curated = safeWikiCurated(details?.enrichment?.curated_data ?? null)
-    const rawWikiSummary = details?.enrichment?.raw_sources?.wikipediaSummary as any
+    const rawWikiSummary = details?.enrichment?.raw_sources?.wikipediaSummary as
+      | {
+          summary?: unknown
+          thumbnail_url?: unknown
+        }
+      | null
+      | undefined
     const fallbackSummary =
       typeof rawWikiSummary?.summary === 'string' ? String(rawWikiSummary.summary) : null
     const fallbackThumb =
@@ -756,7 +762,7 @@ export default function PlaceDrawer({
                           </span>
                         </div>
                         <p className={`text-xs italic leading-relaxed ${bodyMutedClass}`}>
-                          "{mention.snippet}"
+                          &quot;{mention.snippet}&quot;
                         </p>
                       </div>
                     )
