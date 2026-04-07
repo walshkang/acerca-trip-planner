@@ -4,6 +4,19 @@ Execution prompts for Cursor Composer and Claude agents. Each file is self-conta
 
 ---
 
+## Sources Redesign (active — run A → B → C → D)
+
+| Prompt | Task | Agent | Depends on |
+|--------|------|-------|------------|
+| `sources-a-schema-pipeline.md` | Migration: tags/callouts on social_mentions, ratings on places; update Gemini extraction | **Cursor** | — |
+| `sources-b-api-contract.md` | Update `list_user_social_sources()` RPC + TypeScript contract | **Cursor** | A + db:types |
+| `sources-c-panel-ui.md` | SourcesPanel redesign: source dropdown, rich place cards, Add to list | **Cursor** | B |
+| `sources-d-desktop-shell-nav.md` | Desktop split layout, Sources tab nav fix, map pins per source | **Cursor** | C |
+
+**Run strictly in order. Each slice depends on the previous.**
+
+---
+
 ## Social Discovery S5 (active)
 
 | Prompt | Task | Agent | Depends on |

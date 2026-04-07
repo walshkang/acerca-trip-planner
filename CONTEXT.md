@@ -9,17 +9,18 @@
 
 ## Active Context
 
-**Current Phase:** Social Discovery Pipeline — S1-S4 shipped (schema, ingestion API, RPC query, map UI)
+**Current Phase:** Sources Workspace Redesign — A–D shaped (Cursor prompts written), not yet implemented
 
 **Previous (all complete):**
-- Transit Coverage (Slices 1, 2, 4) — GTFS proxy, per-line rendering, mode sub-toggles. Manual overrides + OSM fallback (S1–S5) partially complete.
+- Social Discovery S1–S6 — schema, ingestion API, RPC query, map UI (persona chips + scaled markers), content fetch (YouTube/blog), async job queue + Vercel cron, Realtime map refresh, Sources mode shell
+- Transit Coverage (Slices 1, 2, 4) — GTFS proxy, per-line rendering, mode sub-toggles. Manual overrides + OSM fallback paused.
 - P3-E5 (Visual Polish) — selected day visibility, header overlap, calendar viewport, pin prominence, ghost marker pulse, add-place card
 - P3-E4 (Headless Planning API) — slices A–H shipped. Task 4.11 (in-app chat) deferred.
 - P3-E3 (UX Pivot) — all 5 plan page slices, paper shell on all viewports, MapInset wired.
-- Map Layer Toggle + Transit Layer — `useMapLayerStore`, layer picker in PaperHeader, GTFS vector tile transit with per-mode sub-toggles (subway/bus/rail/ferry), canonical mode normalization, subtle per-type styling
-- Multi-User Collab P1–P3 — `list_shares` + `list_collaborators` schema, share link generation, anonymous join flow, `ShareListButton`, async sync via visibility-change refetch, `PlannerFreshnessLabel`
+- Map Layer Toggle + Transit Layer — `useMapLayerStore`, layer picker in PaperHeader, GTFS vector tile transit with per-mode sub-toggles, canonical mode normalization, subtle per-type styling
+- Multi-User Collab P1–P3 — `list_shares` + `list_collaborators` schema, share link generation, anonymous join flow, `ShareListButton`, async sync, `PlannerFreshnessLabel`
 
-### Social Discovery Pipeline Status
+### Social Discovery Pipeline — COMPLETE (S1–S6)
 
 Full spec: [`docs/SOCIAL_DISCOVERY_PIPELINE.md`](docs/SOCIAL_DISCOVERY_PIPELINE.md)
 
@@ -28,12 +29,24 @@ Full spec: [`docs/SOCIAL_DISCOVERY_PIPELINE.md`](docs/SOCIAL_DISCOVERY_PIPELINE.
 | Slice | What | Status |
 |-------|------|--------|
 | S1 | Schema: `social_sources`, `social_mentions`, `persona_enum`, system user | **Done** |
-| S2 | Ingestion API: `POST /api/enrichment/ingest-social` (LLM extraction -> Google resolve -> upserts) | **Done** |
+| S2 | Ingestion API: `POST /api/enrichment/ingest-social` (LLM extraction → Google resolve → upserts) | **Done** |
 | S3 | Query layer: `discover_social_places` RPC (mention counts, persona filter, snippets) | **Done** |
 | S4 | Map UI: persona toggle chips, mention-scaled markers, mention sidebar in PlaceDrawer | **Done** |
 | S5a | Content fetch lib + API: `POST /api/enrichment/fetch-content` (YouTube transcript + blog extraction) | **Done** |
-| S5b | URL paste UI: `POST /api/enrichment/enqueue-social-job` → `social_ingest_jobs` + worker (`/api/internal/process-social-jobs`, Vercel cron) + Realtime → map refresh | **Done** |
-| S5c | Async queue: `social_ingest_jobs`, `claim_next_social_job()` RPC, chunking + batched Gemini, optional `GET /api/enrichment/social-ingest-job/[id]` | **Done** |
+| S5b | URL paste UI → `social_ingest_jobs` queue + worker + Vercel cron + Realtime map refresh | **Done** |
+| S5c | Async queue: `claim_next_social_job()` RPC, chunking + batched Gemini | **Done** |
+| S6 | Sources mode: `SourcesShellPaper`, `SourcesPanel`, `user_social_sources` table, `useSourcesStore`, `import-from-sources` API | **Done** |
+
+### Sources Workspace Redesign Status
+
+Cursor prompts written (`cursor-prompts/sources-a–d`). Run strictly A → B → C → D.
+
+| Slice | Prompt | What | Status |
+|-------|--------|------|--------|
+| A | `sources-a-schema-pipeline.md` | Migration: `social_mentions.tags/callouts`, `places.google_rating/review_count`; Gemini extraction updated | **TODO** |
+| B | `sources-b-api-contract.md` | `list_user_social_sources()` v2 + TypeScript contract | **TODO — after A + db:types** |
+| C | `sources-c-panel-ui.md` | SourcesPanel: source dropdown, rich place cards (stars, tags, callouts, "More details", "Add to list") | **TODO — after B** |
+| D | `sources-d-desktop-shell-nav.md` | Desktop split layout, Sources tab nav fix, map pins per source | **TODO — after C** |
 
 ### Transit Coverage Status (paused)
 
@@ -119,11 +132,11 @@ AppShell
 ### What's Next
 
 **Immediate (active):**
-- **S5a — Content fetch lib + API** (`cursor-prompts/social-s5-fetch-content.md`): install `youtube-transcript` + `node-html-parser`, create `lib/server/social/fetch-content.ts` + `POST /api/enrichment/fetch-content`. Cursor task.
-- **S5b — URL ingest UI** (`cursor-prompts/social-s5-ingest-ui.md`): URL paste input in ExplorePanel that chains fetch → ingest → map refresh. Blocked on S5a.
+- **Sources Redesign A** (`cursor-prompts/sources-a-schema-pipeline.md`) — schema migration + Gemini extraction update. Run first.
+- After A + `npm run db:types`: **Sources Redesign B** (`cursor-prompts/sources-b-api-contract.md`)
+- Then C, then D — see Sources Workspace Redesign Status table above.
 
-**Queued (pick next):**
-- **Social Discovery S5b (ingest UI)** — URL paste input in ExplorePanel, chains fetch-content → ingest-social → map refresh (blocked on S5a)
+**Queued (pick after Sources A–D):**
 - **Transit coverage S1-S5** — Manual overrides + OSM Overpass fallback (paused, not blocked)
 - **In-app chat UI (task 4.11)** — Conversational trip planning wired to preview/commit APIs
 - **Discover ↔ Plan map sync** — Selecting a list on Discover page flies the Plan map to that list's pins
@@ -145,7 +158,7 @@ All phases below are complete. Details in git history.
 - **P3-E3:** UX Pivot — Two-Journey Architecture (Explore/Plan), CalendarPlanner, MapInset, date-shift migration
 - **P3-E4:** Headless Planning API — import/export contract, preview/commit APIs, LLM client prompt, import UI
 - **P3-E5:** Visual Polish — selected day cell, header overlap, calendar viewport, pin prominence, ghost marker
-- **Social Discovery S1-S4:** schema + system user, ingest API, discover RPC, persona chips + scaled markers + drawer mentions
+- **Social Discovery S1–S6:** schema + system user, ingest API, discover RPC, persona chips + scaled markers + drawer mentions, content fetch (YouTube/blog), async job queue + cron + Realtime, Sources mode shell
 - **Map Layer Toggle:** `useMapLayerStore`, layer picker (default/transit/terrain), GTFS vector tile transit, per-mode sub-toggles, subtle per-type styling, per-user persistence
 - **Multi-User Collab P1–P3:** Share links, anonymous join flow, `ShareListButton`, async sync, `PlannerFreshnessLabel`
 - **Transit Coverage (partial):** Per-line GTFS rendering (slices 1,2,4), mode sub-toggles, canonical normalization, Supabase cache
