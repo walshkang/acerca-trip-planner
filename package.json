@@ -16,6 +16,7 @@
     "eval:fallback": "RUN_EVALS=1 SOCIAL_EXTRACTION_OUTPUT_MODE=text-json-fallback vitest run tests/social/evals/",
     "eval:capture": "tsx scripts/eval-capture.ts",
     "eval:diagnose": "tsx scripts/eval-diagnose.ts",
+    "ingest:debug": "tsx scripts/ingest-debug.ts",
     "test:ui": "vitest --ui",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",

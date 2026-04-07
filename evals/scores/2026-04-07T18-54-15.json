@@ -1,0 +1,84 @@
+{
+  "timestamp": "2026-04-07T18:54:15.521Z",
+  "model": "gemma-4-31b-it",
+  "output_mode": "text-json-fallback",
+  "judge_model": "gemma-4-31b-it",
+  "fixtures": {
+    "happy-path": {
+      "recall_score": 100,
+      "groundedness_score": 100,
+      "persona_score": 100,
+      "richness_score": 100,
+      "reasoning": "The actual extraction is perfect. It captured all four locations mentioned in the transcript (100% recall). Every piece of information is directly supported by the text (100% groundedness). The 'foodie' persona was correctly identified, as the transcript emphasizes culinary techniques like 'wok hei' and specific flavor profiles. In terms of richness, the AI matched the expected extraction and actually improved upon it by identifying 'crispy pork' as a separate dish callout for Nai Ek Roll Noodle, which was present in the text but omitted in the expected extraction.",
+      "pass": true,
+      "failing_dimensions": []
+    },
+    "firehose": {
+      "recall_score": 75,
+      "groundedness_score": 100,
+      "persona_score": 100,
+      "richness_score": 85,
+      "reasoning": "The AI missed 4 out of 16 mentioned places (Tsukiji Sushiko, Meat Yazawa, Afuri, and Marion Crepes), resulting in a recall score of 75. However, the extraction it did perform was perfectly grounded in the text with no hallucinations. The persona was correctly identified as 'foodie' and the tags/callouts reflected the culinary focus of the transcript. Richness is high for the items captured—in fact, it captured more specific dish callouts for Uobei than the expected extraction did—but the overall richness is slightly lowered by the missing locations.",
+      "pass": true,
+      "failing_dimensions": []
+    },
+    "ghost-town": {
+      "recall_score": 100,
+      "groundedness_score": 40,
+      "persona_score": 10,
+      "richness_score": 100,
+      "reasoning": "The AI correctly matched the expected extraction regarding mentioned places (empty list). However, it failed significantly on the persona. The author explicitly states 'we just landed in Lisbon,' which directly contradicts the 'local' persona. The 'local' persona requires insider knowledge, whereas the author is a first-time visitor exploring the city.",
+      "pass": false,
+      "failing_dimensions": [
+        "groundedness",
+        "persona"
+      ]
+    },
+    "negative-review": {
+      "recall_score": 100,
+      "groundedness_score": 100,
+      "persona_score": 100,
+      "richness_score": 90,
+      "reasoning": "The actual extraction achieved perfect recall, capturing all three locations and every specific dish/drink mentioned. Groundedness is perfect as all information is derived from the transcript. The persona was correctly identified as 'foodie' and the extraction focused on the relevant culinary details (chef, technique, specific dishes). Richness is very high, although the context snippets are slightly more truncated than the expected extraction, the tags are comprehensive and accurately reflect the nuances of the text.",
+      "pass": true,
+      "failing_dimensions": []
+    },
+    "tangent": {
+      "recall_score": 100,
+      "groundedness_score": 100,
+      "persona_score": 100,
+      "richness_score": 100,
+      "reasoning": "The actual extraction perfectly matches the expected extraction in terms of the target place (Museo Jumex) and persona (design). It actually exceeds the expected extraction in richness by identifying additional callouts (the bookshop and rooftop terrace) and providing more comprehensive tags, all of which are explicitly supported by the transcript.",
+      "pass": true,
+      "failing_dimensions": []
+    },
+    "luxury-persona": {
+      "recall_score": 100,
+      "groundedness_score": 100,
+      "persona_score": 100,
+      "richness_score": 98,
+      "reasoning": "The actual extraction perfectly identified all four locations mentioned in the transcript. It correctly assigned the 'luxury' persona, which is well-supported by the mentions of Michelin stars, high price points (40,000 yen), and high-end service. The groundedness is perfect as all snippets and details are derived directly from the text. Richness is very high, capturing specific dishes and activities, and in the case of the Nezu Museum, it actually provided more detail (adding the permanent collection) than the expected extraction.",
+      "pass": true,
+      "failing_dimensions": []
+    },
+    "local-persona": {
+      "recall_score": 95,
+      "groundedness_score": 100,
+      "persona_score": 100,
+      "richness_score": 88,
+      "reasoning": "The AI successfully extracted all three mentioned places and correctly identified the 'local' persona. Groundedness is perfect as all information is derived from the text. Recall is very high, only missing the mention of 'char siu' as a specific dish. Richness is strong, although it missed some of the more granular tags present in the expected extraction (like 'no-english-sign'), it added a helpful activity callout for the bookstore.",
+      "pass": true,
+      "failing_dimensions": []
+    }
+  },
+  "summary": {
+    "total": 7,
+    "passed": 6,
+    "failed": 1,
+    "avg_recall": 95.7,
+    "avg_groundedness": 91.4,
+    "avg_persona": 87.1,
+    "avg_richness": 94.4,
+    "weakest_dimension": "persona"
+  }
+}

@@ -18,7 +18,7 @@ describe.skipIf(!runEvals)('semantic extraction evals (LLM judge)', () => {
   })
 
   it.each(EVAL_FIXTURES)(
-    '$label — recall ≥ 75, hallucination ≤ 20, persona ≥ 75, richness ≥ 70',
+    '$label — recall ≥ 75, groundedness ≥ 80, persona ≥ 75, richness ≥ 70',
     async ({ label, transcript, expected }) => {
       const actual = await extractMergedSocialExtraction(transcript)
       const scores = await runJudge({ transcript, expected, actual, judgeModel: JUDGE_MODEL })
@@ -26,7 +26,7 @@ describe.skipIf(!runEvals)('semantic extraction evals (LLM judge)', () => {
 
       console.log(`[${label}] judge scores:`, {
         recall: scores.recall_score,
-        hallucination: scores.hallucination_score,
+        groundedness: scores.groundedness_score,
         persona: scores.persona_score,
         richness: scores.richness_score,
         reasoning: scores.reasoning,
@@ -37,9 +37,9 @@ describe.skipIf(!runEvals)('semantic extraction evals (LLM judge)', () => {
         `recall too low: ${scores.reasoning}`
       ).toBeGreaterThanOrEqual(JUDGE_THRESHOLDS.recall.min)
       expect(
-        scores.hallucination_score,
-        `hallucination too high: ${scores.reasoning}`
-      ).toBeLessThanOrEqual(JUDGE_THRESHOLDS.hallucination.min)
+        scores.groundedness_score,
+        `groundedness too low: ${scores.reasoning}`
+      ).toBeGreaterThanOrEqual(JUDGE_THRESHOLDS.groundedness.min)
       expect(
         scores.persona_score,
         `persona misclassified: ${scores.reasoning}`

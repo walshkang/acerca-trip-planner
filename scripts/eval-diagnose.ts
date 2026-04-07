@@ -11,7 +11,7 @@ const SCORES_DIR = path.resolve(process.cwd(), 'evals', 'scores')
 
 type FixtureResult = {
   recall_score: number
-  hallucination_score: number
+  groundedness_score: number
   persona_score: number
   richness_score: number
   reasoning: string
@@ -30,7 +30,7 @@ type ScoreFile = {
     passed: number
     failed: number
     avg_recall: number
-    avg_hallucination: number
+    avg_groundedness: number
     avg_persona: number
     avg_richness: number
     weakest_dimension: string
@@ -84,14 +84,14 @@ function main() {
   // Score table
   lines.push('SCORES')
   lines.push(
-    `${'fixture'.padEnd(20)} ${'recall'.padStart(7)} ${'halluc'.padStart(7)} ${'persona'.padStart(8)} ${'richness'.padStart(9)}  pass`
+    `${'fixture'.padEnd(20)} ${'recall'.padStart(7)} ${'ground'.padStart(7)} ${'persona'.padStart(8)} ${'richness'.padStart(9)}  pass`
   )
   lines.push('─'.repeat(62))
 
   const thresholdRow = [
     '(threshold)'.padEnd(20),
     `≥${JUDGE_THRESHOLDS.recall.min}`.padStart(7),
-    `≤${JUDGE_THRESHOLDS.hallucination.min}`.padStart(7),
+    `≥${JUDGE_THRESHOLDS.groundedness.min}`.padStart(7),
     `≥${JUDGE_THRESHOLDS.persona.min}`.padStart(8),
     `≥${JUDGE_THRESHOLDS.richness.min}`.padStart(9),
     '',
@@ -102,7 +102,7 @@ function main() {
     const row = [
       label.padEnd(20),
       String(result.recall_score).padStart(7),
-      String(result.hallucination_score).padStart(7),
+      String(result.groundedness_score).padStart(7),
       String(result.persona_score).padStart(8),
       String(result.richness_score).padStart(9),
       result.pass ? ' ✓' : ` ✗ ${result.failing_dimensions.join(', ')}`,
@@ -114,7 +114,7 @@ function main() {
   const avgRow = [
     'AVERAGE'.padEnd(20),
     String(data.summary.avg_recall).padStart(7),
-    String(data.summary.avg_hallucination).padStart(7),
+    String(data.summary.avg_groundedness).padStart(7),
     String(data.summary.avg_persona).padStart(8),
     String(data.summary.avg_richness).padStart(9),
     '',
@@ -131,7 +131,7 @@ function main() {
     lines.push('')
     for (const [label, result] of failures) {
       lines.push(`${label} — failing: ${result.failing_dimensions.join(', ')}`)
-      lines.push(`  recall=${result.recall_score} halluc=${result.hallucination_score} persona=${result.persona_score} richness=${result.richness_score}`)
+      lines.push(`  recall=${result.recall_score} groundedness=${result.groundedness_score} persona=${result.persona_score} richness=${result.richness_score}`)
       lines.push(`  Judge: "${result.reasoning}"`)
       lines.push('')
     }
@@ -140,7 +140,7 @@ function main() {
   // Dimension averages ranked worst to best
   const dimAvgs = [
     { dim: 'recall', avg: data.summary.avg_recall, threshold: JUDGE_THRESHOLDS.recall.min, direction: 'gte' as const },
-    { dim: 'hallucination', avg: data.summary.avg_hallucination, threshold: JUDGE_THRESHOLDS.hallucination.min, direction: 'lte' as const },
+    { dim: 'groundedness', avg: data.summary.avg_groundedness, threshold: JUDGE_THRESHOLDS.groundedness.min, direction: 'gte' as const },
     { dim: 'persona', avg: data.summary.avg_persona, threshold: JUDGE_THRESHOLDS.persona.min, direction: 'gte' as const },
     { dim: 'richness', avg: data.summary.avg_richness, threshold: JUDGE_THRESHOLDS.richness.min, direction: 'gte' as const },
   ].sort((a, b) => {
@@ -181,10 +181,14 @@ function main() {
   const output = lines.join('\n')
   console.log(output)
 
-  // Write diagnosis file
-  const diagPath = path.join(SCORES_DIR, 'latest-diagnosis.md')
-  fs.writeFileSync(diagPath, output)
-  console.log(`\nDiagnosis written to ${path.relative(process.cwd(), diagPath)}`)
+  // Write timestamped archive + update latest
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
+  const archivedPath = path.join(SCORES_DIR, `${timestamp}-diagnosis.md`)
+  const latestPath = path.join(SCORES_DIR, 'latest-diagnosis.md')
+  fs.writeFileSync(archivedPath, output)
+  fs.writeFileSync(latestPath, output)
+  console.log(`\nDiagnosis written to ${path.relative(process.cwd(), archivedPath)}`)
+  console.log(`Latest updated     : ${path.relative(process.cwd(), latestPath)}`)
 }
 
 main()

@@ -41,6 +41,9 @@ export async function decideBetaAccess(input: {
   if (input.pathname.startsWith('/api/test/')) {
     return { kind: 'allow' }
   }
+  if (input.pathname.startsWith('/api/internal/')) {
+    return { kind: 'allow' }
+  }
 
   const cookie = getBetaCookieFromHeader(input.cookieHeader)
   const result = await verifyBetaToken(pwd, cookie, now)

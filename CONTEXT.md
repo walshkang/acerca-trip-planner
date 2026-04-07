@@ -131,7 +131,7 @@ AppShell
 
 **Immediate (active):**
 - **Sources QA hardening** — stabilize auth/session reliability for seeded Playwright runs and reduce test skips
-- **Social eval stabilization** — split extraction/eval/judge model envs, keep deterministic eval call volume bounded, and document provider/model constraints
+- **Social eval flywheel** — `eval:capture` → `eval:diagnose` → meta-LLM prompt improvement → `eval:capture --force`. Score files + diagnosis reports committed to `evals/scores/`. See `evals/scores/README.md` for full loop docs. Ghost-town fixture still returning wrong persona (`local` instead of `adventure`) — next prompt improvement target.
 
 **Queued:**
 - **Transit coverage S1-S5** — Manual overrides + OSM Overpass fallback (paused, not blocked)

@@ -166,6 +166,33 @@ When delegating, produce a **handoff block** the human can paste into the other 
 - Do NOT set `PLAYWRIGHT_BROWSERS_PATH=0` — the global cache (`~/Library/Caches/ms-playwright`) is shared across agents; setting that env var forces a per-project copy and wastes disk space.
 - Run E2E with: `npm run test:e2e` (uses `http://localhost:3010` by default).
 
+### Social Extraction Eval System
+
+The social extraction pipeline (`lib/server/social/ingest.ts`) has a self-improving eval flywheel. Agents working on extraction quality should understand this system.
+
+**Key files:**
+- `lib/server/social/eval-judge.ts` — shared judge logic, `JUDGE_THRESHOLDS`, `runJudge()`, `getFailingDimensions()`
+- `scripts/eval-capture.ts` — runs all fixtures through extraction + judge, writes `evals/scores/YYYY-MM-DDTHH-MM-SS.json`
+- `scripts/eval-diagnose.ts` — reads latest score file, writes `evals/scores/latest-diagnosis.md` (ranked failure report + meta-LLM context block)
+- `tests/social/evals/fixtures/` — eval fixtures (transcript + expected extraction + `_eval_notes`)
+- `evals/scores/README.md` — full flywheel documentation
+
+**The loop:**
+```
+npm run eval:capture              # extract + judge → score JSON (uses extraction cache)
+npm run eval:capture -- --force   # force re-extract (after SYSTEM_PROMPT changes)
+npm run eval:diagnose             # ranked failure report → evals/scores/latest-diagnosis.md
+```
+Paste `evals/scores/latest-diagnosis.md` into a meta-LLM with the current `SYSTEM_PROMPT` to get targeted improvement suggestions. Update `SYSTEM_PROMPT` in `lib/server/social/ingest.ts`, then re-capture with `--force`.
+
+**Thresholds** (all higher = better): recall ≥ 75, groundedness ≥ 80, persona ≥ 75, richness ≥ 70.
+
+**Output modes:** Gemini models use `native-json` (structured output). Gemma models are auto-detected by model ID prefix and use `text-json-fallback` (generateText + JSON parse).
+
+Score and diagnosis files in `evals/scores/` are committed to git for run-over-run tracking. Extraction cache (`evals/extractions/`) is gitignored.
+
+---
+
 ### Red Lines (any agent)
 
 Stop and re-route if:

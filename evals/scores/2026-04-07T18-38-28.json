@@ -1,0 +1,96 @@
+{
+  "timestamp": "2026-04-07T18:38:28.070Z",
+  "model": "gemma-4-31b-it",
+  "output_mode": "text-json-fallback",
+  "judge_model": "gemma-4-31b-it",
+  "fixtures": {
+    "happy-path": {
+      "recall_score": 100,
+      "hallucination_score": 100,
+      "persona_score": 100,
+      "richness_score": 100,
+      "reasoning": "The actual extraction is perfect. It identified all four locations mentioned in the transcript (Jay Fai, Nai Ek Roll Noodle, After You Dessert Cafe, and Tep Bar), resulting in a recall score of 100. There are no hallucinations; every detail, from the prices to the specific drinks and dishes, is directly supported by the text. The persona 'foodie' is correctly assigned, as the transcript focuses heavily on flavor profiles ('wok hei', 'clean and light'), culinary prestige ('Michelin-starred'), and specific ingredients. Richness is excellent, as it captured all key callouts, including 'crispy pork' at Nai Ek, which was actually more comprehensive than the expected extraction.",
+      "pass": false,
+      "failing_dimensions": [
+        "hallucination"
+      ]
+    },
+    "firehose": {
+      "recall_score": 75,
+      "hallucination_score": 100,
+      "persona_score": 100,
+      "richness_score": 90,
+      "reasoning": "The AI missed 4 out of 16 mentioned places (Tsukiji Sushiko, Meat Yazawa, Afuri, and Marion Crepes), resulting in a recall score of 75%. There were no hallucinations; all extracted places and details are grounded in the text. The persona 'foodie' was correctly identified, as the transcript focuses heavily on flavor profiles, ingredients, and culinary experiences. Richness is high for the extracted entities, with comprehensive callouts for dishes and drinks, even capturing more detail for Uobei than the expected extraction.",
+      "pass": false,
+      "failing_dimensions": [
+        "hallucination"
+      ]
+    },
+    "ghost-town": {
+      "recall_score": 100,
+      "hallucination_score": 100,
+      "persona_score": 0,
+      "richness_score": 100,
+      "reasoning": "The actual extraction matches the expected extraction regarding mentioned places (both are empty), resulting in perfect recall and no hallucinations. However, the persona identification is completely incorrect. The author explicitly states they 'just landed in Lisbon' and are staying in an Airbnb/hostel, which directly contradicts the 'local' persona (insider knowledge). The 'adventure' persona is the correct fit due to the focus on exploration, wandering steep hills, and physical experiences.",
+      "pass": false,
+      "failing_dimensions": [
+        "hallucination",
+        "persona"
+      ]
+    },
+    "negative-review": {
+      "recall_score": 100,
+      "hallucination_score": 100,
+      "persona_score": 100,
+      "richness_score": 85,
+      "reasoning": "The AI achieved perfect recall by identifying all three locations (Lau Pa Sat, Burnt Ends, Atlas Bar). There were no hallucinations; all extracted details are grounded in the text. The persona 'foodie' is correctly assigned, as the transcript emphasizes flavor profiles ('smoky, sweet'), culinary techniques ('wood-fired oven'), and chef credentials. Richness is high because all specific dishes and drinks were captured in the callouts, although the context snippets were slightly more truncated than the expected extraction, omitting some of the descriptive critique.",
+      "pass": false,
+      "failing_dimensions": [
+        "hallucination"
+      ]
+    },
+    "tangent": {
+      "recall_score": 100,
+      "hallucination_score": 100,
+      "persona_score": 100,
+      "richness_score": 100,
+      "reasoning": "The actual extraction correctly identifies the primary visited location (Museo Jumex) as per the expected extraction. It perfectly identifies the 'design' persona, which is explicitly supported by the author stating they are an architect and focusing on materials like travertine and architectural features like sawtooth skylights. The actual extraction is richer than the expected extraction, as it captures the bookshop and rooftop terrace as activities, both of which are explicitly mentioned in the transcript. There are no hallucinations; all tags and callouts are grounded in the text.",
+      "pass": false,
+      "failing_dimensions": [
+        "hallucination"
+      ]
+    },
+    "luxury-persona": {
+      "recall_score": 100,
+      "hallucination_score": 100,
+      "persona_score": 100,
+      "richness_score": 100,
+      "reasoning": "The actual extraction is nearly perfect. It identified all four locations mentioned in the transcript (Aman Tokyo, Sukiyabashi Jiro Honten, The Peninsula Tokyo's The Lobby, and Nezu Museum). The persona 'luxury' is correctly assigned and supported by evidence of high price points (40,000 yen sushi), exclusive accommodations, and high-end service. There are no hallucinations; every detail in the snippets, tags, and callouts is directly supported by the text. The richness is excellent, capturing specific dishes and activities.",
+      "pass": false,
+      "failing_dimensions": [
+        "hallucination"
+      ]
+    },
+    "local-persona": {
+      "recall_score": 100,
+      "hallucination_score": 100,
+      "persona_score": 100,
+      "richness_score": 95,
+      "reasoning": "Recall is perfect as all three mentioned places were extracted. Hallucination score is 100 because every detail provided is grounded in the text; notably, the actual extraction avoided the 'cash-only' hallucination present in the expected extraction. Persona is correctly identified as 'local' and reflected in the tags (e.g., 'local favorite', 'neighborhood spot'). Richness is very high, capturing specific menu items and the poetry collection activity, only missing the mention of 'char siu' from the market stall.",
+      "pass": false,
+      "failing_dimensions": [
+        "hallucination"
+      ]
+    }
+  },
+  "summary": {
+    "total": 7,
+    "passed": 0,
+    "failed": 7,
+    "avg_recall": 96.4,
+    "avg_hallucination": 100,
+    "avg_persona": 85.7,
+    "avg_richness": 95.7,
+    "weakest_dimension": "hallucination"
+  }
+}

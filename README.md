@@ -238,6 +238,39 @@ By grounding everything in a local dataset and using AI only where its output ca
 
 ---
 
+## 🔬 Social Extraction Eval System
+
+The social extraction pipeline has a self-improving eval loop that tracks quality over time.
+
+**How it works:**
+
+1. **Capture** — runs all fixtures (transcript + expected output) through the extractor and an LLM judge, writes a timestamped score JSON to `evals/scores/`:
+   ```bash
+   npm run eval:capture              # uses cached extractions (fast)
+   npm run eval:capture -- --force   # re-extracts everything
+   ```
+
+2. **Diagnose** — reads the latest score file and prints a ranked failure report:
+   ```bash
+   npm run eval:diagnose
+   ```
+   Writes `evals/scores/latest-diagnosis.md` — paste this into a meta-LLM with `SYSTEM_PROMPT` from `lib/server/social/ingest.ts` to get targeted improvement suggestions.
+
+3. **Improve** — update `SYSTEM_PROMPT` in `lib/server/social/ingest.ts`, then re-run with `--force`.
+
+**Eval dimensions** (all 0–100, higher = better):
+
+| Dimension | Threshold | What it checks |
+|-----------|-----------|---------------|
+| `recall_score` | ≥ 75 | Were all expected places found? |
+| `groundedness_score` | ≥ 80 | Are extracted details supported by the transcript? |
+| `persona_score` | ≥ 75 | Does `author_persona` match the transcript's tone? |
+| `richness_score` | ≥ 70 | Are callouts/tags specific and grounded (not generic)? |
+
+Score files and diagnosis reports in `evals/scores/` are committed to git for run-over-run tracking. See `evals/scores/README.md` for full documentation.
+
+---
+
 ## 🧪 Learning Reports
 
 This repo generates **learning plans/reports** to capture decisions and follow-ups for the team.
