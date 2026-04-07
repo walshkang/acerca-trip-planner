@@ -210,7 +210,8 @@ describe('POST /api/enrichment/ingest-social integration', () => {
         google_review_count: 2134,
       }),
       expect.objectContaining({
-        onConflict: 'user_id,source,source_id',
+        onConflict: 'user_id,dedupe_key',
+        ignoreDuplicates: true,
       })
     )
 
