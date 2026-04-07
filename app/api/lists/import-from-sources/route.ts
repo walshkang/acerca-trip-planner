@@ -1,9 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { normalizeTagList } from '@/lib/lists/tags'
-import type { ImportFromSourcesResponse } from '@/lib/social/sources-export-payload'
 import { createClient } from '@/lib/supabase/server'
 
-export type { ImportFromSourcesResponse } from '@/lib/social/sources-export-payload'
+export type ImportFromSourcesResponse = {
+  list_id: string
+  list_name: string
+  inserted_count: number
+  duplicate_items: Array<{
+    place_id: string
+    place_name: string
+    existing_day_index: number | null
+    requested_day_index: number | undefined
+  }>
+}
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i

@@ -2,6 +2,10 @@
 
 Execution prompts for Cursor Composer and Claude agents. Each file is self-contained: it states what to build, which files to read first, and explicit implementation steps.
 
+Shipped prompts live in `archive/`. Move a prompt there (and update this README) once its slice is confirmed working.
+
+`agent_task.md` is a reusable preamble — reference it at the top of new agent prompts.
+
 ---
 
 ## Sources Redesign (active — run A → B → C → D)
@@ -17,35 +21,19 @@ Execution prompts for Cursor Composer and Claude agents. Each file is self-conta
 
 ---
 
-## Social Discovery S5 (active)
+## E2E Test Rewrite (active)
 
 | Prompt | Task | Agent | Depends on |
 |--------|------|-------|------------|
-| `social-s5-fetch-content.md` | `POST /api/enrichment/fetch-content` — YouTube transcript + blog extraction | **Cursor** | — |
-| `social-s5-ingest-ui.md` | URL paste input in ExplorePanel → fetch → ingest → map refresh | **Cursor** | S5a |
-
-**Run S5a first. S5b unblocks once fetch-content endpoint exists.**
+| `e2e-test-rewrite.md` | Rewrite 12 stale Playwright specs against paper shell; delete workspace-adaptive, add paper-shell-responsive | **Cursor** | — |
 
 ---
 
-## Social Discovery Pipeline (shipped S1–S4)
-
-Full spec: `docs/SOCIAL_DISCOVERY_PIPELINE.md`
+## Visual Refresh (active — runs parallel to Sources A–D)
 
 | Prompt | Task | Agent | Depends on |
 |--------|------|-------|------------|
-| `social-s1-schema.md` | Schema migration: `persona_enum`, `social_sources`, `social_mentions` | **Claude Opus** | — |
-| `social-s2-extraction-contract.md` | Zod schema for LLM structured output + request validation | **Claude Sonnet** | S1 + db:types |
-| `social-s2-ingestion-api.md` | `POST /api/enrichment/ingest-social` orchestrator | **Claude Opus** | S2.1 |
-| `social-s3-query-rpc.md` | `discover_social_places` SQL function migration | **Claude Opus** | S1 |
-| `social-s3-rpc-wrapper.md` | TypeScript wrapper for the RPC | **Claude Sonnet** | S3.1 + db:types |
-| `social-s3-seed-data.md` | Dev seed script (Bangkok social places) | **Claude Sonnet** | S3.1 |
-| `social-s4-store.md` | `useSocialDiscoveryStore` Zustand store | **Cursor** | S2.1, S3.2 |
-| `social-s4-persona-chips.md` | Persona toggle chips in PaperExplorePanel | **Cursor** | S4.1 |
-| `social-s4-map-markers.md` | Merge social pins into map, scale by mention count | **Cursor** | S4.1 |
-| `social-s4-drawer-mentions.md` | "Mentioned by" section in PlaceDrawer | **Cursor** | S4.3 |
-
-**Run S1 first. After `npm run db:types`, S2.x and S3.x can run in parallel.**
+| `inspector-card-chip-refresh.md` | InspectorCard: paper chip/button/input/surface styles, drop glass + isDark | **Cursor** | — |
 
 ---
 
@@ -58,10 +46,7 @@ Full spec: `docs/SOCIAL_DISCOVERY_PIPELINE.md`
 
 ---
 
-## Archived (shipped)
-
-Previous P3-E4 prompts (B–H) are complete. Prompt files remain for reference.
-`docs/archive/PHASE_3_LIST_INTERCHANGE.md` has the full spec.
+## Archived (shipped) → `archive/`
 
 | Prompt | What |
 |--------|------|
@@ -79,3 +64,19 @@ Previous P3-E4 prompts (B–H) are complete. Prompt files remain for reference.
 | `discover-map-settings.md` | Map settings popover |
 | `collab-share-ui.md` | Share link UI |
 | `collab-async-sync.md` | Async sync via visibility-change |
+| `social-s1-schema.md` | Schema: persona_enum, social_sources, social_mentions |
+| `social-s2-extraction-contract.md` | Zod schema for LLM structured output |
+| `social-s2-ingestion-api.md` | POST /api/enrichment/ingest-social orchestrator |
+| `social-s3-query-rpc.md` | discover_social_places SQL function |
+| `social-s3-rpc-wrapper.md` | TypeScript RPC wrapper |
+| `social-s3-seed-data.md` | Dev seed script (Bangkok) |
+| `social-s4-store.md` | useSocialDiscoveryStore Zustand store |
+| `social-s4-persona-chips.md` | Persona toggle chips in PaperExplorePanel |
+| `social-s4-map-markers.md` | Social pins merged into map, scaled by mention count |
+| `social-s4-drawer-mentions.md` | "Mentioned by" section in PlaceDrawer |
+| `social-s5-fetch-content.md` | POST /api/enrichment/fetch-content (YouTube + blog) |
+| `social-s5-ingest-ui.md` | URL paste UI → fetch → ingest → map refresh |
+| `slice2-calendar-grid.md` | CalendarPlanner week view (plan page rebuild) |
+| `slice3-day-detail-and-drag.md` | Day detail panel + drag reorder |
+| `slice4-view-toggles.md` | Week/day/list view toggles |
+| `slice5-map-reposition-smart-dates.md` | Map reposition + smart date shifting |

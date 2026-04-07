@@ -26,12 +26,21 @@ export type Platform = (typeof PLATFORM_VALUES)[number]
 
 export const personaSchema = z.enum(PERSONA_VALUES)
 
+export const calloutSchema = z
+  .object({
+    type: z.enum(['dish', 'drink', 'activity', 'tip']),
+    text: z.string().min(1).max(200),
+  })
+  .strict()
+
 export const mentionedPlaceSchema = z
   .object({
     place_name: z.string().min(1),
     place_type: z.string().optional(),
     context_snippet: z.string().min(1).max(4000),
     sentiment: z.enum(['positive', 'neutral', 'mixed']),
+    tags: z.array(z.string().min(1).max(50)).max(6).optional().default([]),
+    callouts: z.array(calloutSchema).max(10).optional().default([]),
   })
   .strict()
 
@@ -78,6 +87,7 @@ export const ingestSocialRequestSchema = z
   .strict()
 
 export type MentionedPlace = z.infer<typeof mentionedPlaceSchema>
+export type Callout = z.infer<typeof calloutSchema>
 export type SocialExtraction = z.infer<typeof socialExtractionSchema>
 export type SocialExtractionChunk = z.infer<typeof socialExtractionChunkSchema>
 export type MergedSocialExtraction = z.infer<typeof mergedSocialExtractionSchema>

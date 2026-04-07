@@ -1,5 +1,7 @@
 # Sources Redesign — Slice C: SourcesPanel UI
 
+> **Read first:** `cursor-prompts/agent_task.md` — preamble, invariants, and DoD (including CONTEXT.md update requirement).
+
 ## Goal
 
 Replace the current accordion-per-source layout in `SourcesPanel` with a richer browsing experience:
@@ -132,3 +134,4 @@ Keep `SocialUrlIngest` at the top, unchanged.
 - [ ] "Add to list" POSTs to the correct endpoint; shows feedback
 - [ ] Old accordion + SourcesExportSheet removed
 - [ ] `npm run check` passes
+- [ ] `CONTEXT.md` updated: Slice C marked **Done** in the Sources Redesign status table

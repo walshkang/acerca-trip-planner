@@ -1,5 +1,7 @@
 # Sources Redesign — Slice D: Desktop Shell + Navigation
 
+> **Read first:** `cursor-prompts/agent_task.md` — preamble, invariants, and DoD (including CONTEXT.md update requirement).
+
 ## Goal
 
 1. **Desktop layout for Sources**: left panel (SourcesPanel, ~380px) + full map on the right — same split as Explore mode
@@ -129,3 +131,4 @@ Verify with a grep that nothing else imports them before deleting.
 - [ ] Mobile layout remains full-screen panel (no map)
 - [ ] Stale export files deleted (if no other consumers)
 - [ ] `npm run check` passes
+- [ ] `CONTEXT.md` updated: Slice D marked **Done**, Sources Redesign block moved to Completed Phases, "Current Phase" updated to next active work

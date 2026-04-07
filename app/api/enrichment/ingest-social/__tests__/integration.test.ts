@@ -94,6 +94,8 @@ describe('POST /api/enrichment/ingest-social integration', () => {
             place_type: 'restaurant',
             context_snippet: 'Best slice in town.',
             sentiment: 'positive',
+            tags: ['late-night', 'casual'],
+            callouts: [{ type: 'dish', text: 'vodka slice' }],
           },
           {
             place_name: 'Ghost Bistro',
@@ -121,6 +123,8 @@ describe('POST /api/enrichment/ingest-social integration', () => {
                 place_id: 'ChIJ_luigi',
                 name: "Luigi's Pizza",
                 geometry: { location: { lat: 40.7128, lng: -74.006 } },
+                rating: 4.7,
+                user_ratings_total: 2134,
               },
             ],
           }),
@@ -202,6 +206,8 @@ describe('POST /api/enrichment/ingest-social integration', () => {
         source: 'social',
         source_id: 'google:ChIJ_luigi',
         location: 'SRID=4326;POINT(-74.006 40.7128)',
+        google_rating: 4.7,
+        google_review_count: 2134,
       }),
       expect.objectContaining({
         onConflict: 'user_id,source,source_id',
@@ -213,6 +219,8 @@ describe('POST /api/enrichment/ingest-social integration', () => {
       expect.objectContaining({
         source_id: 'source-uuid-1',
         place_id: 'place-uuid-1',
+        tags: ['late-night', 'casual'],
+        callouts: [{ type: 'dish', text: 'vodka slice' }],
       }),
       expect.objectContaining({
         onConflict: 'source_id,place_id',

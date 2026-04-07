@@ -45,6 +45,7 @@ type LatLng = { lat: number; lng: number }
 type SearchBias = { lat: number; lng: number; radiusMeters: number }
 
 type DiscoveryState = {
+  focusedPlaceId: string | null
   query: string
   isSubmitting: boolean
   error: string | null
@@ -69,6 +70,8 @@ type DiscoveryState = {
   }) => void
   setSearchBias: (bias: SearchBias | null) => void
   setListScopeId: (listId: string | null) => void
+  openPlaceDrawer: (placeId: string) => void
+  closePlaceDrawer: () => void
   clear: () => void
   discardAndClear: () => void
   submit: () => Promise<void>
@@ -90,6 +93,7 @@ function looksLikeUrl(input: string): boolean {
 }
 
 export const useDiscoveryStore = create<DiscoveryState>((set, get) => ({
+  focusedPlaceId: null,
   query: '',
   isSubmitting: false,
   error: null,
@@ -118,9 +122,12 @@ export const useDiscoveryStore = create<DiscoveryState>((set, get) => ({
     }),
   setSearchBias: (bias) => set({ searchBias: bias }),
   setListScopeId: (listId) => set({ listScopeId: listId }),
+  openPlaceDrawer: (placeId) => set({ focusedPlaceId: placeId }),
+  closePlaceDrawer: () => set({ focusedPlaceId: null }),
 
   clear: () =>
     set({
+      focusedPlaceId: null,
       query: '',
       isSubmitting: false,
       error: null,
@@ -141,6 +148,7 @@ export const useDiscoveryStore = create<DiscoveryState>((set, get) => ({
     const status = current?.status
 
     set({
+      focusedPlaceId: null,
       query: '',
       isSubmitting: false,
       error: null,

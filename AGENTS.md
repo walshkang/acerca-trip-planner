@@ -7,7 +7,7 @@ This file is the single source of truth for how we build here. It applies to hum
 - `CONTEXT.md` — active phase, immediate blockers, implementation memory
 - `docs/VIBE_PLAYBOOK.md` — checklists and patterns
 - `docs/QUALITY_GATES.md` — quality gates and acceptance criteria
-- Starting a new task? Use `prompts/agent_task.md`.
+- Starting a new task? Use `cursor-prompts/agent_task.md`.
 
 ## Human Instructions
 - Use the PR template and document goal, non-goals, tradeoffs, and verification.

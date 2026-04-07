@@ -11,6 +11,7 @@ function makeResponse(body: unknown, ok = true, status = 200): Response {
 
 function resetDiscoveryStore() {
   useDiscoveryStore.setState({
+    focusedPlaceId: null,
     query: '',
     isSubmitting: false,
     error: null,
@@ -27,6 +28,21 @@ function resetDiscoveryStore() {
     listScopeId: null,
   })
 }
+
+describe('useDiscoveryStore place drawer state', () => {
+  beforeEach(() => {
+    resetDiscoveryStore()
+  })
+
+  it('opens and closes focused place drawer', () => {
+    const store = useDiscoveryStore.getState()
+    store.openPlaceDrawer('place-123')
+    expect(useDiscoveryStore.getState().focusedPlaceId).toBe('place-123')
+
+    store.closePlaceDrawer()
+    expect(useDiscoveryStore.getState().focusedPlaceId).toBeNull()
+  })
+})
 
 describe('useDiscoveryStore.submit', () => {
   beforeEach(() => {

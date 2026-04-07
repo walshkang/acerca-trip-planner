@@ -1,5 +1,7 @@
 # Sources Redesign — Slice B: API Contract
 
+> **Read first:** `cursor-prompts/agent_task.md` — preamble, invariants, and DoD (including CONTEXT.md update requirement).
+
 ## Goal
 
 Extend `GET /api/enrichment/user-sources` to surface the new fields from Slice A:
@@ -158,3 +160,4 @@ No logic change is needed if the route simply forwards the RPC result. If there 
 - [ ] TypeScript types match the response shape
 - [ ] Route test updated and passing
 - [ ] `npm run check` passes
+- [ ] `CONTEXT.md` updated: Slice B marked **Done** in the Sources Redesign status table

@@ -49,16 +49,7 @@ function safeNormalized(v: unknown): NormalizedData | null {
 export default function InspectorCard(props: {
   onCommitted?: (placeId: string) => void
   onClose?: () => void
-  tone?: 'light' | 'dark'
 }) {
-  const isDark = (props.tone ?? 'dark') === 'dark'
-  const selectedChipClass = isDark
-    ? 'border-slate-100 bg-slate-100 text-slate-900'
-    : 'border-slate-900 bg-slate-900 text-slate-50'
-  const unselectedChipClass = isDark
-    ? 'border-white/10 text-slate-200 hover:border-white/30'
-    : 'border-slate-300 text-slate-700 hover:border-slate-500'
-  const listHelperClass = isDark ? 'text-slate-300' : 'text-slate-600'
   const candidate = useDiscoveryStore((s) => s.previewCandidate)
   const enrichment = useDiscoveryStore((s) => s.previewEnrichment)
   const google = useDiscoveryStore((s) => s.previewGoogle)
@@ -293,9 +284,7 @@ export default function InspectorCard(props: {
 
   return (
     <div
-      className={`glass-panel pointer-events-auto w-[min(420px,92vw)] rounded-lg md:rounded-[4px] md:border-paper-tertiary-fixed md:bg-paper-surface-warm md:shadow-none md:backdrop-blur-none ${
-        isDark ? 'text-slate-100' : 'text-slate-900 inspector-light'
-      }`}
+      className="pointer-events-auto w-[min(420px,92vw)] rounded-lg border border-paper-tertiary-fixed bg-paper-surface-warm shadow-sm text-paper-on-surface"
       onClick={(e) => e.stopPropagation()}
       role="dialog"
       aria-label="Candidate preview"
@@ -303,16 +292,16 @@ export default function InspectorCard(props: {
       <div className="p-4 space-y-3">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <h3 className="truncate text-sm font-semibold text-slate-100 md:font-headline md:font-extrabold md:uppercase md:tracking-tight md:text-paper-on-surface">
+            <h3 className="truncate text-sm font-semibold text-paper-on-surface">
               {candidate.name}
             </h3>
             {candidate.address ? (
-              <p className="mt-1 truncate text-xs text-slate-300 md:font-body md:text-paper-on-surface-variant">
+              <p className="mt-1 truncate text-xs text-paper-on-surface-variant">
                 {candidate.address}
               </p>
             ) : null}
             {neighborhoodLabel ? (
-              <p className="mt-1 truncate text-[11px] text-slate-400 md:text-paper-on-surface-variant">
+              <p className="mt-1 truncate text-[11px] text-paper-on-surface-variant">
                 {neighborhoodLabel}
               </p>
             ) : null}
@@ -320,7 +309,7 @@ export default function InspectorCard(props: {
           <button
             type="button"
             onClick={props.onClose ?? clear}
-            className="glass-button px-2 py-1 text-[11px] md:rounded-[4px] md:border md:border-paper-tertiary-fixed md:bg-paper-surface-container-low md:text-paper-on-surface md:shadow-none md:backdrop-blur-none hover:md:bg-paper-tertiary-fixed"
+            className="rounded-full border border-paper-tertiary-fixed bg-paper-surface-container-low px-3 py-1 text-xs font-medium text-paper-on-surface transition-colors hover:bg-paper-surface-container"
           >
             Close
           </button>
@@ -331,19 +320,19 @@ export default function InspectorCard(props: {
             <button
               type="button"
               onClick={() => setShowMoreDetails((prev) => !prev)}
-              className="glass-button px-3 py-1 text-[11px] md:rounded-[4px] md:border md:border-paper-tertiary-fixed md:bg-paper-surface-container-low md:text-paper-on-surface md:shadow-none md:backdrop-blur-none hover:md:bg-paper-tertiary-fixed"
+              className="rounded-full border border-paper-tertiary-fixed bg-paper-surface-container-low px-3 py-1 text-xs font-medium text-paper-on-surface transition-colors hover:bg-paper-surface-container"
             >
               {showMoreDetails ? 'Hide details' : 'More details'}
             </button>
 
             {showMoreDetails ? (
-              <div className="mt-2 space-y-2 text-xs text-slate-200 md:font-body md:text-paper-on-surface">
+              <div className="mt-2 space-y-2 text-xs text-paper-on-surface">
                 {google?.opening_hours ? (
                   <div>
-                    <p className="text-[11px] font-semibold text-slate-200 md:text-[10px] md:font-bold md:uppercase md:tracking-[0.2em] md:text-paper-on-surface">
+                    <p className="text-[11px] font-semibold text-paper-on-surface">
                       Hours
                     </p>
-                    <p className="mt-0.5 text-[11px] text-slate-300 md:text-paper-on-surface-variant">
+                    <p className="mt-0.5 text-[11px] text-paper-on-surface-variant">
                       {google.opening_hours.open_now === true
                         ? 'Open now'
                         : google.opening_hours.open_now === false
@@ -351,7 +340,7 @@ export default function InspectorCard(props: {
                           : 'Hours status unavailable'}
                     </p>
                     {google.opening_hours.weekday_text?.length ? (
-                      <ul className="mt-1 space-y-0.5 text-[11px] text-slate-300 md:text-paper-on-surface-variant">
+                      <ul className="mt-1 space-y-0.5 text-[11px] text-paper-on-surface-variant">
                         {google.opening_hours.weekday_text
                           .slice(0, 7)
                           .map((row) => (
@@ -364,14 +353,14 @@ export default function InspectorCard(props: {
 
                 {googleTypes.length ? (
                   <div>
-                    <p className="text-[11px] font-semibold text-slate-200 md:text-[10px] md:font-bold md:uppercase md:tracking-[0.2em] md:text-paper-on-surface">
+                    <p className="text-[11px] font-semibold text-paper-on-surface">
                       Google types
                     </p>
                     <div className="mt-1 flex flex-wrap gap-2">
                       {googleTypes.slice(0, 12).map((t) => (
                         <span
                           key={t}
-                          className="rounded-full border border-white/10 px-2 py-0.5 text-[11px] text-slate-200 md:rounded-[2px] md:border-paper-tertiary-fixed md:bg-paper-surface-container md:text-paper-on-surface-variant"
+                          className="rounded-full border border-paper-tertiary-fixed bg-paper-surface-container px-2.5 py-1 text-xs font-medium text-paper-on-surface transition-colors hover:bg-paper-surface-container-high"
                         >
                           {t}
                         </span>
@@ -382,11 +371,11 @@ export default function InspectorCard(props: {
 
                 {google?.website ? (
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-[11px] font-semibold text-slate-200 md:text-paper-on-surface">
+                    <span className="text-[11px] font-semibold text-paper-on-surface">
                       Website
                     </span>
                     <a
-                      className="truncate text-[11px] text-slate-300 underline hover:text-slate-100 md:text-paper-primary hover:md:text-paper-primary-container"
+                      className="truncate text-[11px] text-paper-primary underline transition-colors hover:text-paper-primary-container"
                       href={google.website}
                       target="_blank"
                       rel="noreferrer"
@@ -398,11 +387,11 @@ export default function InspectorCard(props: {
 
                 {google?.url ? (
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-[11px] font-semibold text-slate-200 md:text-paper-on-surface">
+                    <span className="text-[11px] font-semibold text-paper-on-surface">
                       Google Maps
                     </span>
                     <a
-                      className="truncate text-[11px] text-slate-300 underline hover:text-slate-100 md:text-paper-primary hover:md:text-paper-primary-container"
+                      className="truncate text-[11px] text-paper-primary underline transition-colors hover:text-paper-primary-container"
                       href={google.url}
                       target="_blank"
                       rel="noreferrer"
@@ -423,18 +412,18 @@ export default function InspectorCard(props: {
               <img
                 src={curated.thumbnail_url}
                 alt={curated.wikipedia_title ?? candidate.name}
-                className="h-14 w-14 shrink-0 rounded-md object-cover bg-slate-800/60 md:rounded-[4px] md:bg-paper-surface-container"
+                className="h-14 w-14 shrink-0 rounded-md bg-paper-surface-container object-cover"
               />
             ) : null}
             <div className="min-w-0">
               {curated?.wikipedia_title ? (
-                <p className="text-[11px] text-slate-300 md:text-paper-on-surface-variant">
+                <p className="text-[11px] text-paper-on-surface-variant">
                   {curated.wikipedia_title}
                   {curated.wikidata_qid ? ` · ${curated.wikidata_qid}` : ''}
                 </p>
               ) : null}
               {curated?.summary ? (
-                <p className="mt-1 text-xs text-slate-200 line-clamp-4 md:text-paper-on-surface">
+                <p className="mt-1 line-clamp-4 text-xs text-paper-on-surface">
                   {curated.summary}
                 </p>
               ) : null}
@@ -443,14 +432,10 @@ export default function InspectorCard(props: {
         ) : null}
 
         <div className="space-y-1">
-          <p
-            className={`text-[11px] font-semibold md:text-[10px] md:font-bold md:uppercase md:tracking-[0.2em] ${isDark ? 'text-slate-300' : 'text-slate-600'} md:text-paper-on-surface`}
-          >
+          <p className="text-[11px] font-semibold text-paper-on-surface">
             Place type
           </p>
-          <p
-            className={`text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-500'} md:font-body md:text-paper-on-surface-variant`}
-          >
+          <p className="text-[11px] text-paper-on-surface-variant">
             Sets the map icon before this pin is saved.
           </p>
           <div className="flex flex-wrap gap-2" data-testid="inspector-category-chips">
@@ -466,15 +451,15 @@ export default function InspectorCard(props: {
                     userPickedCommitCategoryRef.current = true
                     setCommitCategory(cat)
                   }}
-                  className={`rounded-full border px-3 py-1 text-xs transition md:rounded-[2px] md:px-3 md:py-1 md:text-[11px] md:font-bold md:uppercase md:tracking-wider disabled:opacity-50 ${
+                  className={`rounded-full border px-2.5 py-1 text-xs font-medium transition-colors disabled:opacity-50 ${
                     selected
-                      ? `${selectedChipClass} md:!border-paper-on-surface md:!bg-paper-on-surface md:!text-paper-surface`
-                      : `${unselectedChipClass} md:!border-paper-tertiary-fixed md:!bg-paper-surface-container md:!text-paper-on-surface hover:md:!bg-white`
+                      ? 'border-paper-on-surface bg-paper-on-surface text-paper-surface'
+                      : 'border-paper-tertiary-fixed bg-paper-surface-container text-paper-on-surface hover:bg-paper-surface-container-high'
                   }`}
                 >
                   <span
                     aria-hidden
-                    className="mr-1 inline-block text-base leading-none md:text-[13px]"
+                    className="mr-1 inline-block text-base leading-none"
                   >
                     {resolveCategoryEmoji(cat)}
                   </span>
@@ -487,9 +472,7 @@ export default function InspectorCard(props: {
 
         <div className="space-y-1">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <p
-              className={`text-[11px] font-semibold md:text-[10px] md:font-bold md:uppercase md:tracking-[0.2em] ${isDark ? 'text-slate-300' : 'text-slate-600'} md:text-paper-on-surface`}
-            >
+            <p className="text-[11px] font-semibold text-paper-on-surface">
               Suggested tags
             </p>
             {includedAutoTags.length ? (
@@ -500,15 +483,13 @@ export default function InspectorCard(props: {
                   userEditedSuggestedTagsRef.current = true
                   setIncludedAutoTags([])
                 }}
-                className={`text-[11px] underline disabled:opacity-50 ${isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-600 hover:text-slate-900'} md:text-paper-on-surface-variant`}
+                className="text-[11px] text-paper-on-surface-variant underline transition-colors hover:text-paper-on-surface disabled:opacity-50"
               >
                 Clear all suggested
               </button>
             ) : null}
           </div>
-          <p
-            className={`text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-500'} md:font-body md:text-paper-on-surface-variant`}
-          >
+          <p className="text-[11px] text-paper-on-surface-variant">
             From enrichment — remove any you do not want on the list.
           </p>
           {includedAutoTags.length ? (
@@ -516,11 +497,7 @@ export default function InspectorCard(props: {
               {includedAutoTags.map((t) => (
                 <span
                   key={t}
-                  className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] md:rounded-[2px] md:border-paper-tertiary-fixed md:bg-paper-surface-container ${
-                    isDark
-                      ? 'border-white/10 text-slate-200'
-                      : 'border-slate-300 text-slate-800'
-                  } md:text-paper-on-surface`}
+                  className="inline-flex items-center gap-1 rounded-full border border-paper-tertiary-fixed bg-paper-surface-container px-2.5 py-1 text-xs font-medium text-paper-on-surface transition-colors hover:bg-paper-surface-container-high"
                 >
                   {t.startsWith('#') ? t : `#${t}`}
                   <button
@@ -530,11 +507,7 @@ export default function InspectorCard(props: {
                       userEditedSuggestedTagsRef.current = true
                       setIncludedAutoTags((prev) => prev.filter((x) => x !== t))
                     }}
-                    className={
-                      isDark
-                        ? 'text-slate-400 hover:text-slate-200'
-                        : 'text-slate-500 hover:text-slate-900'
-                    }
+                    className="text-paper-on-surface-variant transition-colors hover:text-paper-on-surface"
                     aria-label={`Remove suggested tag ${t}`}
                   >
                     ×
@@ -543,9 +516,7 @@ export default function InspectorCard(props: {
               ))}
             </div>
           ) : (
-            <p
-              className={`text-[11px] ${isDark ? 'text-slate-500' : 'text-slate-500'} md:text-paper-on-surface-variant`}
-            >
+            <p className="text-[11px] text-paper-on-surface-variant">
               No suggested tags for this pin.
             </p>
           )}
@@ -555,12 +526,12 @@ export default function InspectorCard(props: {
           <div className="space-y-2">
             <div className="flex flex-wrap gap-2">
               {normalized.energy ? (
-                <span className="rounded-full border border-white/10 px-2 py-0.5 text-[11px] text-slate-200 md:rounded-[2px] md:border-paper-tertiary-fixed md:bg-paper-surface-container md:text-paper-on-surface-variant">
+                <span className="rounded-full border border-paper-tertiary-fixed bg-paper-surface-container px-2.5 py-1 text-xs font-medium text-paper-on-surface">
                   Energy: {normalized.energy}
                 </span>
               ) : null}
               {normalized.vibe ? (
-                <span className="rounded-full border border-white/10 px-2 py-0.5 text-[11px] text-slate-200 md:rounded-[2px] md:border-paper-tertiary-fixed md:bg-paper-surface-container md:text-paper-on-surface-variant">
+                <span className="rounded-full border border-paper-tertiary-fixed bg-paper-surface-container px-2.5 py-1 text-xs font-medium text-paper-on-surface">
                   Vibe: {normalized.vibe}
                 </span>
               ) : null}
@@ -569,21 +540,19 @@ export default function InspectorCard(props: {
         ) : null}
 
         {commitError ? (
-          <p className={`text-xs ${isDark ? 'text-red-300' : 'text-red-600'}`}>
+          <p className="text-xs text-red-600">
             {commitError}
           </p>
         ) : null}
 
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <p
-              className={`text-xs font-medium md:text-[10px] md:font-bold md:uppercase md:tracking-[0.2em] ${isDark ? 'text-slate-300' : 'text-slate-700'} md:text-paper-on-surface`}
-            >
+            <p className="text-xs font-medium text-paper-on-surface">
               List
             </p>
           </div>
           {listsLoading ? (
-            <p className={`text-xs ${listHelperClass}`}>Loading lists…</p>
+            <p className="text-xs text-paper-on-surface-variant">Loading lists…</p>
           ) : null}
           <div className="flex flex-wrap gap-2">
             {lists.map((list) => {
@@ -594,10 +563,10 @@ export default function InspectorCard(props: {
                   type="button"
                   aria-pressed={selected}
                   onClick={() => setSelectedListId(selected ? null : list.id)}
-                  className={`rounded-full border px-3 py-1 text-xs transition md:rounded-[2px] md:px-3 md:py-1 md:text-[11px] md:font-bold md:uppercase md:tracking-wider ${
+                  className={`rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${
                     selected
-                      ? `${selectedChipClass} md:!border-paper-on-surface md:!bg-paper-on-surface md:!text-paper-surface`
-                      : `${unselectedChipClass} md:!border-paper-tertiary-fixed md:!bg-paper-surface-container md:!text-paper-on-surface hover:md:!bg-white`
+                      ? 'border-paper-on-surface bg-paper-on-surface text-paper-surface'
+                      : 'border-paper-tertiary-fixed bg-paper-surface-container text-paper-on-surface hover:bg-paper-surface-container-high'
                   }`}
                 >
                   {list.name}
@@ -609,7 +578,7 @@ export default function InspectorCard(props: {
               type="button"
               aria-expanded={showNewListInput}
               onClick={() => setShowNewListInput((v) => !v)}
-              className={`rounded-full border px-3 py-1 text-xs transition md:rounded-[2px] md:px-3 md:py-1 md:text-[11px] md:font-bold md:uppercase md:tracking-wider ${unselectedChipClass} md:!border-paper-tertiary-fixed md:!bg-paper-surface-container md:!text-paper-on-surface hover:md:!bg-white`}
+              className="rounded-full border border-paper-tertiary-fixed bg-paper-surface-container px-2.5 py-1 text-xs font-medium text-paper-on-surface transition-colors hover:bg-paper-surface-container-high"
             >
               + New list
             </button>
@@ -618,7 +587,7 @@ export default function InspectorCard(props: {
           {showNewListInput ? (
             <div className="flex items-center gap-2">
               <input
-                className="glass-input flex-1 text-xs md:rounded-[4px] md:border-paper-tertiary-fixed md:bg-paper-surface-container md:backdrop-blur-none md:text-paper-on-surface md:placeholder:text-paper-on-surface-variant"
+                className="w-full flex-1 rounded-md border border-paper-tertiary-fixed bg-paper-surface-container px-3 py-1.5 text-xs text-paper-on-surface placeholder:text-paper-on-surface-variant focus:border-paper-primary focus:outline-none"
                 value={newListName}
                 onChange={(e) => setNewListName(e.target.value)}
                 placeholder="New list name"
@@ -627,31 +596,31 @@ export default function InspectorCard(props: {
                 type="button"
                 onClick={createList}
                 disabled={creatingList || !newListName.trim()}
-                className="glass-button rounded-md px-2 py-1 text-[11px] disabled:opacity-50 md:rounded-[4px] md:border md:border-paper-tertiary-fixed md:bg-paper-surface-container-low md:text-paper-on-surface md:shadow-none md:backdrop-blur-none hover:md:bg-paper-tertiary-fixed"
+                className="rounded-full border border-paper-tertiary-fixed bg-paper-surface-container-low px-3 py-1 text-xs font-medium text-paper-on-surface transition-colors hover:bg-paper-surface-container disabled:opacity-50"
               >
                 {creatingList ? 'Adding…' : 'Add'}
               </button>
             </div>
           ) : null}
           <div>
-            <label className="block text-xs font-medium text-slate-300 md:text-paper-on-surface">
+            <label className="block text-xs font-medium text-paper-on-surface">
               Add tags (optional)
             </label>
             <input
-              className="glass-input mt-1 w-full text-xs md:rounded-[4px] md:border-paper-tertiary-fixed md:bg-paper-surface-container md:backdrop-blur-none md:text-paper-on-surface md:placeholder:text-paper-on-surface-variant"
+              className="mt-1 w-full rounded-md border border-paper-tertiary-fixed bg-paper-surface-container px-3 py-1.5 text-xs text-paper-on-surface placeholder:text-paper-on-surface-variant focus:border-paper-primary focus:outline-none"
               value={tagInput}
               onChange={(e) => setTagInput(e.target.value)}
               disabled={!selectedListId}
               placeholder="date-night, rooftop, kid-friendly"
             />
             {!selectedListId ? (
-              <p className={`mt-1 text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+              <p className="mt-1 text-[11px] text-paper-on-surface-variant">
                 Tags apply to list items. Choose a list to enable tags.
               </p>
             ) : null}
           </div>
           {listsError ? (
-            <p className={`text-xs ${isDark ? 'text-red-300' : 'text-red-600'}`}>
+            <p className="text-xs text-red-600">
               {listsError}
             </p>
           ) : null}
@@ -662,11 +631,7 @@ export default function InspectorCard(props: {
           data-onboarding="approve-pin"
           onClick={commit}
           disabled={isCommitting}
-          className={`w-full rounded-md px-3 py-2 text-sm shadow-sm transition-colors disabled:opacity-50 md:!rounded-[4px] md:!border-0 md:!bg-paper-primary md:!px-4 md:!py-2.5 md:!text-xs md:!font-bold md:!uppercase md:!tracking-widest md:!text-paper-on-primary md:!shadow-none hover:md:!bg-paper-primary-container ${
-            isDark
-              ? 'bg-slate-100/90 text-slate-900 hover:bg-slate-100'
-              : 'bg-slate-900/90 text-slate-50 hover:bg-slate-900'
-          }`}
+          className="w-full rounded-full bg-paper-primary px-4 py-2.5 text-xs font-bold uppercase tracking-widest text-paper-on-primary transition-colors hover:bg-paper-primary-container disabled:opacity-50"
         >
           {isCommitting ? 'Approving…' : 'Approve Pin'}
         </button>

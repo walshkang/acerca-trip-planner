@@ -135,7 +135,25 @@ describe('/api/enrichment/user-sources', () => {
           title: 'T',
           author_name: 'A',
           author_persona: 'foodie',
-          places: [],
+          places: [
+            {
+              place_id: 'place-1',
+              place_name: 'Cafe Uno',
+              category: 'food',
+              google_place_id: 'google-1',
+              google_rating: 4.6,
+              google_review_count: 1234,
+              snippet: 'Great breakfast spot',
+              sentiment: 'positive',
+              tags: ['brunch', 'coffee'],
+              callouts: [
+                {
+                  type: 'dish',
+                  text: 'ricotta pancakes',
+                },
+              ],
+            },
+          ],
         },
       ]
       const mock = makeClient({ rpcData: rows })

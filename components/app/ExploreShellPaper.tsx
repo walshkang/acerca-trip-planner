@@ -516,6 +516,7 @@ export default function ExploreShellPaper() {
             activeTab="map"
             onTabChange={(tab) => {
               if (tab === 'itinerary') setMode('plan')
+              if (tab === 'sources') setMode('sources')
             }}
             clearRightRail={!isNarrow}
             activeLayer={activeLayer}

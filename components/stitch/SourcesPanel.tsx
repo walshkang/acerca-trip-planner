@@ -1,17 +1,11 @@
 'use client'
 
-import dynamic from 'next/dynamic'
-import { ChevronDown, ChevronRight } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { SocialUrlIngest } from '@/components/stitch/SocialUrlIngest'
-import type { ExportItem } from '@/lib/social/sources-export-payload'
 import type { UserSocialSourcePlace, UserSocialSourceRow } from '@/lib/social/user-sources-contract'
-import { getPlaceStateSnapshot, useSourcesStore } from '@/lib/state/useSourcesStore'
+import { useTripStore } from '@/lib/state/useTripStore'
 
-const SourcesExportSheet = dynamic(
-  () => import('@/components/stitch/SourcesExportSheet'),
-  { ssr: false }
-)
+type AddStatus = 'idle' | 'loading' | 'added' | 'duplicate' | 'error'
 
 function platformChipLabel(platform: string): string {
   const p = platform.trim().toLowerCase()
@@ -21,169 +15,127 @@ function platformChipLabel(platform: string): string {
   return (platform.trim().toUpperCase() || 'SOURCE')
 }
 
-function cycleDayIndex(current: number | undefined): number | undefined {
-  if (current === undefined) return 1
-  if (current >= 7) return undefined
-  return current + 1
+function calloutPrefix(type: 'dish' | 'drink' | 'activity' | 'tip'): string {
+  if (type === 'dish') return '🍽'
+  if (type === 'drink') return '🥤'
+  if (type === 'activity') return '📍'
+  return '💡'
 }
 
-function mergeTags(existing: string[], raw: string): string[] {
-  const parts = raw
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean)
-  const seen = new Set(existing)
-  const out = [...existing]
-  for (const p of parts) {
-    if (!seen.has(p)) {
-      seen.add(p)
-      out.push(p)
+function SourcePlaceCard({
+  place,
+  activeListId,
+  onMoreDetails,
+}: {
+  place: UserSocialSourcePlace
+  activeListId: string | null
+  onMoreDetails: (placeId: string) => void
+}) {
+  const [addStatus, setAddStatus] = useState<AddStatus>('idle')
+
+  useEffect(() => {
+    if (addStatus !== 'added') return
+    const timeout = window.setTimeout(() => {
+      setAddStatus('idle')
+    }, 2000)
+    return () => window.clearTimeout(timeout)
+  }, [addStatus])
+
+  const hasRating = place.google_rating != null
+  const ratingText = hasRating ? place.google_rating.toFixed(1) : null
+  const reviewCount = place.google_review_count ?? 0
+  const addDisabled = !activeListId || addStatus === 'loading'
+
+  async function onAddToList() {
+    if (!activeListId) return
+    setAddStatus('loading')
+    try {
+      const res = await fetch(
+        `/api/lists/${activeListId}/items?place_id=${encodeURIComponent(place.place_id)}`,
+        { method: 'POST' }
+      )
+      if (res.ok) {
+        setAddStatus('added')
+        return
+      }
+      if (res.status === 409) {
+        setAddStatus('duplicate')
+        return
+      }
+      setAddStatus('error')
+    } catch {
+      setAddStatus('error')
     }
   }
-  return out
-}
-
-function SourcePlaceRow({ place }: { place: UserSocialSourcePlace }) {
-  const place_id = place.place_id
-  const placeState = useSourcesStore((s) => getPlaceStateSnapshot(s.placeState, place_id))
-  const setDayIndex = useSourcesStore((s) => s.setDayIndex)
-  const setTags = useSourcesStore((s) => s.setTags)
-  const toggleExcluded = useSourcesStore((s) => s.toggleExcluded)
-
-  const [tagDraft, setTagDraft] = useState('')
-
-  const excluded = placeState.excluded
-  const dayIndex = placeState.day_index
-  const tags = placeState.tags
-
-  const commitTags = useCallback(() => {
-    if (!tagDraft.trim()) return
-    setTags(place_id, mergeTags(tags, tagDraft))
-    setTagDraft('')
-  }, [place_id, setTags, tagDraft, tags])
-
-  const onDayClick = () => {
-    setDayIndex(place_id, cycleDayIndex(dayIndex))
-  }
-
-  const removeTag = (t: string) => {
-    setTags(
-      place_id,
-      tags.filter((x) => x !== t)
-    )
-  }
 
   return (
-    <div
-      data-testid="sources-place-row"
-      className={`border-t border-paper-tertiary-fixed px-3 py-2 ${excluded ? 'opacity-40' : ''}`}
-    >
-      <div className="flex flex-wrap items-baseline gap-2">
-        <span
-          className={`text-sm font-medium text-paper-on-surface ${excluded ? 'line-through' : ''}`}
-        >
-          {place.place_name}
-        </span>
-        <span className="paper-chip py-0.5 text-[10px] leading-tight">{place.category}</span>
+    <div className="rounded border border-paper-tertiary-fixed bg-paper-surface-container px-3 py-3">
+      <div className="flex items-center justify-between gap-2">
+        <div className="min-w-0">
+          <p className="truncate text-sm font-medium text-paper-on-surface">{place.place_name}</p>
+          <div className="mt-1 flex items-center gap-2">
+            <span className="paper-chip py-0.5 text-[10px] leading-tight">{place.category}</span>
+            {hasRating ? (
+              <span className="text-xs text-paper-on-surface-variant">
+                ★ {ratingText}
+                {reviewCount >= 1 ? ` (${reviewCount})` : ''}
+              </span>
+            ) : null}
+          </div>
+        </div>
       </div>
-      <p className="mt-1 line-clamp-2 text-xs italic text-paper-on-surface-variant">
-        {place.snippet}
+      <p className="mt-2 line-clamp-3 text-xs italic text-paper-on-surface-variant">
+        "{place.snippet}"
       </p>
-      <div className="mt-2 flex flex-wrap items-center gap-2">
-        <button
-          type="button"
-          onClick={onDayClick}
-          className="rounded-[4px] border border-paper-tertiary-fixed bg-paper-surface-container px-2 py-0.5 text-xs text-paper-on-surface"
-        >
-          {dayIndex === undefined ? '+ Day' : `Day ${dayIndex}`}
-        </button>
-        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1">
-          {tags.map((t) => (
-            <span key={t} className="paper-chip-active inline-flex items-center gap-1 py-0.5 pl-2 pr-1 text-[10px]">
-              {t}
-              <button
-                type="button"
-                className="rounded px-0.5 text-paper-on-surface-variant hover:text-white"
-                aria-label={`Remove tag ${t}`}
-                onClick={() => removeTag(t)}
-              >
-                ×
-              </button>
+
+      {place.tags.length > 0 ? (
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {place.tags.map((tag) => (
+            <span key={`tag:${place.place_id}:${tag}`} className="paper-chip py-0.5 text-[10px]">
+              {tag}
             </span>
-          ))}
-          <input
-            type="text"
-            value={tagDraft}
-            onChange={(e) => setTagDraft(e.target.value)}
-            onBlur={commitTags}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault()
-                commitTags()
-              }
-            }}
-            placeholder="+ tag"
-            className="min-w-[4.5rem] max-w-[12rem] flex-1 rounded border border-paper-tertiary-fixed bg-paper-surface-warm px-2 py-0.5 text-xs text-paper-on-surface placeholder:text-paper-on-surface-variant focus:outline-none focus:ring-1 focus:ring-paper-primary"
-          />
-        </div>
-        <button
-          type="button"
-          onClick={() => toggleExcluded(place_id)}
-          className="shrink-0 text-xs text-paper-on-surface-variant underline decoration-paper-tertiary-fixed underline-offset-2 hover:text-paper-on-surface"
-        >
-          {excluded ? 'Include' : 'Exclude'}
-        </button>
-      </div>
-    </div>
-  )
-}
-
-function SourceCard({ source }: { source: UserSocialSourceRow }) {
-  const expandedSourceIds = useSourcesStore((s) => s.expandedSourceIds)
-  const toggleExpanded = useSourcesStore((s) => s.toggleExpanded)
-
-  const expanded = expandedSourceIds.includes(source.source_id)
-  const n = source.places.length
-  const title = source.title?.trim() || source.url
-  const author = source.author_name?.trim()
-
-  return (
-    <div
-      data-testid="sources-source-card"
-      className="overflow-hidden rounded border border-paper-tertiary-fixed bg-paper-surface-container"
-    >
-      <button
-        type="button"
-        onClick={() => toggleExpanded(source.source_id)}
-        className="flex w-full items-start gap-2 px-3 py-2.5 text-left transition-colors hover:bg-paper-surface-warm/80"
-      >
-        <span className="paper-chip shrink-0 py-1">{platformChipLabel(source.platform)}</span>
-        <div className="min-w-0 flex-1">
-          <p className="truncate font-headline text-xs font-extrabold uppercase tracking-tight text-paper-on-surface">
-            {title}
-          </p>
-          {author ? (
-            <p className="mt-0.5 truncate text-xs text-paper-on-surface-variant">@{author}</p>
-          ) : null}
-        </div>
-        <span className="shrink-0 text-[11px] font-medium text-paper-on-surface-variant">
-          {n} place{n !== 1 ? 's' : ''}
-        </span>
-        <span className="shrink-0 text-paper-on-surface-variant">
-          {expanded ? (
-            <ChevronDown className="h-4 w-4" aria-hidden />
-          ) : (
-            <ChevronRight className="h-4 w-4" aria-hidden />
-          )}
-        </span>
-      </button>
-      {expanded ? (
-        <div className="border-t border-paper-tertiary-fixed bg-paper-surface-warm/50">
-          {source.places.map((place) => (
-            <SourcePlaceRow key={place.place_id} place={place} />
           ))}
         </div>
       ) : null}
+
+      {place.callouts.length > 0 ? (
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {place.callouts.map((callout, idx) => (
+            <span
+              key={`callout:${place.place_id}:${idx}`}
+              className="paper-chip-active py-0.5 text-[10px]"
+            >
+              {calloutPrefix(callout.type)} {callout.text}
+            </span>
+          ))}
+        </div>
+      ) : null}
+
+      <div className="mt-3 flex items-center justify-between gap-2">
+        <button
+          type="button"
+          className="paper-button-ghost px-2 py-1 text-xs"
+          onClick={() => onMoreDetails(place.place_id)}
+        >
+          More details
+        </button>
+        <button
+          type="button"
+          className="paper-button-primary px-2 py-1 text-xs disabled:opacity-60"
+          onClick={() => void onAddToList()}
+          disabled={addDisabled}
+        >
+          {addStatus === 'loading'
+            ? 'Adding…'
+            : addStatus === 'added'
+              ? 'Added ✓'
+              : addStatus === 'duplicate'
+                ? 'Already added'
+                : addStatus === 'error'
+                  ? 'Try again'
+                  : '+ Add to list'}
+        </button>
+      </div>
     </div>
   )
 }
@@ -205,13 +157,20 @@ function SourcesSkeleton() {
   )
 }
 
-export default function SourcesPanel() {
+type SourcesPanelProps = {
+  onMoreDetails?: (placeId: string) => void
+  onSelectedSourceChange?: (source: UserSocialSourceRow | null) => void
+}
+
+export default function SourcesPanel({
+  onMoreDetails,
+  onSelectedSourceChange,
+}: SourcesPanelProps) {
   const [sources, setSources] = useState<UserSocialSourceRow[] | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [exportOpen, setExportOpen] = useState(false)
-
-  const placeState = useSourcesStore((s) => s.placeState)
+  const [selectedSourceId, setSelectedSourceId] = useState<string | null>(null)
+  const activeListId = useTripStore((s) => s.activeListId)
 
   const loadSources = useCallback(async () => {
     setLoading(true)
@@ -237,6 +196,7 @@ export default function SourcesPanel() {
         (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       )
       setSources(sorted)
+      setSelectedSourceId((prev) => prev ?? sorted[0]?.source_id ?? null)
     } catch {
       setError('Could not load sources.')
       setSources([])
@@ -249,41 +209,25 @@ export default function SourcesPanel() {
     void loadSources()
   }, [loadSources])
 
-  const placeCounts = useMemo(() => {
-    if (!sources) return { selected: 0, excluded: 0, total: 0 }
-    let total = 0
-    let excluded = 0
-    for (const s of sources) {
-      for (const p of s.places) {
-        total += 1
-        if (getPlaceStateSnapshot(placeState, p.place_id).excluded) excluded += 1
-      }
+  useEffect(() => {
+    if (!sources?.length) {
+      setSelectedSourceId(null)
+      return
     }
-    const selected = total - excluded
-    return { selected, excluded, total }
-  }, [sources, placeState])
-
-  const exportItems: ExportItem[] = useMemo(() => {
-    if (!sources?.length) return []
-    const out: ExportItem[] = []
-    for (const source of sources) {
-      for (const place of source.places) {
-        const snap = getPlaceStateSnapshot(placeState, place.place_id)
-        if (snap.excluded) continue
-        out.push({
-          place_id: place.place_id,
-          google_place_id: place.google_place_id,
-          place_name: place.place_name,
-          category: place.category,
-          ...(snap.day_index !== undefined ? { day_index: snap.day_index } : {}),
-          tags: snap.tags,
-        })
-      }
+    if (!selectedSourceId || !sources.some((source) => source.source_id === selectedSourceId)) {
+      setSelectedSourceId(sources[0]!.source_id)
     }
-    return out
-  }, [sources, placeState])
+  }, [selectedSourceId, sources])
 
-  const showFooter = placeCounts.selected >= 1 && placeCounts.total > 0
+  const selectedSource = useMemo(() => {
+    if (!sources?.length) return null
+    if (!selectedSourceId) return sources[0] ?? null
+    return sources.find((source) => source.source_id === selectedSourceId) ?? sources[0] ?? null
+  }, [selectedSourceId, sources])
+
+  useEffect(() => {
+    onSelectedSourceChange?.(selectedSource)
+  }, [onSelectedSourceChange, selectedSource])
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-paper-surface-warm">
@@ -302,39 +246,60 @@ export default function SourcesPanel() {
           <p className="px-3 py-6 text-center text-sm text-red-600 dark:text-red-400">{error}</p>
         ) : !sources?.length ? (
           <p className="px-3 py-8 text-center text-sm text-paper-on-surface-variant">
-            No sources yet — paste a URL above
+            Paste a YouTube or blog URL above to get started
           </p>
         ) : (
-          <div className="space-y-3 px-3 pb-4 pt-1">
-            {sources.map((source) => (
-              <SourceCard key={source.source_id} source={source} />
-            ))}
+          <div className="space-y-3 px-3 pb-4 pt-3">
+            <div>
+              <label
+                htmlFor="sources-select"
+                className="text-[11px] font-bold uppercase tracking-[0.16em] text-paper-on-surface-variant"
+              >
+                Source
+              </label>
+              <select
+                id="sources-select"
+                data-testid="sources-select"
+                value={selectedSource?.source_id ?? ''}
+                onChange={(e) => setSelectedSourceId(e.target.value || null)}
+                className="mt-1 w-full rounded border border-paper-tertiary-fixed bg-paper-surface-container px-2 py-1.5 text-sm text-paper-on-surface focus:outline-none focus:ring-1 focus:ring-paper-primary"
+              >
+                {sources.map((source) => (
+                  <option key={source.source_id} value={source.source_id}>
+                    {source.title?.trim() || source.url}
+                  </option>
+                ))}
+              </select>
+              {selectedSource ? (
+                <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-paper-on-surface-variant">
+                  <span className="paper-chip py-0.5">
+                    {platformChipLabel(selectedSource.platform)}
+                  </span>
+                  <span>@{selectedSource.author_name}</span>
+                  <span className="capitalize">{selectedSource.author_persona}</span>
+                </div>
+              ) : null}
+            </div>
+
+            {selectedSource?.places.length ? (
+              <div className="space-y-2">
+                {selectedSource.places.map((place) => (
+                  <SourcePlaceCard
+                    key={place.place_id}
+                    place={place}
+                    activeListId={activeListId}
+                    onMoreDetails={(placeId) => onMoreDetails?.(placeId)}
+                  />
+                ))}
+              </div>
+            ) : (
+              <p className="py-6 text-center text-sm text-paper-on-surface-variant">
+                No places extracted from this source
+              </p>
+            )}
           </div>
         )}
       </div>
-
-      {showFooter ? (
-        <div className="shrink-0 border-t border-paper-tertiary-fixed bg-paper-surface-warm px-3 py-3">
-          <p className="text-xs text-paper-on-surface-variant">
-            {placeCounts.selected} place{placeCounts.selected !== 1 ? 's' : ''} selected ·{' '}
-            {placeCounts.excluded} excluded
-          </p>
-          <button
-            type="button"
-            data-testid="sources-export-button"
-            className="paper-button-primary mt-2 w-full"
-            onClick={() => setExportOpen(true)}
-          >
-            Export to list →
-          </button>
-        </div>
-      ) : null}
-
-      <SourcesExportSheet
-        open={exportOpen}
-        onClose={() => setExportOpen(false)}
-        items={exportItems}
-      />
     </div>
   )
 }

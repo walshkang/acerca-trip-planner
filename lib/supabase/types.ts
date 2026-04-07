@@ -342,6 +342,8 @@ export type Database = {
           enrichment_version: number
           geohash7: string | null
           google_place_id: string | null
+          google_rating: number | null
+          google_review_count: number | null
           id: string
           location: unknown
           name: string
@@ -367,6 +369,8 @@ export type Database = {
           enrichment_version?: number
           geohash7?: string | null
           google_place_id?: string | null
+          google_rating?: number | null
+          google_review_count?: number | null
           id?: string
           location: unknown
           name: string
@@ -392,6 +396,8 @@ export type Database = {
           enrichment_version?: number
           geohash7?: string | null
           google_place_id?: string | null
+          google_rating?: number | null
+          google_review_count?: number | null
           id?: string
           location?: unknown
           name?: string
@@ -469,28 +475,34 @@ export type Database = {
       }
       social_mentions: {
         Row: {
+          callouts: Json
           created_at: string
           id: string
           place_id: string
           sentiment: string | null
           snippet: string
           source_id: string
+          tags: string[]
         }
         Insert: {
+          callouts?: Json
           created_at?: string
           id?: string
           place_id: string
           sentiment?: string | null
           snippet: string
           source_id: string
+          tags?: string[]
         }
         Update: {
+          callouts?: Json
           created_at?: string
           id?: string
           place_id?: string
           sentiment?: string | null
           snippet?: string
           source_id?: string
+          tags?: string[]
         }
         Relationships: [
           {
@@ -838,10 +850,50 @@ export type Database = {
             }
             Returns: string
           }
+      claim_next_social_job: {
+        Args: never
+        Returns: {
+          created_at: string
+          error_message: string | null
+          failures: Json | null
+          id: string
+          location_hint: Json | null
+          places_failed: number
+          places_resolved: number
+          source_id: string | null
+          status: string
+          updated_at: string
+          url: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "social_ingest_jobs"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       disablelongtransactions: { Args: never; Returns: string }
       discard_place_candidate: {
         Args: { p_candidate_id: string }
         Returns: undefined
+      }
+      discover_social_places: {
+        Args: {
+          p_bounds?: unknown
+          p_min_mentions?: number
+          p_persona?: Database["public"]["Enums"]["persona_enum"]
+        }
+        Returns: {
+          category: Database["public"]["Enums"]["category_enum"]
+          lat: number
+          lng: number
+          mention_count: number
+          name: string
+          personas: Database["public"]["Enums"]["persona_enum"][]
+          place_id: string
+          top_snippets: Json
+        }[]
       }
       dropgeometrycolumn:
         | {
@@ -975,10 +1027,7 @@ export type Database = {
       geomfromewkt: { Args: { "": string }; Returns: unknown }
       gettransactionid: { Args: never; Returns: unknown }
       is_list_owner: { Args: { p_list_id: string }; Returns: boolean }
-      list_user_social_sources: {
-        Args: Record<string, never>
-        Returns: Json
-      }
+      list_user_social_sources: { Args: never; Returns: Json }
       longtransactionsenabled: { Args: never; Returns: boolean }
       patch_list_trip_dates: {
         Args: {
@@ -1042,10 +1091,6 @@ export type Database = {
       }
       postgis_version: { Args: never; Returns: string }
       postgis_wagyu_version: { Args: never; Returns: string }
-      claim_next_social_job: {
-        Args: Record<string, never>
-        Returns: Database["public"]["Tables"]["social_ingest_jobs"]["Row"] | null
-      }
       promote_place_candidate:
         | { Args: { p_candidate_id: string }; Returns: string }
         | {

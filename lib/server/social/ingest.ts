@@ -27,6 +27,9 @@ Extract the author's persona and all specific places mentioned.
 For each place, include the exact quote/context and classify sentiment.
 Only include real, specific establishments - not generic references like "a cafe" or "the beach".
 Persona values must be exactly one of: local, luxury, budget, design, foodie, adventure, family, nightlife.
+For each place also provide:
+- tags: 1-4 short keyword labels capturing vibe, format, or notable attributes (e.g. "rooftop", "cash-only", "hidden gem", "outdoor seating"). Max 6 tags.
+- callouts: specific named dishes, drinks, or activities mentioned in the context for this place (e.g. {type: "dish", text: "pad see ew"}, {type: "activity", text: "longtail boat ride"}). Only include callouts explicitly named in the transcript. Max 10 callouts per place.
 `.trim()
 
 const CHUNK_SYSTEM_PROMPT = `
@@ -36,6 +39,9 @@ If this segment has no real, named establishments, set contains_places to false 
 Do not invent venues. Persona values must be exactly one of: local, luxury, budget, design, foodie, adventure, family, nightlife.
 For each place, include the exact quote/context and classify sentiment.
 Only include real, specific establishments - not generic references like "a cafe" or "the beach".
+For each place also provide:
+- tags: 1-4 short keyword labels capturing vibe, format, or notable attributes (e.g. "rooftop", "cash-only", "hidden gem", "outdoor seating"). Max 6 tags.
+- callouts: specific named dishes, drinks, or activities mentioned in the context for this place (e.g. {type: "dish", text: "pad see ew"}, {type: "activity", text: "longtail boat ride"}). Only include callouts explicitly named in the transcript. Max 10 callouts per place.
 `.trim()
 
 const google = createGoogleGenerativeAI({
@@ -78,6 +84,8 @@ type ExtractedMention = {
   place_type?: string
   context_snippet: string
   sentiment: 'positive' | 'neutral' | 'mixed'
+  tags?: string[]
+  callouts?: Array<{ type: 'dish' | 'drink' | 'activity' | 'tip'; text: string }>
 }
 
 export type IngestSocialResult = {
@@ -207,9 +215,20 @@ async function ensurePlaceId(params: {
   lat: number
   lng: number
   googleTypes?: string[]
+  googleRating?: number
+  googleReviewCount?: number
 }): Promise<string> {
   const supabase = getAdminSupabase()
-  const { sourceUserId, googlePlaceId, name, lat, lng, googleTypes } = params
+  const {
+    sourceUserId,
+    googlePlaceId,
+    name,
+    lat,
+    lng,
+    googleTypes,
+    googleRating,
+    googleReviewCount,
+  } = params
 
   const upsertResult = await supabase
     .from('places')
@@ -224,6 +243,8 @@ async function ensurePlaceId(params: {
         dedupe_key: `google:${googlePlaceId}`,
         enrichment_source_hash: 'social-ingest',
         location: toGeographyPointWkt(lat, lng),
+        google_rating: typeof googleRating === 'number' ? googleRating : null,
+        google_review_count: typeof googleReviewCount === 'number' ? googleReviewCount : null,
       },
       {
         onConflict: 'user_id,source,source_id',
@@ -312,6 +333,9 @@ export async function persistSocialIngest(request: IngestSocialRequest): Promise
           lat,
           lng,
           googleTypes: Array.isArray(top.types) ? (top.types as string[]) : undefined,
+          googleRating: typeof top.rating === 'number' ? top.rating : undefined,
+          googleReviewCount:
+            typeof top.user_ratings_total === 'number' ? top.user_ratings_total : undefined,
         })
 
         const mentionInsert = await supabase.from('social_mentions').upsert(
@@ -320,6 +344,8 @@ export async function persistSocialIngest(request: IngestSocialRequest): Promise
             place_id: placeId,
             snippet: mention.context_snippet,
             sentiment: mention.sentiment,
+            tags: mention.tags ?? [],
+            callouts: mention.callouts ? JSON.parse(JSON.stringify(mention.callouts)) : [],
           },
           { onConflict: 'source_id,place_id' }
         )

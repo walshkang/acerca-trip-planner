@@ -4,14 +4,16 @@
 - Invariants: DB is source of truth; only approved pins are truth; enrich once, read forever; strict taxonomy; user edits never overwrite frozen AI enrichment.
 - DoD: tests updated/added; verification steps; migrations + `npm run db:types` if schema changed; no TODO placeholders in Decisions / Rationale or Next Steps.
 - Pointers: `supabase/migrations` for schema, `docs/reports` for learning reports.
-- Starting a new task/chat? Use `prompts/agent_task.md`.
+- Starting a new task/chat? Use `cursor-prompts/agent_task.md`.
 - Routing preview (Plan mode): set `ROUTING_PROVIDER` and `OSRM_BASE_URL` per [`.env.example`](.env.example); otherwise the API returns `501` / `provider_unavailable` by design.
 
 ## Active Context
 
-**Current Phase:** Sources Workspace Redesign — A–D shaped (Cursor prompts written), not yet implemented
+**Current Phase:** E2E test rewrite — 12 stale Playwright specs need rewriting against paper shell (see `cursor-prompts/e2e-test-rewrite.md`)
 
 **Previous (all complete):**
+- Sources Workspace Redesign A–D — tags/callouts schema, ratings on places, `list_user_social_sources()` v2, SourcesPanel rich place cards, desktop split layout, Sources tab always visible
+- Visual Refresh VR-1 — `InspectorCard` paper chip/button/surface refresh, glass + tone branches removed
 - Social Discovery S1–S6 — schema, ingestion API, RPC query, map UI (persona chips + scaled markers), content fetch (YouTube/blog), async job queue + Vercel cron, Realtime map refresh, Sources mode shell
 - Transit Coverage (Slices 1, 2, 4) — GTFS proxy, per-line rendering, mode sub-toggles. Manual overrides + OSM fallback paused.
 - P3-E5 (Visual Polish) — selected day visibility, header overlap, calendar viewport, pin prominence, ghost marker pulse, add-place card
@@ -37,16 +39,11 @@ Full spec: [`docs/SOCIAL_DISCOVERY_PIPELINE.md`](docs/SOCIAL_DISCOVERY_PIPELINE.
 | S5c | Async queue: `claim_next_social_job()` RPC, chunking + batched Gemini | **Done** |
 | S6 | Sources mode: `SourcesShellPaper`, `SourcesPanel`, `user_social_sources` table, `useSourcesStore`, `import-from-sources` API | **Done** |
 
-### Sources Workspace Redesign Status
+### Visual Refresh Status
 
-Cursor prompts written (`cursor-prompts/sources-a–d`). Run strictly A → B → C → D.
-
-| Slice | Prompt | What | Status |
-|-------|--------|------|--------|
-| A | `sources-a-schema-pipeline.md` | Migration: `social_mentions.tags/callouts`, `places.google_rating/review_count`; Gemini extraction updated | **TODO** |
-| B | `sources-b-api-contract.md` | `list_user_social_sources()` v2 + TypeScript contract | **TODO — after A + db:types** |
-| C | `sources-c-panel-ui.md` | SourcesPanel: source dropdown, rich place cards (stars, tags, callouts, "More details", "Add to list") | **TODO — after B** |
-| D | `sources-d-desktop-shell-nav.md` | Desktop split layout, Sources tab nav fix, map pins per source | **TODO — after C** |
+| Slice | Area | What | Status |
+|-------|------|------|--------|
+| VR-1 | Discover | `InspectorCard` paper-surface chip/button/input refresh; remove legacy glass + tone branches | **Done** |
 
 ### Transit Coverage Status (paused)
 
@@ -132,11 +129,9 @@ AppShell
 ### What's Next
 
 **Immediate (active):**
-- **Sources Redesign A** (`cursor-prompts/sources-a-schema-pipeline.md`) — schema migration + Gemini extraction update. Run first.
-- After A + `npm run db:types`: **Sources Redesign B** (`cursor-prompts/sources-b-api-contract.md`)
-- Then C, then D — see Sources Workspace Redesign Status table above.
+- **E2E test rewrite** (`cursor-prompts/e2e-test-rewrite.md`) — 12 Playwright specs broken since UX pivot; rewrite from intent against paper shell
 
-**Queued (pick after Sources A–D):**
+**Queued:**
 - **Transit coverage S1-S5** — Manual overrides + OSM Overpass fallback (paused, not blocked)
 - **In-app chat UI (task 4.11)** — Conversational trip planning wired to preview/commit APIs
 - **Discover ↔ Plan map sync** — Selecting a list on Discover page flies the Plan map to that list's pins
@@ -159,6 +154,7 @@ All phases below are complete. Details in git history.
 - **P3-E4:** Headless Planning API — import/export contract, preview/commit APIs, LLM client prompt, import UI
 - **P3-E5:** Visual Polish — selected day cell, header overlap, calendar viewport, pin prominence, ghost marker
 - **Social Discovery S1–S6:** schema + system user, ingest API, discover RPC, persona chips + scaled markers + drawer mentions, content fetch (YouTube/blog), async job queue + cron + Realtime, Sources mode shell
+- **Sources Workspace Redesign A–D:** schema+pipeline updates, user-sources API contract, redesigned Sources panel cards, desktop split shell + tab navigation + source-filtered map pins
 - **Map Layer Toggle:** `useMapLayerStore`, layer picker (default/transit/terrain), GTFS vector tile transit, per-mode sub-toggles, subtle per-type styling, per-user persistence
 - **Multi-User Collab P1–P3:** Share links, anonymous join flow, `ShareListButton`, async sync, `PlannerFreshnessLabel`
 - **Transit Coverage (partial):** Per-line GTFS rendering (slices 1,2,4), mode sub-toggles, canonical normalization, Supabase cache

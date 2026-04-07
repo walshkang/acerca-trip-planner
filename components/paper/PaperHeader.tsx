@@ -187,8 +187,7 @@ function BrandAndTabs({
   activeTab,
   onTabChange,
 }: Pick<PaperHeaderProps, 'activeTab' | 'onTabChange'>) {
-  const visibleTabs =
-    activeTab === 'sources' ? tabs : tabs.filter((t) => t.id !== 'sources')
+  const visibleTabs = tabs
 
   return (
     <div className="flex min-w-0 flex-wrap items-center gap-2 justify-self-start sm:gap-3">

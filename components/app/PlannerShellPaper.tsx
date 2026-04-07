@@ -150,6 +150,7 @@ function PlannerShellPaperWithList({ activeListId }: { activeListId: string }) {
         activeTab="itinerary"
         onTabChange={(tab) => {
           if (tab === 'map') setMode('explore')
+          if (tab === 'sources') setMode('sources')
         }}
         activeLayer={activeLayer}
         onLayerChange={setLayer}

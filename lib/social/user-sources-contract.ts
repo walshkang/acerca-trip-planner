@@ -3,13 +3,19 @@
  * Rows are produced by `public.list_user_social_sources()` — keep in sync.
  */
 
+import type { Callout } from '@/lib/social/extraction-contract'
+
 export type UserSocialSourcePlace = {
   place_id: string
   place_name: string
   category: string
   google_place_id: string | null
+  google_rating: number | null
+  google_review_count: number | null
   snippet: string
   sentiment: string | null
+  tags: string[]
+  callouts: Callout[]
 }
 
 export type UserSocialSourceRow = {

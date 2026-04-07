@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  mentionedPlaceSchema,
   parseIngestSocialRequest,
   parseSocialExtraction,
 } from '@/lib/social/extraction-contract'
@@ -77,5 +78,43 @@ describe('social extraction contract', () => {
       unknown_field: true,
     })
     expect(result.ok).toBe(false)
+  })
+
+  it('defaults tags and callouts to empty arrays', () => {
+    const parsed = mentionedPlaceSchema.parse({
+      place_name: 'Jay Fai',
+      context_snippet: 'Best crab omelet in Bangkok.',
+      sentiment: 'positive',
+    })
+    expect(parsed.tags).toEqual([])
+    expect(parsed.callouts).toEqual([])
+  })
+
+  it('accepts valid callouts and tags', () => {
+    const parsed = mentionedPlaceSchema.parse({
+      place_name: 'Jay Fai',
+      context_snippet: 'Try the crab omelet and orange soda.',
+      sentiment: 'positive',
+      tags: ['michelin', 'street-food'],
+      callouts: [
+        { type: 'dish', text: 'crab omelet' },
+        { type: 'drink', text: 'orange soda' },
+      ],
+    })
+    expect(parsed.tags).toEqual(['michelin', 'street-food'])
+    expect(parsed.callouts).toEqual([
+      { type: 'dish', text: 'crab omelet' },
+      { type: 'drink', text: 'orange soda' },
+    ])
+  })
+
+  it('rejects invalid callout type', () => {
+    const result = mentionedPlaceSchema.safeParse({
+      place_name: 'Jay Fai',
+      context_snippet: 'Try the chef special.',
+      sentiment: 'positive',
+      callouts: [{ type: 'dessert', text: 'mango sticky rice' }],
+    })
+    expect(result.success).toBe(false)
   })
 })

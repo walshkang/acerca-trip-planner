@@ -14,3 +14,4 @@ Done means:
 - Tests updated/added.
 - Clear verification steps.
 - Decisions / Rationale written (no TODO placeholders).
+- `CONTEXT.md` updated: mark this slice **Done** in its status table, update "Current Phase" if all slices in the active block are complete, and move the block to "Completed Phases" when fully shipped.
