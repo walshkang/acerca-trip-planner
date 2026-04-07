@@ -6,6 +6,14 @@ import type { Database } from '@/lib/supabase/types'
 
 type JobRow = Database['public']['Tables']['social_ingest_jobs']['Row']
 
+async function updateProgress(jobId: string, message: string): Promise<void> {
+  const admin = getAdminSupabase()
+  await admin
+    .from('social_ingest_jobs')
+    .update({ progress_message: message, updated_at: new Date().toISOString() })
+    .eq('id', jobId)
+}
+
 function buildIngestRequest(
   job: JobRow,
   fetched: import('@/lib/server/social/fetch-content').FetchedContent
@@ -36,6 +44,7 @@ function buildIngestRequest(
 export async function runClaimedSocialIngestJob(job: JobRow): Promise<void> {
   const admin = getAdminSupabase()
   try {
+    await updateProgress(job.id, 'Fetching content...')
     const fetchResult = await fetchContent(job.url)
     if ('error' in fetchResult) {
       await admin
@@ -48,8 +57,11 @@ export async function runClaimedSocialIngestJob(job: JobRow): Promise<void> {
       return
     }
 
+    await updateProgress(job.id, 'Extracting places from transcript...')
     const request = buildIngestRequest(job, fetchResult)
-    await persistSocialIngestForJob(request, job.id)
+    await persistSocialIngestForJob(request, job.id, (msg) => {
+      void updateProgress(job.id, msg)
+    })
   } catch (e) {
     await admin
       .from('social_ingest_jobs')

@@ -66,6 +66,31 @@ test.describe('social URL ingest UI', () => {
     await expect(panel.getByRole('button', { name: '…' })).toBeDisabled()
   })
 
+  test('running job shows progress message text', async ({ page }) => {
+    const panel = page.getByTestId('paper-explore-panel')
+    const urlInput = panel.getByPlaceholder('Paste YouTube or blog URL…')
+
+    await page.route('**/api/enrichment/enqueue-social-job', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ job_id: '11111111-1111-1111-1111-111111111111' }),
+      })
+    })
+    await page.route('**/api/enrichment/social-ingest-job/**', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ status: 'running', progress_message: 'Resolving 12 places...' }),
+      })
+    })
+
+    await urlInput.fill('https://www.youtube.com/watch?v=dQw4w9WgXcQ')
+    await panel.getByRole('button', { name: 'Add' }).click()
+
+    await expect(panel.getByText('Resolving 12 places...')).toBeVisible({ timeout: 10_000 })
+  })
+
   // --- Error states ---
 
   test('unsupported platform shows error message', async ({ page }) => {

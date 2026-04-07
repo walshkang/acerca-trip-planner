@@ -9,7 +9,7 @@
 
 ## Active Context
 
-**Current Phase:** E2E test rewrite — 12 stale Playwright specs need rewriting against paper shell (see `cursor-prompts/e2e-test-rewrite.md`)
+**Current Phase:** Sources workspace stabilization + follow-up QA
 
 **Previous (all complete):**
 - Sources Workspace Redesign A–D — tags/callouts schema, ratings on places, `list_user_social_sources()` v2, SourcesPanel rich place cards, desktop split layout, Sources tab always visible
@@ -21,6 +21,7 @@
 - P3-E3 (UX Pivot) — all 5 plan page slices, paper shell on all viewports, MapInset wired.
 - Map Layer Toggle + Transit Layer — `useMapLayerStore`, layer picker in PaperHeader, GTFS vector tile transit with per-mode sub-toggles, canonical mode normalization, subtle per-type styling
 - Multi-User Collab P1–P3 — `list_shares` + `list_collaborators` schema, share link generation, anonymous join flow, `ShareListButton`, async sync, `PlannerFreshnessLabel`
+- E2E test rewrite — paper shell selector/flow refresh for `paper-shell-responsive`, list/map/planner specs, and social ingest tests (`cursor-prompts/e2e-test-rewrite.md`)
 
 ### Social Discovery Pipeline — COMPLETE (S1–S6)
 
@@ -129,7 +130,8 @@ AppShell
 ### What's Next
 
 **Immediate (active):**
-- **E2E test rewrite** (`cursor-prompts/e2e-test-rewrite.md`) — 12 Playwright specs broken since UX pivot; rewrite from intent against paper shell
+- **Sources QA hardening** — stabilize auth/session reliability for seeded Playwright runs and reduce test skips
+- **Social eval stabilization** — split extraction/eval/judge model envs, keep deterministic eval call volume bounded, and document provider/model constraints
 
 **Queued:**
 - **Transit coverage S1-S5** — Manual overrides + OSM Overpass fallback (paused, not blocked)

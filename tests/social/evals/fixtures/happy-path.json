@@ -1,0 +1,53 @@
+{
+  "label": "happy-path",
+  "description": "Clean 4-place Bangkok foodie video. Baseline — straightforward extraction with dishes, drinks, tags.",
+  "transcript": "What's up guys, welcome back to the channel. Today I'm taking you through my favorite spots in Bangkok's Chinatown, Yaowarat Road. First stop, we're hitting up Jay Fai. If you don't know, this is the only Michelin-starred street food restaurant in the world. I ordered the legendary crab omelet and the drunken noodles. The crab omelet is insane — it's like 1,000 baht which is pricey for street food but honestly worth every single baht. The wok hei on the drunken noodles is next level.\n\nAfter that we walked about five minutes down the road to Nai Ek Roll Noodle. This place has been around for decades. I got the roasted duck roll noodles with extra crispy pork. The broth is so clean and light, perfect after the heavy crab omelet. Super cheap too, like 60 baht a bowl.\n\nFor dessert we popped into After You Dessert Cafe on Charoen Krung Road. I know it's a chain but their Shibuya honey toast is genuinely one of the best desserts in Bangkok. We also tried the kakigori with mango — refreshing after walking around in the heat all day.\n\nLast stop of the night was Tep Bar. This is a cocktail bar right in the heart of Chinatown that plays live Thai music. I had the lemongrass gin fizz and my friend got the butterfly pea flower cocktail. The vibe here is incredible — low lighting, old Thai instruments on the walls. Definitely more of a locals' spot, not too touristy. If you're in Yaowarat, don't skip it.",
+  "expected": {
+    "author_persona": "foodie",
+    "mentioned_places": [
+      {
+        "place_name": "Jay Fai",
+        "place_type": "restaurant",
+        "context_snippet": "this is the only Michelin-starred street food restaurant in the world. I ordered the legendary crab omelet and the drunken noodles. The crab omelet is insane — it's like 1,000 baht which is pricey for street food but honestly worth every single baht.",
+        "sentiment": "positive",
+        "tags": ["michelin", "street-food", "splurge"],
+        "callouts": [
+          { "type": "dish", "text": "crab omelet" },
+          { "type": "dish", "text": "drunken noodles" }
+        ]
+      },
+      {
+        "place_name": "Nai Ek Roll Noodle",
+        "place_type": "restaurant",
+        "context_snippet": "This place has been around for decades. I got the roasted duck roll noodles with extra crispy pork. The broth is so clean and light, perfect after the heavy crab omelet. Super cheap too, like 60 baht a bowl.",
+        "sentiment": "positive",
+        "tags": ["cheap-eats", "noodles", "legacy"],
+        "callouts": [
+          { "type": "dish", "text": "roasted duck roll noodles" }
+        ]
+      },
+      {
+        "place_name": "After You Dessert Cafe",
+        "place_type": "cafe",
+        "context_snippet": "their Shibuya honey toast is genuinely one of the best desserts in Bangkok. We also tried the kakigori with mango — refreshing after walking around in the heat all day.",
+        "sentiment": "positive",
+        "tags": ["dessert", "chain"],
+        "callouts": [
+          { "type": "dish", "text": "Shibuya honey toast" },
+          { "type": "dish", "text": "kakigori with mango" }
+        ]
+      },
+      {
+        "place_name": "Tep Bar",
+        "place_type": "bar",
+        "context_snippet": "a cocktail bar right in the heart of Chinatown that plays live Thai music. I had the lemongrass gin fizz and my friend got the butterfly pea flower cocktail. The vibe here is incredible — low lighting, old Thai instruments on the walls.",
+        "sentiment": "positive",
+        "tags": ["cocktails", "live-music", "locals-spot"],
+        "callouts": [
+          { "type": "drink", "text": "lemongrass gin fizz" },
+          { "type": "drink", "text": "butterfly pea flower cocktail" }
+        ]
+      }
+    ]
+  }
+}

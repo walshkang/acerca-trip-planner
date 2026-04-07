@@ -29,6 +29,17 @@ Shipped prompts live in `archive/`. Move a prompt there (and update this README)
 
 ---
 
+## Social Evals (active — run 2 → 3 → 4 → 5)
+
+| Prompt | Task | Agent | Depends on |
+|--------|------|-------|------------|
+| `eval-2-deterministic-harness.md` | Golden fixture harness with deterministic schema + sentinel checks | **Cursor** | — |
+| `eval-3-llm-judge.md` | Semantic judge eval with recall/hallucination/vibe rubric | **Cursor** | 2 |
+| `eval-4-runner.md` | Scripts + gating + docs for eval execution | **Cursor** | 2 + 3 |
+| `eval-5-pipeline-perf-progress.md` | Ingest perf improvements + progress message UX | **Cursor** | 2 + 3 |
+
+---
+
 ## Visual Refresh (active — runs parallel to Sources A–D)
 
 | Prompt | Task | Agent | Depends on |

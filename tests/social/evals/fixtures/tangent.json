@@ -1,0 +1,25 @@
+{
+  "label": "tangent",
+  "description": "Mexico City design vlog where creator visits 1 place but mentions 3 others historically/aspirationally. Tests over-extraction — only the visited place should be extracted.",
+  "transcript": "I've been obsessed with the architecture of Mexico City for years. Luis Barragan is probably the biggest reason I became an architect — his use of color and light completely changed how I think about residential space. Casa Barragan, his personal home in Tacubaya, is technically open for tours but you have to book months in advance and I couldn't get a slot this trip. Hopefully next time.\n\nTadao Ando designed the Universidad building for Fundacion Casa Wabi down in Oaxaca, which I'd love to see someday, but that's a whole separate trip. And of course there's the Museo Soumaya by Fernando Romero — I walked past it but it was closed for renovation so I couldn't go in. From the outside the aluminum hexagonal facade is stunning though.\n\nThe one place I actually managed to properly visit was Museo Jumex in Polanco. This is the David Chipperfield building — clean travertine exterior, these gorgeous sawtooth skylights on the roof. The current exhibition was a Leonora Carrington retrospective, her surrealist paintings alongside her sculptures and tapestries. I spent about three hours there. The ground floor bookshop is really well curated too, I picked up a monograph on Barragan ironically. The rooftop terrace gives you this perfect framing of the Soumaya building next door, which is honestly the best way to see it right now since you can't go inside.\n\nIf you're into architecture or design, Polanco is the neighborhood. But don't expect to see everything in one trip — half the good stuff is either booked out or under renovation.",
+  "expected": {
+    "author_persona": "design",
+    "mentioned_places": [
+      {
+        "place_name": "Museo Jumex",
+        "place_type": "museum",
+        "context_snippet": "This is the David Chipperfield building — clean travertine exterior, these gorgeous sawtooth skylights on the roof. The current exhibition was a Leonora Carrington retrospective. I spent about three hours there. The ground floor bookshop is really well curated too.",
+        "sentiment": "positive",
+        "tags": ["architecture", "museum", "chipperfield"],
+        "callouts": [
+          { "type": "activity", "text": "Leonora Carrington retrospective" }
+        ]
+      }
+    ]
+  },
+  "_eval_notes": {
+    "over_extraction_critical": "Casa Barragan (couldn't get a tour), Fundacion Casa Wabi (aspirational, different city), and Museo Soumaya (closed for renovation, only walked past) should NOT be extracted. Only Museo Jumex was actually visited and reviewed.",
+    "borderline": "Museo Soumaya is the trickiest — they walked past it and commented on the facade. But they explicitly said it was closed and they couldn't go in. The system prompt says 'Only extract places the creator personally visited or directly recommends.' Walking past a closed building doesn't qualify.",
+    "extraction_count": "Exactly 1 place. If the model returns 2+, it's over-extracting."
+  }
+}

@@ -1,0 +1,179 @@
+{
+  "label": "firehose",
+  "description": "Dense 16-place Tokyo food crawl. Tests recall completeness, dedup (two mentions of Tsukiji Outer Market), and high extraction volume.",
+  "transcript": "Alright, 48 hours in Tokyo and I'm going to eat as much as humanly possible. Let's go.\n\nDay one, six AM, we're at Tsukiji Outer Market. Not the inner market — that moved to Toyosu — but the outer market is still packed with vendors. First stop is Tsukiji Sushiko for a tuna breakfast set, just unreal quality at eight AM. Then we grabbed tamagoyaki from Yamacho, the rolled egg place that always has a line. Crispy outside, custardy inside.\n\nWe walked over to Ginza for coffee at Chatei Hatou, a kissaten that's been open since the seventies. They do a slow hand-drip pour-over that takes like ten minutes. Worth the wait. While in Ginza I ducked into Mitsukoshi department store basement — the depachika food hall is insane. Picked up wagyu bento from Meat Yazawa's counter.\n\nLunch was at Fuunji in Shinjuku for their tsukemen. The line was forty-five minutes but the concentrated fish broth dipping noodles are genuinely the best ramen experience I've had in Tokyo. Thick noodles, perfectly chewy. Right after that, because I have no self-control, I hit Afuri in the same neighborhood for their yuzu shio ramen — lighter, citrusy, a totally different vibe from Fuunji.\n\nAfternoon snack run: we went to Takeshita Street in Harajuku. Grabbed a crepe from Marion Crepes — strawberry and custard, classic tourist move but whatever, it's good. Then walked to Omotesando for matcha soft serve at Nanaya. They have seven levels of matcha intensity and the level seven is borderline bitter in the best way.\n\nDinner was the big one: Narisawa in Minami-Aoyama. Two Michelin stars. The bread forest course where they serve bread on a branch is theatrical but the flavors back it up. The satoyama wagyu was the standout dish. Also had a sake pairing that was way better than wine would've been.\n\nDay two started at Onigiri Bongo in Otsuka. The line forms before they open and it moves fast. I got the salmon and the tenmusu. Best rice-to-filling ratio of any onigiri I've tried.\n\nThen we trained to Yanaka for coffee at Kayaba Coffee. It's in a renovated old building, the egg sandwich is the move, everyone orders it. Good drip coffee too.\n\nMid-morning we were back in Shinjuku at Shin-Okubo for Korean food. Hit up Hongdae Pocha for cheese corn dogs and tteokbokki. Totally different energy from the rest of the trip.\n\nLunch at Tonkatsu Maisen in Omotesando. The kurobuta pork cutlet set is legendary. The cabbage alone is worth coming for — they shred it so fine it's like eating a cloud. I also tried the menchi katsu as a side, super juicy.\n\nAfternoon pit stop at Starbucks Reserve Roastery in Nakameguro. I know, I know, it's Starbucks. But this four-story location is genuinely beautiful, right on the Meguro River. The barrel-aged cold brew was excellent.\n\nWe also ducked into the Tsukiji Outer Market area again on day two — I wanted to go back for more tamagoyaki from Yamacho, that's how good it was.\n\nDinner was at Uobei in Shibuya, the conveyor belt sushi place where you order on a tablet and plates fly at you on a little train. The quality-to-price ratio is absurd. Salmon, engawa, uni — all around 100-150 yen per plate.\n\nClosed out the trip at Bar Benfiddich in Shinjuku. The bartender forages his own ingredients and makes bitters from scratch. I had a cocktail with homemade absinthe and foraged herbs. One of the most unique bar experiences of my life.\n\nThat's 48 hours in Tokyo. My stomach hurts. Subscribe.",
+  "expected": {
+    "author_persona": "foodie",
+    "mentioned_places": [
+      {
+        "place_name": "Tsukiji Sushiko",
+        "place_type": "restaurant",
+        "context_snippet": "First stop is Tsukiji Sushiko for a tuna breakfast set, just unreal quality at eight AM.",
+        "sentiment": "positive",
+        "tags": ["sushi", "breakfast", "tsukiji"],
+        "callouts": [
+          { "type": "dish", "text": "tuna breakfast set" }
+        ]
+      },
+      {
+        "place_name": "Yamacho",
+        "place_type": "food stall",
+        "context_snippet": "we grabbed tamagoyaki from Yamacho, the rolled egg place that always has a line. Crispy outside, custardy inside.",
+        "sentiment": "positive",
+        "tags": ["street-food", "tsukiji"],
+        "callouts": [
+          { "type": "dish", "text": "tamagoyaki" }
+        ]
+      },
+      {
+        "place_name": "Chatei Hatou",
+        "place_type": "cafe",
+        "context_snippet": "a kissaten that's been open since the seventies. They do a slow hand-drip pour-over that takes like ten minutes. Worth the wait.",
+        "sentiment": "positive",
+        "tags": ["kissaten", "pour-over", "legacy"],
+        "callouts": [
+          { "type": "drink", "text": "hand-drip pour-over" }
+        ]
+      },
+      {
+        "place_name": "Meat Yazawa",
+        "place_type": "food counter",
+        "context_snippet": "Picked up wagyu bento from Meat Yazawa's counter.",
+        "sentiment": "positive",
+        "tags": ["wagyu", "depachika"],
+        "callouts": [
+          { "type": "dish", "text": "wagyu bento" }
+        ]
+      },
+      {
+        "place_name": "Fuunji",
+        "place_type": "restaurant",
+        "context_snippet": "the concentrated fish broth dipping noodles are genuinely the best ramen experience I've had in Tokyo. Thick noodles, perfectly chewy.",
+        "sentiment": "positive",
+        "tags": ["tsukemen", "ramen", "queue"],
+        "callouts": [
+          { "type": "dish", "text": "tsukemen" }
+        ]
+      },
+      {
+        "place_name": "Afuri",
+        "place_type": "restaurant",
+        "context_snippet": "I hit Afuri in the same neighborhood for their yuzu shio ramen — lighter, citrusy, a totally different vibe from Fuunji.",
+        "sentiment": "positive",
+        "tags": ["ramen", "yuzu"],
+        "callouts": [
+          { "type": "dish", "text": "yuzu shio ramen" }
+        ]
+      },
+      {
+        "place_name": "Marion Crepes",
+        "place_type": "food stall",
+        "context_snippet": "Grabbed a crepe from Marion Crepes — strawberry and custard, classic tourist move but whatever, it's good.",
+        "sentiment": "positive",
+        "tags": ["harajuku", "street-food", "tourist"],
+        "callouts": [
+          { "type": "dish", "text": "strawberry and custard crepe" }
+        ]
+      },
+      {
+        "place_name": "Nanaya",
+        "place_type": "dessert shop",
+        "context_snippet": "matcha soft serve at Nanaya. They have seven levels of matcha intensity and the level seven is borderline bitter in the best way.",
+        "sentiment": "positive",
+        "tags": ["matcha", "dessert"],
+        "callouts": [
+          { "type": "dish", "text": "matcha soft serve" }
+        ]
+      },
+      {
+        "place_name": "Narisawa",
+        "place_type": "restaurant",
+        "context_snippet": "Two Michelin stars. The bread forest course where they serve bread on a branch is theatrical but the flavors back it up. The satoyama wagyu was the standout dish.",
+        "sentiment": "positive",
+        "tags": ["michelin", "fine-dining", "innovative"],
+        "callouts": [
+          { "type": "dish", "text": "bread forest course" },
+          { "type": "dish", "text": "satoyama wagyu" },
+          { "type": "drink", "text": "sake pairing" }
+        ]
+      },
+      {
+        "place_name": "Onigiri Bongo",
+        "place_type": "restaurant",
+        "context_snippet": "The line forms before they open and it moves fast. I got the salmon and the tenmusu. Best rice-to-filling ratio of any onigiri I've tried.",
+        "sentiment": "positive",
+        "tags": ["onigiri", "queue", "cheap-eats"],
+        "callouts": [
+          { "type": "dish", "text": "salmon onigiri" },
+          { "type": "dish", "text": "tenmusu" }
+        ]
+      },
+      {
+        "place_name": "Kayaba Coffee",
+        "place_type": "cafe",
+        "context_snippet": "It's in a renovated old building, the egg sandwich is the move, everyone orders it. Good drip coffee too.",
+        "sentiment": "positive",
+        "tags": ["kissaten", "renovated"],
+        "callouts": [
+          { "type": "dish", "text": "egg sandwich" },
+          { "type": "drink", "text": "drip coffee" }
+        ]
+      },
+      {
+        "place_name": "Hongdae Pocha",
+        "place_type": "restaurant",
+        "context_snippet": "Hit up Hongdae Pocha for cheese corn dogs and tteokbokki. Totally different energy from the rest of the trip.",
+        "sentiment": "positive",
+        "tags": ["korean", "shin-okubo"],
+        "callouts": [
+          { "type": "dish", "text": "cheese corn dogs" },
+          { "type": "dish", "text": "tteokbokki" }
+        ]
+      },
+      {
+        "place_name": "Tonkatsu Maisen",
+        "place_type": "restaurant",
+        "context_snippet": "The kurobuta pork cutlet set is legendary. The cabbage alone is worth coming for — they shred it so fine it's like eating a cloud.",
+        "sentiment": "positive",
+        "tags": ["tonkatsu", "legendary"],
+        "callouts": [
+          { "type": "dish", "text": "kurobuta pork cutlet set" },
+          { "type": "dish", "text": "menchi katsu" }
+        ]
+      },
+      {
+        "place_name": "Starbucks Reserve Roastery",
+        "place_type": "cafe",
+        "context_snippet": "this four-story location is genuinely beautiful, right on the Meguro River. The barrel-aged cold brew was excellent.",
+        "sentiment": "positive",
+        "tags": ["coffee", "nakameguro", "scenic"],
+        "callouts": [
+          { "type": "drink", "text": "barrel-aged cold brew" }
+        ]
+      },
+      {
+        "place_name": "Uobei",
+        "place_type": "restaurant",
+        "context_snippet": "the conveyor belt sushi place where you order on a tablet and plates fly at you on a little train. The quality-to-price ratio is absurd.",
+        "sentiment": "positive",
+        "tags": ["sushi", "budget", "conveyor-belt"],
+        "callouts": []
+      },
+      {
+        "place_name": "Bar Benfiddich",
+        "place_type": "bar",
+        "context_snippet": "The bartender forages his own ingredients and makes bitters from scratch. I had a cocktail with homemade absinthe and foraged herbs. One of the most unique bar experiences of my life.",
+        "sentiment": "positive",
+        "tags": ["cocktails", "speakeasy", "foraged"],
+        "callouts": [
+          { "type": "drink", "text": "homemade absinthe cocktail" }
+        ]
+      }
+    ]
+  },
+  "_eval_notes": {
+    "dedup_test": "Yamacho is mentioned twice (day 1 and day 2) but should appear only once.",
+    "exclusion_test": "Tsukiji Outer Market and Mitsukoshi department store are locations/landmarks, not specific establishments the creator reviewed — borderline. Tsukiji Outer Market is a market area, Mitsukoshi is a department store (the depachika is the context for Meat Yazawa). Ideally excluded, but acceptable if included.",
+    "recall_target": "16 distinct named establishments. A score of 14/16+ is passing."
+  }
+}

@@ -10,6 +10,7 @@ type Status = 'idle' | 'loading' | 'success' | 'error'
 
 type SocialIngestJobRow = {
   status: string
+  progress_message?: string | null
   error_message?: string | null
   places_resolved?: number | null
   source_id?: string | null
@@ -46,6 +47,7 @@ export function SocialUrlIngest({
   const [url, setUrl] = useState('')
   const [status, setStatus] = useState<Status>('idle')
   const [message, setMessage] = useState('')
+  const [runningMessage, setRunningMessage] = useState<string>('Processing...')
   const [activeJobId, setActiveJobId] = useState<string | null>(null)
   const terminalHandledRef = useRef(false)
 
@@ -111,6 +113,7 @@ export function SocialUrlIngest({
     terminalHandledRef.current = false
     const jobId = activeJobId
     const sb = getSupabase()
+    setRunningMessage('Processing...')
 
     void fetch(`/api/enrichment/social-ingest-job/${jobId}`, {
       credentials: 'same-origin',
@@ -118,6 +121,10 @@ export function SocialUrlIngest({
       .then((r) => (r.ok ? r.json() : null))
       .then((row: SocialIngestJobRow | null) => {
         if (!row?.status) return
+        if (row.status === 'running') {
+          setRunningMessage(row.progress_message?.trim() || 'Processing...')
+          return
+        }
         if (row.status === 'succeeded' || row.status === 'failed') {
           void handleJobTerminal(row)
         }
@@ -136,6 +143,10 @@ export function SocialUrlIngest({
         },
         (payload) => {
           const row = payload.new as SocialIngestJobRow
+          if (row.status === 'running') {
+            setRunningMessage(row.progress_message?.trim() || 'Processing...')
+            return
+          }
           if (row.status === 'succeeded' || row.status === 'failed') {
             void handleJobTerminal(row)
           }
@@ -189,6 +200,7 @@ export function SocialUrlIngest({
 
       terminalHandledRef.current = false
       setStatus('idle')
+      setRunningMessage('Processing...')
       setActiveJobId(data.job_id)
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Something went wrong'
@@ -227,7 +239,7 @@ export function SocialUrlIngest({
         </button>
       </form>
       {loading && activeJobId ? (
-        <p className="mt-1 text-xs text-paper-on-surface-variant">Processing…</p>
+        <p className="mt-1 text-xs text-paper-on-surface-variant">{runningMessage}</p>
       ) : null}
       {status === 'success' && !hideSuccessBanner ? (
         <p className="mt-1 text-xs text-emerald-700 dark:text-emerald-400">{message}</p>

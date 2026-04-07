@@ -26,6 +26,8 @@ You are analyzing a transcript from social media content about travel.
 Extract the author's persona and all specific places mentioned.
 For each place, include the exact quote/context and classify sentiment.
 Only include real, specific establishments - not generic references like "a cafe" or "the beach".
+Only extract places the creator personally visited, reviewed, or directly recommends - not places mentioned historically, aspirationally, or in passing without a visit.
+Only include a place if you can quote at least 2 sentences of direct experience from the transcript. Skip places that are merely name-checked or visited so briefly that no meaningful opinion is expressed.
 Persona values must be exactly one of: local, luxury, budget, design, foodie, adventure, family, nightlife.
 For each place also provide:
 - tags: 1-4 short keyword labels capturing vibe, format, or notable attributes (e.g. "rooftop", "cash-only", "hidden gem", "outdoor seating"). Max 6 tags.
@@ -39,6 +41,8 @@ If this segment has no real, named establishments, set contains_places to false 
 Do not invent venues. Persona values must be exactly one of: local, luxury, budget, design, foodie, adventure, family, nightlife.
 For each place, include the exact quote/context and classify sentiment.
 Only include real, specific establishments - not generic references like "a cafe" or "the beach".
+Only extract places the creator personally visited, reviewed, or directly recommends - not places mentioned historically, aspirationally, or in passing without a visit.
+Only include a place if you can quote at least 2 sentences of direct experience from the transcript. Skip places that are merely name-checked or visited so briefly that no meaningful opinion is expressed.
 For each place also provide:
 - tags: 1-4 short keyword labels capturing vibe, format, or notable attributes (e.g. "rooftop", "cash-only", "hidden gem", "outdoor seating"). Max 6 tags.
 - callouts: specific named dishes, drinks, or activities mentioned in the context for this place (e.g. {type: "dish", text: "pad see ew"}, {type: "activity", text: "longtail boat ride"}). Only include callouts explicitly named in the transcript. Max 10 callouts per place.
@@ -49,13 +53,26 @@ const google = createGoogleGenerativeAI({
 })
 
 export function getSocialExtractionModelId(): string {
-  return process.env.SOCIAL_EXTRACTION_MODEL?.trim() || 'gemini-1.5-flash'
+  const runtimeModel = process.env.SOCIAL_EXTRACTION_MODEL?.trim()
+  const evalModel = process.env.SOCIAL_EXTRACTION_MODEL_EVAL?.trim()
+  const isEvalRun = process.env.RUN_EVALS === '1'
+  if (isEvalRun) {
+    return evalModel || runtimeModel || 'gemini-1.5-flash'
+  }
+  return runtimeModel || 'gemini-1.5-flash'
 }
 
 const GEMINI_BATCH_SIZE = 4
+const PLACES_BATCH_SIZE = 5
 
 async function sleep(ms: number): Promise<void> {
   await new Promise((r) => setTimeout(r, ms))
+}
+
+function chunk<T>(arr: T[], size: number): T[][] {
+  const out: T[][] = []
+  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size))
+  return out
 }
 
 async function generateObjectWithRetry<T>(fn: () => Promise<T>): Promise<T> {
@@ -122,7 +139,9 @@ function requireSocialSystemUserId(): string {
   return userId
 }
 
-async function extractMergedSocialExtraction(transcript: string): Promise<MergedSocialExtraction> {
+export async function extractMergedSocialExtraction(
+  transcript: string
+): Promise<MergedSocialExtraction> {
   const { maxChars } = getChunkingConfigFromEnv()
   if (transcript.length <= maxChars) {
     const generated = await generateObjectWithRetry(() =>
@@ -278,7 +297,10 @@ async function ensurePlaceId(params: {
 /**
  * Core pipeline: LLM extraction → Google Places → social_sources / places / social_mentions.
  */
-export async function persistSocialIngest(request: IngestSocialRequest): Promise<IngestSocialResult> {
+export async function persistSocialIngest(
+  request: IngestSocialRequest,
+  onProgress?: (msg: string) => void
+): Promise<IngestSocialResult> {
   try {
     const extraction = await extractMergedSocialExtraction(request.transcript)
 
@@ -289,79 +311,95 @@ export async function persistSocialIngest(request: IngestSocialRequest): Promise
 
     const sourceUserId = requireSocialSystemUserId()
     const supabase = getAdminSupabase()
-    const failures: IngestFailure[] = []
-    let placesResolved = 0
     const extractedMentions = dedupeExtractedMentions(
       extraction.mentioned_places as ExtractedMention[]
     )
+    onProgress?.(`Resolving ${extractedMentions.length} places...`)
 
-    for (const mention of extractedMentions) {
-      try {
-        const searchQuery = mention.place_type
-          ? `${mention.place_name} ${mention.place_type}`
-          : mention.place_name
+    const allResults = await Promise.all(
+      chunk(extractedMentions, PLACES_BATCH_SIZE).map((batch) =>
+        Promise.all(
+          batch.map(async (mention) => {
+            try {
+              const searchQuery = mention.place_type
+                ? `${mention.place_name} ${mention.place_type}`
+                : mention.place_name
 
-        const matches = await searchGooglePlaces(searchQuery, {
-          locationBias:
-            typeof request.location_hint?.lat === 'number' &&
-            typeof request.location_hint?.lng === 'number'
-              ? {
-                  lat: request.location_hint.lat,
-                  lng: request.location_hint.lng,
-                  radiusMeters: 50_000,
+              const matches = await searchGooglePlaces(searchQuery, {
+                locationBias:
+                  typeof request.location_hint?.lat === 'number' &&
+                  typeof request.location_hint?.lng === 'number'
+                    ? {
+                        lat: request.location_hint.lat,
+                        lng: request.location_hint.lng,
+                        radiusMeters: 50_000,
+                      }
+                    : undefined,
+              })
+
+              const top = matches[0]
+              const googlePlaceId = top?.place_id
+              const lat = top?.geometry?.location?.lat
+              const lng = top?.geometry?.location?.lng
+
+              if (!googlePlaceId || typeof lat !== 'number' || typeof lng !== 'number') {
+                return {
+                  ok: false as const,
+                  place_name: mention.place_name,
+                  reason: 'no_google_match',
                 }
-              : undefined,
-        })
+              }
 
-        const top = matches[0]
-        const googlePlaceId = top?.place_id
-        const lat = top?.geometry?.location?.lat
-        const lng = top?.geometry?.location?.lng
+              const placeId = await ensurePlaceId({
+                sourceUserId,
+                googlePlaceId,
+                name: top.name?.trim() || mention.place_name,
+                lat,
+                lng,
+                googleTypes: Array.isArray(top.types) ? (top.types as string[]) : undefined,
+                googleRating: typeof top.rating === 'number' ? top.rating : undefined,
+                googleReviewCount:
+                  typeof top.user_ratings_total === 'number' ? top.user_ratings_total : undefined,
+              })
 
-        if (!googlePlaceId || typeof lat !== 'number' || typeof lng !== 'number') {
-          failures.push({
-            place_name: mention.place_name,
-            reason: 'no_google_match',
+              const mentionInsert = await supabase.from('social_mentions').upsert(
+                {
+                  source_id: sourceId,
+                  place_id: placeId,
+                  snippet: mention.context_snippet,
+                  sentiment: mention.sentiment,
+                  tags: mention.tags ?? [],
+                  callouts: mention.callouts ? JSON.parse(JSON.stringify(mention.callouts)) : [],
+                },
+                { onConflict: 'source_id,place_id' }
+              )
+
+              if (mentionInsert.error) {
+                throw new Error(`social_mentions_insert_failed:${mentionInsert.error.message}`)
+              }
+
+              return { ok: true as const }
+            } catch (error) {
+              return {
+                ok: false as const,
+                place_name: mention.place_name,
+                reason: error instanceof Error ? error.message : 'place_resolution_failed',
+              }
+            }
           })
-          continue
-        }
-
-        const placeId = await ensurePlaceId({
-          sourceUserId,
-          googlePlaceId,
-          name: top.name?.trim() || mention.place_name,
-          lat,
-          lng,
-          googleTypes: Array.isArray(top.types) ? (top.types as string[]) : undefined,
-          googleRating: typeof top.rating === 'number' ? top.rating : undefined,
-          googleReviewCount:
-            typeof top.user_ratings_total === 'number' ? top.user_ratings_total : undefined,
-        })
-
-        const mentionInsert = await supabase.from('social_mentions').upsert(
-          {
-            source_id: sourceId,
-            place_id: placeId,
-            snippet: mention.context_snippet,
-            sentiment: mention.sentiment,
-            tags: mention.tags ?? [],
-            callouts: mention.callouts ? JSON.parse(JSON.stringify(mention.callouts)) : [],
-          },
-          { onConflict: 'source_id,place_id' }
         )
+      )
+    )
 
-        if (mentionInsert.error) {
-          throw new Error(`social_mentions_insert_failed:${mentionInsert.error.message}`)
-        }
-
-        placesResolved += 1
-      } catch (error) {
-        failures.push({
-          place_name: mention.place_name,
-          reason: error instanceof Error ? error.message : 'place_resolution_failed',
-        })
-      }
-    }
+    const flatResults = allResults.flat()
+    const failures: IngestFailure[] = flatResults
+      .filter((r) => !r.ok)
+      .map((r) => ({
+        place_name: (r as { place_name: string }).place_name,
+        reason: (r as { reason: string }).reason,
+      }))
+    const placesResolved = flatResults.filter((r) => r.ok).length
+    onProgress?.(`Done - ${placesResolved} places added`)
 
     if (failures.length > 0) {
       console.warn('[social-ingest] mention failures', {
@@ -393,9 +431,10 @@ export async function ingestSocialSource(request: IngestSocialRequest): Promise<
 
 export async function persistSocialIngestForJob(
   request: IngestSocialRequest,
-  jobId: string
+  jobId: string,
+  onProgress?: (msg: string) => void
 ): Promise<IngestSocialResult> {
-  const result = await persistSocialIngest(request)
+  const result = await persistSocialIngest(request, onProgress)
   const admin = getAdminSupabase()
 
   if (result.error) {

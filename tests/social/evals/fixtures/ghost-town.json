@@ -1,0 +1,13 @@
+{
+  "label": "ghost-town",
+  "description": "City overview vlog about Lisbon with zero named businesses. Tests that mentioned_places is [] and the model doesn't hallucinate filler places.",
+  "transcript": "So we just landed in Lisbon and honestly I already love this city. The light here is completely different from anywhere else I've been in Europe — it's this warm golden haze that makes everything look like a movie. We're staying in this cute little Airbnb in the Alfama district.\n\nWe spent the first day just wandering around. The streets are so steep, like actually insane hills everywhere. We rode one of those old trams, the yellow ones, super crowded but it's one of those things you just have to do. The views from the top of the hill were incredible, you can see the whole river and the red bridge.\n\nFor food, we mostly just ducked into random little spots. There's a cafe on every corner here. We had pasteis de nata at like three different places, I'm not going to pretend I remember which ones. They're all good honestly. We also had some kind of grilled fish at this tiny restaurant near the waterfront. The waiter didn't speak English so we just pointed at what the table next to us was having and it was amazing.\n\nThe nightlife is wild too. We ended up at some bar in Bairro Alto where they were playing fado music. I don't even know the name, someone from our hostel just took us there. The whole neighborhood is basically one big party on the weekends, every street has people spilling out of bars.\n\nI think what makes Lisbon special is that it doesn't feel like it's trying too hard. It's not polished like Paris or chaotic like Barcelona. It's just vibes. The tiles on the buildings, the sound of the trams, the smell of grilled sardines everywhere. If you're looking for a European city that hasn't been completely taken over by tourism, Lisbon is it. Although honestly it's getting there.\n\nWe're here for five more days so I'll do a part two with actual restaurant recommendations once I figure out which ones are worth going back to. For now just trust me, book the flight.",
+  "expected": {
+    "author_persona": "adventure",
+    "mentioned_places": []
+  },
+  "_eval_notes": {
+    "hallucination_risk": "The model may try to extract 'Alfama district', 'Bairro Alto', the yellow tram, or generic 'cafe' / 'restaurant near the waterfront'. None of these are specific named establishments. mentioned_places MUST be empty.",
+    "persona_note": "Could also be 'budget' — either is acceptable. Key test is zero places, not the persona."
+  }
+}

@@ -429,6 +429,7 @@ export type Database = {
           location_hint: Json | null
           places_failed: number
           places_resolved: number
+          progress_message: string | null
           source_id: string | null
           status: string
           updated_at: string
@@ -443,6 +444,7 @@ export type Database = {
           location_hint?: Json | null
           places_failed?: number
           places_resolved?: number
+          progress_message?: string | null
           source_id?: string | null
           status: string
           updated_at?: string
@@ -457,6 +459,7 @@ export type Database = {
           location_hint?: Json | null
           places_failed?: number
           places_resolved?: number
+          progress_message?: string | null
           source_id?: string | null
           status?: string
           updated_at?: string

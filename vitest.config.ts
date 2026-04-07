@@ -7,8 +7,8 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: [
-      'tests/**/*.{test,spec}.{js,ts,tsx}',
-      'app/api/**/__tests__/*.{test,spec}.{js,ts,tsx}',
+      'tests/**/*.{test,spec,eval}.{js,ts,tsx}',
+      'app/api/**/__tests__/*.{test,spec,eval}.{js,ts,tsx}',
     ],
     exclude: [...configDefaults.exclude, 'tests/e2e/**'],
     setupFiles: ['tests/setup-env.ts'],

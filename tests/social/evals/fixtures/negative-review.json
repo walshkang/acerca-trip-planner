@@ -1,0 +1,46 @@
+{
+  "label": "negative-review",
+  "description": "Mixed-sentiment review of 3 Singapore spots — one loved, one hated, one ambivalent. Tests sentiment enum accuracy.",
+  "transcript": "Okay so I need to talk about the most overrated food street in Singapore. I went to Lau Pa Sat hawker centre because literally every travel blog tells you to go there. And look, the building is beautiful, it's a gorgeous Victorian cast-iron structure. But the food? Mid at best. I had the satay from one of the stalls on the satay street — Boon Tat Street side — and it was dry, overcooked, and way overpriced for what it is. Like eight dollars for ten sticks of mediocre chicken satay. The locals I talked to said nobody from Singapore actually eats here, it's pure tourist trap. I believe them.\n\nNow let me tell you about the complete opposite experience. We went to Burnt Ends in Chinatown. This is a one-Michelin-star restaurant by chef Dave Pynt. It's built around this four-ton wood-fired oven and grill. I had the pulled pork brioche bun to start — smoky, sweet, the brioche was perfectly soft. Then the king crab with garlic and smoked butter, which was obscene. And the main event, the bone marrow with caviar. I'm not being dramatic when I say it was one of the best bites I've ever had. The whole experience was incredible. It's not cheap — we spent about 400 SGD for two — but for this level of cooking over live fire, it's genuinely worth it.\n\nAfter dinner we walked over to Atlas Bar in the Parkview Square building. This place is famous for having one of the largest gin collections in the world — like 1,300 bottles in this three-story Art Deco tower of gin. It looks absolutely insane, very Great Gatsby vibes. But honestly? The cocktails were fine. Not bad, not mind-blowing. My martini was competent but I've had better at half the price. The real draw is the interior and the Instagram factor. If you're into cocktail craft, you might be a little disappointed. If you want to sit in a jaw-dropping room and drink a decent martini, it's worth one visit. I probably wouldn't go back though.",
+  "expected": {
+    "author_persona": "foodie",
+    "mentioned_places": [
+      {
+        "place_name": "Lau Pa Sat",
+        "place_type": "hawker centre",
+        "context_snippet": "the food? Mid at best. I had the satay from one of the stalls on the satay street — Boon Tat Street side — and it was dry, overcooked, and way overpriced for what it is. Like eight dollars for ten sticks of mediocre chicken satay. The locals I talked to said nobody from Singapore actually eats here, it's pure tourist trap.",
+        "sentiment": "mixed",
+        "tags": ["tourist-trap", "hawker", "overrated"],
+        "callouts": [
+          { "type": "dish", "text": "chicken satay" }
+        ]
+      },
+      {
+        "place_name": "Burnt Ends",
+        "place_type": "restaurant",
+        "context_snippet": "one-Michelin-star restaurant by chef Dave Pynt. It's built around this four-ton wood-fired oven and grill. I had the pulled pork brioche bun to start — smoky, sweet. Then the king crab with garlic and smoked butter. And the main event, the bone marrow with caviar. I'm not being dramatic when I say it was one of the best bites I've ever had.",
+        "sentiment": "positive",
+        "tags": ["michelin", "wood-fire", "splurge"],
+        "callouts": [
+          { "type": "dish", "text": "pulled pork brioche bun" },
+          { "type": "dish", "text": "king crab with garlic and smoked butter" },
+          { "type": "dish", "text": "bone marrow with caviar" }
+        ]
+      },
+      {
+        "place_name": "Atlas Bar",
+        "place_type": "bar",
+        "context_snippet": "famous for having one of the largest gin collections in the world — like 1,300 bottles in this three-story Art Deco tower of gin. But honestly? The cocktails were fine. Not bad, not mind-blowing. My martini was competent but I've had better at half the price. The real draw is the interior and the Instagram factor.",
+        "sentiment": "mixed",
+        "tags": ["gin", "art-deco", "instagram-spot"],
+        "callouts": [
+          { "type": "drink", "text": "martini" }
+        ]
+      }
+    ]
+  },
+  "_eval_notes": {
+    "sentiment_critical": "Lau Pa Sat MUST be 'mixed' (not 'positive'). The transcript is clearly negative about the food but positive about the building. Atlas MUST be 'mixed' (positive on interior, lukewarm on cocktails). Burnt Ends MUST be 'positive'.",
+    "persona_note": "Could be 'luxury' given the Burnt Ends / Atlas picks. 'foodie' is more accurate to tone. Either is acceptable."
+  }
+}
