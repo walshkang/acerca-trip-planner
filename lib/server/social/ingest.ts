@@ -478,7 +478,7 @@ async function ensurePlaceId(params: {
         google_review_count: typeof googleReviewCount === 'number' ? googleReviewCount : null,
       },
       {
-        onConflict: 'user_id,source,source_id',
+        onConflict: 'user_id,dedupe_key',
         ignoreDuplicates: true,
       }
     )
