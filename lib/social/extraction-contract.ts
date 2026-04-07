@@ -30,7 +30,7 @@ export const mentionedPlaceSchema = z
   .object({
     place_name: z.string().min(1),
     place_type: z.string().optional(),
-    context_snippet: z.string().min(1).max(500),
+    context_snippet: z.string().min(1).max(4000),
     sentiment: z.enum(['positive', 'neutral', 'mixed']),
   })
   .strict()
@@ -39,6 +39,23 @@ export const socialExtractionSchema = z
   .object({
     author_persona: personaSchema,
     mentioned_places: z.array(mentionedPlaceSchema).min(1).max(50),
+  })
+  .strict()
+
+/** Per-chunk LLM output; empty segments allowed. */
+export const socialExtractionChunkSchema = z
+  .object({
+    author_persona: personaSchema.optional(),
+    mentioned_places: z.array(mentionedPlaceSchema).min(0).max(50),
+    contains_places: z.boolean().optional(),
+  })
+  .strict()
+
+/** After merging chunk extractions (may have zero places). */
+export const mergedSocialExtractionSchema = z
+  .object({
+    author_persona: personaSchema,
+    mentioned_places: z.array(mentionedPlaceSchema).min(0).max(100),
   })
   .strict()
 
@@ -62,6 +79,8 @@ export const ingestSocialRequestSchema = z
 
 export type MentionedPlace = z.infer<typeof mentionedPlaceSchema>
 export type SocialExtraction = z.infer<typeof socialExtractionSchema>
+export type SocialExtractionChunk = z.infer<typeof socialExtractionChunkSchema>
+export type MergedSocialExtraction = z.infer<typeof mergedSocialExtractionSchema>
 export type IngestSocialRequest = z.infer<typeof ingestSocialRequestSchema>
 
 export function parseSocialExtraction(
@@ -78,6 +97,16 @@ export function parseIngestSocialRequest(
   body: unknown
 ): { ok: true; data: IngestSocialRequest } | { ok: false; message: string } {
   const result = ingestSocialRequestSchema.safeParse(body)
+  if (!result.success) {
+    return { ok: false, message: result.error.issues.map((i) => i.message).join('; ') }
+  }
+  return { ok: true, data: result.data }
+}
+
+export function parseSocialExtractionChunk(
+  raw: unknown
+): { ok: true; data: SocialExtractionChunk } | { ok: false; message: string } {
+  const result = socialExtractionChunkSchema.safeParse(raw)
   if (!result.success) {
     return { ok: false, message: result.error.issues.map((i) => i.message).join('; ') }
   }

@@ -1,13 +1,22 @@
 'use client'
 
-import { useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
+import { getSupabase } from '@/lib/supabase/client'
+import { precheckSocialIngestUrl } from '@/lib/social/social-ingest-url'
 import { useDiscoveryStore } from '@/lib/state/useDiscoveryStore'
 import { useSocialDiscoveryStore } from '@/lib/state/useSocialDiscoveryStore'
 
 type Status = 'idle' | 'loading' | 'success' | 'error'
 
-function mapFetchError(code: string | undefined): string {
-  switch (code) {
+type SocialIngestJobRow = {
+  status: string
+  error_message?: string | null
+  places_resolved?: number | null
+  source_id?: string | null
+}
+
+function mapJobErrorMessage(msg: string | null | undefined): string {
+  switch (msg) {
     case 'platform_not_supported':
       return 'Only YouTube and blog URLs are supported'
     case 'no_transcript':
@@ -17,7 +26,7 @@ function mapFetchError(code: string | undefined): string {
     case 'invalid_url':
       return 'Enter a valid URL'
     default:
-      return 'Something went wrong'
+      return msg?.trim() || 'Ingest failed'
   }
 }
 
@@ -37,8 +46,107 @@ export function SocialUrlIngest({
   const [url, setUrl] = useState('')
   const [status, setStatus] = useState<Status>('idle')
   const [message, setMessage] = useState('')
+  const [activeJobId, setActiveJobId] = useState<string | null>(null)
+  const terminalHandledRef = useRef(false)
+
   const fetchSocialPlaces = useSocialDiscoveryStore((s) => s.fetchPlaces)
   const searchBias = useDiscoveryStore((s) => s.searchBias)
+
+  const handleJobTerminal = useCallback(
+    async (row: SocialIngestJobRow) => {
+      if (terminalHandledRef.current) return
+      terminalHandledRef.current = true
+      setActiveJobId(null)
+
+      if (row.status === 'failed') {
+        setStatus('error')
+        setMessage(mapJobErrorMessage(row.error_message))
+        setTimeout(() => setStatus('idle'), 5000)
+        return
+      }
+
+      if (row.status !== 'succeeded') {
+        setStatus('error')
+        setMessage('Unexpected job state')
+        setTimeout(() => setStatus('idle'), 5000)
+        return
+      }
+
+      try {
+        await fetchSocialPlaces()
+
+        if (typeof row.source_id === 'string' && row.source_id.length > 0) {
+          await fetch('/api/enrichment/user-sources', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ source_id: row.source_id }),
+            credentials: 'same-origin',
+          })
+        }
+
+        await onIngestSuccess?.()
+
+        const n = row.places_resolved ?? 0
+        setUrl('')
+
+        if (hideSuccessBanner) {
+          setStatus('idle')
+        } else {
+          setStatus('success')
+          setMessage(`${n} place${n !== 1 ? 's' : ''} added`)
+          setTimeout(() => setStatus('idle'), 4000)
+        }
+      } catch {
+        setStatus('error')
+        setMessage('Something went wrong')
+        setTimeout(() => setStatus('idle'), 5000)
+      }
+    },
+    [fetchSocialPlaces, hideSuccessBanner, onIngestSuccess]
+  )
+
+  useEffect(() => {
+    if (!activeJobId) return
+
+    terminalHandledRef.current = false
+    const jobId = activeJobId
+    const sb = getSupabase()
+
+    void fetch(`/api/enrichment/social-ingest-job/${jobId}`, {
+      credentials: 'same-origin',
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((row: SocialIngestJobRow | null) => {
+        if (!row?.status) return
+        if (row.status === 'succeeded' || row.status === 'failed') {
+          void handleJobTerminal(row)
+        }
+      })
+      .catch(() => {})
+
+    const channel = sb
+      .channel(`social_job_${jobId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'social_ingest_jobs',
+          filter: `id=eq.${jobId}`,
+        },
+        (payload) => {
+          const row = payload.new as SocialIngestJobRow
+          if (row.status === 'succeeded' || row.status === 'failed') {
+            void handleJobTerminal(row)
+          }
+        }
+      )
+      .subscribe()
+
+    return () => {
+      void sb.removeChannel(channel)
+    }
+  }, [activeJobId, handleJobTerminal])
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
@@ -48,90 +156,55 @@ export function SocialUrlIngest({
     setStatus('loading')
     setMessage('')
 
-    const ingestKey = process.env.NEXT_PUBLIC_SOCIAL_INGEST_KEY
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json',
-      'X-Ingest-Key': ingestKey ?? '',
+    const pre = precheckSocialIngestUrl(trimmed)
+    if (!pre.ok) {
+      setStatus('error')
+      setMessage(mapJobErrorMessage(pre.code))
+      setTimeout(() => setStatus('idle'), 5000)
+      return
     }
 
     try {
-      const fetchRes = await fetch('/api/enrichment/fetch-content', {
+      const res = await fetch('/api/enrichment/enqueue-social-job', {
         method: 'POST',
-        headers,
-        body: JSON.stringify({ url: trimmed }),
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({
+          url: trimmed,
+          ...(searchBias
+            ? { location_hint: { lat: searchBias.lat, lng: searchBias.lng } }
+            : {}),
+        }),
       })
-      const fetchData = (await fetchRes.json()) as {
-        error?: string
-        url?: string
-        platform?: string
-        author_name?: string
-        title?: string
-        transcript?: string
+
+      const data = (await res.json()) as { job_id?: string; error?: string }
+
+      if (!res.ok || !data.job_id) {
+        throw new Error(
+          typeof data.error === 'string' && data.error.length > 0
+            ? data.error
+            : 'Could not start ingest'
+        )
       }
 
-      if (!fetchRes.ok || fetchData.error) {
-        throw new Error(mapFetchError(fetchData.error))
-      }
-
-      const ingestBody = {
-        url: fetchData.url,
-        platform: fetchData.platform,
-        author_name: fetchData.author_name,
-        title: fetchData.title,
-        transcript: fetchData.transcript,
-        ...(searchBias
-          ? { location_hint: { lat: searchBias.lat, lng: searchBias.lng } }
-          : {}),
-      }
-
-      const ingestRes = await fetch('/api/enrichment/ingest-social', {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(ingestBody),
-      })
-      const ingestData = (await ingestRes.json()) as {
-        error?: string
-        places_resolved?: number
-        source_id?: string
-      }
-
-      if (!ingestRes.ok || ingestData.error) {
-        const errMsg =
-          typeof ingestData.error === 'string' && ingestData.error.length > 0
-            ? ingestData.error
-            : 'Something went wrong'
-        throw new Error(errMsg)
-      }
-
-      await fetchSocialPlaces()
-
-      if (typeof ingestData.source_id === 'string' && ingestData.source_id.length > 0) {
-        await fetch('/api/enrichment/user-sources', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ source_id: ingestData.source_id }),
-          credentials: 'same-origin',
-        })
-      }
-
-      await onIngestSuccess?.()
-
-      const n = ingestData.places_resolved ?? 0
-      setUrl('')
-
-      if (hideSuccessBanner) {
-        setStatus('idle')
-      } else {
-        setStatus('success')
-        setMessage(`${n} place${n !== 1 ? 's' : ''} added`)
-        setTimeout(() => setStatus('idle'), 4000)
-      }
+      terminalHandledRef.current = false
+      setStatus('idle')
+      setActiveJobId(data.job_id)
     } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Something went wrong'
+      if (msg.includes('Unauthorized') || msg.includes('401')) {
+        setStatus('error')
+        setMessage('Sign in to add places from a URL')
+        setTimeout(() => setStatus('idle'), 5000)
+        return
+      }
       setStatus('error')
-      setMessage(err instanceof Error ? err.message : 'Something went wrong')
+      setMessage(msg)
       setTimeout(() => setStatus('idle'), 5000)
     }
   }
+
+  const loading = status === 'loading' || activeJobId !== null
 
   return (
     <div className="mb-3 mt-1 border-b border-paper-tertiary-fixed px-3 pb-3">
@@ -141,18 +214,21 @@ export function SocialUrlIngest({
           placeholder="Paste YouTube or blog URL…"
           value={url}
           onChange={(e) => setUrl(e.target.value)}
-          disabled={status === 'loading'}
+          disabled={loading}
           data-testid={dataTestIdUrlInput}
           className="min-w-0 flex-1 rounded border border-paper-tertiary-fixed bg-paper-surface-warm px-3 py-1.5 text-sm text-paper-on-surface placeholder:text-paper-on-surface-variant focus:outline-none focus:ring-1 focus:ring-paper-primary disabled:opacity-50"
         />
         <button
           type="submit"
-          disabled={!url.trim() || status === 'loading'}
+          disabled={!url.trim() || loading}
           className="shrink-0 rounded bg-paper-primary px-3 py-1.5 text-sm font-medium text-white disabled:opacity-40"
         >
-          {status === 'loading' ? '…' : 'Add'}
+          {loading ? '…' : 'Add'}
         </button>
       </form>
+      {loading && activeJobId ? (
+        <p className="mt-1 text-xs text-paper-on-surface-variant">Processing…</p>
+      ) : null}
       {status === 'success' && !hideSuccessBanner ? (
         <p className="mt-1 text-xs text-emerald-700 dark:text-emerald-400">{message}</p>
       ) : null}

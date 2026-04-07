@@ -414,6 +414,59 @@ export type Database = {
           },
         ]
       }
+      social_ingest_jobs: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          failures: Json | null
+          id: string
+          location_hint: Json | null
+          places_failed: number
+          places_resolved: number
+          source_id: string | null
+          status: string
+          updated_at: string
+          url: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          failures?: Json | null
+          id?: string
+          location_hint?: Json | null
+          places_failed?: number
+          places_resolved?: number
+          source_id?: string | null
+          status: string
+          updated_at?: string
+          url: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          failures?: Json | null
+          id?: string
+          location_hint?: Json | null
+          places_failed?: number
+          places_resolved?: number
+          source_id?: string | null
+          status?: string
+          updated_at?: string
+          url?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "social_ingest_jobs_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "social_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       social_mentions: {
         Row: {
           created_at: string
@@ -989,6 +1042,10 @@ export type Database = {
       }
       postgis_version: { Args: never; Returns: string }
       postgis_wagyu_version: { Args: never; Returns: string }
+      claim_next_social_job: {
+        Args: Record<string, never>
+        Returns: Database["public"]["Tables"]["social_ingest_jobs"]["Row"] | null
+      }
       promote_place_candidate:
         | { Args: { p_candidate_id: string }; Returns: string }
         | {

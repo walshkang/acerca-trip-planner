@@ -31,8 +31,9 @@ Full spec: [`docs/SOCIAL_DISCOVERY_PIPELINE.md`](docs/SOCIAL_DISCOVERY_PIPELINE.
 | S2 | Ingestion API: `POST /api/enrichment/ingest-social` (LLM extraction -> Google resolve -> upserts) | **Done** |
 | S3 | Query layer: `discover_social_places` RPC (mention counts, persona filter, snippets) | **Done** |
 | S4 | Map UI: persona toggle chips, mention-scaled markers, mention sidebar in PlaceDrawer | **Done** |
-| S5a | Content fetch lib + API: `POST /api/enrichment/fetch-content` (YouTube transcript + blog extraction) | **Active** |
-| S5b | URL paste UI in ExplorePanel → chains fetch → ingest → map refresh | Blocked on S5a |
+| S5a | Content fetch lib + API: `POST /api/enrichment/fetch-content` (YouTube transcript + blog extraction) | **Done** |
+| S5b | URL paste UI: `POST /api/enrichment/enqueue-social-job` → `social_ingest_jobs` + worker (`/api/internal/process-social-jobs`, Vercel cron) + Realtime → map refresh | **Done** |
+| S5c | Async queue: `social_ingest_jobs`, `claim_next_social_job()` RPC, chunking + batched Gemini, optional `GET /api/enrichment/social-ingest-job/[id]` | **Done** |
 
 ### Transit Coverage Status (paused)
 

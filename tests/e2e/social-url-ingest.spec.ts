@@ -55,9 +55,8 @@ test.describe('social URL ingest UI', () => {
     const urlInput = panel.getByPlaceholder('Paste YouTube or blog URL…')
     await urlInput.fill('https://www.youtube.com/watch?v=dQw4w9WgXcQ')
 
-    // Intercept both API calls so the request hangs briefly — lets us observe loading state
-    await page.route('**/api/enrichment/fetch-content', route => {
-      // Delay response so we can assert the loading state
+    // Delay enqueue response so we can observe loading state before job id is set
+    await page.route('**/api/enrichment/enqueue-social-job', (route) => {
       setTimeout(() => route.continue(), 3_000)
     })
 
