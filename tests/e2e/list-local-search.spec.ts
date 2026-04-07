@@ -20,6 +20,7 @@ test('list detail local search adds approved places', async ({ page }) => {
     seeds.push(seedA, seedB)
 
     await page.goto(`/lists/${seedA.list.id}`)
+    await ensureSignedIn(page)
 
     const searchInput = page.getByPlaceholder('Search approved places')
     await expect(searchInput).toBeVisible()
@@ -39,10 +40,9 @@ test('list detail local search adds approved places', async ({ page }) => {
 
     await expect(resultCard.getByRole('button', { name: 'Added' })).toBeVisible()
 
-    const placesSection = page
-      .getByRole('heading', { name: 'Places' })
-      .locator('..')
-    await expect(placesSection.getByText(seedB.place_name)).toBeVisible()
+    // Place should now appear in the list detail
+    const listPanel = page.getByTestId('paper-explore-panel')
+    await expect(listPanel.locator(`[data-place-id="${seedB.place_id}"]`).first()).toBeVisible()
   } finally {
     await cleanupSeededData(page, seeds)
   }

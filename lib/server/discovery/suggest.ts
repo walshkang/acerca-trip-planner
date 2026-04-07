@@ -296,7 +296,9 @@ export async function buildDiscoverySuggestions(
           neighborhood: geo.neighborhood,
           borough: geo.borough,
           matched_place_id: place.id,
-          score: 2000 - index,
+          // In list scope, local places rank above Google results (user is searching their own list).
+          // In explore mode (no list_id), Google results lead — the user is discovering new places.
+          score: canonical.list_id ? 2000 - index : 500 - index,
           rank: 0,
           reasons: ['places_index'],
         },

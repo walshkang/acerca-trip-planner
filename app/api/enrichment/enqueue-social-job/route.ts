@@ -58,5 +58,20 @@ export async function POST(request: NextRequest) {
     )
   }
 
+  // In local dev, the Vercel cron doesn't run — kick the worker immediately so
+  // the Realtime subscription in SocialUrlIngest gets the completion event.
+  if (process.env.NODE_ENV === 'development') {
+    const workerSecret =
+      process.env.PROCESS_SOCIAL_JOBS_KEY?.trim() ||
+      process.env.CRON_SECRET?.trim()
+    if (workerSecret) {
+      const base = request.nextUrl.origin
+      void fetch(`${base}/api/internal/process-social-jobs`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${workerSecret}` },
+      }).catch(() => {})
+    }
+  }
+
   return NextResponse.json({ job_id: data.id })
 }

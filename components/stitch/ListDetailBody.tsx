@@ -677,7 +677,7 @@ export default function ListDetailBody({
               ))}
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-2" data-testid="list-tag-filters">
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <p

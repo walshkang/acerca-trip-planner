@@ -24,7 +24,6 @@ test.describe('social URL ingest UI', () => {
   // --- Presence ---
 
   test('URL input and Add button are visible in explore panel', async ({ page }) => {
-    // Scope to desktop panel — mobile panel renders the same component offscreen
     const panel = page.getByTestId('paper-explore-panel')
     const urlInput = panel.getByPlaceholder('Paste YouTube or blog URL…')
     await expect(urlInput).toBeVisible()

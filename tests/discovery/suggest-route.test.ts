@@ -178,7 +178,7 @@ describe('POST /api/discovery/suggest', () => {
     expect(json.message).toBe('List not found')
   })
 
-  it('is deterministic and enforces places-first merge ordering', async () => {
+  it('is deterministic and enforces google-first merge ordering in explore mode (no list_id)', async () => {
     const placesRows: PlaceRow[] = [
       {
         id: 'place-1',
@@ -246,15 +246,17 @@ describe('POST /api/discovery/suggest', () => {
     }
 
     expect(firstJson.suggestions).toEqual(secondJson.suggestions)
-    expect(firstJson.suggestions?.[0]?.source).toBe('places_index')
+    // In explore mode (no list_id), Google results score higher than local places.
+    // google-1 is deduplicated (matches place-1), so google-3 leads, then locals.
+    expect(firstJson.suggestions?.[0]?.source).toBe('google_search')
     expect(firstJson.suggestions?.[1]?.source).toBe('places_index')
-    expect(firstJson.suggestions?.[2]?.source).toBe('google_search')
+    expect(firstJson.suggestions?.[2]?.source).toBe('places_index')
     expect(firstJson.suggestions?.map((item) => item.source_id)).toEqual([
+      'google-3',
       'place-1',
       'place-2',
-      'google-3',
     ])
-    expect((firstJson.suggestions?.[0]?.score ?? 0) > (firstJson.suggestions?.[2]?.score ?? 0)).toBe(
+    expect((firstJson.suggestions?.[0]?.score ?? 0) > (firstJson.suggestions?.[1]?.score ?? 0)).toBe(
       true
     )
   })
