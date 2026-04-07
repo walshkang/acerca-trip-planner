@@ -8,6 +8,20 @@ import { useSocialDiscoveryStore } from '@/lib/state/useSocialDiscoveryStore'
 
 type Status = 'idle' | 'loading' | 'success' | 'error'
 
+type IngestStage = 1 | 2 | 3
+
+const INGEST_STAGES: { label: string; key: IngestStage }[] = [
+  { label: 'Reading', key: 1 },
+  { label: 'Extracting', key: 2 },
+  { label: 'Matching', key: 3 },
+]
+
+function getIngestStage(msg: string): IngestStage {
+  if (msg.startsWith('Resolving') || msg.startsWith('Done')) return 3
+  if (msg.startsWith('Extracting')) return 2
+  return 1
+}
+
 type SocialIngestJobRow = {
   status: string
   progress_message?: string | null
@@ -239,7 +253,35 @@ export function SocialUrlIngest({
         </button>
       </form>
       {loading && activeJobId ? (
-        <p className="mt-1 text-xs text-paper-on-surface-variant">{runningMessage}</p>
+        <div className="mt-2 space-y-1.5">
+          <div className="flex items-center gap-1.5">
+            {INGEST_STAGES.map(({ label, key }, i) => {
+              const stage = getIngestStage(runningMessage)
+              const done = key < stage
+              const active = key === stage
+              return (
+                <div key={key} className="flex items-center gap-1.5">
+                  <span
+                    className={[
+                      'rounded-full px-2 py-0.5 text-xs font-medium transition-colors',
+                      done
+                        ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400'
+                        : active
+                          ? 'animate-pulse bg-paper-primary/15 text-paper-primary'
+                          : 'bg-paper-surface-warm text-paper-on-surface-variant opacity-40',
+                    ].join(' ')}
+                  >
+                    {done ? '✓ ' : ''}{label}
+                  </span>
+                  {i < INGEST_STAGES.length - 1 ? (
+                    <span className="text-paper-on-surface-variant opacity-30 text-xs">→</span>
+                  ) : null}
+                </div>
+              )
+            })}
+          </div>
+          <p className="text-xs text-paper-on-surface-variant">{runningMessage}</p>
+        </div>
       ) : null}
       {status === 'success' && !hideSuccessBanner ? (
         <p className="mt-1 text-xs text-emerald-700 dark:text-emerald-400">{message}</p>
