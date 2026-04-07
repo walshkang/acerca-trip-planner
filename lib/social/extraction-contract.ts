@@ -47,7 +47,7 @@ export const mentionedPlaceSchema = z
 export const socialExtractionSchema = z
   .object({
     author_persona: personaSchema,
-    mentioned_places: z.array(mentionedPlaceSchema).min(1).max(50),
+    mentioned_places: z.array(mentionedPlaceSchema).min(0).max(50),
   })
   .strict()
 

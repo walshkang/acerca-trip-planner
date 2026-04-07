@@ -152,6 +152,9 @@ These tests require `GOOGLE_GENERATIVE_AI_API_KEY` (or `GOOGLE_PLACES_API_KEY`) 
 Model selection precedence:
 - when `RUN_EVALS=1`: `SOCIAL_EXTRACTION_MODEL_EVAL` → `SOCIAL_EXTRACTION_MODEL` → default `gemini-1.5-flash`
 - otherwise: `SOCIAL_EXTRACTION_MODEL` → default `gemini-1.5-flash`
+Output mode:
+- `SOCIAL_EXTRACTION_OUTPUT_MODE=native-json` (default): provider-native JSON mode
+- `SOCIAL_EXTRACTION_OUTPUT_MODE=text-json-fallback`: text output + JSON extraction + schema validation
 
 Do **not** add this key to the test runner env by default. Callers must set it explicitly.
 
@@ -162,5 +165,8 @@ Do **not** add this key to the test runner env by default. Callers must set it e
 - [ ] `extractMergedSocialExtraction` is exported from `lib/server/social/ingest.ts`
 - [ ] `tests/social/evals/fixtures/index.ts` loads all 5 fixtures without TypeScript errors
 - [ ] `RUN_EVALS=1 GOOGLE_GENERATIVE_AI_API_KEY=... npx vitest run tests/social/evals/deterministic.eval.ts` runs and passes
+- [ ] Deterministic suite is runnable in both modes:
+  - `RUN_EVALS=1 SOCIAL_EXTRACTION_OUTPUT_MODE=native-json ...`
+  - `RUN_EVALS=1 SOCIAL_EXTRACTION_OUTPUT_MODE=text-json-fallback ...`
 - [ ] Without `RUN_EVALS`, running `npm run test` skips this suite entirely (verify with `npx vitest run tests/social/evals/deterministic.eval.ts` — should show 0 tests run, not failures)
 - [ ] `npm run check` passes (no type errors from the new export or fixture imports)

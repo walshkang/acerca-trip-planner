@@ -19,11 +19,16 @@ describe.skipIf(!runEvals)('deterministic extraction evals', () => {
   }
 
   beforeAll(async () => {
-    for (const fixture of EVAL_FIXTURES) {
-      const result = await extractMergedSocialExtraction(fixture.transcript)
-      extractionCache.set(fixture.label, result)
+    const CONCURRENT = 2
+    for (let i = 0; i < EVAL_FIXTURES.length; i += CONCURRENT) {
+      await Promise.all(
+        EVAL_FIXTURES.slice(i, i + CONCURRENT).map(async (fixture) => {
+          const result = await extractMergedSocialExtraction(fixture.transcript)
+          extractionCache.set(fixture.label, result)
+        })
+      )
     }
-  }, 120_000)
+  }, 600_000)
 
   it.each(EVAL_FIXTURES)('$label — output is schema-valid', async ({ label, transcript }) => {
     expect(transcript.length).toBeGreaterThan(0)
@@ -85,4 +90,26 @@ describe.skipIf(!runEvals)('deterministic extraction evals', () => {
 
     expect(result.mentioned_places.length).toBeGreaterThanOrEqual(12)
   }, 60_000)
+
+  it('luxury-persona — author_persona is luxury, not foodie or design', async () => {
+    const result = getCachedExtraction('luxury-persona')
+
+    expect(result.author_persona).toBe('luxury')
+    expect(result.mentioned_places.length).toBeGreaterThanOrEqual(3)
+
+    // Jiro must be present — it's the most distinctive place
+    const names = result.mentioned_places.map((p) => p.place_name.toLowerCase())
+    expect(names.some((n) => n.includes('jiro'))).toBe(true)
+  }, 30_000)
+
+  it('local-persona — author_persona is local, not budget or foodie', async () => {
+    const result = getCachedExtraction('local-persona')
+
+    expect(result.author_persona).toBe('local')
+    expect(result.mentioned_places.length).toBeGreaterThanOrEqual(2)
+
+    // BooksActually is the clearest non-food local signal — must not be dropped
+    const names = result.mentioned_places.map((p) => p.place_name.toLowerCase())
+    expect(names.some((n) => n.includes('booksactually') || n.includes('books actually'))).toBe(true)
+  }, 30_000)
 })

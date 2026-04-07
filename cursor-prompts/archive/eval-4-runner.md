@@ -24,7 +24,9 @@ Add to `scripts`:
 ```json
 "eval": "RUN_EVALS=1 vitest run tests/social/evals/",
 "eval:deterministic": "RUN_EVALS=1 vitest run tests/social/evals/deterministic.eval.ts",
-"eval:judge": "RUN_EVALS=1 vitest run tests/social/evals/judge.eval.ts"
+"eval:judge": "RUN_EVALS=1 vitest run tests/social/evals/judge.eval.ts",
+"eval:native": "RUN_EVALS=1 SOCIAL_EXTRACTION_OUTPUT_MODE=native-json vitest run tests/social/evals/",
+"eval:fallback": "RUN_EVALS=1 SOCIAL_EXTRACTION_OUTPUT_MODE=text-json-fallback vitest run tests/social/evals/"
 ```
 
 Usage:
@@ -32,6 +34,8 @@ Usage:
 GOOGLE_GENERATIVE_AI_API_KEY=... npm run eval
 GOOGLE_GENERATIVE_AI_API_KEY=... npm run eval:deterministic
 GOOGLE_GENERATIVE_AI_API_KEY=... npm run eval:judge
+GOOGLE_GENERATIVE_AI_API_KEY=... npm run eval:native
+GOOGLE_GENERATIVE_AI_API_KEY=... npm run eval:fallback
 ```
 
 ---
@@ -141,6 +145,9 @@ Note: Add `GOOGLE_GENERATIVE_AI_API_KEY` to GitHub repo secrets before using thi
 
 - [ ] `npm run eval:deterministic` runs and all deterministic tests pass
 - [ ] `npm run eval:judge` runs and all 5 fixtures score above threshold
+- [ ] Both output modes are runnable via scripts:
+  - `npm run eval:native`
+  - `npm run eval:fallback`
 - [ ] `npm run test` (normal CI) skips the eval suite entirely — no `RUN_EVALS` set means 0 eval tests run
 - [ ] JSON fixture imports are type-safe (no `any`, `tsconfig` has `resolveJsonModule`)
 - [ ] `npm run check` passes

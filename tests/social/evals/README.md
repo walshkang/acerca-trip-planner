@@ -13,6 +13,12 @@ GOOGLE_GENERATIVE_AI_API_KEY=your_key npm run eval:deterministic
 
 # LLM judge only (semantic scoring)
 GOOGLE_GENERATIVE_AI_API_KEY=your_key npm run eval:judge
+
+# Force native JSON mode across eval suites
+GOOGLE_GENERATIVE_AI_API_KEY=your_key npm run eval:native
+
+# Force text fallback mode across eval suites
+GOOGLE_GENERATIVE_AI_API_KEY=your_key npm run eval:fallback
 ```
 
 Note: `eval:deterministic` and `eval:judge` require the eval suite implementation from earlier slices.
@@ -22,6 +28,7 @@ Note: `eval:deterministic` and `eval:judge` require the eval suite implementatio
 - `SOCIAL_EXTRACTION_MODEL`: runtime extraction default (also fallback for evals)
 - `SOCIAL_EXTRACTION_MODEL_EVAL`: deterministic eval extraction override when `RUN_EVALS=1`
 - `SOCIAL_EVAL_JUDGE_MODEL`: judge eval override (falls back to `SOCIAL_EXTRACTION_MODEL_EVAL`, then `SOCIAL_EXTRACTION_MODEL`)
+- `SOCIAL_EXTRACTION_OUTPUT_MODE`: extraction output mode (`native-json` or `text-json-fallback`, default `native-json`)
 
 Example:
 

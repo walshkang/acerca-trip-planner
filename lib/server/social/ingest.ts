@@ -1,4 +1,4 @@
-import { generateObject } from 'ai'
+import { generateObject, generateText } from 'ai'
 import { createGoogleGenerativeAI } from '@ai-sdk/google'
 import type { Json } from '@/lib/supabase/types'
 import { searchGooglePlaces } from '@/lib/enrichment/sources'
@@ -21,36 +21,48 @@ import {
 import { getAdminSupabase } from '@/lib/supabase/admin'
 import { toGeographyPointWkt } from '@/lib/server/places/ingest-google-place'
 
+const PERSONA_RUBRIC = `
+Persona rubric (pick the single best fit):
+- local: hidden gems, avoiding tourist traps, neighborhood insider knowledge
+- luxury: price points, exclusivity, high-end service or products
+- budget: value focus, affordable finds, cost-conscious choices
+- design: architecture, interior aesthetics, visual composition
+- foodie: flavor profiles, ingredients, culinary technique, chef focus
+- adventure: outdoor activities, physical experiences, exploration
+- family: kid-friendly, group logistics, family-oriented experiences
+- nightlife: bars, clubs, late-night scene, drinks-forward
+`.trim()
+
 const SYSTEM_PROMPT = `
-You are analyzing a transcript from social media content about travel.
-Extract the author's persona and all specific places mentioned.
-For each place, include the exact quote/context and classify sentiment.
-Only include real, specific establishments - not generic references like "a cafe" or "the beach".
-Only extract places the creator personally visited, reviewed, or directly recommends - not places mentioned historically, aspirationally, or in passing without a visit.
-Only include a place if you can quote at least 2 sentences of direct experience from the transcript. Skip places that are merely name-checked or visited so briefly that no meaningful opinion is expressed.
-Persona values must be exactly one of: local, luxury, budget, design, foodie, adventure, family, nightlife.
-For each place also provide:
-- tags: 1-4 short keyword labels capturing vibe, format, or notable attributes (e.g. "rooftop", "cash-only", "hidden gem", "outdoor seating"). Max 6 tags.
-- callouts: specific named dishes, drinks, or activities mentioned in the context for this place (e.g. {type: "dish", text: "pad see ew"}, {type: "activity", text: "longtail boat ride"}). Only include callouts explicitly named in the transcript. Max 10 callouts per place.
+Extract travel places from this social media transcript. Start your response with { and end with }. No markdown, no backticks, no preamble.
+
+Include a place only if ALL three conditions hold:
+1. Real, named establishment (not "a cafe", "the beach", or a city/neighborhood)
+2. Creator personally visited or reviewed it — not mentioned historically, aspirationally, or in passing
+3. At least 2 sentences of direct experience in the transcript — skip places that are merely name-checked
+
+${PERSONA_RUBRIC}
+Per place: place_name, place_type (optional), context_snippet (direct quote), sentiment (positive|neutral|mixed), tags (up to 6 short labels, e.g. rooftop, cash-only, hidden gem), callouts (explicitly named dishes/drinks/activities only, max 10, e.g. {type:"dish",text:"pad see ew"})
 `.trim()
 
 const CHUNK_SYSTEM_PROMPT = `
-You are analyzing ONE segment of a longer travel transcript.
-Extract the author's persona (if inferable from this segment) and specific places mentioned in THIS segment only.
-If this segment has no real, named establishments, set contains_places to false and mentioned_places to [].
-Do not invent venues. Persona values must be exactly one of: local, luxury, budget, design, foodie, adventure, family, nightlife.
-For each place, include the exact quote/context and classify sentiment.
-Only include real, specific establishments - not generic references like "a cafe" or "the beach".
-Only extract places the creator personally visited, reviewed, or directly recommends - not places mentioned historically, aspirationally, or in passing without a visit.
-Only include a place if you can quote at least 2 sentences of direct experience from the transcript. Skip places that are merely name-checked or visited so briefly that no meaningful opinion is expressed.
-For each place also provide:
-- tags: 1-4 short keyword labels capturing vibe, format, or notable attributes (e.g. "rooftop", "cash-only", "hidden gem", "outdoor seating"). Max 6 tags.
-- callouts: specific named dishes, drinks, or activities mentioned in the context for this place (e.g. {type: "dish", text: "pad see ew"}, {type: "activity", text: "longtail boat ride"}). Only include callouts explicitly named in the transcript. Max 10 callouts per place.
+Extract travel places from this transcript segment. Start your response with { and end with }. No markdown, no backticks, no preamble.
+
+Include a place only if ALL three conditions hold:
+1. Real, named establishment (not "a cafe", "the beach", or a city/neighborhood)
+2. Creator personally visited or reviewed it — not mentioned historically, aspirationally, or in passing
+3. At least 2 sentences of direct experience in this segment — skip places that are merely name-checked
+
+If no qualifying places exist in this segment, return mentioned_places:[] and contains_places:false.
+${PERSONA_RUBRIC} (only assign if inferable from this segment)
+Per place: place_name, place_type (optional), context_snippet (direct quote), sentiment (positive|neutral|mixed), tags (up to 6 short labels), callouts (explicitly named dishes/drinks/activities only, max 10)
 `.trim()
 
 const google = createGoogleGenerativeAI({
   apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY ?? process.env.GOOGLE_PLACES_API_KEY,
 })
+
+type SocialExtractionOutputMode = 'native-json' | 'text-json-fallback'
 
 export function getSocialExtractionModelId(): string {
   const runtimeModel = process.env.SOCIAL_EXTRACTION_MODEL?.trim()
@@ -62,8 +74,27 @@ export function getSocialExtractionModelId(): string {
   return runtimeModel || 'gemini-1.5-flash'
 }
 
+function getExtractionModel() {
+  // thinkingBudget:0 disables thinking on Gemini 2.5+ models — extraction is pattern-matching,
+  // not reasoning, so thinking tokens are pure waste. No-op on models that don't support it.
+  return google(getSocialExtractionModelId(), { thinkingConfig: { thinkingBudget: 0 } })
+}
+
+export function getSocialExtractionOutputMode(): SocialExtractionOutputMode {
+  const configured = process.env.SOCIAL_EXTRACTION_OUTPUT_MODE?.trim()
+  if (configured === 'native-json') return 'native-json'
+  if (configured === 'text-json-fallback') return 'text-json-fallback'
+  // Gemma models don't support native JSON schema (responseSchema); fall back automatically.
+  if (getSocialExtractionModelId().toLowerCase().startsWith('gemma')) return 'text-json-fallback'
+  return 'native-json'
+}
+
 const GEMINI_BATCH_SIZE = 4
 const PLACES_BATCH_SIZE = 5
+const GENERATION_ATTEMPTS = 4
+// Schema hints: structure only (field semantics are already in the system prompts above).
+const FULL_SCHEMA_HINT = `{"author_persona":"...","mentioned_places":[{"place_name":"...","place_type":"...","context_snippet":"...","sentiment":"positive|neutral|mixed","tags":["..."],"callouts":[{"type":"dish|drink|activity|tip","text":"..."}]}]}`
+const CHUNK_SCHEMA_HINT = `{"author_persona":"...","contains_places":true,"mentioned_places":[{"place_name":"...","place_type":"...","context_snippet":"...","sentiment":"positive|neutral|mixed","tags":["..."],"callouts":[{"type":"dish|drink|activity|tip","text":"..."}]}]}`
 
 async function sleep(ms: number): Promise<void> {
   await new Promise((r) => setTimeout(r, ms))
@@ -77,14 +108,172 @@ function chunk<T>(arr: T[], size: number): T[][] {
 
 async function generateObjectWithRetry<T>(fn: () => Promise<T>): Promise<T> {
   let lastErr: unknown
-  for (let attempt = 0; attempt < 4; attempt++) {
+  for (let attempt = 0; attempt < GENERATION_ATTEMPTS; attempt++) {
     try {
       return await fn()
     } catch (e) {
       lastErr = e
       const msg = e instanceof Error ? e.message : String(e)
       const is429 = msg.includes('429') || msg.includes('Too Many Requests')
-      if (!is429 || attempt === 3) throw e
+      if (!is429 || attempt === GENERATION_ATTEMPTS - 1) throw e
+      await sleep(2 ** attempt * 400)
+    }
+  }
+  throw lastErr
+}
+
+function stripMarkdownCodeFences(text: string): string {
+  const trimmed = text.trim()
+  const fencedMatch = trimmed.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i)
+  return fencedMatch ? fencedMatch[1].trim() : trimmed
+}
+
+export function extractJsonObjectFromModelText(raw: string): unknown {
+  const directCandidate = raw.trim()
+  const noFenceCandidate = stripMarkdownCodeFences(directCandidate)
+  const spanStart = noFenceCandidate.indexOf('{')
+  const spanEnd = noFenceCandidate.lastIndexOf('}')
+  const spanCandidate =
+    spanStart >= 0 && spanEnd > spanStart
+      ? noFenceCandidate.slice(spanStart, spanEnd + 1).trim()
+      : ''
+
+  const candidates = Array.from(
+    new Set([directCandidate, noFenceCandidate, spanCandidate].filter((c) => c.length > 0))
+  )
+
+  let lastParseError: unknown
+  for (const candidate of candidates) {
+    try {
+      return JSON.parse(candidate)
+    } catch (error) {
+      lastParseError = error
+    }
+  }
+  throw new Error(
+    `social_extraction_text_invalid_json:${lastParseError instanceof Error ? lastParseError.message : 'parse_failed'}`
+  )
+}
+
+function isTruncationFinishReason(reason: string | undefined): boolean {
+  if (!reason) return false
+  const normalized = reason.toLowerCase()
+  return (
+    normalized.includes('length') ||
+    normalized.includes('max') ||
+    normalized.includes('token') ||
+    normalized.includes('incomplete')
+  )
+}
+
+function shouldRetryTextFallbackError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error)
+  if (message.includes('social_extraction_text_truncated')) return false
+  return (
+    message.includes('429') ||
+    message.includes('Too Many Requests') ||
+    message.includes('social_extraction_text_invalid_json') ||
+    message.includes('social_extraction_invalid:') ||
+    message.includes('social_extraction_chunk_invalid:')
+  )
+}
+
+const CALLOUT_TYPE_ALIAS: Record<string, 'dish' | 'drink' | 'activity' | 'tip'> = {
+  dishes: 'dish',
+  food: 'dish',
+  foods: 'dish',
+  meal: 'dish',
+  meals: 'dish',
+  beverage: 'drink',
+  beverages: 'drink',
+  cocktail: 'drink',
+  cocktails: 'drink',
+  mocktail: 'drink',
+  mocktails: 'drink',
+  coffee: 'drink',
+  coffees: 'drink',
+  activity: 'activity',
+  activities: 'activity',
+  tip: 'tip',
+  tips: 'tip',
+}
+
+function normalizeCalloutType(value: unknown): 'dish' | 'drink' | 'activity' | 'tip' | null {
+  if (typeof value !== 'string') return null
+  const normalized = value.trim().toLowerCase()
+  if (normalized === 'dish' || normalized === 'drink' || normalized === 'activity' || normalized === 'tip') {
+    return normalized
+  }
+  return CALLOUT_TYPE_ALIAS[normalized] ?? null
+}
+
+function sanitizeMentionCallouts(value: unknown): unknown {
+  if (!value || typeof value !== 'object') return value
+  const mention = value as { callouts?: unknown[] }
+  if (!Array.isArray(mention.callouts)) return mention
+  const callouts = mention.callouts
+    .map((callout) => {
+      if (!callout || typeof callout !== 'object') return null
+      const c = callout as { type?: unknown; text?: unknown }
+      const type = normalizeCalloutType(c.type)
+      if (!type) return null
+      return { ...c, type }
+    })
+    .filter((callout): callout is { type: 'dish' | 'drink' | 'activity' | 'tip'; text?: unknown } => !!callout)
+  return { ...(mention as Record<string, unknown>), callouts }
+}
+
+export function sanitizeSocialExtractionPayload(raw: unknown): unknown {
+  if (!raw || typeof raw !== 'object') return raw
+  const payload = raw as { mentioned_places?: unknown[] }
+  if (!Array.isArray(payload.mentioned_places)) return payload
+  return {
+    ...(payload as Record<string, unknown>),
+    mentioned_places: payload.mentioned_places.map((mention) => sanitizeMentionCallouts(mention)),
+  }
+}
+
+export function sanitizeSocialExtractionChunkPayload(raw: unknown): unknown {
+  return sanitizeSocialExtractionPayload(raw)
+}
+
+async function generateTextJsonWithRetry<T>(params: {
+  system: string
+  prompt: string
+  schemaHint: string
+  parse: (value: unknown) => { ok: true; data: T } | { ok: false; message: string }
+  errorPrefix: 'social_extraction_invalid' | 'social_extraction_chunk_invalid'
+}): Promise<T> {
+  let lastErr: unknown
+  for (let attempt = 0; attempt < GENERATION_ATTEMPTS; attempt++) {
+    try {
+      const generated = await generateText({
+        model: getExtractionModel(),
+        system: `${params.system}\n\nJSON shape: ${params.schemaHint}`,
+        prompt: params.prompt,
+        temperature: 0,
+      })
+
+      const finishReason = (generated as { finishReason?: string }).finishReason
+      if (isTruncationFinishReason(finishReason)) {
+        throw new Error(`social_extraction_text_truncated:${finishReason}`)
+      }
+
+      const parsedObject = extractJsonObjectFromModelText(generated.text)
+      const sanitized =
+        params.errorPrefix === 'social_extraction_invalid'
+          ? sanitizeSocialExtractionPayload(parsedObject)
+          : sanitizeSocialExtractionChunkPayload(parsedObject)
+      const validated = params.parse(sanitized)
+      if (!validated.ok) {
+        throw new Error(`${params.errorPrefix}:${validated.message}`)
+      }
+      return validated.data
+    } catch (error) {
+      lastErr = error
+      if (!shouldRetryTextFallbackError(error) || attempt === GENERATION_ATTEMPTS - 1) {
+        throw error
+      }
       await sleep(2 ** attempt * 400)
     }
   }
@@ -142,22 +331,35 @@ function requireSocialSystemUserId(): string {
 export async function extractMergedSocialExtraction(
   transcript: string
 ): Promise<MergedSocialExtraction> {
+  const outputMode = getSocialExtractionOutputMode()
   const { maxChars } = getChunkingConfigFromEnv()
   if (transcript.length <= maxChars) {
-    const generated = await generateObjectWithRetry(() =>
-      generateObject({
-        model: google(getSocialExtractionModelId()),
-        schema: socialExtractionSchema,
-        system: SYSTEM_PROMPT,
-        prompt: transcript,
-        temperature: 0,
-      })
-    )
-    const extractionParsed = parseSocialExtraction(generated.object)
-    if (!extractionParsed.ok) {
-      throw new Error(`social_extraction_invalid:${extractionParsed.message}`)
-    }
-    const data = extractionParsed.data
+    const data =
+      outputMode === 'native-json'
+        ? await generateObjectWithRetry(() =>
+            generateObject({
+              model: getExtractionModel(),
+              schema: socialExtractionSchema,
+              system: SYSTEM_PROMPT,
+              prompt: transcript,
+              temperature: 0,
+            }).then((generated) => {
+              const extractionParsed = parseSocialExtraction(
+                sanitizeSocialExtractionPayload(generated.object)
+              )
+              if (!extractionParsed.ok) {
+                throw new Error(`social_extraction_invalid:${extractionParsed.message}`)
+              }
+              return extractionParsed.data
+            })
+          )
+        : await generateTextJsonWithRetry({
+            system: SYSTEM_PROMPT,
+            prompt: transcript,
+            schemaHint: FULL_SCHEMA_HINT,
+            parse: parseSocialExtraction,
+            errorPrefix: 'social_extraction_invalid',
+          })
     return {
       author_persona: data.author_persona,
       mentioned_places: data.mentioned_places,
@@ -172,21 +374,31 @@ export async function extractMergedSocialExtraction(
     const batch = textChunks.slice(i, i + GEMINI_BATCH_SIZE)
     const batchResults = await Promise.all(
       batch.map((text) =>
-        generateObjectWithRetry(() =>
-          generateObject({
-            model: google(getSocialExtractionModelId()),
-            schema: socialExtractionChunkSchema,
-            system: CHUNK_SYSTEM_PROMPT,
-            prompt: text,
-            temperature: 0,
-          })
-        ).then((generated) => {
-          const extractionParsed = parseSocialExtractionChunk(generated.object)
-          if (!extractionParsed.ok) {
-            throw new Error(`social_extraction_chunk_invalid:${extractionParsed.message}`)
-          }
-          return extractionParsed.data
-        })
+        outputMode === 'native-json'
+          ? generateObjectWithRetry(() =>
+              generateObject({
+                model: getExtractionModel(),
+                schema: socialExtractionChunkSchema,
+                system: CHUNK_SYSTEM_PROMPT,
+                prompt: text,
+                temperature: 0,
+              })
+            ).then((generated) => {
+              const extractionParsed = parseSocialExtractionChunk(
+                sanitizeSocialExtractionChunkPayload(generated.object)
+              )
+              if (!extractionParsed.ok) {
+                throw new Error(`social_extraction_chunk_invalid:${extractionParsed.message}`)
+              }
+              return extractionParsed.data
+            })
+          : generateTextJsonWithRetry({
+              system: CHUNK_SYSTEM_PROMPT,
+              prompt: text,
+              schemaHint: CHUNK_SCHEMA_HINT,
+              parse: parseSocialExtractionChunk,
+              errorPrefix: 'social_extraction_chunk_invalid',
+            })
       )
     )
     chunkOutputs.push(...batchResults)

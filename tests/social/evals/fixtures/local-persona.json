@@ -1,0 +1,45 @@
+{
+  "label": "local-persona",
+  "description": "Singapore resident showing their Tiong Bahru neighbourhood routine. Tests persona rubric: local ≠ budget (they spend money) and local ≠ foodie (food is incidental, insider access is the point). Strong 'I live here' framing throughout.",
+  "transcript": "I've lived in Tiong Bahru for six years and I still think it's the most underrated neighbourhood in Singapore. Tourists mostly know it for the hipster cafes but the people who actually live here are mostly elderly Hokkien families who've been in these flats since the 1950s. The HDB blocks here are the oldest in Singapore, pre-war era actually, and the architecture is unlike anything else in the city.\n\nMy morning routine starts at Tiong Bahru Market. I go to the same wonton mee stall every week — it's on the second floor, left side when you come up the stairs, the uncle has been running it for 30 years. There's no sign in English, the queue is always hawkers and retirees, never tourists. I get the dry version with extra chilli. The noodles are hand-pulled and the char siu is house-made. Probably the best $4 I spend all week.\n\nAfter that I usually walk down Yong Siak Street to get coffee at Forty Hands. It's technically well-known at this point — they were one of the first specialty coffee places in Singapore — but the regulars are still mostly locals who live within five minutes. I know the barista, she's been there longer than I have. I get the flat white and usually sit outside for an hour. That corner is one of the few places in Singapore where you can sit on a real street with actual pedestrian traffic and neighbourhood energy.\n\nIf I'm there on a weekend I'll walk over to BooksActually on Yong Siak. It's a genuinely independent bookshop, the kind that's almost extinct. They stock local Singaporean writers, regional literature, zines made by people in the neighbourhood. It's been in the area forever and Kenny, the owner, knows everyone. I bought a poetry collection there last week by a poet from Bedok I'd never heard of. That's the kind of discovery you don't make on an algorithm.",
+  "expected": {
+    "author_persona": "local",
+    "mentioned_places": [
+      {
+        "place_name": "Tiong Bahru Market",
+        "place_type": "hawker centre",
+        "context_snippet": "I go to the same wonton mee stall every week — the uncle has been running it for 30 years. There's no sign in English, the queue is always hawkers and retirees, never tourists. The noodles are hand-pulled and the char siu is house-made.",
+        "sentiment": "positive",
+        "tags": ["hawker", "locals-only", "cash-only", "no-english-sign"],
+        "callouts": [
+          { "type": "dish", "text": "wonton mee dry with extra chilli" },
+          { "type": "dish", "text": "char siu" }
+        ]
+      },
+      {
+        "place_name": "Forty Hands",
+        "place_type": "cafe",
+        "context_snippet": "The regulars are still mostly locals who live within five minutes. I know the barista, she's been there longer than I have. That corner is one of the few places in Singapore where you can sit on a real street with actual pedestrian traffic and neighbourhood energy.",
+        "sentiment": "positive",
+        "tags": ["specialty-coffee", "neighbourhood", "outdoor-seating", "regulars"],
+        "callouts": [
+          { "type": "drink", "text": "flat white" }
+        ]
+      },
+      {
+        "place_name": "BooksActually",
+        "place_type": "bookshop",
+        "context_snippet": "They stock local Singaporean writers, regional literature, zines made by people in the neighbourhood. Kenny, the owner, knows everyone. That's the kind of discovery you don't make on an algorithm.",
+        "sentiment": "positive",
+        "tags": ["independent", "local-authors", "neighbourhood", "hidden-gem"],
+        "callouts": []
+      }
+    ]
+  },
+  "_eval_notes": {
+    "persona_critical": "Creator is local: 6-year resident, knows the barista by name, knows the market uncle, knows the bookshop owner, explicitly frames everything as neighbourhood routine vs. tourist circuit. Should NOT be classified as budget (the cheap food is incidental) or foodie (food is one stop in a neighbourhood walk, not the focus).",
+    "richness_check": "Tags should reflect insider access ('locals-only', 'no-english-sign', 'regulars') not just generic descriptors. Callouts must be specific named items from the transcript.",
+    "local_vs_budget": "The wonton mee is $4 but the creator isn't price-focused — they mention it as a routine, not as a value find. The framing is insider access, not cost-consciousness.",
+    "local_vs_foodie": "Food is present but the creator never talks about flavour profiles, culinary technique, or ingredients analytically. The wonton mee is mentioned in the context of the uncle and the crowd, not the gastronomy."
+  }
+}

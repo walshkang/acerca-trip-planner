@@ -1,0 +1,53 @@
+{
+  "label": "luxury-persona",
+  "description": "Tokyo luxury stay and dining vlog. Unambiguous luxury creator — price points, exclusivity, service language throughout. Tests persona rubric: should not be classified as foodie or design despite food and aesthetic content.",
+  "transcript": "We just checked into the Aman Tokyo and I honestly don't know how I'm supposed to go back to normal hotels after this. We're on the 33rd floor, the room is 80 square meters, and the entire north wall is floor-to-ceiling glass looking out over the Imperial Palace gardens. I've stayed at a lot of properties in Asia and nothing quite compares to the level of attention here. The moment we arrived, they had our names, our preferences from a previous stay two years ago, and a handwritten welcome note. That kind of institutional memory is rare.\n\nFor dinner we booked Sukiyabashi Jiro Honten in Ginza — yes, the Jiro Dreams of Sushi one. Three Michelin stars. This is notoriously hard to get into, we had to go through the hotel concierge and it still took weeks of back and forth. The omakase is around 40,000 yen per person. It is the most technically precise meal I've ever had. Every piece of nigiri served at the exact temperature it needs to be, the rice seasoning calibrated per fish. You don't add soy sauce, you don't ask for ginger between courses. You follow the rhythm. 20 pieces over about 30 minutes. When it was done I wanted to cry a little bit.\n\nThe next morning we went for breakfast at The Peninsula Tokyo's The Lobby. They do a proper European breakfast service, full tableside presentation. I had the eggs Benedict with smoked salmon — nothing earth-shattering but the service execution was impeccable, the kind where your water glass is never less than half full and staff seem to anticipate when you're about to need something before you know yourself. After breakfast we had a car sent to take us to Nezu Museum in Aoyama. The museum itself is quiet — not a lot of people — with a stunning traditional Japanese garden behind it. We spent about an hour in the permanent collection and another 45 minutes just sitting in the garden. Admission is 1,300 yen which feels almost absurdly cheap relative to everything else we did.",
+  "expected": {
+    "author_persona": "luxury",
+    "mentioned_places": [
+      {
+        "place_name": "Aman Tokyo",
+        "place_type": "hotel",
+        "context_snippet": "We're on the 33rd floor, the room is 80 square meters, and the entire north wall is floor-to-ceiling glass looking out over the Imperial Palace gardens. The moment we arrived, they had our names, our preferences from a previous stay two years ago, and a handwritten welcome note. That kind of institutional memory is rare.",
+        "sentiment": "positive",
+        "tags": ["luxury", "hotel", "imperial-palace-view", "service"],
+        "callouts": []
+      },
+      {
+        "place_name": "Sukiyabashi Jiro Honten",
+        "place_type": "restaurant",
+        "context_snippet": "Three Michelin stars. The omakase is around 40,000 yen per person. It is the most technically precise meal I've ever had. Every piece of nigiri served at the exact temperature it needs to be, the rice seasoning calibrated per fish.",
+        "sentiment": "positive",
+        "tags": ["michelin", "omakase", "splurge", "reservation-required"],
+        "callouts": [
+          { "type": "dish", "text": "omakase nigiri" }
+        ]
+      },
+      {
+        "place_name": "The Peninsula Tokyo",
+        "place_type": "restaurant",
+        "context_snippet": "They do a proper European breakfast service, full tableside presentation. The service execution was impeccable, the kind where your water glass is never less than half full and staff seem to anticipate when you're about to need something before you know yourself.",
+        "sentiment": "positive",
+        "tags": ["luxury", "breakfast", "hotel-dining", "service"],
+        "callouts": [
+          { "type": "dish", "text": "eggs Benedict with smoked salmon" }
+        ]
+      },
+      {
+        "place_name": "Nezu Museum",
+        "place_type": "museum",
+        "context_snippet": "The museum itself is quiet — not a lot of people — with a stunning traditional Japanese garden behind it. We spent about an hour in the permanent collection and another 45 minutes just sitting in the garden.",
+        "sentiment": "positive",
+        "tags": ["museum", "garden", "quiet", "aoyama"],
+        "callouts": [
+          { "type": "activity", "text": "traditional Japanese garden" }
+        ]
+      }
+    ]
+  },
+  "_eval_notes": {
+    "persona_critical": "Creator is clearly luxury: price points (40,000 yen omakase, 80sqm hotel room), exclusivity framing (hard to book, hotel concierge required), service language ('institutional memory', 'anticipate when you're about to need something'). Should NOT be classified as foodie (despite food content) or design (despite aesthetic observations).",
+    "richness_check": "Callouts should be specific: 'omakase nigiri' and 'eggs Benedict with smoked salmon' are named. Tags should reflect the luxury/service angle, not generic food tags.",
+    "nezu_museum_note": "Nezu Museum qualifies: creator visited, spent 1h45m, commented on the collection and garden. Admission price mentioned but not the focus — the experience was substantive enough."
+  }
+}

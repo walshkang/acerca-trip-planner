@@ -54,6 +54,7 @@ const JUDGE_MODEL =
   process.env.SOCIAL_EXTRACTION_MODEL_EVAL?.trim() ||
   process.env.SOCIAL_EXTRACTION_MODEL?.trim() ||
   'gemini-2.5-flash'
+const OUTPUT_MODE = process.env.SOCIAL_EXTRACTION_OUTPUT_MODE?.trim() || 'native-json'
 
 const judgeScoreSchema = z.object({
   recall_score: z
@@ -123,6 +124,11 @@ Score the actual extraction.
 }
 
 describe.skipIf(!runEvals)('semantic extraction evals (LLM judge)', () => {
+  it('logs extraction output mode for transparency', () => {
+    console.log(`[judge eval] extraction output mode: ${OUTPUT_MODE}`)
+    expect(['native-json', 'text-json-fallback']).toContain(OUTPUT_MODE)
+  })
+
   it.each(EVAL_FIXTURES)(
     '$label — recall ≥ 75, hallucination ≤ 20, vibe ≥ 70',
     async ({ label, transcript, expected }) => {
@@ -165,6 +171,7 @@ Tighten thresholds once the prompt is stable (target: recall ≥ 85, hallucinati
 ## Definition of Done
 
 - [ ] `SYSTEM_PROMPT` and `CHUNK_SYSTEM_PROMPT` in `ingest.ts` include both the visited-vs-mentioned instruction and the 2-sentence rule
+- [ ] Judge suite is runnable with `SOCIAL_EXTRACTION_OUTPUT_MODE=native-json` and `SOCIAL_EXTRACTION_OUTPUT_MODE=text-json-fallback`
 - [ ] `RUN_EVALS=1 GOOGLE_GENERATIVE_AI_API_KEY=... npx vitest run tests/social/evals/judge.eval.ts` runs and passes all 5 fixtures
 - [ ] `tangent` fixture passes with ≤ 2 places extracted (visited-vs-mentioned fix confirmed)
 - [ ] Re-running on the real NYC transcript no longer extracts Nintendo NYC, MoMA, or New York Public Library (2-sentence rule confirmed)

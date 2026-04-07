@@ -3,6 +3,8 @@ import firehose from './firehose.json'
 import ghostTown from './ghost-town.json'
 import negativeReview from './negative-review.json'
 import tangent from './tangent.json'
+import luxuryPersona from './luxury-persona.json'
+import localPersona from './local-persona.json'
 import type { MergedSocialExtraction } from '@/lib/social/extraction-contract'
 
 export type EvalFixture = {
@@ -18,4 +20,6 @@ export const EVAL_FIXTURES: EvalFixture[] = [
   ghostTown,
   negativeReview,
   tangent,
+  luxuryPersona,
+  localPersona,
 ] as EvalFixture[]
