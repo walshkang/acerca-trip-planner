@@ -176,7 +176,7 @@ Routing + discovery core is shipped, and the current active slice is social disc
 
 **Next up**
 
-* **Social Discovery S5 (content fetching adapters)** — source acquisition layer for transcripts/content before ingestion
+* **Sources Research Workspace MVP (S7-S10)** — `research` lists + attached sources, deterministic overlap ranking, viewport-bounded "Search this area", +/- voting, and add-to-trip flow
 * **In-app chat UI (task 4.11)** — conversational client over the existing deterministic preview/commit APIs
 * **Transit coverage completion (S1-S5)** — manual overrides + OSM fallback for missing city feeds
 

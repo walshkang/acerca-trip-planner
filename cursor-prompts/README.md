@@ -8,43 +8,23 @@ Shipped prompts live in `archive/`. Move a prompt there (and update this README)
 
 ---
 
-## Sources Redesign (active — run A → B → C → D)
+## Sources Research Workspace (active)
 
-| Prompt | Task | Agent | Depends on |
-|--------|------|-------|------------|
-| `sources-a-schema-pipeline.md` | Migration: tags/callouts on social_mentions, ratings on places; update Gemini extraction | **Cursor** | — |
-| `sources-b-api-contract.md` | Update `list_user_social_sources()` RPC + TypeScript contract | **Cursor** | A + db:types |
-| `sources-c-panel-ui.md` | SourcesPanel redesign: source dropdown, rich place cards, Add to list | **Cursor** | B |
-| `sources-d-desktop-shell-nav.md` | Desktop split layout, Sources tab nav fix, map pins per source | **Cursor** | C |
+Use the current planning docs for active execution scope:
+- `docs/SOCIAL_DISCOVERY_PIPELINE.md` (S7-S10 section)
+- `CONTEXT.md` (Immediate active items)
 
-**Run strictly in order. Each slice depends on the previous.**
+Legacy Sources Redesign A-D prompts are archived.
 
 ---
 
-## E2E Test Rewrite (active)
+## Social Evals (active)
 
-| Prompt | Task | Agent | Depends on |
-|--------|------|-------|------------|
-| `e2e-test-rewrite.md` | Rewrite 12 stale Playwright specs against paper shell; delete workspace-adaptive, add paper-shell-responsive | **Cursor** | — |
+Use the eval flywheel docs for active work:
+- `evals/scores/README.md`
+- `CONTEXT.md` (Immediate active eval notes)
 
----
-
-## Social Evals (active — run 2 → 3 → 4 → 5)
-
-| Prompt | Task | Agent | Depends on |
-|--------|------|-------|------------|
-| `eval-2-deterministic-harness.md` | Golden fixture harness with deterministic schema + sentinel checks | **Cursor** | — |
-| `eval-3-llm-judge.md` | Semantic judge eval with recall/hallucination/vibe rubric | **Cursor** | 2 |
-| `eval-4-runner.md` | Scripts + gating + docs for eval execution | **Cursor** | 2 + 3 |
-| `eval-5-pipeline-perf-progress.md` | Ingest perf improvements + progress message UX | **Cursor** | 2 + 3 |
-
----
-
-## Visual Refresh (active — runs parallel to Sources A–D)
-
-| Prompt | Task | Agent | Depends on |
-|--------|------|-------|------------|
-| `inspector-card-chip-refresh.md` | InspectorCard: paper chip/button/input/surface styles, drop glass + isDark | **Cursor** | — |
+One-off implementation prompts for earlier eval slices are archived.
 
 ---
 
@@ -91,3 +71,10 @@ Shipped prompts live in `archive/`. Move a prompt there (and update this README)
 | `slice3-day-detail-and-drag.md` | Day detail panel + drag reorder |
 | `slice4-view-toggles.md` | Week/day/list view toggles |
 | `slice5-map-reposition-smart-dates.md` | Map reposition + smart date shifting |
+| `sources-a-schema-pipeline.md` | Sources redesign A: schema + extraction pipeline |
+| `sources-b-api-contract.md` | Sources redesign B: user-sources API contract |
+| `sources-c-panel-ui.md` | Sources redesign C: SourcesPanel rich cards |
+| `sources-d-desktop-shell-nav.md` | Sources redesign D: desktop split + tab nav |
+| `e2e-test-rewrite.md` | Paper shell Playwright rewrite |
+| `inspector-card-chip-refresh.md` | InspectorCard paper visual refresh |
+| `eval-5-pipeline-perf-progress.md` | Social ingest performance + progress messages |

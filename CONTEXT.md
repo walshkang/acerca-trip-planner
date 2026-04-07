@@ -130,8 +130,8 @@ AppShell
 ### What's Next
 
 **Immediate (active):**
-- **Sources Research Workspace MVP (Overlap Triage) implementation prep** — execute the agreed vertical slice: research list + attached sources + deterministic overlap-ranked places + map parity + hide/add-to-trip actions.
-- **Phase sequencing locked** — move scoped place-level `Hide` into MVP (phase 1) so the triage loop is complete; keep compare UI and richer curation surfaces in phase 2.
+- **Sources Research Workspace MVP (S7-S10) implementation prep** — execute the agreed vertical slice: `research` list type + attached sources + deterministic overlap-ranked places + "Search this area" + +/- voting + add-to-trip flow.
+- **Phase sequencing locked** — ship schema and overlap RPC first (S7-S8), then map/list triage and add-to-trip UI in parallel (S9-S10).
 - **MVP scope guardrail** — map starts with clustering/basic parity; marker prominence scaling can ship in MVP if low-risk, otherwise immediately after without blocking core loop.
 - **Social eval flywheel** — `eval:capture` → `eval:diagnose` → meta-LLM prompt improvement → `eval:capture --force`. Score files + diagnosis reports committed to `evals/scores/`. See `evals/scores/README.md` for full loop docs. Ghost-town fixture still returning wrong persona (`local` instead of `adventure`) — next prompt improvement target.
 
@@ -201,17 +201,18 @@ gantt
 ### MVP vertical slice: Overlap Triage
 - User creates a `research` list and attaches ingested social sources (initially YouTube/blog).
 - UI shows deterministic places for that active research list only, sorted by unique source overlap (`3 sources`, `2 sources`, ...).
-- Map mirrors the same set and order semantics (basic clustering required; marker scaling optional in week-1 MVP).
-- Each place supports two primary actions: `Hide` (scoped to this research list) and `Add to Trip` (create standard `list_item` in selected `trip` list).
-- Shared research list links reproduce the same inputs (sources + curation state) and deterministic ranked output.
+- Map mirrors the same place set, with viewport-bounded querying via "Search this area".
+- Each place supports two primary actions: +/- voting (reversible per-user curation) and `Add to Trip` (create standard `list_item` in selected `trip` list).
+- Shared research list links reproduce the same attached sources + vote state and deterministic ranked output.
 
 ### Phase order (locked)
-1. **Phase 1 — Aggregator MVP (S8, S9, S10 + scoped hide)**
+1. **Phase 1 — Aggregator MVP (S7, S8, S9, S10)**
    - `list_type` boundaries (`trip` vs `research`)
    - overlap ranking in list/map
+   - viewport-bounded query loop ("Search this area")
+   - per-user +/- vote persistence
    - add-to-trip mutation
-   - scoped place-level hide/restore persistence
-2. **Phase 2 — Curation + Compare (S7, S11, S12)**
+2. **Phase 2 — Curation + Compare (S11, S12)**
    - compare surface, source-specific context, richer curation UX
 3. **Phase 3 — Ecosystem Expansion (S13)**
    - TikTok adapter + metadata fallback + queue scale tuning
@@ -220,7 +221,8 @@ gantt
 - Extend existing collaboration/list architecture; do not build a parallel workspace model.
 - `lists`: add `list_type: 'trip' | 'research'`.
 - `list_sources`: junction table binding `list_id` ↔ `source_id`.
-- `research_curation`: scoped curation layer with `status: 'hidden' | 'shortlisted'`, keyed by unique `(list_id, place_id)`.
+- `research_votes`: scoped vote layer keyed by unique `(list_id, place_id, user_id)` with `vote_value IN (-1, 1)`.
+- `discover_research_places`: deterministic RPC scoped to active `list_id`, optional viewport bounds, and stable sort by overlap then score.
 - Preserve invariant: user curation never overwrites frozen AI enrichment records.
 
 ## The Constitution
