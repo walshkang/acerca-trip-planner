@@ -9,7 +9,7 @@
 
 ## Active Context
 
-**Current Phase:** Sources workspace stabilization + follow-up QA
+**Current Phase:** Sources Research Workspace (MVP execution shaping complete)
 
 **Previous (all complete):**
 - Sources Workspace Redesign A–D — tags/callouts schema, ratings on places, `list_user_social_sources()` v2, SourcesPanel rich place cards, desktop split layout, Sources tab always visible
@@ -130,10 +130,15 @@ AppShell
 ### What's Next
 
 **Immediate (active):**
-- **Sources QA hardening** — stabilize auth/session reliability for seeded Playwright runs and reduce test skips
+- **Sources Research Workspace MVP (Overlap Triage) implementation prep** — execute the agreed vertical slice: research list + attached sources + deterministic overlap-ranked places + map parity + hide/add-to-trip actions.
+- **Phase sequencing locked** — move scoped place-level `Hide` into MVP (phase 1) so the triage loop is complete; keep compare UI and richer curation surfaces in phase 2.
+- **MVP scope guardrail** — map starts with clustering/basic parity; marker prominence scaling can ship in MVP if low-risk, otherwise immediately after without blocking core loop.
 - **Social eval flywheel** — `eval:capture` → `eval:diagnose` → meta-LLM prompt improvement → `eval:capture --force`. Score files + diagnosis reports committed to `evals/scores/`. See `evals/scores/README.md` for full loop docs. Ghost-town fixture still returning wrong persona (`local` instead of `adventure`) — next prompt improvement target.
 
 **Queued:**
+- **Sources Workspace phase 2 (Curation + Compare)** — visual compare surface (thumbnail + metadata), snippet-rich cards, and restore/shortlist polish on top of MVP overlap triage.
+- **Media previews in sources** — thumbnail-first + outbound links is the baseline; inline embeds only as a follow-up perf/UX bet.
+- **TikTok import adapter (phase 3)** — additive expansion with metadata fallback permitted; must not block MVP release.
 - **Transit coverage S1-S5** — Manual overrides + OSM Overpass fallback (paused, not blocked)
 - **In-app chat UI (task 4.11)** — Conversational trip planning wired to preview/commit APIs
 - **Discover ↔ Plan map sync** — Selecting a list on Discover page flies the Plan map to that list's pins
@@ -141,7 +146,6 @@ AppShell
 
 **Deferred (separate epics):**
 - Insights layer (distance warnings, closed-day alerts)
-- Content fetching (YouTube transcript API, TikTok scraping) — upstream of social pipeline
 - PDF export, deeper Google Maps / Notion integrations
 
 ## Completed Phases
@@ -191,6 +195,33 @@ gantt
   "S4 Map UI + Persona Chips" :done, s4, after s3, 5d
   "S5 Content Fetching Adapters" :s5, after s4, 7d
 ```
+
+## Sources Research Workspace (agreed plan)
+
+### MVP vertical slice: Overlap Triage
+- User creates a `research` list and attaches ingested social sources (initially YouTube/blog).
+- UI shows deterministic places for that active research list only, sorted by unique source overlap (`3 sources`, `2 sources`, ...).
+- Map mirrors the same set and order semantics (basic clustering required; marker scaling optional in week-1 MVP).
+- Each place supports two primary actions: `Hide` (scoped to this research list) and `Add to Trip` (create standard `list_item` in selected `trip` list).
+- Shared research list links reproduce the same inputs (sources + curation state) and deterministic ranked output.
+
+### Phase order (locked)
+1. **Phase 1 — Aggregator MVP (S8, S9, S10 + scoped hide)**
+   - `list_type` boundaries (`trip` vs `research`)
+   - overlap ranking in list/map
+   - add-to-trip mutation
+   - scoped place-level hide/restore persistence
+2. **Phase 2 — Curation + Compare (S7, S11, S12)**
+   - compare surface, source-specific context, richer curation UX
+3. **Phase 3 — Ecosystem Expansion (S13)**
+   - TikTok adapter + metadata fallback + queue scale tuning
+
+### Data/contract direction (for implementation)
+- Extend existing collaboration/list architecture; do not build a parallel workspace model.
+- `lists`: add `list_type: 'trip' | 'research'`.
+- `list_sources`: junction table binding `list_id` ↔ `source_id`.
+- `research_curation`: scoped curation layer with `status: 'hidden' | 'shortlisted'`, keyed by unique `(list_id, place_id)`.
+- Preserve invariant: user curation never overwrites frozen AI enrichment records.
 
 ## The Constitution
 - LLMs label and translate intent; deterministic systems retrieve and compute.

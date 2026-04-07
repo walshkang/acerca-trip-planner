@@ -31,3 +31,10 @@ A short, repeatable checklist for building in this repo.
 - Use the PR template and record decisions/tradeoffs.
 - Run `npm run check` before pushing when possible.
 - Keep learning reports filled (no TODO placeholders).
+
+## Current Execution Slice (Sources Research MVP)
+- Build overlap triage first: active `research` list scoped ranking by unique source overlap.
+- Keep phase-1 actions minimal: `Hide` (scoped) and `Add to Trip`.
+- Reuse existing list sharing/collab semantics; avoid parallel workspace models.
+- Keep map parity deterministic with list results; clustering required, marker prominence optional.
+- Treat TikTok parity and inline media as additive follow-ups, not MVP blockers.

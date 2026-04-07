@@ -288,3 +288,60 @@ All S4 tasks unblock once S3.3 seed data is in place — Cursor can iterate on U
 - **Not a scraper.** The pipeline accepts pre-extracted transcripts/text. Content fetching (YouTube transcript API, TikTok scraping) is a separate concern, outside this bet.
 - **Not real-time.** Ingestion is async, triggered manually or by a future cron job. The map reads from Postgres, not a live stream.
 - **Not a recommendation engine.** The system structures and surfaces social signals. It doesn't rank or personalize. The user filters by persona and reads the snippets.
+
+---
+
+## Next Bet — Sources Research Workspace (plan locked)
+
+> This section captures the agreed vertical slice after S1-S6: overlap-first triage that turns social ingestion into research decisions quickly.
+
+### Problem to make true
+
+Users can already ingest sources, but they still cannot quickly answer:
+- "Which places show up across multiple vlogs?"
+- "How do these sources differ?"
+- "Which places should I ignore vs add to my trip list?"
+
+Without this, ingestion creates data but not a practical research workflow.
+
+### MVP outcome (Overlap Triage)
+
+A user opens Sources mode and can:
+1. Create/use a `research` list and attach social sources.
+2. See places ranked deterministically by unique source overlap within that active list.
+3. Triage from list+map with two primary actions: `Hide` and `Add to Trip`.
+4. Share the research list so collaborators see identical inputs + curation state and the same deterministic ranking.
+
+### Planned slices (S7+)
+
+| Slice | Title | Scope |
+|------|-------|-------|
+| S8 | Repeated-place ranking (Phase 1) | Deterministic score by unique multi-source overlap within active research list; reason labels ("mentioned by 3 sources"). |
+| S9 | Research map + list workflow (Phase 1) | Shared list/map triage surface with quick `Hide` and `Add to Trip` actions. |
+| S10 | List boundary model (Phase 1) | Explicit `research` vs `trip` list type with existing sharing/collab semantics. |
+| S7 | Source compare surface (Phase 2) | Side-by-side source metadata and overlap indicators, after MVP triage loop is stable. |
+| S11 | Curation + restore polish (Phase 2) | Persist and manage `hidden/shortlisted` state; improve trust and explainability UX. |
+| S12 | Media previews (Phase 2) | Thumbnail-first + outbound links in baseline; inline embeds only if perf/UX cost is acceptable. |
+| S13 | TikTok import parity (Phase 3) | Add TikTok path with metadata fallback; non-blocking for MVP launch. |
+
+### Guardrails
+
+- Keep map pins and DB records as source of truth.
+- Keep AI work in ingestion only; ranking and filtering remain deterministic.
+- Never let research-list actions silently mutate a user trip list.
+- "Hide" should be reversible and scoped (user/list-aware), not destructive deletion.
+- Ranking scope is the active research list only (not global destination popularity).
+- TikTok failures must degrade gracefully (fallback metadata or explicit unsupported state) without blocking core flow.
+
+### Contract direction (implementation target)
+
+- `lists` adds `list_type: 'trip' | 'research'`.
+- `list_sources` links attached social sources to the active research list.
+- `research_curation` stores scoped place state (`hidden`, `shortlisted`) with unique `(list_id, place_id)` and update-in-place status transitions.
+
+### Resolved decisions
+
+- Repeated-place ranking is scoped to the active research list.
+- `Hide` is place-level and scoped to `(list_id, place_id)`.
+- Media preview baseline is thumbnail + outbound link; inline player is deferred.
+- TikTok parity allows metadata fallback and is phase-3 additive (non-blocking for MVP).
