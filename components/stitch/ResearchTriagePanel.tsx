@@ -139,6 +139,7 @@ export default function ResearchTriagePanel({
   onResearchListIdChange,
   searchThisAreaTick,
 }: ResearchTriagePanelProps) {
+  const [isOpen, setIsOpen] = useState(false)
   const markSearchAreaFresh = useResearchWorkspaceStore((s) => s.markSearchAreaFresh)
 
   const [lists, setLists] = useState<ListRow[]>([])
@@ -336,12 +337,33 @@ export default function ResearchTriagePanel({
     }
   }
 
+  function handleToggle() {
+    if (isOpen) {
+      onResearchListIdChange(null)
+      onResearchMapPlacesChange([])
+    }
+    setIsOpen((v) => !v)
+  }
+
   return (
-    <div className="border-b border-paper-tertiary-fixed px-3 py-3">
-      <h3 className="text-[11px] font-bold uppercase tracking-[0.16em] text-paper-on-surface-variant">
-        Research overlap
-      </h3>
-      <p className="mt-1 text-xs text-paper-on-surface-variant">
+    <div className="border-b border-paper-tertiary-fixed">
+      <button
+        type="button"
+        onClick={handleToggle}
+        className="flex w-full items-center justify-between px-3 py-3 text-left"
+        aria-expanded={isOpen}
+      >
+        <span className="text-[11px] font-bold uppercase tracking-[0.16em] text-paper-on-surface-variant">
+          Research overlap
+        </span>
+        <span className="text-paper-on-surface-variant" aria-hidden="true">
+          {isOpen ? '▲' : '▼'}
+        </span>
+      </button>
+
+      {isOpen ? (
+      <div className="px-3 pb-3">
+      <p className="text-xs text-paper-on-surface-variant">
         Attach ingested sources to a research list, then triage overlapping places. Use Search
         this area on the map to filter by viewport.
       </p>
@@ -495,6 +517,8 @@ export default function ResearchTriagePanel({
             </div>
           </div>
         </div>
+      ) : null}
+      </div>
       ) : null}
     </div>
   )
