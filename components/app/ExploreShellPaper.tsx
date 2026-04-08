@@ -343,6 +343,7 @@ export default function ExploreShellPaper() {
   const handlePlaceCategoryUpdated = useCallback(
     (placeId: string, category: CategoryEnum) => {
       setPlaces((prev) => prev.map((p) => (p.id === placeId ? { ...p, category } : p)))
+      mapShellRef.current?.updatePlace(placeId, { category })
     },
     []
   )

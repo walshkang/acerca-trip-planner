@@ -69,6 +69,7 @@ export type MapShellFlyToOptions = {
 export type MapShellHandle = {
   fetchPlaces: () => Promise<void>
   flyTo: (options: MapShellFlyToOptions) => void
+  updatePlace: (placeId: string, patch: Partial<MapPlace>) => void
 }
 
 export type MapShellProps = {
@@ -97,6 +98,8 @@ export type MapShellProps = {
     lng: number
     radiusMeters: number
   } | null) => void
+  /** When true, skip fetching user places. Map starts empty (social/overlay places only). */
+  suppressPlaceFetch?: boolean
   /** When true, map is interactive and workspace chrome (overlays) may render on top. */
   onReadyChange?: (ready: boolean) => void
   onPlacesChange?: (places: MapPlace[]) => void
@@ -134,6 +137,7 @@ const MapShell = forwardRef<MapShellHandle, MapShellProps>(function MapShell(
     showTransit,
     setMapFallbackNotice,
     setSearchBias,
+    suppressPlaceFetch = false,
     onReadyChange,
     onPlacesChange,
     socialPlaces = [],
@@ -284,6 +288,13 @@ const MapShell = forwardRef<MapShellHandle, MapShellProps>(function MapShell(
   )
 
   const fetchPlaces = useCallback(async () => {
+    if (suppressPlaceFetch) {
+      setPlaces([])
+      setLoading(false)
+      setIsAuthed(true)
+      setAuthChecked(true)
+      return
+    }
     try {
       setLoading(true)
 
@@ -320,16 +331,20 @@ const MapShell = forwardRef<MapShellHandle, MapShellProps>(function MapShell(
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [suppressPlaceFetch])
 
   const flyTo = useCallback((options: MapShellFlyToOptions) => {
     mapRef.current?.flyTo(options)
   }, [])
 
+  const updatePlace = useCallback((placeId: string, patch: Partial<MapPlace>) => {
+    setPlaces((prev) => prev.map((p) => (p.id === placeId ? { ...p, ...patch } : p)))
+  }, [])
+
   useImperativeHandle(
     ref,
-    () => ({ fetchPlaces, flyTo }),
-    [fetchPlaces, flyTo]
+    () => ({ fetchPlaces, flyTo, updatePlace }),
+    [fetchPlaces, flyTo, updatePlace]
   )
 
   const mapInteractive =
@@ -535,12 +550,13 @@ const MapShell = forwardRef<MapShellHandle, MapShellProps>(function MapShell(
   ])
 
   useEffect(() => {
+    if (suppressPlaceFetch) return
     if (!activeListPlaceIds.length) return
     const missing = activeListPlaceIds.some((id) => !placeIdSet.has(id))
     if (missing) {
       fetchPlaces()
     }
-  }, [activeListPlaceIds, fetchPlaces, placeIdSet])
+  }, [suppressPlaceFetch, activeListPlaceIds, fetchPlaces, placeIdSet])
 
   useEffect(() => {
     if (!pendingFocusPlaceId) return

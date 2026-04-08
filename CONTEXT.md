@@ -9,10 +9,17 @@
 
 ## Active Context
 
-**Current Phase:** Sources H — shaped, pending Cursor implementation (`cursor-prompts/sources-h-clean-map-list-overlay.md`)
-- H1: `suppressPlaceFetch` on MapShell → Sources map starts clean
-- H2: trip-list overlay chip toggle (top-left of map, one list at a time)
-- H3: `isUnvetted` on `MapPlace` → plain stone dot marker for unvetted social source places
+**Current Phase:** Sources H — shipped (implemented by Claude Code, not Cursor)
+- H1: `suppressPlaceFetch` on `MapShell` — Sources map starts clean, always true
+- H2: multi-select list overlay chips (top-left of map); overlay places fetched with geometry from `places_view` and passed as `socialPlaces` with `isOverlay: true` (sky-blue dot) — no un-suppressing of user place fetch
+- H3: `isUnvetted`/`isOverlay` on `MapPlace`; maplibre renderer branches: stone-gray dot (unvetted), sky-blue dot (overlay), emoji (default)
+- RLS recursion fix: migration `20260412000003` — `can_user_view_place_via_collab()` SECURITY DEFINER helper breaks places↔list_items policy cycle
+- `places_view` social filter: migration `20260412000004` — hides social places unless in at least one `list_item`; enforces Sources-only visibility at DB level
+- Category emoji live-update: `MapShellHandle.updatePlace()` — patches MapShell internal state on category change without refetch
+
+**Known issues (open, next session):**
+- Social places from original YouTube vlog import still appear in the saved list — these predate the `places_view` filter and are already in `list_items` from the ingest flow; needs a data cleanup or ingest-path fix so social places aren't auto-added to lists on import
+- Sources page has no list picker for "Add to list" — `SourcesPanel` hardcodes `activeListId` from `useTripStore`; user cannot choose which trip list to save a source place to
 
 **Previous (all complete):**
 - Sources E–G — map view for source places (lat/lng in v3 RPC, direct from `selectedSource.places`), chip visual refresh (`paper-chip-active` gray + 6px radius), card-to-map highlight (scout mode, imperative `flyTo` via `MapShellHandle` ref)
@@ -135,7 +142,7 @@ AppShell
 ### What's Next
 
 **Immediate (active):**
-- **Sources H (next)** — clean map + list overlay toggle + unvetted dot markers. Prompt ready at `cursor-prompts/sources-h-clean-map-list-overlay.md`.
+- **Sources I (next)** — list picker in `SourcesPanel` (choose target list for "Add to list"), social import path audit (stop auto-adding ingested social places to lists).
 - **Sources Research Workspace follow-ups** — E2E coverage for research triage + shared-list vote UX; optional seed script for `list_sources` demo data.
 - **MVP scope guardrail** — map starts with clustering/basic parity; marker prominence scaling shipped for overlap count in Sources map.
 - **Social eval flywheel** — `eval:capture` → `eval:diagnose` → meta-LLM prompt improvement → `eval:capture --force`. Score files + diagnosis reports committed to `evals/scores/`. See `evals/scores/README.md` for full loop docs. Ghost-town fixture still returning wrong persona (`local` instead of `adventure`) — next prompt improvement target.

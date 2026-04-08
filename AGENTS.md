@@ -65,9 +65,16 @@ Memory files (`~/.claude/projects/*/memory/`) are Claude Code–specific and upd
 
 We use multiple AI agents and tools. Each agent should self-assess whether it is the right tool for the current task, execute if so, or recommend delegating if not. This section is the shared contract all agents read.
 
-### Agent Tiers
+### Agent Tier Assignment
 
-Agents self-assign to a tier based on what they can actually do in this session — not by product name. Claude Code, Cursor Composer, Gemini CLI, Copilot CLI, and others all fit somewhere here.
+| Agent | Default Tier | Why |
+|-------|-------------|-----|
+| **Claude Code** | Deep | Full repo access, shell execution, cross-file reasoning, can run migrations and tests |
+| **Cursor Composer** | Bounded | Excellent at in-file implementation against a clear spec; struggles with design decisions, cross-boundary bugs, and staying strictly in scope |
+
+Agents can operate below their default tier (Claude Code doing a Quick rename is fine). Agents must **not** operate above their tier without an explicit human escalation.
+
+### Agent Tiers
 
 | Tier | Capability | Fits When |
 |------|-----------|-----------|
@@ -217,3 +224,15 @@ Stop and re-route if:
 - Deep tier spending time on single-file CSS tweaks or lint fixes → delegate to Quick.
 - Deep tier writing boilerplate tests that follow an existing pattern exactly → delegate to Bounded.
 - Any agent violating an invariant from the Invariants section above → stop, flag it, re-route.
+
+### Bounded Tier Must-Nots (Cursor Composer)
+
+Cursor Composer has shown a pattern of scope creep. When operating as Bounded:
+
+- **Do not add features not listed in the spec.** If the spec says "single-select overlay", do not build multi-select. If the spec doesn't mention a list picker, don't add one.
+- **Do not change hardcoded prop values to conditionals.** If the spec passes `suppressPlaceFetch` as always `true`, do not make it conditional to "fix" a symptom. Flag the gap and stop.
+- **Do not fix bugs discovered outside your task scope.** If you notice a pre-existing bug while implementing, add a `// TODO: [description]` comment and flag it to the human. Do not fix it inline.
+- **Do not create migrations.** Migrations are Deep tier only, even if you think you know the fix. Flag the error message and the suspected root cause; let Deep tier write the SQL.
+- **Follow the spec's data flow design exactly.** If the spec says data flows through `socialPlaces`, do not introduce an alternative path (e.g., un-suppressing a fetch) to make something work.
+
+When in doubt: implement exactly what's written in the spec, flag anything that seems wrong, and stop.

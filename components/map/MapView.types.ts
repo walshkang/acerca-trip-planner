@@ -18,6 +18,10 @@ export type MapPlace = {
   overlapCount?: number
   /** Research workspace: dim pin when aggregate vote score is negative */
   researchDeemphasize?: boolean
+  /** True for AI-extracted social source places that haven't been user-approved. */
+  isUnvetted?: boolean
+  /** True for user places overlaid from a saved list in Sources mode. */
+  isOverlay?: boolean
 }
 
 export type LatLng = {

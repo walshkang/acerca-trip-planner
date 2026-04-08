@@ -433,15 +433,31 @@ const MapViewMaplibre = forwardRef<MapViewRef, MapViewProps>(
                   }}
                   aria-label={`Open ${place.name}`}
                 >
-                  <span
-                    aria-hidden="true"
-                    className={`flex items-center justify-center rounded-full ${markerSizeClass} ${markerBackdropClassName} ${socialMarkerRingClassName} ${markerStateClassName}`}
-                  >
-                    <span className="text-[18px] leading-none">
-                      {resolveCategoryEmoji?.(place.category) ??
-                        getCategoryEmoji(place.category)}
+                  {place.isUnvetted ? (
+                    <span
+                      aria-hidden="true"
+                      className={`flex items-center justify-center rounded-full ${markerSizeClass} bg-stone-400/80 ring-1 ring-stone-300/60 ${markerStateClassName}`}
+                    >
+                      <span className="block h-2 w-2 rounded-full bg-white/80" />
                     </span>
-                  </span>
+                  ) : place.isOverlay ? (
+                    <span
+                      aria-hidden="true"
+                      className={`flex items-center justify-center rounded-full ${markerSizeClass} bg-sky-400/80 ring-1 ring-sky-300/60 ${markerStateClassName}`}
+                    >
+                      <span className="block h-2 w-2 rounded-full bg-white/90" />
+                    </span>
+                  ) : (
+                    <span
+                      aria-hidden="true"
+                      className={`flex items-center justify-center rounded-full ${markerSizeClass} ${markerBackdropClassName} ${socialMarkerRingClassName} ${markerStateClassName}`}
+                    >
+                      <span className="text-[18px] leading-none">
+                        {resolveCategoryEmoji?.(place.category) ??
+                          getCategoryEmoji(place.category)}
+                      </span>
+                    </span>
+                  )}
                 </button>
               </Marker>
             )
