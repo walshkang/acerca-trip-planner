@@ -9,10 +9,15 @@
 
 ## Active Context
 
-**Current Phase:** Sources Research Workspace — E–G shipped (map view, chip refresh, card-to-map highlight)
+**Current Phase:** Sources H — shaped, pending Cursor implementation (`cursor-prompts/sources-h-clean-map-list-overlay.md`)
+- H1: `suppressPlaceFetch` on MapShell → Sources map starts clean
+- H2: trip-list overlay chip toggle (top-left of map, one list at a time)
+- H3: `isUnvetted` on `MapPlace` → plain stone dot marker for unvetted social source places
 
 **Previous (all complete):**
-- Sources Workspace Redesign A–F — tags/callouts schema, ratings on places, `list_user_social_sources()` v3 (+ lat/lng), SourcesPanel rich place cards, desktop split layout, Sources tab always visible, source places wired directly to map, `paper-chip-active` gray + 6px radius
+- Sources E–G — map view for source places (lat/lng in v3 RPC, direct from `selectedSource.places`), chip visual refresh (`paper-chip-active` gray + 6px radius), card-to-map highlight (scout mode, imperative `flyTo` via `MapShellHandle` ref)
+- Bug fixes this session: add-to-list 400 (place_id in body not query param), RLS 500 (social places blocked by `list_items` WITH CHECK), map flyTo wrong place (init effect re-firing on `allPlaces` changes)
+- Sources Workspace Redesign A–F — tags/callouts schema, ratings on places, `list_user_social_sources()` v3 (+ lat/lng), SourcesPanel rich place cards, desktop split layout, Sources tab always visible
 - Visual Refresh VR-1 — `InspectorCard` paper chip/button/surface refresh, glass + tone branches removed
 - Social Discovery S1–S6 — schema, ingestion API, RPC query, map UI (persona chips + scaled markers), content fetch (YouTube/blog), async job queue + Vercel cron, Realtime map refresh, Sources mode shell
 - Transit Coverage (Slices 1, 2, 4) — GTFS proxy, per-line rendering, mode sub-toggles. Manual overrides + OSM fallback paused.
@@ -130,7 +135,8 @@ AppShell
 ### What's Next
 
 **Immediate (active):**
-- **Sources Research Workspace follow-ups** — E2E coverage for research triage + shared-list vote UX; optional seed script for `list_sources` demo data. Sources E+F shipped (map view + chip style).
+- **Sources H (next)** — clean map + list overlay toggle + unvetted dot markers. Prompt ready at `cursor-prompts/sources-h-clean-map-list-overlay.md`.
+- **Sources Research Workspace follow-ups** — E2E coverage for research triage + shared-list vote UX; optional seed script for `list_sources` demo data.
 - **MVP scope guardrail** — map starts with clustering/basic parity; marker prominence scaling shipped for overlap count in Sources map.
 - **Social eval flywheel** — `eval:capture` → `eval:diagnose` → meta-LLM prompt improvement → `eval:capture --force`. Score files + diagnosis reports committed to `evals/scores/`. See `evals/scores/README.md` for full loop docs. Ghost-town fixture still returning wrong persona (`local` instead of `adventure`) — next prompt improvement target.
 
@@ -159,7 +165,7 @@ All phases below are complete. Details in git history.
 - **P3-E4:** Headless Planning API — import/export contract, preview/commit APIs, LLM client prompt, import UI
 - **P3-E5:** Visual Polish — selected day cell, header overlap, calendar viewport, pin prominence, ghost marker
 - **Social Discovery S1–S6:** schema + system user, ingest API, discover RPC, persona chips + scaled markers + drawer mentions, content fetch (YouTube/blog), async job queue + cron + Realtime, Sources mode shell
-- **Sources Workspace Redesign A–F:** schema+pipeline updates (tags/callouts/ratings + lat/lng in v3 RPC), user-sources API contract, redesigned Sources panel cards, desktop split shell + tab navigation + source-filtered map pins (direct lat/lng, no store join), chip visual refresh (gray + 6px radius)
+- **Sources Workspace Redesign A–H (in progress):** A–G complete — schema+pipeline (tags/callouts/ratings + lat/lng), redesigned panel cards, desktop split, source-filtered map pins (direct lat/lng), chip refresh, card-to-map scout mode. H shaped (clean map + list overlay + unvetted markers).
 - **Map Layer Toggle:** `useMapLayerStore`, layer picker (default/transit/terrain), GTFS vector tile transit, per-mode sub-toggles, subtle per-type styling, per-user persistence
 - **Multi-User Collab P1–P3:** Share links, anonymous join flow, `ShareListButton`, async sync, `PlannerFreshnessLabel`
 - **Transit Coverage (partial):** Per-line GTFS rendering (slices 1,2,4), mode sub-toggles, canonical normalization, Supabase cache
