@@ -1,30 +1,64 @@
 import { randomUUID } from 'crypto'
-import { test, expect, type Locator } from '@playwright/test'
+import { test, expect, type Locator, type Page } from '@playwright/test'
 
-import {
-  applySeededPrerequisiteSkips,
-  cleanupSeededData,
-  ensureSignedIn,
-  escapeRegex,
-  seedListWithPlace,
-  visibleByTestId,
-  waitForPlaceDrawerReady,
-} from './seeded-helpers'
+async function ensureSignedIn(page: Page) {
+  const loadingText = page.getByText('Loading map...')
+  await loadingText.waitFor({ state: 'detached' }).catch(() => null)
 
-applySeededPrerequisiteSkips(test)
-
-function skipOnAuthInfraError(error: unknown): never {
-  if (
-    error instanceof Error &&
-    (/Seed failed \(401\):/.test(error.message) ||
-      /Not signed in\./.test(error.message))
-  ) {
-    test.skip(true, 'Auth/session unavailable for seeded E2E run')
+  const toolsButton = page.getByRole('button', { name: 'Tools' })
+  try {
+    await toolsButton.waitFor({ state: 'visible', timeout: 15000 })
+    return
+  } catch {
+    const signIn = page.getByRole('link', { name: 'Sign in' })
+    const isSignedOut = await signIn.isVisible().catch(() => false)
+    if (isSignedOut) {
+      throw new Error(
+        'Not signed in. Ensure PLAYWRIGHT_SEED_EMAIL / PLAYWRIGHT_SEED_PASSWORD are set (globalSetup writes playwright/.auth/user.json), or set PLAYWRIGHT_SKIP_AUTH_SETUP=1 and create storage state manually.'
+      )
+    }
+    throw new Error('Tools button not visible. Map may still be loading.')
   }
-  throw error
 }
 
-async function waitForMembershipApplied(placeDrawer: Locator, membershipButton: Locator) {
+async function seedListWithPlace(page: Page) {
+  const seedToken = process.env.PLAYWRIGHT_SEED_TOKEN
+  if (!seedToken) {
+    throw new Error('PLAYWRIGHT_SEED_TOKEN is not set for Playwright seeding.')
+  }
+
+  const res = await page.request.post('/api/test/seed', {
+    headers: { 'x-seed-token': seedToken },
+  })
+  if (!res.ok()) {
+    const body = await res.text().catch(() => '')
+    throw new Error(`Seed failed (${res.status()}): ${body}`)
+  }
+  const json = (await res.json()) as {
+    list?: { id: string; name: string }
+    place_id?: string
+    place_name?: string
+  }
+  if (!json.list?.id || !json.place_id || !json.place_name) {
+    throw new Error('Seed response missing list/place data')
+  }
+  return json
+}
+
+async function waitForPlaceDrawerReady(
+  placeDrawer: Locator,
+  placeName: string
+) {
+  await expect(placeDrawer).toBeVisible()
+  await expect(
+    placeDrawer.getByRole('heading', { name: placeName })
+  ).toBeVisible()
+}
+
+async function waitForMembershipApplied(
+  placeDrawer: Locator,
+  membershipButton: Locator
+) {
   await expect(membershipButton).toHaveAttribute('aria-pressed', 'true')
   const tagInput = placeDrawer.getByPlaceholder('Add tags (comma-separated)')
   await expect(tagInput).toBeVisible()
@@ -32,81 +66,160 @@ async function waitForMembershipApplied(placeDrawer: Locator, membershipButton: 
   return tagInput
 }
 
-test('map pin opens place drawer and shows selected list membership controls', async ({
-  page,
-}, testInfo) => {
+test('place drawer opens and tags are editable for active list', async ({ page }, testInfo) => {
   await page.goto('/')
-  try {
-    await ensureSignedIn(page)
-  } catch (error) {
-    skipOnAuthInfraError(error)
+
+  await ensureSignedIn(page)
+  const seed = await seedListWithPlace(page)
+
+  await page.getByRole('button', { name: 'Lists' }).click()
+  const listDrawer = page
+    .locator('[data-testid="list-drawer"]:visible')
+    .first()
+  await expect(listDrawer).toBeVisible()
+
+  await listDrawer.getByRole('button', { name: seed.list.name }).click()
+
+  const placesSection = listDrawer.getByRole('heading', { name: 'Places' }).locator('..')
+  const placeButton = placesSection.getByRole('button', { name: seed.place_name })
+  await expect(placeButton).toBeVisible()
+  await placeButton.click()
+
+  const placeDrawer = page
+    .locator('[data-testid="place-drawer"]:visible')
+    .first()
+  await waitForPlaceDrawerReady(placeDrawer, seed.place_name)
+
+  const membershipButton = placeDrawer.getByRole('button', {
+    name: new RegExp(seed.list.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')),
+  })
+  const isSelected = await membershipButton
+    .getAttribute('aria-pressed')
+    .then((value) => value === 'true')
+    .catch(() => false)
+  if (!isSelected) {
+    await membershipButton.click()
   }
 
-  const seeds = [] as Awaited<ReturnType<typeof seedListWithPlace>>[]
-  try {
-    let seed: Awaited<ReturnType<typeof seedListWithPlace>>
-    try {
-      seed = await seedListWithPlace(page)
-    } catch (error) {
-      skipOnAuthInfraError(error)
-    }
-    seeds.push(seed)
+  const tagInput = await waitForMembershipApplied(placeDrawer, membershipButton)
+  const tagValue = `playwright-smoke-${testInfo.workerIndex}-${randomUUID().slice(0, 8)}`
+  await tagInput.fill(tagValue)
+  const listItemsResponse = page.waitForResponse((res) => {
+    return (
+      res.request().method() === 'GET' &&
+      res.url().includes(`/api/lists/${seed.list.id}/items`) &&
+      res.ok()
+    )
+  })
+  await placeDrawer.getByRole('button', { name: 'Add' }).click()
+  await listItemsResponse
+  const tagSection = placeDrawer.getByText('List tags').locator('..')
+  await expect(tagSection.getByText(tagValue)).toBeVisible()
+  const placeRow = placeButton.locator('..').locator('..')
+  await expect(placeRow.getByText(tagValue)).toBeVisible()
+})
 
-    await page.goto(`/?list=${encodeURIComponent(seed.list.id)}`)
-    await ensureSignedIn(page)
+test('place drawer stays below inspector overlay', async ({ page }) => {
+  await page.goto('/')
 
-    await page.getByRole('button', { name: `Open ${seed.place_name}` }).click()
-    const placeDrawer = visibleByTestId(page, 'place-drawer')
-    await waitForPlaceDrawerReady(placeDrawer, seed.place_name)
+  await ensureSignedIn(page)
+  const seed = await seedListWithPlace(page)
 
-    const membershipButton = placeDrawer.getByRole('button', {
-      name: new RegExp(escapeRegex(seed.list.name)),
-    })
-    const isSelected = await membershipButton
-      .getAttribute('aria-pressed')
-      .then((value) => value === 'true')
-      .catch(() => false)
-    if (!isSelected) await membershipButton.click()
+  await page.getByRole('button', { name: 'Lists' }).click()
+  const listDrawer = page
+    .locator('[data-testid="list-drawer"]:visible')
+    .first()
+  await expect(listDrawer).toBeVisible()
+  await listDrawer.getByRole('button', { name: seed.list.name }).click()
+  const placesSection = listDrawer.getByRole('heading', { name: 'Places' }).locator('..')
+  const placeButton = placesSection.getByRole('button', { name: seed.place_name })
+  await expect(placeButton).toBeVisible()
+  await placeButton.click()
 
-    const tagInput = await waitForMembershipApplied(placeDrawer, membershipButton)
-    const tagValue = `playwright-${testInfo.workerIndex}-${randomUUID().slice(0, 8)}`
-    await tagInput.fill(tagValue)
-    await placeDrawer.getByRole('button', { name: 'Add' }).click()
-    await expect(placeDrawer.getByText(tagValue)).toBeVisible()
-  } finally {
-    await cleanupSeededData(page, seeds)
-  }
+  const placeDrawer = page
+    .locator('[data-testid="place-drawer"]:visible')
+    .first()
+  const rightOverlay = page.getByTestId('map-overlay-right')
+
+  await waitForPlaceDrawerReady(placeDrawer, seed.place_name)
+  await expect(rightOverlay).toBeVisible()
+
+  const contextPanel = page
+    .locator('[data-testid="context-panel-desktop"]:visible')
+    .first()
+  await expect(contextPanel).toBeVisible()
+
+  const placeBox = await contextPanel.boundingBox()
+  const overlayBox = await rightOverlay.boundingBox()
+
+  expect(placeBox && overlayBox).toBeTruthy()
+  if (!placeBox || !overlayBox) return
+
+  expect(placeBox.y).toBeGreaterThanOrEqual(overlayBox.y + overlayBox.height - 1)
 })
 
 test('place drawer URL supports deep link and back/forward', async ({ page }) => {
-  const seeds = [] as Awaited<ReturnType<typeof seedListWithPlace>>[]
-  try {
-    let seed: Awaited<ReturnType<typeof seedListWithPlace>>
-    try {
-      seed = await seedListWithPlace(page)
-    } catch (error) {
-      skipOnAuthInfraError(error)
-    }
-    seeds.push(seed)
-    const encodedPlaceId = encodeURIComponent(seed.place_id)
+  const seed = await seedListWithPlace(page)
+  const encodedPlaceId = encodeURIComponent(seed.place_id)
 
-    await page.goto(`/?place=${encodedPlaceId}`)
-    await ensureSignedIn(page)
+  await page.goto(`/?place=${encodedPlaceId}`)
+  await ensureSignedIn(page)
 
-    const placeDrawer = visibleByTestId(page, 'place-drawer')
-    await waitForPlaceDrawerReady(placeDrawer, seed.place_name)
-    await expect(page).toHaveURL(new RegExp(`[?&]place=${encodedPlaceId}`))
+  const placeDrawer = page
+    .locator('[data-testid="place-drawer"]:visible')
+    .first()
+  await waitForPlaceDrawerReady(placeDrawer, seed.place_name)
+  await expect(page).toHaveURL(new RegExp(`[?&]place=${encodedPlaceId}`))
 
-    await placeDrawer.getByRole('button', { name: 'Close' }).click()
-    await expect(placeDrawer).toBeHidden()
-    await expect(page).toHaveURL(/\/$/)
+  await placeDrawer.getByRole('button', { name: 'Close' }).click()
+  await expect(placeDrawer).toBeHidden()
+  await expect(page).toHaveURL(/\/$/)
 
-    await page.goBack()
-    await waitForPlaceDrawerReady(placeDrawer, seed.place_name)
+  await page.goBack()
+  await waitForPlaceDrawerReady(placeDrawer, seed.place_name)
+  await expect(page).toHaveURL(new RegExp(`[?&]place=${encodedPlaceId}`))
 
-    await page.goForward()
-    await expect(placeDrawer).toBeHidden()
-  } finally {
-    await cleanupSeededData(page, seeds)
-  }
+  await page.goForward()
+  await expect(placeDrawer).toBeHidden()
+  await expect(page).toHaveURL(/\/$/)
+})
+
+test('transit overlay does not block marker clicks', async ({ page }) => {
+  await page.goto('/')
+  await ensureSignedIn(page)
+
+  const seed = await seedListWithPlace(page)
+
+  await page.getByRole('button', { name: 'Tools' }).click()
+  const transitToggle = page.getByLabel('Transit lines')
+  await transitToggle.check()
+  await page.getByRole('button', { name: 'Close' }).click()
+
+  await page.getByRole('button', { name: 'Lists' }).click()
+  const listDrawer = page
+    .locator('[data-testid="list-drawer"]:visible')
+    .first()
+  await expect(listDrawer).toBeVisible()
+  await listDrawer.getByRole('button', { name: seed.list.name }).click()
+
+  const placesSection = listDrawer
+    .getByRole('heading', { name: 'Places' })
+    .locator('..')
+  await expect(
+    placesSection.getByRole('button', { name: seed.place_name })
+  ).toBeVisible()
+
+  await page.getByRole('button', { name: 'Hide lists' }).click()
+  await expect(listDrawer).toBeHidden()
+  await expect(page.getByRole('button', { name: 'Lists' })).toBeVisible()
+
+  await page.getByRole('button', { name: `Open ${seed.place_name}` }).click()
+
+  const placeDrawer = page
+    .locator('[data-testid="place-drawer"]:visible')
+    .first()
+  await expect(placeDrawer).toBeVisible()
+  await expect(
+    placeDrawer.getByRole('heading', { name: seed.place_name })
+  ).toBeVisible()
 })

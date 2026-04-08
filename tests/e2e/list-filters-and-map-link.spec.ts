@@ -1,100 +1,161 @@
-import { test, expect } from '@playwright/test'
+import { test, expect, type Page } from '@playwright/test'
 
-import {
-  addPlaceToList,
-  applySeededPrerequisiteSkips,
-  cleanupSeededData,
-  ensureSignedIn,
-  seedListWithPlace,
-  setListItemTags,
-  visibleByTestId,
-  waitForPlaceDrawerReady,
-} from './seeded-helpers'
+async function ensureSignedIn(page: Page) {
+  const loadingText = page.getByText('Loading map...')
+  await loadingText.waitFor({ state: 'detached' }).catch(() => null)
 
-applySeededPrerequisiteSkips(test)
+  const toolsButton = page.getByRole('button', { name: 'Tools' })
+  try {
+    await toolsButton.waitFor({ state: 'visible', timeout: 15000 })
+    return
+  } catch {
+    const signIn = page.getByRole('link', { name: 'Sign in' })
+    const isSignedOut = await signIn.isVisible().catch(() => false)
+    if (isSignedOut) {
+      throw new Error(
+        'Not signed in. Ensure PLAYWRIGHT_SEED_EMAIL / PLAYWRIGHT_SEED_PASSWORD are set (globalSetup writes playwright/.auth/user.json), or set PLAYWRIGHT_SKIP_AUTH_SETUP=1 and create storage state manually.'
+      )
+    }
+    throw new Error('Tools button not visible. Map may still be loading.')
+  }
+}
+
+async function seedListWithPlace(page: Page) {
+  const seedToken = process.env.PLAYWRIGHT_SEED_TOKEN
+  if (!seedToken) {
+    throw new Error('PLAYWRIGHT_SEED_TOKEN is not set for Playwright seeding.')
+  }
+
+  const res = await page.request.post('/api/test/seed', {
+    headers: { 'x-seed-token': seedToken },
+  })
+  if (!res.ok()) {
+    const body = await res.text().catch(() => '')
+    throw new Error(`Seed failed (${res.status()}): ${body}`)
+  }
+  const json = (await res.json()) as {
+    list?: { id: string; name: string }
+    place_id?: string
+    place_name?: string
+  }
+  if (!json.list?.id || !json.place_id || !json.place_name) {
+    throw new Error('Seed response missing list/place data')
+  }
+  return json
+}
+
+async function addPlaceToList(
+  page: Page,
+  listId: string,
+  placeId: string,
+  tags: string[]
+) {
+  const res = await page.request.post(`/api/lists/${listId}/items`, {
+    headers: { 'content-type': 'application/json' },
+    data: { place_id: placeId, tags },
+  })
+  if (!res.ok()) {
+    const body = await res.text().catch(() => '')
+    throw new Error(`Failed to add place to list: ${res.status()} ${body}`)
+  }
+}
+
+async function setListItemTags(
+  page: Page,
+  listId: string,
+  placeId: string,
+  tags: string[]
+) {
+  const itemsRes = await page.request.get(`/api/lists/${listId}/items?limit=200`)
+  if (!itemsRes.ok()) {
+    throw new Error(`Failed to fetch list items (${itemsRes.status()})`)
+  }
+  const json = (await itemsRes.json()) as {
+    items?: Array<{ id: string; place?: { id?: string } | null }>
+  }
+  const item = (json.items ?? []).find((row) => row.place?.id === placeId)
+  if (!item?.id) {
+    throw new Error('List item not found for place')
+  }
+
+  const res = await page.request.patch(
+    `/api/lists/${listId}/items/${item.id}/tags`,
+    {
+      headers: { 'content-type': 'application/json' },
+      data: { tags },
+    }
+  )
+  if (!res.ok()) {
+    const body = await res.text().catch(() => '')
+    throw new Error(`Failed to set list item tags: ${res.status()} ${body}`)
+  }
+}
 
 test('list tag filters work in list detail view', async ({ page }) => {
   await page.goto('/')
   await ensureSignedIn(page)
 
-  const seeds = [] as Awaited<ReturnType<typeof seedListWithPlace>>[]
-  try {
-    const seedA = await seedListWithPlace(page)
-    const seedB = await seedListWithPlace(page)
-    seeds.push(seedA, seedB)
+  const seedA = await seedListWithPlace(page)
+  const seedB = await seedListWithPlace(page)
 
-    await addPlaceToList(page, seedA.list.id, seedB.place_id, ['brunch'])
-    await setListItemTags(page, seedA.list.id, seedA.place_id, ['date-night'])
+  await addPlaceToList(page, seedA.list.id, seedB.place_id, ['brunch'])
+  await setListItemTags(page, seedA.list.id, seedA.place_id, ['date-night'])
 
-    await page.goto(`/?list=${encodeURIComponent(seedA.list.id)}`)
-    await ensureSignedIn(page)
+  await page.goto(`/lists/${seedA.list.id}`)
 
-    const panel = page.getByTestId('paper-explore-panel')
-    await expect(panel).toBeVisible()
-    const listDrawer = panel.getByTestId('list-drawer')
-    await expect(listDrawer).toBeVisible()
+  const placesSection = page.getByRole('heading', { name: 'Places' }).locator('..')
+  await expect(placesSection.getByText(seedA.place_name)).toBeVisible()
+  await expect(placesSection.getByText(seedB.place_name)).toBeVisible()
 
-    const placeRowA = listDrawer.locator(`[data-place-id="${seedA.place_id}"]`).first()
-    const placeRowB = listDrawer.locator(`[data-place-id="${seedB.place_id}"]`).first()
-    await expect(placeRowA).toBeVisible()
-    await expect(placeRowA).toContainText(seedA.place_name)
-    await expect(placeRowB).toBeVisible()
-    await expect(placeRowB).toContainText(seedB.place_name)
+  const tagsHeader = page.getByText('Tags', { exact: true })
+  const tagsSection = tagsHeader.locator('..').locator('..').locator('..')
+  const dateNightFilter = tagsSection.getByRole('button', { name: 'date-night' })
+  await dateNightFilter.click()
+  await expect(placesSection.getByText(seedA.place_name)).toBeVisible()
+  await expect(placesSection.getByText(seedB.place_name)).toBeHidden()
 
-    // Open filters and apply tag filter
-    const filterToggle = listDrawer.getByRole('button', { name: /Filter/i }).first()
-    await filterToggle.click()
+  await tagsSection.getByRole('button', { name: 'Clear' }).click()
+  await expect(placesSection.getByText(seedB.place_name)).toBeVisible()
 
-    const tagFilters = listDrawer.getByTestId('list-tag-filters')
-    await expect(tagFilters).toBeVisible()
-
-    await tagFilters.getByRole('button', { name: 'date-night', exact: true }).click()
-    await expect(placeRowA).toBeVisible()
-    await expect(placeRowB).toBeHidden()
-
-    await tagFilters.getByRole('button', { name: 'Clear', exact: true }).click()
-    await expect(placeRowA).toBeVisible()
-    await expect(placeRowB).toBeVisible()
-
-    await tagFilters.getByRole('button', { name: 'brunch', exact: true }).click()
-    await expect(placeRowB).toBeVisible()
-    await expect(placeRowA).toBeHidden()
-  } finally {
-    await cleanupSeededData(page, seeds)
-  }
+  const brunchFilter = tagsSection.getByRole('button', { name: 'brunch' })
+  await brunchFilter.click()
+  await expect(placesSection.getByText(seedB.place_name)).toBeVisible()
+  await expect(placesSection.getByText(seedA.place_name)).toBeHidden()
 })
 
 test('map marker click focuses list row and opens place drawer', async ({ page }) => {
   await page.goto('/')
   await ensureSignedIn(page)
 
-  const seeds = [] as Awaited<ReturnType<typeof seedListWithPlace>>[]
-  try {
-    const seed = await seedListWithPlace(page)
-    seeds.push(seed)
+  const seed = await seedListWithPlace(page)
 
-    await page.goto(`/?list=${encodeURIComponent(seed.list.id)}`)
-    await ensureSignedIn(page)
+  await page.getByRole('button', { name: 'Lists' }).click()
+  const listDrawer = page
+    .locator('[data-testid="list-drawer"]:visible')
+    .first()
+  await expect(listDrawer).toBeVisible()
+  await listDrawer.getByRole('button', { name: seed.list.name }).click()
 
-    const listDrawer = page.getByTestId('paper-explore-panel').getByTestId('list-drawer')
-    await expect(listDrawer).toBeVisible()
+  const placesSection = listDrawer.getByRole('heading', { name: 'Places' }).locator('..')
+  await expect(placesSection.getByText(seed.place_name)).toBeVisible()
 
-    const focusedRow = listDrawer.locator(`[data-place-id="${seed.place_id}"]`).first()
-    await expect(focusedRow).toBeVisible()
-    await expect(focusedRow).toContainText(seed.place_name)
+  await page.getByRole('button', { name: 'Hide lists' }).click()
+  await expect(page.getByRole('button', { name: 'Lists' })).toBeVisible()
 
-    const markerButton = page.getByRole('button', { name: `Open ${seed.place_name}` })
-    await expect(markerButton).toBeVisible()
-    await markerButton.dispatchEvent('click')
+  await page.getByRole('button', { name: `Open ${seed.place_name}` }).click()
 
-    const placeDrawer = visibleByTestId(page, 'place-drawer')
-    await waitForPlaceDrawerReady(placeDrawer, seed.place_name)
-    await expect(page).toHaveURL(
-      new RegExp(`[?&]place=${encodeURIComponent(seed.place_id)}`)
-    )
+  const placeDrawer = page
+    .locator('[data-testid="place-drawer"]:visible')
+    .first()
+  await expect(placeDrawer).toBeVisible()
+  await expect(
+    placeDrawer.getByRole('heading', { name: seed.place_name })
+  ).toBeVisible()
+  await expect(page).toHaveURL(
+    new RegExp(`[?&]place=${encodeURIComponent(seed.place_id)}`)
+  )
 
-    await expect(placeDrawer).toBeVisible()
-  } finally {
-    await cleanupSeededData(page, seeds)
-  }
+  const focusedRow = listDrawer.locator(`[data-place-id="${seed.place_id}"]`)
+  await expect(focusedRow).toBeVisible()
+  await expect(focusedRow).toHaveClass(/ring-1/)
 })

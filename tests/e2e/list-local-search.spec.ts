@@ -1,49 +1,76 @@
-import { test, expect } from '@playwright/test'
+import { test, expect, type Page } from '@playwright/test'
 
-import {
-  applySeededPrerequisiteSkips,
-  cleanupSeededData,
-  ensureSignedIn,
-  seedListWithPlace,
-} from './seeded-helpers'
+async function ensureSignedIn(page: Page) {
+  const loadingText = page.getByText('Loading map...')
+  await loadingText.waitFor({ state: 'detached' }).catch(() => null)
 
-applySeededPrerequisiteSkips(test)
+  const toolsButton = page.getByRole('button', { name: 'Tools' })
+  try {
+    await toolsButton.waitFor({ state: 'visible', timeout: 15000 })
+    return
+  } catch {
+    const signIn = page.getByRole('link', { name: 'Sign in' })
+    const isSignedOut = await signIn.isVisible().catch(() => false)
+    if (isSignedOut) {
+      throw new Error(
+        'Not signed in. Ensure PLAYWRIGHT_SEED_EMAIL / PLAYWRIGHT_SEED_PASSWORD are set (globalSetup writes playwright/.auth/user.json), or set PLAYWRIGHT_SKIP_AUTH_SETUP=1 and create storage state manually.'
+      )
+    }
+    throw new Error('Tools button not visible. Map may still be loading.')
+  }
+}
+
+async function seedListWithPlace(page: Page) {
+  const seedToken = process.env.PLAYWRIGHT_SEED_TOKEN
+  if (!seedToken) {
+    throw new Error('PLAYWRIGHT_SEED_TOKEN is not set for Playwright seeding.')
+  }
+
+  const res = await page.request.post('/api/test/seed', {
+    headers: { 'x-seed-token': seedToken },
+  })
+  if (!res.ok()) {
+    const body = await res.text().catch(() => '')
+    throw new Error(`Seed failed (${res.status()}): ${body}`)
+  }
+  const json = (await res.json()) as {
+    list?: { id: string; name: string }
+    place_id?: string
+    place_name?: string
+  }
+  if (!json.list?.id || !json.place_id || !json.place_name) {
+    throw new Error('Seed response missing list/place data')
+  }
+  return json
+}
 
 test('list detail local search adds approved places', async ({ page }) => {
   await page.goto('/')
   await ensureSignedIn(page)
 
-  const seeds = [] as Awaited<ReturnType<typeof seedListWithPlace>>[]
-  try {
-    const seedA = await seedListWithPlace(page)
-    const seedB = await seedListWithPlace(page)
-    seeds.push(seedA, seedB)
+  const seedA = await seedListWithPlace(page)
+  const seedB = await seedListWithPlace(page)
 
-    await page.goto(`/lists/${seedA.list.id}`)
-    await ensureSignedIn(page)
+  await page.goto(`/lists/${seedA.list.id}`)
 
-    const searchInput = page.getByPlaceholder('Search approved places')
-    await expect(searchInput).toBeVisible()
-    await searchInput.fill(seedB.place_name)
+  const searchInput = page.getByPlaceholder('Search approved places')
+  await expect(searchInput).toBeVisible()
+  await searchInput.fill(seedB.place_name)
 
-    const results = page.getByTestId('local-search-results')
-    await expect(results).toBeVisible()
-    const resultName = results.getByText(seedB.place_name).first()
-    await expect(resultName).toBeVisible()
-    const resultCard = resultName.locator('../../..')
-    await expect(resultCard).toContainText('Approved')
-    await expect(resultCard.getByTestId('local-search-category-chips')).toBeVisible()
-    await expect(
-      resultCard.getByTestId('local-search-category-chips').getByRole('button')
-    ).toHaveCount(6)
-    await resultCard.getByRole('button', { name: 'Add' }).click()
+  const results = page.getByTestId('local-search-results')
+  await expect(results).toBeVisible()
+  const resultCard = results
+    .locator(':scope > div')
+    .filter({ hasText: seedB.place_name })
+    .first()
+  await expect(resultCard.getByText(seedB.place_name)).toBeVisible()
+  await expect(resultCard.getByText('Approved')).toBeVisible()
+  await resultCard.getByRole('button', { name: 'Add' }).click()
 
-    await expect(resultCard.getByRole('button', { name: 'Added' })).toBeVisible()
+  await expect(resultCard.getByRole('button', { name: 'Added' })).toBeVisible()
 
-    // Place should now appear in the list detail
-    const listPanel = page.getByTestId('paper-explore-panel')
-    await expect(listPanel.locator(`[data-place-id="${seedB.place_id}"]`).first()).toBeVisible()
-  } finally {
-    await cleanupSeededData(page, seeds)
-  }
+  const placesSection = page
+    .getByRole('heading', { name: 'Places' })
+    .locator('..')
+  await expect(placesSection.getByText(seedB.place_name)).toBeVisible()
 })

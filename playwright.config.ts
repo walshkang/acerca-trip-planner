@@ -12,20 +12,18 @@ if (fs.existsSync(envPath)) {
     if (idx <= 0) continue
     const key = trimmed.slice(0, idx).trim()
     if (!key || process.env[key] != null) continue
-    const raw = trimmed.slice(idx + 1).trim()
-    // Strip surrounding single or double quotes (dotenv convention)
-    const value = raw.replace(/^(['"])(.*)\1$/, '$2')
+    const value = trimmed.slice(idx + 1).trim()
     process.env[key] = value
   }
 }
 
-const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:3010'
+const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:3000'
 const storageState =
   process.env.PLAYWRIGHT_STORAGE_STATE ?? 'playwright/.auth/user.json'
 
 export default defineConfig({
   testDir: 'tests/e2e',
-  globalSetup: 'tests/e2e/global-setup.ts',
+  globalSetup: path.resolve(__dirname, 'playwright/global-setup.ts'),
   timeout: 60_000,
   expect: {
     timeout: 10_000,
@@ -38,7 +36,4 @@ export default defineConfig({
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
   },
-  projects: [
-    { name: 'chromium', use: { browserName: 'chromium' } },
-  ],
 })

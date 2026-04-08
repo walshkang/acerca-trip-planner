@@ -1,75 +1,50 @@
-# Playwright E2E (seeded suite)
+# Playwright E2E (local workflow)
 
-Seeded Playwright coverage is active for the current restored suite when seed
-prerequisites exist.
-
-Active seeded specs:
-- `tests/e2e/list-planner-move.spec.ts`
-- `tests/e2e/map-place-drawer.spec.ts`
-- `tests/e2e/list-local-search.spec.ts`
-- `tests/e2e/list-filters-and-map-link.spec.ts`
-
-Current restored seeded total: 15 tests (including PMTiles-mode guarded coverage).
+This repo uses Playwright for browser-level smoke checks.
 
 ## 1) Install browsers (one-time)
 ```sh
 npx playwright install
 ```
 
-## 2) Create an auth storage state (one-time, manual login)
-This records your authenticated session so tests can run headless.
+## 2) Configure auth + seed env (required)
+Playwright signs in as a dedicated seed user (email/password) and uses a guarded
+seed endpoint to create deterministic data for tests.
 
 ```sh
-npx playwright codegen http://localhost:3000 --save-storage=playwright/.auth/user.json
+export PLAYWRIGHT_SEED_TOKEN=local-playwright
+export PLAYWRIGHT_SEED_EMAIL=playwright@example.com
+export PLAYWRIGHT_SEED_PASSWORD=replace-with-a-strong-password
 ```
-- A browser opens. Log in normally.
-- Once you see the app, close the browser window.
-- The session is saved to `playwright/.auth/user.json`.
 
-Tip: If you want to re-auth, delete that file and run the command again.
+Also ensure the app server has `SUPABASE_SERVICE_ROLE_KEY` set (used for `/api/test/seed`).
+
+## 2.5) Create/verify the seed user (one-time)
+This uses the service role key to create (or confirm) the seed user and verifies
+that password sign-in works.
+
+```sh
+node scripts/ensure-playwright-seed-user.mjs
+```
 
 ## 3) Run tests
-Standard:
+In another terminal, ensure the app server is running at `PLAYWRIGHT_BASE_URL`
+(default `http://localhost:3000`):
+```sh
+npm run dev
+```
+
 ```sh
 npm run test:e2e
 ```
 
-Constrained local environments (where the dev server must stay in the same shell lifecycle):
-```sh
-/bin/zsh -lc '
-set -euo pipefail
-PLAYWRIGHT_HOST_PLATFORM_OVERRIDE=mac15-arm64 npm run dev -- -H 127.0.0.1 -p 3010 >/tmp/acerca-next-e2e.log 2>&1 &
-DEV_PID=$!
-trap "kill \"$DEV_PID\" >/dev/null 2>&1 || true; wait \"$DEV_PID\" >/dev/null 2>&1 || true" EXIT
-for i in {1..90}; do
-  curl -sf http://127.0.0.1:3010/ >/dev/null && break
-  sleep 1
-done
-PLAYWRIGHT_HOST_PLATFORM_OVERRIDE=mac15-arm64 PLAYWRIGHT_BASE_URL=http://127.0.0.1:3010 npm run test:e2e
-'
-```
-
-If `PLAYWRIGHT_SEED_TOKEN` or storage state is missing, seeded tests are skipped
-with an explicit message.
+Notes:
+- The Playwright `globalSetup` writes auth storage state to `playwright/.auth/user.json` automatically.
+- To bypass auth setup (and use manual login state), set `PLAYWRIGHT_SKIP_AUTH_SETUP=1`.
 
 Useful variants:
 - UI mode (interactive): `npm run test:e2e:ui`
 - Debug mode (step through): `npm run test:e2e:debug`
-
-## 3.25) Manual CI run (workflow_dispatch)
-Manual seeded E2E can be run via GitHub Actions workflow:
-- Workflow: `.github/workflows/playwright-seeded.yml`
-- Trigger: `workflow_dispatch` only
-
-Required repository secrets:
-- `PLAYWRIGHT_SEED_TOKEN`: token accepted by `/api/test/seed`
-- `PLAYWRIGHT_STORAGE_STATE_JSON`: full JSON content of a valid Playwright storage state
-  (equivalent to local `playwright/.auth/user.json`)
-
-Notes:
-- Workflow runs with `NEXT_PUBLIC_MAP_PROVIDER=maplibre` to avoid map token coupling.
-- Workflow writes `playwright/.auth/user.json` from secret JSON, starts a local Next server, and runs `npm run test:e2e`.
-- Playwright report, test results, and server logs are uploaded as artifacts.
 
 ## 3.5) Optional Mapbox run (compat)
 Set the provider flag before starting the app server (or in `.env.local`):
@@ -79,20 +54,6 @@ export NEXT_PUBLIC_MAP_PROVIDER=mapbox
 ```
 
 Then run Playwright as usual. This lets you verify the Mapbox path when needed.
-
-## 3.6) Optional PMTiles run (MapLibre)
-For PMTiles style smoke coverage, keep MapLibre as the provider and set the style source:
-
-```sh
-export NEXT_PUBLIC_MAP_PROVIDER=maplibre
-export NEXT_PUBLIC_MAPLIBRE_STYLE_SOURCE=pmtiles
-```
-
-Then run the targeted map spec (or full suite) as usual.
-
-Fresh clone precondition:
-- If PMTiles map files were fetched via Git LFS pointers, run `git lfs pull` before PMTiles runs.
-- PMTiles style uses local archive path `/map/nyc.pmtiles`.
 
 ## 4) Common workflows
 ### Record a new flow quickly
@@ -110,6 +71,3 @@ npx playwright show-trace test-results/.../trace.zip
 ## Notes
 - Tests live in `tests/e2e/`.
 - Storage state is ignored by git (`playwright/.auth/`).
-- Seeded specs share helpers in `tests/e2e/seeded-helpers.ts` (env guards, API auth probe, seed helpers, and resilient visible test-id locators).
-- **Sweep at start**: Before the suite runs, `globalSetup` (`tests/e2e/global-setup.ts`) calls `DELETE /api/test/seed` with an empty body to sweep any remaining Playwright-created lists, places, and place_candidates (by name prefix). That keeps the manual-test account clean even after aborted runs; the same account can be used for both E2E and manual testing.
-- Seeded specs also call guarded cleanup (`DELETE /api/test/seed` with explicit `list_ids`/`place_ids`) in `finally` blocks to remove seeded data created during each test.
