@@ -9,10 +9,10 @@
 
 ## Active Context
 
-**Current Phase:** Sources Research Workspace MVP (S7–S10 shipped in app + migrations)
+**Current Phase:** Sources Research Workspace — E+F shipped (map view for source places, chip visual refresh)
 
 **Previous (all complete):**
-- Sources Workspace Redesign A–D — tags/callouts schema, ratings on places, `list_user_social_sources()` v2, SourcesPanel rich place cards, desktop split layout, Sources tab always visible
+- Sources Workspace Redesign A–F — tags/callouts schema, ratings on places, `list_user_social_sources()` v3 (+ lat/lng), SourcesPanel rich place cards, desktop split layout, Sources tab always visible, source places wired directly to map, `paper-chip-active` gray + 6px radius
 - Visual Refresh VR-1 — `InspectorCard` paper chip/button/surface refresh, glass + tone branches removed
 - Social Discovery S1–S6 — schema, ingestion API, RPC query, map UI (persona chips + scaled markers), content fetch (YouTube/blog), async job queue + Vercel cron, Realtime map refresh, Sources mode shell
 - Transit Coverage (Slices 1, 2, 4) — GTFS proxy, per-line rendering, mode sub-toggles. Manual overrides + OSM fallback paused.
@@ -130,7 +130,7 @@ AppShell
 ### What's Next
 
 **Immediate (active):**
-- **Sources Research Workspace follow-ups** — E2E coverage for research triage + shared-list vote UX; optional seed script for `list_sources` demo data.
+- **Sources Research Workspace follow-ups** — E2E coverage for research triage + shared-list vote UX; optional seed script for `list_sources` demo data. Sources E+F shipped (map view + chip style).
 - **MVP scope guardrail** — map starts with clustering/basic parity; marker prominence scaling shipped for overlap count in Sources map.
 - **Social eval flywheel** — `eval:capture` → `eval:diagnose` → meta-LLM prompt improvement → `eval:capture --force`. Score files + diagnosis reports committed to `evals/scores/`. See `evals/scores/README.md` for full loop docs. Ghost-town fixture still returning wrong persona (`local` instead of `adventure`) — next prompt improvement target.
 
@@ -159,7 +159,7 @@ All phases below are complete. Details in git history.
 - **P3-E4:** Headless Planning API — import/export contract, preview/commit APIs, LLM client prompt, import UI
 - **P3-E5:** Visual Polish — selected day cell, header overlap, calendar viewport, pin prominence, ghost marker
 - **Social Discovery S1–S6:** schema + system user, ingest API, discover RPC, persona chips + scaled markers + drawer mentions, content fetch (YouTube/blog), async job queue + cron + Realtime, Sources mode shell
-- **Sources Workspace Redesign A–D:** schema+pipeline updates, user-sources API contract, redesigned Sources panel cards, desktop split shell + tab navigation + source-filtered map pins
+- **Sources Workspace Redesign A–F:** schema+pipeline updates (tags/callouts/ratings + lat/lng in v3 RPC), user-sources API contract, redesigned Sources panel cards, desktop split shell + tab navigation + source-filtered map pins (direct lat/lng, no store join), chip visual refresh (gray + 6px radius)
 - **Map Layer Toggle:** `useMapLayerStore`, layer picker (default/transit/terrain), GTFS vector tile transit, per-mode sub-toggles, subtle per-type styling, per-user persistence
 - **Multi-User Collab P1–P3:** Share links, anonymous join flow, `ShareListButton`, async sync, `PlannerFreshnessLabel`
 - **Transit Coverage (partial):** Per-line GTFS rendering (slices 1,2,4), mode sub-toggles, canonical normalization, Supabase cache

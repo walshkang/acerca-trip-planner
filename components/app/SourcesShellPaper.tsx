@@ -12,7 +12,6 @@ import type { UserSocialSourceRow } from '@/lib/social/user-sources-contract'
 import { useResearchWorkspaceStore } from '@/lib/state/useResearchWorkspaceStore'
 import { CATEGORY_ENUM_VALUES, type CategoryEnum } from '@/lib/types/enums'
 import { useNavStore } from '@/lib/state/useNavStore'
-import { hydrateSocialStore, useSocialDiscoveryStore } from '@/lib/state/useSocialDiscoveryStore'
 
 /**
  * SourcesShellPaper — Paper-styled Sources journey mode.
@@ -22,8 +21,6 @@ export default function SourcesShellPaper() {
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const isMobile = useMediaQuery('(max-width: 767px)')
-  const socialPlaces = useSocialDiscoveryStore((s) => s.socialPlaces)
-  const fetchSocialPlaces = useSocialDiscoveryStore((s) => s.fetchPlaces)
 
   const [selectedSource, setSelectedSource] = useState<UserSocialSourceRow | null>(null)
   const [focusedPlaceId, setFocusedPlaceId] = useState<string | null>(null)
@@ -34,38 +31,29 @@ export default function SourcesShellPaper() {
   const setViewportBounds = useResearchWorkspaceStore((s) => s.setViewportBounds)
   const searchAreaStale = useResearchWorkspaceStore((s) => s.searchAreaStale)
 
-  useEffect(() => {
-    hydrateSocialStore()
-    void fetchSocialPlaces()
-  }, [fetchSocialPlaces])
-
   const signInHref = useMemo(() => {
     const next = `${pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`
     return `/auth/sign-in?next=${encodeURIComponent(next)}`
   }, [pathname, searchParams])
 
-  const selectedSourcePlaceIds = useMemo(
-    () => new Set(selectedSource?.places.map((place) => place.place_id) ?? []),
-    [selectedSource]
-  )
-
   const sourceMapPlaces = useMemo<MapPlace[]>(
     () =>
-      socialPlaces
+      (selectedSource?.places ?? [])
         .filter(
           (place) =>
-            selectedSourcePlaceIds.has(place.place_id) &&
+            place.lat != null &&
+            place.lng != null &&
             CATEGORY_ENUM_VALUES.includes(place.category as CategoryEnum)
         )
         .map((place) => ({
           id: place.place_id,
-          name: place.name,
+          name: place.place_name,
           category: place.category as CategoryEnum,
-          lat: place.lat,
-          lng: place.lng,
-          mentionCount: place.mention_count,
+          lat: place.lat!,
+          lng: place.lng!,
+          mentionCount: 1,
         })),
-    [selectedSourcePlaceIds, socialPlaces]
+    [selectedSource]
   )
 
   const displayMapPlaces = researchListId ? researchMapPlaces : sourceMapPlaces
@@ -81,22 +69,8 @@ export default function SourcesShellPaper() {
     if (!focusedPlaceId) return null
     const fromMap = displayMapPlaces.find((place) => place.id === focusedPlaceId)
     if (fromMap) return fromMap
-    const fromSocial = socialPlaces.find((p) => p.place_id === focusedPlaceId)
-    if (
-      fromSocial &&
-      CATEGORY_ENUM_VALUES.includes(fromSocial.category as CategoryEnum)
-    ) {
-      return {
-        id: fromSocial.place_id,
-        name: fromSocial.name,
-        category: fromSocial.category as CategoryEnum,
-        lat: fromSocial.lat,
-        lng: fromSocial.lng,
-        mentionCount: fromSocial.mention_count,
-      }
-    }
     return null
-  }, [displayMapPlaces, focusedPlaceId, socialPlaces])
+  }, [displayMapPlaces, focusedPlaceId])
 
   useEffect(() => {
     if (!focusedPlaceId) return

@@ -16,6 +16,8 @@ export type UserSocialSourcePlace = {
   sentiment: string | null
   tags: string[]
   callouts: Callout[]
+  lat: number | null
+  lng: number | null
 }
 
 export type UserSocialSourceRow = {
