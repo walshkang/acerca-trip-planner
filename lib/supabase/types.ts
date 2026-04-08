@@ -102,6 +102,7 @@ export type Database = {
           last_scheduled_by: string | null
           last_scheduled_source: string | null
           list_id: string
+          notes: string | null
           place_id: string
           scheduled_date: string | null
           scheduled_end_time: string | null
@@ -118,6 +119,7 @@ export type Database = {
           last_scheduled_by?: string | null
           last_scheduled_source?: string | null
           list_id: string
+          notes?: string | null
           place_id: string
           scheduled_date?: string | null
           scheduled_end_time?: string | null
@@ -134,6 +136,7 @@ export type Database = {
           last_scheduled_by?: string | null
           last_scheduled_source?: string | null
           list_id?: string
+          notes?: string | null
           place_id?: string
           scheduled_date?: string | null
           scheduled_end_time?: string | null
@@ -203,6 +206,45 @@ export type Database = {
           },
         ]
       }
+      list_sources: {
+        Row: {
+          created_at: string
+          id: string
+          is_starred: boolean
+          list_id: string
+          source_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_starred?: boolean
+          list_id: string
+          source_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_starred?: boolean
+          list_id?: string
+          source_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "list_sources_list_id_fkey"
+            columns: ["list_id"]
+            isOneToOne: false
+            referencedRelation: "lists"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "list_sources_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "social_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lists: {
         Row: {
           created_at: string
@@ -210,6 +252,7 @@ export type Database = {
           end_date: string | null
           id: string
           is_default: boolean
+          list_type: string
           name: string
           start_date: string | null
           timezone: string | null
@@ -222,6 +265,7 @@ export type Database = {
           end_date?: string | null
           id?: string
           is_default?: boolean
+          list_type?: string
           name: string
           start_date?: string | null
           timezone?: string | null
@@ -234,6 +278,7 @@ export type Database = {
           end_date?: string | null
           id?: string
           is_default?: boolean
+          list_type?: string
           name?: string
           start_date?: string | null
           timezone?: string | null
@@ -416,6 +461,52 @@ export type Database = {
             columns: ["enrichment_id"]
             isOneToOne: false
             referencedRelation: "enrichments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      research_votes: {
+        Row: {
+          list_id: string
+          place_id: string
+          updated_at: string
+          user_id: string
+          vote_value: number
+        }
+        Insert: {
+          list_id: string
+          place_id: string
+          updated_at?: string
+          user_id: string
+          vote_value: number
+        }
+        Update: {
+          list_id?: string
+          place_id?: string
+          updated_at?: string
+          user_id?: string
+          vote_value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "research_votes_list_id_fkey"
+            columns: ["list_id"]
+            isOneToOne: false
+            referencedRelation: "lists"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "research_votes_place_id_fkey"
+            columns: ["place_id"]
+            isOneToOne: false
+            referencedRelation: "places"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "research_votes_place_id_fkey"
+            columns: ["place_id"]
+            isOneToOne: false
+            referencedRelation: "places_view"
             referencedColumns: ["id"]
           },
         ]
@@ -880,6 +971,20 @@ export type Database = {
       discard_place_candidate: {
         Args: { p_candidate_id: string }
         Returns: undefined
+      }
+      discover_research_places: {
+        Args: { p_bounds?: unknown; p_list_id: string }
+        Returns: {
+          category: Database["public"]["Enums"]["category_enum"]
+          lat: number
+          lng: number
+          name: string
+          net_score: number
+          overlap_count: number
+          place_id: string
+          top_snippets: Json
+          user_vote: number | null
+        }[]
       }
       discover_social_places: {
         Args: {

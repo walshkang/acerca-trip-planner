@@ -1,7 +1,9 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import type { MapPlace } from '@/components/map/MapView.types'
 import { SocialUrlIngest } from '@/components/stitch/SocialUrlIngest'
+import ResearchTriagePanel from '@/components/stitch/ResearchTriagePanel'
 import type { UserSocialSourcePlace, UserSocialSourceRow } from '@/lib/social/user-sources-contract'
 import { useTripStore } from '@/lib/state/useTripStore'
 
@@ -42,7 +44,8 @@ function SourcePlaceCard({
   }, [addStatus])
 
   const hasRating = place.google_rating != null
-  const ratingText = hasRating ? place.google_rating.toFixed(1) : null
+  const ratingText =
+    place.google_rating != null ? place.google_rating.toFixed(1) : null
   const reviewCount = place.google_review_count ?? 0
   const addDisabled = !activeListId || addStatus === 'loading'
 
@@ -160,11 +163,19 @@ function SourcesSkeleton() {
 type SourcesPanelProps = {
   onMoreDetails?: (placeId: string) => void
   onSelectedSourceChange?: (source: UserSocialSourceRow | null) => void
+  researchListId: string | null
+  onResearchListIdChange: (id: string | null) => void
+  onResearchMapPlacesChange: (places: MapPlace[]) => void
+  searchThisAreaTick: number
 }
 
 export default function SourcesPanel({
   onMoreDetails,
   onSelectedSourceChange,
+  researchListId,
+  onResearchListIdChange,
+  onResearchMapPlacesChange,
+  searchThisAreaTick,
 }: SourcesPanelProps) {
   const [sources, setSources] = useState<UserSocialSourceRow[] | null>(null)
   const [loading, setLoading] = useState(true)
@@ -231,6 +242,13 @@ export default function SourcesPanel({
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-paper-surface-warm">
+      <ResearchTriagePanel
+        userSources={sources}
+        researchListId={researchListId}
+        onResearchListIdChange={onResearchListIdChange}
+        onResearchMapPlacesChange={onResearchMapPlacesChange}
+        searchThisAreaTick={searchThisAreaTick}
+      />
       <div className="sticky top-0 z-10 border-b border-paper-tertiary-fixed bg-paper-surface-warm">
         <SocialUrlIngest
           hideSuccessBanner

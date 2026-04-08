@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
 const LIST_FIELDS =
-  'id, name, description, is_default, created_at, start_date, end_date, timezone'
+  'id, name, description, is_default, list_type, created_at, start_date, end_date, timezone'
 
 function normalizeName(input: unknown): string | null {
   if (typeof input !== 'string') return null
@@ -79,6 +79,7 @@ export async function POST(request: NextRequest) {
     const body = (await request.json()) as {
       name?: string
       description?: string | null
+      list_type?: string
     }
 
     const name = normalizeName(body?.name)
@@ -91,6 +92,9 @@ export async function POST(request: NextRequest) {
         ? body.description.trim()
         : null
 
+    const listType =
+      body?.list_type === 'research' ? 'research' : 'trip'
+
     const { data: list, error } = await supabase
       .from('lists')
       .insert({
@@ -98,6 +102,7 @@ export async function POST(request: NextRequest) {
         name,
         description,
         is_default: false,
+        list_type: listType,
       })
       .select(LIST_FIELDS)
       .single()
