@@ -9,7 +9,7 @@
 
 ## Active Context
 
-**Current Phase:** Sources Research Workspace (MVP execution shaping complete)
+**Current Phase:** Sources Research Workspace MVP (S7–S10 in progress)
 
 **Previous (all complete):**
 - Sources Workspace Redesign A–D — tags/callouts schema, ratings on places, `list_user_social_sources()` v2, SourcesPanel rich place cards, desktop split layout, Sources tab always visible
@@ -127,12 +127,25 @@ AppShell
 | VP-5 | Discover | Ghost marker pulse animation on proposed pin | **Done** |
 | VP-6 | Both | Pin prominence — larger pins (36px), colored rings by variant, stronger shadows | **Done** |
 
+### Sources Research Workspace Status (active)
+
+Full spec: [`docs/SOCIAL_DISCOVERY_PIPELINE.md`](docs/SOCIAL_DISCOVERY_PIPELINE.md) — "Sources Research Workspace" section.
+
+**Invariant:** AI extraction ends at ingestion. Ranking, overlap, and filtering stay deterministic. User votes never mutate frozen AI enrichment data.
+
+| Slice | What | Status |
+|-------|------|--------|
+| S7 | Schema: `lists.list_type`, `list_sources`, `research_votes` migration | **Todo** |
+| S8 | Query RPC: `discover_research_places` (overlap rank, bounds, votes) | **Todo** |
+| S9 | UI: "Search this area", +/- voting, overlap-scaled markers | **Todo** |
+| S10 | "Add to Trip" mutation + trip-picker sheet | **Todo** |
+
+**Phase order:** S7 → S8 (sequential, deep tier) → S9 + S10 (parallel, bounded tier).
+
 ### What's Next
 
 **Immediate (active):**
-- **Sources Research Workspace MVP (S7-S10) implementation prep** — execute the agreed vertical slice: `research` list type + attached sources + deterministic overlap-ranked places + "Search this area" + +/- voting + add-to-trip flow.
-- **Phase sequencing locked** — ship schema and overlap RPC first (S7-S8), then map/list triage and add-to-trip UI in parallel (S9-S10).
-- **MVP scope guardrail** — map starts with clustering/basic parity; marker prominence scaling can ship in MVP if low-risk, otherwise immediately after without blocking core loop.
+- **Sources Research Workspace MVP (S7–S10)** — prompts ready in `cursor-prompts/social-s7-schema.md` through `social-s10-add-to-trip.md`. Run S7 first, then S8, then S9 and S10 in parallel.
 - **Social eval flywheel** — `eval:capture` → `eval:diagnose` → meta-LLM prompt improvement → `eval:capture --force`. Score files + diagnosis reports committed to `evals/scores/`. See `evals/scores/README.md` for full loop docs. Ghost-town fixture still returning wrong persona (`local` instead of `adventure`) — next prompt improvement target.
 
 **Queued:**
