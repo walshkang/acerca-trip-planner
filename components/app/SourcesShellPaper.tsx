@@ -1,9 +1,9 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { usePathname, useSearchParams } from 'next/navigation'
 import type { MapPlace } from '@/components/map/MapView.types'
-import MapShell from '@/components/map/MapShell'
+import MapShell, { type MapShellHandle } from '@/components/map/MapShell'
 import PaperHeader from '@/components/paper/PaperHeader'
 import PlaceDrawer from '@/components/stitch/PlaceDrawer'
 import SourcesPanel from '@/components/stitch/SourcesPanel'
@@ -22,6 +22,7 @@ export default function SourcesShellPaper() {
   const searchParams = useSearchParams()
   const isMobile = useMediaQuery('(max-width: 767px)')
 
+  const mapShellRef = useRef<MapShellHandle | null>(null)
   const [selectedSource, setSelectedSource] = useState<UserSocialSourceRow | null>(null)
   const [focusedPlaceId, setFocusedPlaceId] = useState<string | null>(null)
   const [mapPinnedPlaceId, setMapPinnedPlaceId] = useState<string | null>(null)
@@ -83,6 +84,13 @@ export default function SourcesShellPaper() {
     if (focusedPlaceId) setMapPinnedPlaceId(null)
   }, [focusedPlaceId])
 
+  useEffect(() => {
+    if (!mapPinnedPlaceId) return
+    const place = sourceMapPlaces.find((p) => p.id === mapPinnedPlaceId)
+    if (!place) return
+    mapShellRef.current?.flyTo({ center: [place.lng, place.lat], zoom: 15 })
+  }, [mapPinnedPlaceId, sourceMapPlaces])
+
   return (
     <div className="relative flex h-screen w-full flex-col bg-paper-surface-warm">
       <PaperHeader
@@ -128,6 +136,7 @@ export default function SourcesShellPaper() {
               </div>
             ) : null}
             <MapShell
+              ref={mapShellRef}
               signInHref={signInHref}
               fitBoundsPadding={{ top: 100, bottom: 40, left: 40, right: 40 }}
               selectedPlaceId={mapPinnedPlaceId ?? focusedPlaceId}
