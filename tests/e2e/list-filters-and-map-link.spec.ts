@@ -38,10 +38,10 @@ async function seedListWithPlace(page: Page) {
     place_id?: string
     place_name?: string
   }
-  if (!json.list?.id || !json.place_id || !json.place_name) {
+  if (!json.list || !json.place_id || !json.place_name) {
     throw new Error('Seed response missing list/place data')
   }
-  return json
+  return json as { list: { id: string; name: string }; place_id: string; place_name: string }
 }
 
 async function addPlaceToList(

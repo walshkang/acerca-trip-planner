@@ -1,5 +1,5 @@
 import { randomUUID } from 'crypto'
-import { adminSupabase } from '@/lib/supabase/admin'
+import { getAdminSupabase } from '@/lib/supabase/admin'
 import { normalizeEnrichment } from '@/lib/server/enrichment/normalize'
 
 type SeedPlaceInput = {
@@ -55,7 +55,7 @@ export async function seedPlaceCandidate({
     place_id: resolvedSourceId,
   }
 
-  const { data: candidate, error } = await adminSupabase
+  const { data: candidate, error } = await getAdminSupabase()
     .from('place_candidates')
     .insert({
       user_id: userId,

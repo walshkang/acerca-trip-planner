@@ -83,13 +83,13 @@ export default async function globalSetup() {
     },
   }
 
-  const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey, {
+  const supabase = createBrowserClient(supabaseUrl!, supabaseAnonKey!, {
     cookies,
   })
 
   const { data, error } = await supabase.auth.signInWithPassword({
-    email: seedEmail,
-    password: seedPassword,
+    email: seedEmail!,
+    password: seedPassword!,
   })
 
   if (error || !data.session) {
