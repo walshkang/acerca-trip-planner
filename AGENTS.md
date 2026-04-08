@@ -204,3 +204,25 @@ Stop and re-route if:
 - Deep tier spending time on single-file CSS tweaks or lint fixes → delegate to Quick.
 - Deep tier writing boilerplate tests that follow an existing pattern exactly → delegate to Bounded.
 - Any agent violating an invariant from the Invariants section above → stop, flag it, re-route.
+
+---
+
+## Cursor Cloud specific instructions
+
+### Services overview
+
+| Service | How to run | Notes |
+|---------|-----------|-------|
+| Next.js dev server | `npm run dev -- -p 3010` | Port 3010 per Playwright guardrails. No `.env.local` needed if secrets are injected as environment variables. |
+| Vitest (unit/integration) | `npx vitest run` | Most tests mock external services. Eval tests need `GOOGLE_GENERATIVE_AI_API_KEY`. |
+| ESLint | `npm run lint` | Pre-existing `react/no-unescaped-entities` error in `SourcesPanel.tsx` — this blocks `next build` but not the dev server. |
+| Playwright E2E | `npm run test:e2e` | Requires running dev server on port 3010 and a live Supabase instance with seeded data. |
+
+### Key gotchas
+
+- **Beta gate**: When `BETA_ACCESS_PASSWORD` is set (default: `test`), all routes redirect to `/beta`. Unlock via `POST /api/beta-unlock` with `{"password":"test"}`, or navigate to `/beta` in the browser and enter the password. Auth routes (`/auth/*`) and internal API routes are exempt.
+- **`next build` fails on main**: There is a pre-existing lint error (`react/no-unescaped-entities` in `components/stitch/SourcesPanel.tsx`) that prevents `next build` from completing. The dev server (`npm run dev`) is unaffected.
+- **Supabase is external**: There is no local Supabase setup (no Docker Compose). The app connects to a hosted Supabase project via `NEXT_PUBLIC_SUPABASE_URL` and related keys. Full app functionality (auth, data, maps) requires valid Supabase credentials.
+- **Map provider**: Defaults to MapLibre with free Carto tiles (`NEXT_PUBLIC_MAP_PROVIDER` unset or `maplibre`). Mapbox requires `NEXT_PUBLIC_MAPBOX_TOKEN`.
+- **Routing preview**: Returns 501 `provider_unavailable` unless `ROUTING_PROVIDER=osrm` and `OSRM_BASE_URL` are configured — this is by design.
+- **Standard commands**: See `package.json` `scripts` for all available commands (`npm run check`, `npm test`, `npm run dev`, etc.).
