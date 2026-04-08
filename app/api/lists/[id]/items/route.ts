@@ -9,9 +9,9 @@ import { listItemSeedTagsFromNormalizedData } from '@/lib/lists/list-item-seed-t
 import { distinctTagsFromItems, normalizeTagList } from '@/lib/lists/tags'
 
 const LIST_FIELDS =
-  'id, name, description, is_default, created_at, start_date, end_date, timezone'
+  'id, name, description, is_default, list_type, created_at, start_date, end_date, timezone'
 const ITEM_FIELDS =
-  'id, created_at, scheduled_date, scheduled_start_time, scheduled_end_time, scheduled_order, completed_at, day_index, tags, place:places(id, name, category, address, created_at, user_notes, enrichment:enrichments(normalized_data))'
+  'id, created_at, scheduled_date, scheduled_start_time, scheduled_end_time, scheduled_order, completed_at, day_index, tags, notes, place:places(id, name, category, address, created_at, user_notes, enrichment:enrichments(normalized_data))'
 
 function parseIntParam(value: string | null, fallback: number) {
   if (!value) return fallback
@@ -267,6 +267,7 @@ export async function POST(
       place_id?: string
       tags?: unknown
       include_automatic_tags?: unknown
+      notes?: unknown
     }
 
     const placeId = typeof body.place_id === 'string' ? body.place_id : null
@@ -290,22 +291,48 @@ export async function POST(
       )
     }
 
-    const { data: place, error: placeError } = await supabase
+    let place: { id: string; enrichment_id: string | null } | null = null
+    const { data: ownPlace, error: ownErr } = await supabase
       .from('places')
       .select('id, enrichment_id')
       .eq('id', placeId)
       .eq('user_id', user.id)
-      .single()
+      .maybeSingle()
 
-    if (placeError || !place) {
-      if (placeError?.code === 'PGRST116') {
-        return NextResponse.json({ error: 'Place not found' }, { status: 404 })
-      }
+    if (ownErr) {
       return NextResponse.json(
-        { error: placeError?.message || 'Place not found' },
-        { status: 404 }
+        { error: ownErr.message || 'Place lookup failed' },
+        { status: 500 }
       )
     }
+
+    if (ownPlace) {
+      place = ownPlace
+    } else {
+      const { data: socialPlace, error: socialErr } = await supabase
+        .from('places')
+        .select('id, enrichment_id')
+        .eq('id', placeId)
+        .eq('source', 'social')
+        .maybeSingle()
+
+      if (socialErr) {
+        return NextResponse.json(
+          { error: socialErr.message || 'Place lookup failed' },
+          { status: 500 }
+        )
+      }
+      place = socialPlace ?? null
+    }
+
+    if (!place) {
+      return NextResponse.json({ error: 'Place not found' }, { status: 404 })
+    }
+
+    const notes =
+      typeof body.notes === 'string' && body.notes.trim().length
+        ? body.notes.trim().slice(0, 8000)
+        : null
 
     const hasTagsField = Object.prototype.hasOwnProperty.call(body, 'tags')
     const normalizedProvided = hasTagsField ? normalizeTagList(body.tags) : []
@@ -344,7 +371,7 @@ export async function POST(
 
     const { data: existing, error: existingError } = await supabase
       .from('list_items')
-      .select('id, list_id, place_id, tags')
+      .select('id, list_id, place_id, tags, notes')
       .eq('list_id', params.id)
       .eq('place_id', placeId)
       .maybeSingle()
@@ -361,20 +388,25 @@ export async function POST(
       desiredTags.length > 0 && (hasTagsField || existingTags.length === 0)
 
     if (existing) {
-      if (!shouldUpdateTags) {
+      const shouldUpdateNotes = notes != null
+      if (!shouldUpdateTags && !shouldUpdateNotes) {
         return NextResponse.json({ item: existing })
       }
 
+      const patch: { tags?: string[]; notes?: string | null } = {}
+      if (shouldUpdateTags) patch.tags = desiredTags
+      if (shouldUpdateNotes) patch.notes = notes
+
       const { data: updated, error: updateError } = await supabase
         .from('list_items')
-        .update({ tags: desiredTags })
+        .update(patch)
         .eq('id', existing.id)
-        .select('id, list_id, place_id, tags')
+        .select('id, list_id, place_id, tags, notes')
         .single()
 
       if (updateError || !updated) {
         return NextResponse.json(
-          { error: updateError?.message || 'Failed to update list item tags' },
+          { error: updateError?.message || 'Failed to update list item' },
           { status: 500 }
         )
       }
@@ -386,6 +418,7 @@ export async function POST(
       list_id: string
       place_id: string
       tags?: string[]
+      notes?: string | null
     } = {
       list_id: params.id,
       place_id: placeId,
@@ -393,18 +426,21 @@ export async function POST(
     if (desiredTags.length) {
       insertPayload.tags = desiredTags
     }
+    if (notes) {
+      insertPayload.notes = notes
+    }
 
     const { data: item, error: itemError } = await supabase
       .from('list_items')
       .insert(insertPayload)
-      .select('id, list_id, place_id, tags')
+      .select('id, list_id, place_id, tags, notes')
       .single()
 
     if (itemError || !item) {
       if (itemError?.code === '23505') {
         const { data: fallback, error: fallbackError } = await supabase
           .from('list_items')
-          .select('id, list_id, place_id, tags')
+          .select('id, list_id, place_id, tags, notes')
           .eq('list_id', params.id)
           .eq('place_id', placeId)
           .single()
@@ -421,16 +457,21 @@ export async function POST(
           : []
         const shouldUpdateFallback =
           desiredTags.length > 0 && (hasTagsField || fallbackTags.length === 0)
+        const shouldUpdateNotesFallback = notes != null
 
-        if (!shouldUpdateFallback) {
+        if (!shouldUpdateFallback && !shouldUpdateNotesFallback) {
           return NextResponse.json({ item: fallback })
         }
 
+        const fbPatch: { tags?: string[]; notes?: string | null } = {}
+        if (shouldUpdateFallback) fbPatch.tags = desiredTags
+        if (shouldUpdateNotesFallback) fbPatch.notes = notes
+
         const { data: updated, error: updateError } = await supabase
           .from('list_items')
-          .update({ tags: desiredTags })
+          .update(fbPatch)
           .eq('id', fallback.id)
-          .select('id, list_id, place_id, tags')
+          .select('id, list_id, place_id, tags, notes')
           .single()
 
         if (updateError || !updated) {

@@ -14,7 +14,10 @@ import {
 } from '@/lib/ui/glow'
 import type { MapViewProps, MapViewRef } from './MapView.types'
 import { fallbackMarkerRingClass } from '@/components/map/placeMarkerRing'
-import { socialMarkerSizeClass } from '@/lib/social/marker-size'
+import {
+  researchOverlapMarkerSizeClass,
+  socialMarkerSizeClass,
+} from '@/lib/social/marker-size'
 
 /** Muted palette by Mapbox `type` (composite road layer) */
 const TRANSIT_LINE_COLOR = [
@@ -287,7 +290,13 @@ const MapViewMapbox = forwardRef<MapViewRef, MapViewProps>(function MapViewMapbo
             ? markerFocusClassName ?? PLACE_FOCUS_GLOW
             : `${ringClass} ${doneClass}`.trim()
           const socialMarkerRingClassName =
-            place.mentionCount == null ? '' : 'ring-2 ring-amber-400/60'
+            place.mentionCount == null && place.overlapCount == null
+              ? ''
+              : 'ring-2 ring-amber-400/60'
+          const markerSizeClass =
+            place.overlapCount != null
+              ? researchOverlapMarkerSizeClass(place.overlapCount)
+              : socialMarkerSizeClass(place.mentionCount)
           return (
             <Marker
               key={place.id}
@@ -319,9 +328,7 @@ const MapViewMapbox = forwardRef<MapViewRef, MapViewProps>(function MapViewMapbo
               >
                 <span
                   aria-hidden="true"
-                  className={`flex items-center justify-center rounded-full ${socialMarkerSizeClass(
-                    place.mentionCount
-                  )} ${markerBackdropClassName} ${socialMarkerRingClassName} ${markerStateClassName}`}
+                  className={`flex items-center justify-center rounded-full ${markerSizeClass} ${markerBackdropClassName} ${socialMarkerRingClassName} ${markerStateClassName}`}
                 >
                   <span className="text-[18px] leading-none">
                     {resolveCategoryEmoji?.(place.category) ??

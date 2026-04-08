@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { parseIsoDateOnly } from '@/lib/lists/planner'
 
 const LIST_FIELDS =
-  'id, name, description, is_default, created_at, start_date, end_date, timezone'
+  'id, name, description, is_default, list_type, created_at, start_date, end_date, timezone'
 
 type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>
 
@@ -12,6 +12,7 @@ type ListTripRow = {
   name: string
   description: string | null
   is_default: boolean
+  list_type: string
   created_at: string
   start_date: string | null
   end_date: string | null

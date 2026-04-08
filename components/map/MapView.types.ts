@@ -14,6 +14,10 @@ export type MapPlace = {
   lat: number
   lng: number
   mentionCount?: number
+  /** Research workspace: distinct sources mentioning this place (marker scaling) */
+  overlapCount?: number
+  /** Research workspace: dim pin when aggregate vote score is negative */
+  researchDeemphasize?: boolean
 }
 
 export type LatLng = {

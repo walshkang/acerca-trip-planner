@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { usePathname, useSearchParams } from 'next/navigation'
 import type { MapPlace } from '@/components/map/MapView.types'
 import MapShell from '@/components/map/MapShell'
@@ -9,6 +9,7 @@ import PlaceDrawer from '@/components/stitch/PlaceDrawer'
 import SourcesPanel from '@/components/stitch/SourcesPanel'
 import { useMediaQuery } from '@/components/ui/useMediaQuery'
 import type { UserSocialSourceRow } from '@/lib/social/user-sources-contract'
+import { useResearchWorkspaceStore } from '@/lib/state/useResearchWorkspaceStore'
 import { CATEGORY_ENUM_VALUES, type CategoryEnum } from '@/lib/types/enums'
 import { useNavStore } from '@/lib/state/useNavStore'
 import { hydrateSocialStore, useSocialDiscoveryStore } from '@/lib/state/useSocialDiscoveryStore'
@@ -26,6 +27,12 @@ export default function SourcesShellPaper() {
 
   const [selectedSource, setSelectedSource] = useState<UserSocialSourceRow | null>(null)
   const [focusedPlaceId, setFocusedPlaceId] = useState<string | null>(null)
+  const [researchListId, setResearchListId] = useState<string | null>(null)
+  const [researchMapPlaces, setResearchMapPlaces] = useState<MapPlace[]>([])
+  const [searchThisAreaTick, setSearchThisAreaTick] = useState(0)
+
+  const setViewportBounds = useResearchWorkspaceStore((s) => s.setViewportBounds)
+  const searchAreaStale = useResearchWorkspaceStore((s) => s.searchAreaStale)
 
   useEffect(() => {
     hydrateSocialStore()
@@ -61,16 +68,41 @@ export default function SourcesShellPaper() {
     [selectedSourcePlaceIds, socialPlaces]
   )
 
-  const focusedPlace = useMemo(
-    () => sourceMapPlaces.find((place) => place.id === focusedPlaceId) ?? null,
-    [focusedPlaceId, sourceMapPlaces]
+  const displayMapPlaces = researchListId ? researchMapPlaces : sourceMapPlaces
+
+  const onMapBoundsChange = useCallback(
+    (bounds: { west: number; south: number; east: number; north: number }) => {
+      setViewportBounds(bounds)
+    },
+    [setViewportBounds]
   )
+
+  const focusedPlace = useMemo(() => {
+    if (!focusedPlaceId) return null
+    const fromMap = displayMapPlaces.find((place) => place.id === focusedPlaceId)
+    if (fromMap) return fromMap
+    const fromSocial = socialPlaces.find((p) => p.place_id === focusedPlaceId)
+    if (
+      fromSocial &&
+      CATEGORY_ENUM_VALUES.includes(fromSocial.category as CategoryEnum)
+    ) {
+      return {
+        id: fromSocial.place_id,
+        name: fromSocial.name,
+        category: fromSocial.category as CategoryEnum,
+        lat: fromSocial.lat,
+        lng: fromSocial.lng,
+        mentionCount: fromSocial.mention_count,
+      }
+    }
+    return null
+  }, [displayMapPlaces, focusedPlaceId, socialPlaces])
 
   useEffect(() => {
     if (!focusedPlaceId) return
-    if (sourceMapPlaces.some((place) => place.id === focusedPlaceId)) return
+    if (displayMapPlaces.some((place) => place.id === focusedPlaceId)) return
     setFocusedPlaceId(null)
-  }, [focusedPlaceId, sourceMapPlaces])
+  }, [displayMapPlaces, focusedPlaceId])
 
   return (
     <div className="relative flex h-screen w-full flex-col bg-paper-surface-warm">
@@ -91,11 +123,28 @@ export default function SourcesShellPaper() {
             <SourcesPanel
               onSelectedSourceChange={setSelectedSource}
               onMoreDetails={setFocusedPlaceId}
+              researchListId={researchListId}
+              onResearchListIdChange={setResearchListId}
+              onResearchMapPlacesChange={setResearchMapPlaces}
+              searchThisAreaTick={searchThisAreaTick}
             />
           </div>
         </div>
         {!isMobile ? (
           <div className="relative hidden min-h-0 min-w-0 flex-1 overflow-hidden rounded-[4px] border border-paper-tertiary-fixed md:block">
+            {researchListId ? (
+              <div className="pointer-events-none absolute bottom-4 left-1/2 z-10 -translate-x-1/2">
+                <button
+                  type="button"
+                  data-testid="research-search-this-area"
+                  disabled={!searchAreaStale}
+                  onClick={() => setSearchThisAreaTick((n) => n + 1)}
+                  className="pointer-events-auto rounded-full border border-paper-tertiary-fixed bg-paper-surface-container/95 px-4 py-2 text-xs font-medium text-paper-on-surface shadow-sm backdrop-blur-sm disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Search this area
+                </button>
+              </div>
+            ) : null}
             <MapShell
               signInHref={signInHref}
               fitBoundsPadding={{ top: 100, bottom: 40, left: 40, right: 40 }}
@@ -118,7 +167,8 @@ export default function SourcesShellPaper() {
               showTransit={false}
               setMapFallbackNotice={() => {}}
               setSearchBias={() => {}}
-              socialPlaces={sourceMapPlaces}
+              onMapBoundsChange={onMapBoundsChange}
+              socialPlaces={displayMapPlaces}
               className="absolute inset-0"
             />
           </div>

@@ -39,7 +39,6 @@ import {
 } from '@/lib/map/bounds'
 import type { ViewState } from 'react-map-gl/maplibre'
 import { mapRingClassesForListItem } from '@/components/map/placeMarkerRing'
-
 export type ActiveListItemState = {
   id: string
   list_id: string
@@ -102,6 +101,13 @@ export type MapShellProps = {
   onReadyChange?: (ready: boolean) => void
   onPlacesChange?: (places: MapPlace[]) => void
   socialPlaces?: MapPlace[]
+  /** Fired when the map viewport settles (move end) with WGS84 bounds */
+  onMapBoundsChange?: (bounds: {
+    west: number
+    south: number
+    east: number
+    north: number
+  }) => void
   className?: string
 }
 
@@ -131,6 +137,7 @@ const MapShell = forwardRef<MapShellHandle, MapShellProps>(function MapShell(
     onReadyChange,
     onPlacesChange,
     socialPlaces = [],
+    onMapBoundsChange,
     className,
   },
   ref
@@ -573,13 +580,16 @@ const MapShell = forwardRef<MapShellHandle, MapShellProps>(function MapShell(
       const dimmedByType =
         activeListTypeFilters.length > 0 &&
         !activeListTypeFilterSet.has(place.category)
-      return dimmedByList || dimmedByType
+      const dimmedResearch =
+        place.researchDeemphasize === true && !isPlaceFocused(place)
+      return dimmedByList || dimmedByType || dimmedResearch
     },
     [
       activeListPlaceIdSet,
       activeListPlaceIds.length,
       activeListTypeFilterSet,
       activeListTypeFilters.length,
+      isPlaceFocused,
       previewSelectedResultId,
     ]
   )
@@ -618,8 +628,32 @@ const MapShell = forwardRef<MapShellHandle, MapShellProps>(function MapShell(
         JSON.stringify({ longitude, latitude, zoom, bearing, pitch })
       )
       updateSearchBiasFromMap()
+
+      const map = mapRef.current as unknown as {
+        getBounds?: () => {
+          getWest?: () => number
+          getSouth?: () => number
+          getEast?: () => number
+          getNorth?: () => number
+        }
+      } | null
+      const b = map?.getBounds?.()
+      if (
+        onMapBoundsChange &&
+        b?.getWest &&
+        b?.getSouth &&
+        b?.getEast &&
+        b?.getNorth
+      ) {
+        onMapBoundsChange({
+          west: b.getWest(),
+          south: b.getSouth(),
+          east: b.getEast(),
+          north: b.getNorth(),
+        })
+      }
     },
-    [updateSearchBiasFromMap]
+    [onMapBoundsChange, updateSearchBiasFromMap]
   )
 
   const handlePlaceClick = useCallback(

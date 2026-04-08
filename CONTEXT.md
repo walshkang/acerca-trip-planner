@@ -9,7 +9,7 @@
 
 ## Active Context
 
-**Current Phase:** Sources Research Workspace (MVP execution shaping complete)
+**Current Phase:** Sources Research Workspace MVP (S7–S10 shipped in app + migrations)
 
 **Previous (all complete):**
 - Sources Workspace Redesign A–D — tags/callouts schema, ratings on places, `list_user_social_sources()` v2, SourcesPanel rich place cards, desktop split layout, Sources tab always visible
@@ -130,9 +130,8 @@ AppShell
 ### What's Next
 
 **Immediate (active):**
-- **Sources Research Workspace MVP (S7-S10) implementation prep** — execute the agreed vertical slice: `research` list type + attached sources + deterministic overlap-ranked places + "Search this area" + +/- voting + add-to-trip flow.
-- **Phase sequencing locked** — ship schema and overlap RPC first (S7-S8), then map/list triage and add-to-trip UI in parallel (S9-S10).
-- **MVP scope guardrail** — map starts with clustering/basic parity; marker prominence scaling can ship in MVP if low-risk, otherwise immediately after without blocking core loop.
+- **Sources Research Workspace follow-ups** — E2E coverage for research triage + shared-list vote UX; optional seed script for `list_sources` demo data.
+- **MVP scope guardrail** — map starts with clustering/basic parity; marker prominence scaling shipped for overlap count in Sources map.
 - **Social eval flywheel** — `eval:capture` → `eval:diagnose` → meta-LLM prompt improvement → `eval:capture --force`. Score files + diagnosis reports committed to `evals/scores/`. See `evals/scores/README.md` for full loop docs. Ghost-town fixture still returning wrong persona (`local` instead of `adventure`) — next prompt improvement target.
 
 **Queued:**
@@ -206,7 +205,7 @@ gantt
 - Shared research list links reproduce the same attached sources + vote state and deterministic ranked output.
 
 ### Phase order (locked)
-1. **Phase 1 — Aggregator MVP (S7, S8, S9, S10)**
+1. **Phase 1 — Aggregator MVP (S7, S8, S9, S10)** — **Done** (schema + RPC + Sources UI: research list, attach sources, overlap cards, map bounds search, votes, add-to-trip with `list_items.notes` provenance)
    - `list_type` boundaries (`trip` vs `research`)
    - overlap ranking in list/map
    - viewport-bounded query loop ("Search this area")
