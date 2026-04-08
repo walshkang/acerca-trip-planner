@@ -9,7 +9,7 @@
 
 ## Active Context
 
-**Current Phase:** Sources Research Workspace — E+F shipped (map view for source places, chip visual refresh)
+**Current Phase:** Sources Research Workspace — E–G shipped (map view, chip refresh, card-to-map highlight)
 
 **Previous (all complete):**
 - Sources Workspace Redesign A–F — tags/callouts schema, ratings on places, `list_user_social_sources()` v3 (+ lat/lng), SourcesPanel rich place cards, desktop split layout, Sources tab always visible, source places wired directly to map, `paper-chip-active` gray + 6px radius

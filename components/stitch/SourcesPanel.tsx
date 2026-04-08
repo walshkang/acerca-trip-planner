@@ -28,10 +28,14 @@ function SourcePlaceCard({
   place,
   activeListId,
   onMoreDetails,
+  onCardSelect,
+  isSelected,
 }: {
   place: UserSocialSourcePlace
   activeListId: string | null
   onMoreDetails: (placeId: string) => void
+  onCardSelect?: (placeId: string) => void
+  isSelected: boolean
 }) {
   const [addStatus, setAddStatus] = useState<AddStatus>('idle')
 
@@ -73,7 +77,22 @@ function SourcePlaceCard({
   }
 
   return (
-    <div className="rounded border border-paper-tertiary-fixed bg-paper-surface-container px-3 py-3">
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={() => onCardSelect?.(place.place_id)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          onCardSelect?.(place.place_id)
+        }
+      }}
+      className={`rounded border bg-paper-surface-container px-3 py-3 transition-colors ${
+        isSelected
+          ? 'border-paper-primary ring-1 ring-paper-primary'
+          : 'border-paper-tertiary-fixed'
+      }`}
+    >
       <div className="flex items-center justify-between gap-2">
         <div className="min-w-0">
           <p className="truncate text-sm font-medium text-paper-on-surface">{place.place_name}</p>
@@ -119,14 +138,20 @@ function SourcePlaceCard({
         <button
           type="button"
           className="paper-button-ghost px-2 py-1 text-xs"
-          onClick={() => onMoreDetails(place.place_id)}
+          onClick={(e) => {
+            e.stopPropagation()
+            onMoreDetails(place.place_id)
+          }}
         >
           More details
         </button>
         <button
           type="button"
           className="paper-button-primary px-2 py-1 text-xs disabled:opacity-60"
-          onClick={() => void onAddToList()}
+          onClick={(e) => {
+            e.stopPropagation()
+            void onAddToList()
+          }}
           disabled={addDisabled}
         >
           {addStatus === 'loading'
@@ -163,6 +188,7 @@ function SourcesSkeleton() {
 
 type SourcesPanelProps = {
   onMoreDetails?: (placeId: string) => void
+  onCardSelect?: (placeId: string | null) => void
   onSelectedSourceChange?: (source: UserSocialSourceRow | null) => void
   researchListId: string | null
   onResearchListIdChange: (id: string | null) => void
@@ -172,6 +198,7 @@ type SourcesPanelProps = {
 
 export default function SourcesPanel({
   onMoreDetails,
+  onCardSelect,
   onSelectedSourceChange,
   researchListId,
   onResearchListIdChange,
@@ -182,6 +209,7 @@ export default function SourcesPanel({
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selectedSourceId, setSelectedSourceId] = useState<string | null>(null)
+  const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null)
   const activeListId = useTripStore((s) => s.activeListId)
 
   const loadSources = useCallback(async () => {
@@ -236,6 +264,19 @@ export default function SourcesPanel({
     if (!selectedSourceId) return sources[0] ?? null
     return sources.find((source) => source.source_id === selectedSourceId) ?? sources[0] ?? null
   }, [selectedSourceId, sources])
+
+  useEffect(() => {
+    if (!selectedSource?.places.length) {
+      setSelectedPlaceId(null)
+      onCardSelect?.(null)
+      return
+    }
+    if (selectedPlaceId && selectedSource.places.some((place) => place.place_id === selectedPlaceId)) {
+      return
+    }
+    setSelectedPlaceId(null)
+    onCardSelect?.(null)
+  }, [onCardSelect, selectedPlaceId, selectedSource])
 
   useEffect(() => {
     onSelectedSourceChange?.(selectedSource)
@@ -308,6 +349,12 @@ export default function SourcesPanel({
                     place={place}
                     activeListId={activeListId}
                     onMoreDetails={(placeId) => onMoreDetails?.(placeId)}
+                    onCardSelect={(placeId) => {
+                      const next = selectedPlaceId === placeId ? null : placeId
+                      setSelectedPlaceId(next)
+                      onCardSelect?.(next)
+                    }}
+                    isSelected={selectedPlaceId === place.place_id}
                   />
                 ))}
               </div>

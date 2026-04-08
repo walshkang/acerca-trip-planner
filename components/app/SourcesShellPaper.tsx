@@ -24,6 +24,7 @@ export default function SourcesShellPaper() {
 
   const [selectedSource, setSelectedSource] = useState<UserSocialSourceRow | null>(null)
   const [focusedPlaceId, setFocusedPlaceId] = useState<string | null>(null)
+  const [mapPinnedPlaceId, setMapPinnedPlaceId] = useState<string | null>(null)
   const [researchListId, setResearchListId] = useState<string | null>(null)
   const [researchMapPlaces, setResearchMapPlaces] = useState<MapPlace[]>([])
   const [searchThisAreaTick, setSearchThisAreaTick] = useState(0)
@@ -78,6 +79,10 @@ export default function SourcesShellPaper() {
     setFocusedPlaceId(null)
   }, [displayMapPlaces, focusedPlaceId])
 
+  useEffect(() => {
+    if (focusedPlaceId) setMapPinnedPlaceId(null)
+  }, [focusedPlaceId])
+
   return (
     <div className="relative flex h-screen w-full flex-col bg-paper-surface-warm">
       <PaperHeader
@@ -97,6 +102,9 @@ export default function SourcesShellPaper() {
             <SourcesPanel
               onSelectedSourceChange={setSelectedSource}
               onMoreDetails={setFocusedPlaceId}
+              onCardSelect={(placeId) => {
+                setMapPinnedPlaceId((prev) => (prev === placeId ? null : placeId))
+              }}
               researchListId={researchListId}
               onResearchListIdChange={setResearchListId}
               onResearchMapPlacesChange={setResearchMapPlaces}
@@ -122,7 +130,7 @@ export default function SourcesShellPaper() {
             <MapShell
               signInHref={signInHref}
               fitBoundsPadding={{ top: 100, bottom: 40, left: 40, right: 40 }}
-              selectedPlaceId={focusedPlaceId}
+              selectedPlaceId={mapPinnedPlaceId ?? focusedPlaceId}
               setPlaceParam={setFocusedPlaceId}
               activeListId={null}
               activeListPlaceIds={[]}
