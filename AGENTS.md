@@ -48,6 +48,19 @@ If you must break an invariant, note it explicitly in the PR and update this fil
 
 ---
 
+## Session Close Checklist
+
+When wrapping up a session (commit + push requested, or natural stopping point):
+
+1. **Archive cursor-prompts** — move implemented and paused prompt `.md` files to `cursor-prompts/archive/`. Only the next-up prompt stays in the root.
+2. **Update `CONTEXT.md`** — `Current Phase` → what's next/shaped; move shipped work into `Previous`; update `Immediate` in "What's Next".
+3. **Commit** — stage all changed files; commit message covers what shipped vs. what's shaped/pending. Claude Code appends `Co-Authored-By`.
+4. **Push.**
+
+Memory files (`~/.claude/projects/*/memory/`) are Claude Code–specific and updated separately by Claude Code.
+
+---
+
 ## Multi-Agent Routing
 
 We use multiple AI agents and tools. Each agent should self-assess whether it is the right tool for the current task, execute if so, or recommend delegating if not. This section is the shared contract all agents read.
