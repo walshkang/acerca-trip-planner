@@ -53,10 +53,11 @@ function SourcePlaceCard({
     if (!activeListId) return
     setAddStatus('loading')
     try {
-      const res = await fetch(
-        `/api/lists/${activeListId}/items?place_id=${encodeURIComponent(place.place_id)}`,
-        { method: 'POST' }
-      )
+      const res = await fetch(`/api/lists/${activeListId}/items`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ place_id: place.place_id }),
+      })
       if (res.ok) {
         setAddStatus('added')
         return
