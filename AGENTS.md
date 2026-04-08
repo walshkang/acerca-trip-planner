@@ -225,4 +225,5 @@ Stop and re-route if:
 - **Supabase is external**: There is no local Supabase setup (no Docker Compose). The app connects to a hosted Supabase project via `NEXT_PUBLIC_SUPABASE_URL` and related keys. Full app functionality (auth, data, maps) requires valid Supabase credentials.
 - **Map provider**: Defaults to MapLibre with free Carto tiles (`NEXT_PUBLIC_MAP_PROVIDER` unset or `maplibre`). Mapbox requires `NEXT_PUBLIC_MAPBOX_TOKEN`.
 - **Routing preview**: Returns 501 `provider_unavailable` unless `ROUTING_PROVIDER=osrm` and `OSRM_BASE_URL` are configured — this is by design.
+- **Headless sign-in for testing**: `POST /api/test/auth` generates + verifies a magic-link OTP server-side (requires `PLAYWRIGHT_SEED_TOKEN` in the `x-seed-token` header and a JSON body `{"email":"<test-email>"}`). This sets Supabase session cookies without needing an email client. Call beta-unlock first if `BETA_ACCESS_PASSWORD` is set.
 - **Standard commands**: See `package.json` `scripts` for all available commands (`npm run check`, `npm test`, `npm run dev`, etc.).
