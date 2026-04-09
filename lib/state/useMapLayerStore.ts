@@ -37,6 +37,8 @@ type MapLayerState = {
   activeLayer: MapLayer
   transitModes: TransitMode[]
   hydrated: boolean
+  transitLoading: boolean
+  setTransitLoading: (loading: boolean) => void
   setLayer: (layer: MapLayer) => void
   setTransitModes: (modes: TransitMode[]) => void
   hydrate: () => Promise<void>
@@ -67,6 +69,7 @@ export const useMapLayerStore = create<MapLayerState>((set, get) => ({
   activeLayer: 'default',
   transitModes: [...DEFAULT_TRANSIT_MODES],
   hydrated: false,
+  transitLoading: false,
 
   setLayer: (layer) => {
     set({ activeLayer: layer })
@@ -88,6 +91,10 @@ export const useMapLayerStore = create<MapLayerState>((set, get) => ({
       // ignore
     }
     debouncedPersistPreferences(get)
+  },
+
+  setTransitLoading: (loading: boolean) => {
+    set({ transitLoading: Boolean(loading) })
   },
 
   hydrate: async () => {

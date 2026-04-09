@@ -1,6 +1,6 @@
 'use client'
 
-import { forwardRef, useCallback, useEffect, useMemo, useState } from 'react'
+import { forwardRef, useCallback, useEffect, useMemo, useState, useRef } from 'react'
 import MapGL, { Layer, Marker, Source } from 'react-map-gl/maplibre'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { getCategoryEmoji } from '@/lib/icons/mapping'
@@ -15,6 +15,7 @@ import {
 } from '@/lib/ui/glow'
 import type { CanonicalMode } from '@/lib/transit/metroArea'
 import type { TransitMode } from '@/lib/state/useMapLayerStore'
+import { useMapLayerStore } from '@/lib/state/useMapLayerStore'
 import type { MapViewProps, MapViewRef } from './MapView.types'
 import { fallbackMarkerRingClass } from '@/components/map/placeMarkerRing'
 import {
@@ -227,6 +228,9 @@ const MapViewMaplibre = forwardRef<MapViewRef, MapViewProps>(
       string | undefined
     >(transitBeforeId)
 
+    const mapInstanceRef = useRef<any>(null)
+    const setTransitLoading = useMapLayerStore((s) => s.setTransitLoading)
+
     const transitCandidateKey = useMemo(
       () => (transitBeforeIdCandidates ?? []).join('|'),
       [transitBeforeIdCandidates]
@@ -253,6 +257,55 @@ const MapViewMaplibre = forwardRef<MapViewRef, MapViewProps>(
     useEffect(() => {
       setResolvedTransitBeforeId(transitBeforeId)
     }, [mapStyle, transitBeforeId, transitCandidateKey])
+
+    useEffect(() => {
+      const map = mapInstanceRef.current
+      if (!map) {
+        // ensure spinner is off when there is no map
+        setTransitLoading(false)
+        return
+      }
+
+      const transitSourceId =
+        typeof transitTileConfig?.vectorSource === 'string'
+          ? transitTileConfig.vectorSource
+          : (transitTileConfig?.vectorSource as any)?.id ?? null
+
+      const onSourceDataLoading = (e: any) => {
+        const sourceId = (e && (e.sourceId ?? e.source)) as string | undefined
+        if (!sourceId) return
+        if (!transitSourceId) return
+        if (sourceId === transitSourceId) {
+          setTransitLoading(true)
+        }
+      }
+
+      const onSourceData = (e: any) => {
+        const sourceId = (e && (e.sourceId ?? e.source)) as string | undefined
+        if (!sourceId) return
+        if (!transitSourceId) return
+        if (sourceId === transitSourceId && e.isSourceLoaded) {
+          setTransitLoading(false)
+        }
+      }
+
+      if (showTransit && transitTileConfig) {
+        map.on('sourcedataloading', onSourceDataLoading)
+        map.on('sourcedata', onSourceData)
+      } else {
+        // ensure spinner off when transit is not active
+        setTransitLoading(false)
+      }
+
+      return () => {
+        try {
+          map.off('sourcedataloading', onSourceDataLoading)
+          map.off('sourcedata', onSourceData)
+        } catch {
+          // ignore
+        }
+      }
+    }, [showTransit, transitTileConfig?.vectorSource, setTransitLoading])
 
     const transitLineColorExpression = useMemo(() => {
       if (transitTileConfig?.colorField === 'pmap:kind') {
@@ -286,11 +339,15 @@ const MapViewMaplibre = forwardRef<MapViewRef, MapViewProps>(
         onMoveEnd={onMoveEnd}
         onLoad={(event) => {
           setStyleReady(true)
-          syncBeforeIdsFromStyle((event as { target?: unknown }).target)
+          const mapInst = (event as { target?: unknown }).target
+          mapInstanceRef.current = mapInst
+          syncBeforeIdsFromStyle(mapInst)
         }}
         onStyleData={(event) => {
           setStyleReady(true)
-          syncBeforeIdsFromStyle((event as { target?: unknown }).target)
+          const mapInst = (event as { target?: unknown }).target
+          mapInstanceRef.current = mapInst
+          syncBeforeIdsFromStyle(mapInst)
         }}
         onError={(event) => {
           onMapError?.((event as { error?: unknown }).error ?? event)

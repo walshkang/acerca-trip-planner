@@ -62,6 +62,7 @@ function HeaderActions({
   const hasPopover = onLayerChange != null
   const transitModes = useMapLayerStore((s) => s.transitModes)
   const setTransitModes = useMapLayerStore((s) => s.setTransitModes)
+  const transitLoading = useMapLayerStore((s) => s.transitLoading)
 
   const toggleTransitMode = useCallback(
     (mode: TransitMode) => {
@@ -144,6 +145,9 @@ function HeaderActions({
                           : 'terrain'}
                     </span>
                     <span className="capitalize">{layer}</span>
+                    {layer === 'transit' && transitLoading && activeLayer === 'transit' ? (
+                      <span className="material-symbols-outlined animate-spin text-sm ml-1">progress_activity</span>
+                    ) : null}
                   </button>
                 ))}
               </div>
