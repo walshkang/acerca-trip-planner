@@ -6,6 +6,7 @@ import { SocialUrlIngest } from '@/components/stitch/SocialUrlIngest'
 import ResearchTriagePanel from '@/components/stitch/ResearchTriagePanel'
 import type { UserSocialSourcePlace, UserSocialSourceRow } from '@/lib/social/user-sources-contract'
 import { useTripStore } from '@/lib/state/useTripStore'
+import { extractYouTubeVideoId, youTubeThumbnailUrl } from '@/lib/social/youtube'
 
 type AddStatus = 'idle' | 'loading' | 'added' | 'duplicate' | 'error'
 
@@ -375,12 +376,44 @@ export default function SourcesPanel({
                 ))}
               </select>
               {selectedSource ? (
-                <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-paper-on-surface-variant">
-                  <span className="paper-chip py-0.5">
-                    {platformChipLabel(selectedSource.platform)}
-                  </span>
-                  <span>@{selectedSource.author_name}</span>
-                  <span className="capitalize">{selectedSource.author_persona}</span>
+                <div className="mt-1 space-y-2">
+                  <div className="flex flex-wrap items-center gap-2 text-xs text-paper-on-surface-variant">
+                    <span className="paper-chip py-0.5">
+                      {platformChipLabel(selectedSource.platform)}
+                    </span>
+                    <span>@{selectedSource.author_name}</span>
+                    <span className="capitalize">{selectedSource.author_persona}</span>
+                  </div>
+                  {(() => {
+                    const videoId = extractYouTubeVideoId(selectedSource.url)
+                    if (!videoId) return null
+                    return (
+                      <a
+                        href={selectedSource.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex items-start gap-3 rounded border border-paper-tertiary-fixed bg-paper-surface-container p-2 transition-colors hover:bg-paper-surface-container-high"
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={youTubeThumbnailUrl(videoId)}
+                          alt={selectedSource.title ?? 'YouTube video'}
+                          className="h-[54px] w-24 shrink-0 rounded object-cover bg-paper-surface-container"
+                          loading="lazy"
+                        />
+                        <div className="min-w-0 flex-1">
+                          {selectedSource.title ? (
+                            <p className="line-clamp-2 text-xs font-medium text-paper-on-surface">
+                              {selectedSource.title}
+                            </p>
+                          ) : null}
+                          <p className="mt-0.5 text-[11px] text-paper-on-surface-variant">
+                            {platformChipLabel(selectedSource.platform)} · @{selectedSource.author_name}
+                          </p>
+                        </div>
+                      </a>
+                    )
+                  })()}
                 </div>
               ) : null}
             </div>

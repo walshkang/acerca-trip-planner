@@ -9,13 +9,13 @@
 
 ## Active Context
 
-**Current Phase:** Sources H — shipped (implemented by Claude Code, not Cursor)
-- H1: `suppressPlaceFetch` on `MapShell` — Sources map starts clean, always true
-- H2: multi-select list overlay chips (top-left of map); overlay places fetched with geometry from `places_view` and passed as `socialPlaces` with `isOverlay: true` (sky-blue dot) — no un-suppressing of user place fetch
-- H3: `isUnvetted`/`isOverlay` on `MapPlace`; maplibre renderer branches: stone-gray dot (unvetted), sky-blue dot (overlay), emoji (default)
-- RLS recursion fix: migration `20260412000003` — `can_user_view_place_via_collab()` SECURITY DEFINER helper breaks places↔list_items policy cycle
-- `places_view` social filter: migration `20260412000004` — hides social places unless in at least one `list_item`; enforces Sources-only visibility at DB level
-- Category emoji live-update: `MapShellHandle.updatePlace()` — patches MapShell internal state on category change without refetch
+**Current Phase:** N1–N5c — shipped (N1/N3/N2+N4 by Cursor; N5a/N5b/N5c by Cursor; prompts by Claude Code)
+- N1: geographic proximity gate on list-scoped search scoring — local places score 0 when search bias >200km from list area; score stays 2000 when bias is null
+- N2+N4: social source URLs removed from `PlaceDrawer`; `InspectorCard` now shows Google rating, review count, and directions link
+- N3: transit layer loading spinner — `transitLoading` in `useMapLayerStore`, driven by maplibre `sourcedataloading`/`sourcedata` events, rendered in `PaperHeader`
+- N5a: `list_user_social_sources()` v4 — adds `address` + `opening_hours` to RPC; `SourcePlaceCard` renders address, collapsible hours, directions link
+- N5b: YouTube thumbnail card below source dropdown — `lib/social/youtube.ts` utility, renders in `SourcesPanel` as clickable card linking to source video
+- N5c: Sources layout rebalance — `SourcesShellPaper` panel `flex-[3]` / map `flex-[2]` (60/40 split); panel `min-w-[380px] max-w-[640px]`, map `min-w-[280px]`
 
 **Known issues (open, next session):**
 - Next substantive edit to `SourcesShellPaper.tsx`: consider regression tests for list overlay + `suppressPlaceFetch` / `displayMapPlaces` → `socialPlaces` (file is complex; parity tests were deferred)
@@ -23,6 +23,7 @@
 - Sources page has no list picker for "Add to list" — `SourcesPanel` hardcodes `activeListId` from `useTripStore`; user cannot choose which trip list to save a source place to
 
 **Previous (all complete):**
+- Sources H — `suppressPlaceFetch` on MapShell, list overlay chips, `isUnvetted`/`isOverlay` marker branches, RLS recursion fix, `places_view` social filter, category emoji live-update
 - Sources E–G — map view for source places (lat/lng in v3 RPC, direct from `selectedSource.places`), chip visual refresh (`paper-chip-active` gray + 6px radius), card-to-map highlight (scout mode, imperative `flyTo` via `MapShellHandle` ref)
 - Bug fixes this session: add-to-list 400 (place_id in body not query param), RLS 500 (social places blocked by `list_items` WITH CHECK), map flyTo wrong place (init effect re-firing on `allPlaces` changes)
 - Sources Workspace Redesign A–F — tags/callouts schema, ratings on places, `list_user_social_sources()` v3 (+ lat/lng), SourcesPanel rich place cards, desktop split layout, Sources tab always visible
