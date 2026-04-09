@@ -305,6 +305,19 @@ export default function InspectorCard(props: {
                 {neighborhoodLabel}
               </p>
             ) : null}
+            {google?.rating != null ? (
+              <div className="flex items-center gap-1.5 mt-1">
+                <span className="text-xs font-semibold text-paper-on-surface">
+                  {google.rating.toFixed(1)}
+                </span>
+                <span className="text-[11px] text-paper-on-surface-variant">★</span>
+                {google.review_count != null ? (
+                  <span className="text-[11px] text-paper-on-surface-variant">
+                    ({google.review_count.toLocaleString()} reviews)
+                  </span>
+                ) : null}
+              </div>
+            ) : null}
           </div>
           <button
             type="button"
@@ -393,6 +406,21 @@ export default function InspectorCard(props: {
                     <a
                       className="truncate text-[11px] text-paper-primary underline transition-colors hover:text-paper-primary-container"
                       href={google.url}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Open
+                    </a>
+                  </div>
+                ) : null}
+                {selectedResult?.lat != null && selectedResult?.lng != null ? (
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[11px] font-semibold text-paper-on-surface">
+                      Directions
+                    </span>
+                    <a
+                      className="truncate text-[11px] text-paper-primary underline transition-colors hover:text-paper-primary-container"
+                      href={`https://www.google.com/maps/dir/?api=1&destination=${selectedResult.lat},${selectedResult.lng}`}
                       target="_blank"
                       rel="noreferrer"
                     >

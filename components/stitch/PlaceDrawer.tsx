@@ -723,6 +723,19 @@ export default function PlaceDrawer({
                   {details.google.formatted_phone_number ? (
                     <p>Phone: {details.google.formatted_phone_number}</p>
                   ) : null}
+                  {place?.lat != null && place?.lng != null ? (
+                    <p>
+                      Directions:{' '}
+                      <a
+                        className={`mt-1 text-xs underline ${bodyTextClass}`}
+                        href={`https://www.google.com/maps/dir/?api=1&destination=${place.lat},${place.lng}`}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        Open in Google Maps
+                      </a>
+                    </p>
+                  ) : null}
                 </div>
               </div>
             ) : null}

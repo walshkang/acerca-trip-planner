@@ -30,6 +30,8 @@ export type DiscoveryGoogleDetails = {
         weekday_text: string[] | null
       }
     | null
+  rating: number | null
+  review_count: number | null
 }
 
 export type DiscoveryEnrichment = {

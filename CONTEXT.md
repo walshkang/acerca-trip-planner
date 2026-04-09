@@ -146,9 +146,9 @@ See [`PRD.md`](PRD.md) for the full shaped roadmap. Summary:
 
 **Immediate (N1–N4):**
 - **N1** — Search: stop showing active-list places when searching a new city
-- **N2** — Remove social source URLs from PlaceDrawer
+- **N2** — Remove social source URLs from PlaceDrawer — **Done**
 - **N3** — Transit layer loading spinner
-- **N4** — Richer search result preview (reviews, directions link)
+- **N4** — Richer search result preview (reviews, directions link) — **Done**
 
 **Next (N5):**
 - **N5** — Sources research hub: enriched place cards, video thumbnails, layout rebalance, research list drawer

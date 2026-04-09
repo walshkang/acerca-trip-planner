@@ -105,6 +105,11 @@ export async function POST(request: NextRequest) {
                 : null,
             }
           : null,
+        rating: typeof googlePlaces.rating === 'number' ? googlePlaces.rating : null,
+        review_count:
+          typeof googlePlaces.user_ratings_total === 'number'
+            ? googlePlaces.user_ratings_total
+            : null,
       },
       enrichment: {
         curatedData: enrichment.curatedData,
