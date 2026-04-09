@@ -1,6 +1,7 @@
--- 2026-04-14: Fix RLS policy gaps + RPC vote aggregation
--- Creates corrected policies for list_sources and research_votes
--- Replaces per-place LATERAL vote aggregation with a pre-aggregated CTE.
+-- 2026-04-14: RLS policy hardening + RPC vote aggregation optimization
+-- 1. research_votes DELETE: add list-access check (was user_id-only)
+-- 2. list_sources collaborator: remove redundant lists join
+-- 3. discover_research_places: replace per-place LATERAL with pre-aggregated CTE
 
 -- DROP affected policies (by exact name)
 DROP POLICY IF EXISTS "Edit collaborators manage list_sources on shared research lists" ON public.list_sources;
@@ -28,7 +29,8 @@ CREATE POLICY "List owners manage list_sources"
     )
   );
 
--- Recreate collaborator policy with explicit ls.user_id = lc.user_id binding
+-- Recreate collaborator policy — remove redundant lists join, keep existing join pattern
+-- (list_shares is a list-level token with no user_id column; lc.user_id = auth.uid() is the user check)
 CREATE POLICY "Edit collaborators manage list_sources on shared research lists"
   ON public.list_sources FOR ALL
   USING (
@@ -37,7 +39,6 @@ CREATE POLICY "Edit collaborators manage list_sources on shared research lists"
       FROM public.list_collaborators lc
       JOIN public.list_shares ls
         ON ls.list_id = lc.list_id
-        AND ls.user_id = lc.user_id
       WHERE lc.list_id = list_sources.list_id
         AND lc.user_id = auth.uid()
         AND ls.permission = 'edit'
@@ -55,7 +56,6 @@ CREATE POLICY "Edit collaborators manage list_sources on shared research lists"
       FROM public.list_collaborators lc
       JOIN public.list_shares ls
         ON ls.list_id = lc.list_id
-        AND ls.user_id = lc.user_id
       WHERE lc.list_id = list_sources.list_id
         AND lc.user_id = auth.uid()
         AND ls.permission = 'edit'
@@ -70,7 +70,7 @@ CREATE POLICY "Edit collaborators manage list_sources on shared research lists"
 
 -- NOTE: do NOT modify the SELECT policy for list_sources (left unchanged elsewhere)
 
--- Recreate research_votes INSERT policy with ls.user_id = lc.user_id binding in collaborator branch
+-- Recreate research_votes INSERT policy (unchanged from original — already correct)
 CREATE POLICY "Users insert own research votes on accessible lists"
   ON public.research_votes FOR INSERT
   WITH CHECK (
@@ -85,7 +85,6 @@ CREATE POLICY "Users insert own research votes on accessible lists"
             SELECT 1 FROM public.list_collaborators lc
             JOIN public.list_shares ls
               ON ls.list_id = lc.list_id
-              AND ls.user_id = lc.user_id
             WHERE lc.list_id = l.id
               AND lc.user_id = auth.uid()
               AND ls.permission = 'edit'
@@ -116,7 +115,6 @@ CREATE POLICY "Users delete own research votes"
             SELECT 1 FROM public.list_collaborators lc
             JOIN public.list_shares ls
               ON ls.list_id = lc.list_id
-              AND ls.user_id = lc.user_id
             WHERE lc.list_id = l.id
               AND lc.user_id = auth.uid()
               AND ls.permission = 'edit'
