@@ -8,6 +8,30 @@ For what's already shipped, see `CONTEXT.md`.
 
 ## Active — Next Up
 
+### N6 — Directions button + multi-stop flow
+
+*(moved up from Queued — N1–N5 shipped)*
+
+See shaped spec below under former Queued section.
+
+---
+
+## Shipped This Session (N1–N5c)
+
+| Slice | What |
+|-------|------|
+| N1 | Geographic proximity gate on list-scoped search — local places demoted to score 0 when bias >200km from list area |
+| N2 | Social source URLs removed from `PlaceDrawer` |
+| N3 | Transit layer loading spinner — `transitLoading` store state, maplibre events, `PaperHeader` spinner |
+| N4 | `InspectorCard` + `PlaceDrawer` — Google rating, review count, directions link |
+| N5a | `list_user_social_sources()` v4 — `address` + `opening_hours`; `SourcePlaceCard` renders all three |
+| N5b | YouTube thumbnail card below source dropdown; `lib/social/youtube.ts` utility |
+| N5c | Sources layout 60/40 — panel `flex-[3]`, map `flex-[2]` |
+
+---
+
+## Queued — Shaped but not next
+
 ### N1 — Search: stop showing active-list places when searching a new city
 
 **Problem:** When searching for a place in a city you haven't been to, the Omnibox returns results from the active list (e.g., Tokyo places while searching for Bangkok). The `listScopeId` in `useDiscoveryStore` sends `list_id` to `/api/discovery/suggest`, which ranks local matches at score 2000 vs Google at 500. That's helpful when searching *within* an active list, but harmful when discovering new places.
