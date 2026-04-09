@@ -1,4 +1,4 @@
-# N5c — Sources layout rebalance (ARCHIVED — moved to cursor-prompts/archive/n5c-layout-rebalance.md)
+# N5c — Sources layout rebalance
 
 ## Goal
 

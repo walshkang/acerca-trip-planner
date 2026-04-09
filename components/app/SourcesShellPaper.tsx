@@ -197,7 +197,7 @@ export default function SourcesShellPaper() {
         data-testid="sources-shell-body"
         className="flex min-h-0 flex-1 overflow-hidden px-4 pb-4 pt-[max(4.75rem,calc(env(safe-area-inset-top,0px)+3.75rem))] sm:px-6 md:gap-3"
       >
-        <div className={`${isMobile ? 'w-full' : 'w-full md:w-[380px] md:shrink-0'} min-h-0`}>
+        <div className={`${isMobile ? 'w-full' : 'w-full md:min-w-[380px] md:max-w-[640px] md:flex-[3]'} min-h-0`}>
           <div className="h-full overflow-hidden rounded-[4px] border border-paper-tertiary-fixed">
             <SourcesPanel
               onSelectedSourceChange={setSelectedSource}
@@ -213,7 +213,7 @@ export default function SourcesShellPaper() {
           </div>
         </div>
         {!isMobile ? (
-          <div className="relative hidden min-h-0 min-w-0 flex-1 overflow-hidden rounded-[4px] border border-paper-tertiary-fixed md:block">
+          <div className="relative hidden min-h-0 min-w-[280px] flex-[2] overflow-hidden rounded-[4px] border border-paper-tertiary-fixed md:block">
             {tripLists.length > 0 ? (
               <div className="pointer-events-none absolute left-3 top-3 z-10 flex flex-wrap gap-1.5">
                 {tripLists.map((list) => (

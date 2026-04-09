@@ -151,7 +151,7 @@ See [`PRD.md`](PRD.md) for the full shaped roadmap. Summary:
 - **N4** — Richer search result preview (reviews, directions link) — **Done**
 
 **Next (N5):**
-- **N5** — Sources research hub: enriched place cards, video thumbnails, layout rebalance, research list drawer
+- **N5** — Sources research hub: enriched place cards, video thumbnails, layout rebalance (N5c: layout rebalance — Done), research list drawer
 
 **Queued (N6–N7 + backlog):**
 - **N6** — Directions button + multi-stop flow (needs shaping)
