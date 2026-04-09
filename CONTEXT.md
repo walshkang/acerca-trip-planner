@@ -9,15 +9,21 @@
 
 ## Active Context
 
-**Current Phase:** N1–N5c — shipped (N1/N3/N2+N4 by Cursor; N5a/N5b/N5c by Cursor; prompts by Claude Code)
-- N1: geographic proximity gate on list-scoped search scoring — local places score 0 when search bias >200km from list area; score stays 2000 when bias is null
-- N2+N4: social source URLs removed from `PlaceDrawer`; `InspectorCard` now shows Google rating, review count, and directions link
-- N3: transit layer loading spinner — `transitLoading` in `useMapLayerStore`, driven by maplibre `sourcedataloading`/`sourcedata` events, rendered in `PaperHeader`
-- N5a: `list_user_social_sources()` v4 — adds `address` + `opening_hours` to RPC; `SourcePlaceCard` renders address, collapsible hours, directions link
-- N5b: YouTube thumbnail card below source dropdown — `lib/social/youtube.ts` utility, renders in `SourcesPanel` as clickable card linking to source video
-- N5c: Sources layout rebalance — `SourcesShellPaper` panel `flex-[3]` / map `flex-[2]` (60/40 split); panel `min-w-[380px] max-w-[640px]`, map `min-w-[280px]`
+**Current Phase:** S7–S10 research workspace shipped + post-merge hardening (2026-04-09)
+
+**Just landed (this session):**
+- S7–S10 research workspace (Cursor cloud agent branch, already merged to main): `list_type`, `list_sources`, `research_votes`, `discover_research_places` RPC, `ResearchTriagePanel`, overlap triage UI, vote + add-to-trip flows
+- Post-merge fixes (4 parallel slices via Cursor prompts):
+  - Migration `20260414000001`: research_votes DELETE policy now requires list access; `list_sources` collaborator policy cleaned up; `discover_research_places` RPC rewritten with CTE (was LATERAL per-place)
+  - `ResearchTriagePanel`: `createResearchList()` now surfaces errors in UI; `buildProvenanceNotes` shows `[truncated]` indicator
+  - `POST /api/lists/[id]/items`: social places scoped to attached sources only (was any `source='social'`)
+  - `lib/social/research-queries.ts`: `ResearchPlaceRow.category` typed as `CategoryEnum`; 4 new edge-case tests (6 total)
+
+**In progress:**
+- Playwright E2E for research flows — `tests/e2e/research.spec.ts` is template scaffolding with generic selectors; needs selector alignment with paper shell UI + auth flow wiring to existing `playwright/global-setup.ts`. Config at `tests/e2e/playwright.config.ts` duplicates root config — consolidate to root.
 
 **Known issues (open, next session):**
+- `ResearchTriagePanel` is 525 lines / 13 useState — should split before S11/S12 work
 - Next substantive edit to `SourcesShellPaper.tsx`: consider regression tests for list overlay + `suppressPlaceFetch` / `displayMapPlaces` → `socialPlaces` (file is complex; parity tests were deferred)
 - Social places from original YouTube vlog import still appear in the saved list — these predate the `places_view` filter and are already in `list_items` from the ingest flow; needs a data cleanup or ingest-path fix so social places aren't auto-added to lists on import
 - Sources page has no list picker for "Add to list" — `SourcesPanel` hardcodes `activeListId` from `useTripStore`; user cannot choose which trip list to save a source place to
