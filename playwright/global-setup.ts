@@ -130,10 +130,12 @@ export default async function globalSetup() {
     const maxAge = typeof options.maxAge === 'number' ? options.maxAge : null
     const expires = maxAge ? now + maxAge : -1
 
+    // Use full base URL for Playwright storageState so cookies are applied
+    // regardless of whether tests use `localhost` or `127.0.0.1`.
     return {
       name,
       value: record.value,
-      domain: hostname,
+      url: baseUrl,
       path: typeof options.path === 'string' ? options.path : '/',
       expires,
       httpOnly: Boolean(options.httpOnly),
