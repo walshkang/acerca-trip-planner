@@ -1,6 +1,8 @@
 import { createBrowserClient } from '@supabase/ssr'
 import fs from 'fs'
 import path from 'path'
+import { BETA_COOKIE_NAME, BETA_TOKEN_TTL_SEC } from '@/lib/beta-access/constants'
+import { signBetaToken } from '@/lib/beta-access/token'
 
 type CookieRecord = {
   value: string
@@ -98,6 +100,28 @@ export default async function globalSetup() {
 
   const hostname = new URL(baseUrl).hostname
   const now = Math.floor(Date.now() / 1000)
+
+  // If a beta password is configured, generate a beta token and add it to the cookieJar
+  const betaPassword = process.env.BETA_ACCESS_PASSWORD?.trim()
+  if (betaPassword) {
+    try {
+      const { token, maxAgeSec } = await signBetaToken(betaPassword, now, BETA_TOKEN_TTL_SEC)
+      const secure = process.env.NODE_ENV === 'production' || process.env.VERCEL === '1'
+      cookieJar.set(BETA_COOKIE_NAME, {
+        value: token,
+        options: {
+          httpOnly: true,
+          path: '/',
+          maxAge: maxAgeSec,
+          sameSite: 'lax',
+          secure: Boolean(secure),
+        },
+      })
+      console.log('[playwright beta] generated beta cookie')
+    } catch (e) {
+      console.warn('[playwright beta] failed to generate beta token', e)
+    }
+  }
 
   const cookieState = Array.from(cookieJar.entries()).map(([name, record]) => {
     const options =
