@@ -18,6 +18,7 @@
 - Category emoji live-update: `MapShellHandle.updatePlace()` — patches MapShell internal state on category change without refetch
 
 **Known issues (open, next session):**
+- Next substantive edit to `SourcesShellPaper.tsx`: consider regression tests for list overlay + `suppressPlaceFetch` / `displayMapPlaces` → `socialPlaces` (file is complex; parity tests were deferred)
 - Social places from original YouTube vlog import still appear in the saved list — these predate the `places_view` filter and are already in `list_items` from the ingest flow; needs a data cleanup or ingest-path fix so social places aren't auto-added to lists on import
 - Sources page has no list picker for "Add to list" — `SourcesPanel` hardcodes `activeListId` from `useTripStore`; user cannot choose which trip list to save a source place to
 
@@ -141,20 +142,21 @@ AppShell
 
 ### What's Next
 
-**Immediate (active):**
-- **Sources I (next)** — list picker in `SourcesPanel` (choose target list for "Add to list"), social import path audit (stop auto-adding ingested social places to lists).
-- **Sources Research Workspace follow-ups** — E2E coverage for research triage + shared-list vote UX; optional seed script for `list_sources` demo data.
-- **MVP scope guardrail** — map starts with clustering/basic parity; marker prominence scaling shipped for overlap count in Sources map.
-- **Social eval flywheel** — `eval:capture` → `eval:diagnose` → meta-LLM prompt improvement → `eval:capture --force`. Score files + diagnosis reports committed to `evals/scores/`. See `evals/scores/README.md` for full loop docs. Ghost-town fixture still returning wrong persona (`local` instead of `adventure`) — next prompt improvement target.
+See [`PRD.md`](PRD.md) for the full shaped roadmap. Summary:
 
-**Queued:**
-- **Sources Workspace phase 2 (Curation + Compare)** — visual compare surface (thumbnail + metadata), snippet-rich cards, and restore/shortlist polish on top of MVP overlap triage.
-- **Media previews in sources** — thumbnail-first + outbound links is the baseline; inline embeds only as a follow-up perf/UX bet.
-- **TikTok import adapter (phase 3)** — additive expansion with metadata fallback permitted; must not block MVP release.
-- **Transit coverage S1-S5** — Manual overrides + OSM Overpass fallback (paused, not blocked)
-- **In-app chat UI (task 4.11)** — Conversational trip planning wired to preview/commit APIs
-- **Discover ↔ Plan map sync** — Selecting a list on Discover page flies the Plan map to that list's pins
-- **Collab P4 (Realtime)** — Supabase Realtime Postgres Changes + Presence
+**Immediate (N1–N4):**
+- **N1** — Search: stop showing active-list places when searching a new city
+- **N2** — Remove social source URLs from PlaceDrawer
+- **N3** — Transit layer loading spinner
+- **N4** — Richer search result preview (reviews, directions link)
+
+**Next (N5):**
+- **N5** — Sources research hub: enriched place cards, video thumbnails, layout rebalance, research list drawer
+
+**Queued (N6–N7 + backlog):**
+- **N6** — Directions button + multi-stop flow (needs shaping)
+- **N7** — Street View integration (noted, needs cost research)
+- Sources I (list picker), Sources phase 2, TikTok adapter, transit coverage, in-app chat, map sync, Collab P4
 
 **Deferred (separate epics):**
 - Insights layer (distance warnings, closed-day alerts)

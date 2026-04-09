@@ -72,6 +72,7 @@ export default function SourcesShellPaper() {
     [overlayListIds, overlayPlacesByListId]
   )
 
+  // With suppressPlaceFetch, user places (and activeListPlaceIds) are unused; overlay pins are merged here and passed as socialPlaces — not a bug.
   const displayMapPlaces = useMemo<MapPlace[]>(() => {
     if (researchListId) return researchMapPlaces
     return [...sourceMapPlaces, ...overlayMapPlaces]

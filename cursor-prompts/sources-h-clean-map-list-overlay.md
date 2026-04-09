@@ -219,3 +219,5 @@ The muted stone-gray dot reads as "provisional" — no category claim until vett
 H1 → H2 → H3. Each is independently testable.
 
 Run `npm run check` before committing.
+
+**Shipped note:** H2/H3 in production use **multi-select** list chips, **`places_view`** for overlay geometry, and **`isOverlay`** (sky-blue dot) on `MapPlace` — not the single-select + `activeListPlaceIds`-only wiring shown in the sections above.

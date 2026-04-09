@@ -48,14 +48,23 @@ If you must break an invariant, note it explicitly in the PR and update this fil
 
 ---
 
+## Doc Sync (every commit)
+
+Every commit that changes behavior must include doc updates in the same commit. Check each:
+
+1. **`CONTEXT.md`** — update `Current Phase` and `What's Next` to reflect what shipped, what moved, what's next.
+2. **`PRD.md`** — if a slice (N1–N7) was started, completed, or descoped, update its status. If new work was shaped, add it.
+3. **`cursor-prompts/`** — archive implemented or paused prompt `.md` files to `cursor-prompts/archive/`. Only the next-up prompt stays in the root.
+
+Do not commit code without the corresponding doc updates. The commit message should cover what shipped vs. what's shaped/pending.
+
 ## Session Close Checklist
 
 When wrapping up a session (commit + push requested, or natural stopping point):
 
-1. **Archive cursor-prompts** — move implemented and paused prompt `.md` files to `cursor-prompts/archive/`. Only the next-up prompt stays in the root.
-2. **Update `CONTEXT.md`** — `Current Phase` → what's next/shaped; move shipped work into `Previous`; update `Immediate` in "What's Next".
-3. **Commit** — stage all changed files; commit message covers what shipped vs. what's shaped/pending. Claude Code appends `Co-Authored-By`.
-4. **Push.**
+1. **Doc sync** — follow the "Doc Sync (every commit)" section above.
+2. **Commit** — stage code + docs together. Claude Code appends `Co-Authored-By`.
+3. **Push.**
 
 Memory files (`~/.claude/projects/*/memory/`) are Claude Code–specific and updated separately by Claude Code.
 
