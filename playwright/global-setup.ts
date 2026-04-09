@@ -136,6 +136,7 @@ export default async function globalSetup() {
       name,
       value: record.value,
       url: baseUrl,
+      domain: hostname,
       path: typeof options.path === 'string' ? options.path : '/',
       expires,
       httpOnly: Boolean(options.httpOnly),
