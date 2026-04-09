@@ -322,7 +322,43 @@ export async function POST(
           { status: 500 }
         )
       }
-      place = socialPlace ?? null
+
+      if (socialPlace) {
+        // Verify the social place is from a source attached to a list the user can access.
+        // First, fetch source_ids from list_sources. RLS ensures only sources for accessible lists are returned.
+        const { data: userSources, error: userSourcesErr } = await supabase
+          .from('list_sources')
+          .select('source_id')
+
+        if (userSourcesErr) {
+          return NextResponse.json(
+            { error: userSourcesErr.message || 'Failed to verify place attachment' },
+            { status: 500 }
+          )
+        }
+
+        const userSourceIds = (userSources ?? []).map((s) => s.source_id)
+
+        if (userSourceIds.length === 0) {
+          // User has no attached sources -> treat as not found
+          return NextResponse.json({ error: 'Place not found' }, { status: 404 })
+        }
+
+        const { count, error: attachErr } = await supabase
+          .from('social_mentions')
+          .select('id', { count: 'exact', head: true })
+          .eq('place_id', placeId)
+          .in('source_id', userSourceIds)
+
+        if (attachErr || !count) {
+          // Place exists but user has no attached source for it
+          return NextResponse.json({ error: 'Place not found' }, { status: 404 })
+        }
+
+        place = socialPlace
+      } else {
+        place = null
+      }
     }
 
     if (!place) {

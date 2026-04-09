@@ -40,4 +40,69 @@ describe('fetchResearchPlaces', () => {
       p_list_id: 'list-uuid',
     })
   })
+
+  it('returns error message when RPC fails', async () => {
+    rpcMock.mockResolvedValue({ data: null, error: { message: 'RPC failed' } })
+
+    const result = await fetchResearchPlaces({ listId: 'list-uuid' })
+
+    expect(result.data).toEqual([])
+    expect(result.error).toBe('RPC failed')
+  })
+
+  it('returns empty array when RPC returns null data', async () => {
+    rpcMock.mockResolvedValue({ data: null, error: null })
+
+    const result = await fetchResearchPlaces({ listId: 'list-uuid' })
+
+    expect(result.data).toEqual([])
+    expect(result.error).toBeNull()
+  })
+
+  it('handles malformed top_snippets gracefully', async () => {
+    rpcMock.mockResolvedValue({
+      data: [
+        {
+          place_id: 'p1',
+          name: 'Test Place',
+          category: 'restaurant',
+          lat: 13.7,
+          lng: 100.5,
+          overlap_count: 1,
+          net_score: 0,
+          user_vote: null,
+          top_snippets: 'not-an-array',
+        },
+      ],
+      error: null,
+    })
+
+    const result = await fetchResearchPlaces({ listId: 'list-uuid' })
+
+    expect(result.data).toHaveLength(1)
+    expect(result.data[0].top_snippets).toEqual([])
+  })
+
+  it('normalizes unexpected vote values to null', async () => {
+    rpcMock.mockResolvedValue({
+      data: [
+        {
+          place_id: 'p1',
+          name: 'Test Place',
+          category: 'restaurant',
+          lat: 13.7,
+          lng: 100.5,
+          overlap_count: 2,
+          net_score: 5,
+          user_vote: 2,
+          top_snippets: [],
+        },
+      ],
+      error: null,
+    })
+
+    const result = await fetchResearchPlaces({ listId: 'list-uuid' })
+
+    expect(result.data[0].user_vote).toBeNull()
+  })
 })

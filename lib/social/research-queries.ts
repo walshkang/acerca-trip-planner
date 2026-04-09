@@ -1,4 +1,5 @@
 import { getSupabase } from '@/lib/supabase/client'
+import { type CategoryEnum } from '@/lib/types/enums'
 
 export type ResearchPlaceSnippet = {
   author_name: string
@@ -9,7 +10,7 @@ export type ResearchPlaceSnippet = {
 export type ResearchPlaceRow = {
   place_id: string
   name: string
-  category: string
+  category: CategoryEnum
   lat: number
   lng: number
   overlap_count: number
@@ -74,7 +75,7 @@ export async function fetchResearchPlaces(
     data: rows.map((r) => ({
       place_id: r.place_id,
       name: r.name,
-      category: r.category,
+      category: r.category as CategoryEnum,
       lat: r.lat,
       lng: r.lng,
       overlap_count: Number(r.overlap_count),

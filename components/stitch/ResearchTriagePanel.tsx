@@ -32,7 +32,11 @@ function buildProvenanceNotes(place: ResearchPlaceRow): string {
     const snip = s.snippet?.trim() || ''
     return `${who} (${plat}): ${snip}`
   })
-  return lines.join('\n').slice(0, 7900)
+  const joined = lines.join('\n')
+  if (joined.length > 7900) {
+    return joined.slice(0, 7880) + '\n\n[truncated]'
+  }
+  return joined
 }
 
 function ResearchPlaceRowCard({
@@ -151,6 +155,7 @@ export default function ResearchTriagePanel({
   const [placesError, setPlacesError] = useState<string | null>(null)
   const [newResearchName, setNewResearchName] = useState('')
   const [creating, setCreating] = useState(false)
+  const [createError, setCreateError] = useState<string | null>(null)
   const [tripSheetPlace, setTripSheetPlace] = useState<ResearchPlaceRow | null>(null)
   const [addingTripId, setAddingTripId] = useState<string | null>(null)
   const [lastQueryBounds, setLastQueryBounds] = useState<ViewportBounds | null | 'full'>(
@@ -273,6 +278,7 @@ export default function ResearchTriagePanel({
   async function createResearchList() {
     const name = newResearchName.trim()
     if (!name || creating) return
+    setCreateError(null)
     setCreating(true)
     try {
       const res = await fetch('/api/lists', {
@@ -281,12 +287,18 @@ export default function ResearchTriagePanel({
         body: JSON.stringify({ name, list_type: 'research' }),
       })
       const json = (await res.json().catch(() => ({}))) as { list?: ListRow; error?: string }
-      if (!res.ok) return
+      if (!res.ok) {
+        setCreateError(json.error || 'Failed to create list')
+        return
+      }
       if (json.list?.id) {
         await loadLists()
         onResearchListIdChange(json.list.id)
         setNewResearchName('')
+        setCreateError(null)
+        return
       }
+      setCreateError('Unexpected response')
     } finally {
       setCreating(false)
     }
@@ -412,6 +424,9 @@ export default function ResearchTriagePanel({
                 Create
               </button>
             </div>
+            {createError ? (
+              <p className="mt-1 text-xs text-red-500">{createError}</p>
+            ) : null}
           </div>
 
           {researchListId && userSources?.length ? (
