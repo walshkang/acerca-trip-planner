@@ -12,6 +12,8 @@ export type UserSocialSourcePlace = {
   google_place_id: string | null
   google_rating: number | null
   google_review_count: number | null
+  address: string | null
+  opening_hours: unknown | null
   snippet: string
   sentiment: string | null
   tags: string[]

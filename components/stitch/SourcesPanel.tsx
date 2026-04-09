@@ -24,6 +24,14 @@ function calloutPrefix(type: 'dish' | 'drink' | 'activity' | 'tip'): string {
   return '💡'
 }
 
+function weekdayTextFromOpeningHours(v: unknown): string[] | null {
+  if (typeof v !== 'object' || v === null || Array.isArray(v)) return null
+  const oh = v as { weekday_text?: unknown }
+  const wt = oh.weekday_text
+  if (!Array.isArray(wt) || wt.some((x: unknown) => typeof x !== 'string')) return null
+  return wt as string[]
+}
+
 function SourcePlaceCard({
   place,
   activeListId,
@@ -52,6 +60,8 @@ function SourcePlaceCard({
     place.google_rating != null ? place.google_rating.toFixed(1) : null
   const reviewCount = place.google_review_count ?? 0
   const addDisabled = !activeListId || addStatus === 'loading'
+  const [showHours, setShowHours] = useState(false)
+  const weekdayText = weekdayTextFromOpeningHours(place.opening_hours)
 
   async function onAddToList() {
     if (!activeListId) return
@@ -96,6 +106,11 @@ function SourcePlaceCard({
       <div className="flex items-center justify-between gap-2">
         <div className="min-w-0">
           <p className="truncate text-sm font-medium text-paper-on-surface">{place.place_name}</p>
+          {place.address ? (
+            <p className="mt-0.5 truncate text-xs text-paper-on-surface-variant">
+              {place.address}
+            </p>
+          ) : null}
           <div className="mt-1 flex items-center gap-2">
             <span className="paper-chip py-0.5 text-[10px] leading-tight">{place.category}</span>
             {hasRating ? (
@@ -105,6 +120,22 @@ function SourcePlaceCard({
               </span>
             ) : null}
           </div>
+          {weekdayText ? (
+            <div className="mt-1">
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); setShowHours((h) => !h) }}
+                className="text-[11px] text-paper-on-surface-variant underline"
+              >
+                {showHours ? 'Hide hours' : 'Hours'}
+              </button>
+              {showHours ? (
+                <ul className="mt-1 space-y-0.5 text-[11px] text-paper-on-surface-variant">
+                  {weekdayText.map((line) => <li key={line}>{line}</li>)}
+                </ul>
+              ) : null}
+            </div>
+          ) : null}
         </div>
       </div>
       <p className="mt-2 line-clamp-3 text-xs italic text-paper-on-surface-variant">
@@ -135,16 +166,29 @@ function SourcePlaceCard({
       ) : null}
 
       <div className="mt-3 flex items-center justify-between gap-2">
-        <button
-          type="button"
-          className="paper-button-ghost px-2 py-1 text-xs"
-          onClick={(e) => {
-            e.stopPropagation()
-            onMoreDetails(place.place_id)
-          }}
-        >
-          More details
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            className="paper-button-ghost px-2 py-1 text-xs"
+            onClick={(e) => {
+              e.stopPropagation()
+              onMoreDetails(place.place_id)
+            }}
+          >
+            More details
+          </button>
+          {place.lat != null && place.lng != null ? (
+            <a
+              className="paper-button-ghost px-2 py-1 text-xs"
+              href={`https://www.google.com/maps/dir/?api=1&destination=${place.lat},${place.lng}`}
+              target="_blank"
+              rel="noreferrer"
+              onClick={(e) => e.stopPropagation()}
+            >
+              Directions
+            </a>
+          ) : null}
+        </div>
         <button
           type="button"
           className="paper-button-primary px-2 py-1 text-xs disabled:opacity-60"
