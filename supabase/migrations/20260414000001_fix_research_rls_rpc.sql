@@ -94,11 +94,7 @@ CREATE POLICY "Users insert own research votes on accessible lists"
     )
   );
 
--- Keep update policy unchanged (users may update their own vote)
-CREATE POLICY "Users update own research votes"
-  ON public.research_votes FOR UPDATE
-  USING (user_id = auth.uid())
-  WITH CHECK (user_id = auth.uid());
+-- NOTE: UPDATE policy "Users update own research votes" left untouched (not dropped, not recreated)
 
 -- Recreate research_votes DELETE policy to ensure user still has list access
 CREATE POLICY "Users delete own research votes"
