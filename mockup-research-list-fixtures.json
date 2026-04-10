@@ -1,0 +1,30 @@
+{
+  "research_list": {
+    "id": "11111111-1111-1111-1111-111111111111",
+    "title": "Istanbul food vlog sources",
+    "description": "Sample research list",
+    "user_id": "22222222-2222-2222-2222-222222222222"
+  },
+  "research_source_sample": {
+    "id": "33333333-3333-3333-3333-333333333333",
+    "research_list_id": "11111111-1111-1111-1111-111111111111",
+    "title": "YouTube: Best Kebabs vlog",
+    "url": "https://www.youtube.com/watch?v=abcd",
+    "source_type": "youtube",
+    "metadata": {"channel":"vlogger"},
+    "transcript": "Sample transcript..."
+  },
+  "research_place_sample": {
+    "id": "44444444-4444-4444-4444-444444444444",
+    "research_source_id": "33333333-3333-3333-3333-333333333333",
+    "name": "Kebab House",
+    "address": "123 Main St, Istanbul",
+    "place_id": "ChIJ-sample-place-id",
+    "rating": 4.6,
+    "review_count": 234,
+    "url": "https://maps.google.com/?q=kebab",
+    "lat": 41.0,
+    "lng": 28.9,
+    "raw_json": {}
+  }
+}

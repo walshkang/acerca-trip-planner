@@ -20,6 +20,9 @@
   - `lib/social/research-queries.ts`: `ResearchPlaceRow.category` typed as `CategoryEnum`; 4 new edge-case tests (6 total)
 
 **In progress:**
+
+- Research list schema + API slices — define DB migrations (research_lists, research_sources, research_places), implement CRUD endpoints and the copy endpoint (ResearchPlace -> UserSavedPlace). Produce OpenAPI/mock payloads for frontend to develop against; owner: Team A (backend). See session plan at `.copilot/session-state/9fe0b8b5-f7b2-4067-995c-0f47c6e0c7f3/plan.md`.
+
 - Playwright E2E for research flows — `tests/e2e/research.spec.ts` is template scaffolding with generic selectors; needs selector alignment with paper shell UI + auth flow wiring to existing `playwright/global-setup.ts`. Config at `tests/e2e/playwright.config.ts` duplicates root config — consolidate to root.
 
 **Known issues (open, next session):**

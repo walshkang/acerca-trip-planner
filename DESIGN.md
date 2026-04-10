@@ -148,6 +148,39 @@ The map remains useful as a spatial reference during planning — it should not 
 
 ---
 
+## D. Sources Research Components
+
+Purpose
+
+- Support research lists and single-source browsing within the existing Paper shell. Reuse existing PaperExplorePanel, ListDrawer, PlaceDrawer, InspectorCard, Dropdown, Modal, Chip and Toast patterns so we keep a single component inventory.
+
+Components
+
+- AddToListDropdown
+  - Purpose: replace the per-source "Add" button with a dropdown that lists the user's trip lists and a "Create new list" action.
+  - Props: place: ResearchPlaceRow; onSelect(listId: string): void; onCreate(): void; disabled?: boolean
+  - Behavior: keyboard-accessible dropdown; selects call POST /api/lists/:listId/places/copy (dedupe by place_id). On success open QuickEditModal to allow adding emoji/tags/notes; show toasts for success/failure.
+  - Reuse: PlannerListSwitcher as the list source, existing Dropdown and Toast patterns.
+
+- ResearchListView (split pane)
+  - Layout: left pane = Sources list (compact source cards); right pane = Selected Source detail (places list + media preview/transcript).
+  - Behavior: single-source browsing UX — selecting a source shows its places; source-level search and tag filters; place cards show rating, review_count and primary actions (AddToListDropdown, vote). Optional map sync via MapShell.
+  - Reuse: PaperExplorePanel, ListDrawer, InspectorCard, PlaceDrawer, existing chips and badges.
+
+- QuickEditModal
+  - Purpose: after a place is copied to a user list, allow quick edits (emoji, tags, notes) before final save.
+  - UI: small modal with emoji picker, tag chips, notes input, Save/Cancel. Use existing Modal, EmojiPicker, TagChip components.
+
+Accessibility & Patterns
+
+- Keyboard-first: dropdowns and modals must support keyboard navigation and aria roles; modals must trap focus and return focus on close.
+- Visual: follow paper-surface tokens, SIGNAL_VISUAL_LANGUAGE for focus/dim states, and existing chip/badge radii.
+- Testing: unit tests for dropdown + copy/dedupe logic, component tests for split-pane layout, Playwright e2e for end-to-end flow.
+
+References
+
+- Reuse component patterns documented elsewhere in this file: PaperExplorePanel, InspectorCard, ListDrawer, PlaceDrawer.
+
 ## C. The planner (day grid)
 
 This section supersedes `docs/PHASE_2_KANBAN_SPEC.md` for planner UI/UX decisions. The backend data model (slot sentinels, fractional ordering, API contract) from that spec remains valid.
