@@ -243,6 +243,7 @@ async function generateTextJsonWithRetry<T>(params: {
   schemaHint: string
   parse: (value: unknown) => { ok: true; data: T } | { ok: false; message: string }
   errorPrefix: 'social_extraction_invalid' | 'social_extraction_chunk_invalid'
+  onRaw?: (raw: string) => void
 }): Promise<T> {
   let lastErr: unknown
   for (let attempt = 0; attempt < GENERATION_ATTEMPTS; attempt++) {
@@ -254,12 +255,17 @@ async function generateTextJsonWithRetry<T>(params: {
         temperature: 0,
       })
 
+      // Capture raw text output for telemetry/debugging (best-effort)
+      try {
+        params.onRaw?.((generated as { text?: string }).text ?? '')
+      } catch {}
+
       const finishReason = (generated as { finishReason?: string }).finishReason
       if (isTruncationFinishReason(finishReason)) {
         throw new Error(`social_extraction_text_truncated:${finishReason}`)
       }
 
-      const parsedObject = extractJsonObjectFromModelText(generated.text)
+      const parsedObject = extractJsonObjectFromModelText((generated as { text: string }).text)
       const sanitized =
         params.errorPrefix === 'social_extraction_invalid'
           ? sanitizeSocialExtractionPayload(parsedObject)
@@ -300,6 +306,10 @@ export type IngestSocialResult = {
   places_failed: number
   failures: IngestFailure[]
   error?: string
+  extract_ms?: number | null
+  places_ms?: number | null
+  model_id?: string | null
+  raw_llm_output?: string | null
 }
 
 function extractedMentionKey(mention: ExtractedMention): string {
@@ -330,9 +340,11 @@ function requireSocialSystemUserId(): string {
 
 export async function extractMergedSocialExtraction(
   transcript: string
-): Promise<MergedSocialExtraction> {
+): Promise<MergedSocialExtraction & { raw_llm_outputs?: string[] }> {
   const outputMode = getSocialExtractionOutputMode()
   const { maxChars } = getChunkingConfigFromEnv()
+  const rawOutputs: string[] = []
+
   if (transcript.length <= maxChars) {
     const data =
       outputMode === 'native-json'
@@ -344,6 +356,9 @@ export async function extractMergedSocialExtraction(
               prompt: transcript,
               temperature: 0,
             }).then((generated) => {
+              try {
+                rawOutputs.push(JSON.stringify(generated.object))
+              } catch {}
               const extractionParsed = parseSocialExtraction(
                 sanitizeSocialExtractionPayload(generated.object)
               )
@@ -359,10 +374,16 @@ export async function extractMergedSocialExtraction(
             schemaHint: FULL_SCHEMA_HINT,
             parse: parseSocialExtraction,
             errorPrefix: 'social_extraction_invalid',
+            onRaw: (raw) => {
+              try {
+                rawOutputs.push(raw)
+              } catch {}
+            },
           })
     return {
       author_persona: data.author_persona,
       mentioned_places: data.mentioned_places,
+      raw_llm_outputs: rawOutputs,
     }
   }
 
@@ -384,6 +405,9 @@ export async function extractMergedSocialExtraction(
                 temperature: 0,
               })
             ).then((generated) => {
+              try {
+                rawOutputs.push(JSON.stringify(generated.object))
+              } catch {}
               const extractionParsed = parseSocialExtractionChunk(
                 sanitizeSocialExtractionChunkPayload(generated.object)
               )
@@ -398,112 +422,23 @@ export async function extractMergedSocialExtraction(
               schemaHint: CHUNK_SCHEMA_HINT,
               parse: parseSocialExtractionChunk,
               errorPrefix: 'social_extraction_chunk_invalid',
+              onRaw: (raw) => {
+                try {
+                  rawOutputs.push(raw)
+                } catch {}
+              },
             })
       )
     )
     chunkOutputs.push(...batchResults)
   }
 
-  return mergeSocialExtractions(chunkOutputs)
-}
-
-async function ensureSourceId(params: {
-  request: IngestSocialRequest
-  authorPersona: Persona
-}): Promise<string> {
-  const supabase = getAdminSupabase()
-  const { request, authorPersona } = params
-
-  const upsertResult = await supabase
-    .from('social_sources')
-    .upsert(
-      {
-        url: request.url,
-        platform: request.platform,
-        author_name: request.author_name,
-        author_persona: authorPersona,
-        title: request.title ?? null,
-        raw_transcript: request.transcript,
-      },
-      { onConflict: 'url' }
-    )
-    .select('id')
-    .single()
-
-  if (upsertResult.error || !upsertResult.data?.id) {
-    throw new Error(
-      `social_sources_upsert_failed:${upsertResult.error?.message ?? 'missing_source_id'}`
-    )
+  const merged = mergeSocialExtractions(chunkOutputs)
+  return {
+    author_persona: merged.author_persona,
+    mentioned_places: merged.mentioned_places,
+    raw_llm_outputs: rawOutputs,
   }
-
-  return upsertResult.data.id
-}
-
-async function ensurePlaceId(params: {
-  sourceUserId: string
-  googlePlaceId: string
-  name: string
-  lat: number
-  lng: number
-  googleTypes?: string[]
-  googleRating?: number
-  googleReviewCount?: number
-}): Promise<string> {
-  const supabase = getAdminSupabase()
-  const {
-    sourceUserId,
-    googlePlaceId,
-    name,
-    lat,
-    lng,
-    googleTypes,
-    googleRating,
-    googleReviewCount,
-  } = params
-
-  const upsertResult = await supabase
-    .from('places')
-    .upsert(
-      {
-        user_id: sourceUserId,
-        name,
-        category: googleTypes?.length ? inferCategoryFromGoogleTypes(googleTypes) : 'Sights',
-        source: 'social',
-        source_id: `google:${googlePlaceId}`,
-        google_place_id: googlePlaceId,
-        dedupe_key: `google:${googlePlaceId}`,
-        enrichment_source_hash: 'social-ingest',
-        location: toGeographyPointWkt(lat, lng),
-        google_rating: typeof googleRating === 'number' ? googleRating : null,
-        google_review_count: typeof googleReviewCount === 'number' ? googleReviewCount : null,
-      },
-      {
-        onConflict: 'user_id,dedupe_key',
-        ignoreDuplicates: true,
-      }
-    )
-    .select('id')
-    .maybeSingle()
-
-  if (upsertResult.error) {
-    throw new Error(`places_upsert_failed:${upsertResult.error.message}`)
-  }
-
-  if (upsertResult.data?.id) return upsertResult.data.id
-
-  const lookup = await supabase
-    .from('places')
-    .select('id')
-    .eq('user_id', sourceUserId)
-    .eq('source', 'social')
-    .eq('source_id', `google:${googlePlaceId}`)
-    .maybeSingle()
-
-  if (lookup.error || !lookup.data?.id) {
-    throw new Error(`places_lookup_failed:${lookup.error?.message ?? 'missing_place_id'}`)
-  }
-
-  return lookup.data.id
 }
 
 /**
@@ -514,7 +449,11 @@ export async function persistSocialIngest(
   onProgress?: (msg: string) => void
 ): Promise<IngestSocialResult> {
   try {
+    const extractStart = Date.now()
     const extraction = await extractMergedSocialExtraction(request.transcript)
+    const extractMs = Date.now() - extractStart
+    const modelId = getSocialExtractionModelId()
+    const rawOutputs = (extraction as any).raw_llm_outputs ?? []
 
     const sourceId = await ensureSourceId({
       request,
@@ -528,6 +467,7 @@ export async function persistSocialIngest(
     )
     onProgress?.(`Resolving ${extractedMentions.length} places...`)
 
+    const placesStart = Date.now()
     const allResults = await Promise.all(
       chunk(extractedMentions, PLACES_BATCH_SIZE).map((batch) =>
         Promise.all(
@@ -602,6 +542,7 @@ export async function persistSocialIngest(
         )
       )
     )
+    const placesMs = Date.now() - placesStart
 
     const flatResults = allResults.flat()
     const failures: IngestFailure[] = flatResults
@@ -625,6 +566,10 @@ export async function persistSocialIngest(
       places_resolved: placesResolved,
       places_failed: failures.length,
       failures,
+      extract_ms: extractMs,
+      places_ms: placesMs,
+      model_id: modelId,
+      raw_llm_output: rawOutputs.join('\n\n').slice(0, 5000),
     }
   } catch (error) {
     return {
@@ -649,6 +594,13 @@ export async function persistSocialIngestForJob(
   const result = await persistSocialIngest(request, onProgress)
   const admin = getAdminSupabase()
 
+  const telemetry = {
+    extract_ms: result.extract_ms ?? null,
+    places_ms: result.places_ms ?? null,
+    model_id: result.model_id ?? null,
+    raw_llm_output: result.raw_llm_output ?? null,
+  }
+
   if (result.error) {
     await admin
       .from('social_ingest_jobs')
@@ -658,6 +610,7 @@ export async function persistSocialIngestForJob(
         places_resolved: 0,
         places_failed: 0,
         failures: null,
+        ...telemetry,
       })
       .eq('id', jobId)
     return result
@@ -675,6 +628,7 @@ export async function persistSocialIngestForJob(
       places_resolved: result.places_resolved,
       places_failed: result.places_failed,
       failures: failuresPayload,
+      ...telemetry,
     })
     .eq('id', jobId)
 

@@ -465,6 +465,127 @@ export type Database = {
           },
         ]
       }
+      research_lists: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          title: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          title: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          title?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      research_places: {
+        Row: {
+          address: string | null
+          created_at: string | null
+          id: string
+          lat: number | null
+          lng: number | null
+          name: string
+          place_id: string | null
+          rating: number | null
+          raw_json: Json | null
+          research_source_id: string
+          review_count: number | null
+          url: string | null
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          name: string
+          place_id?: string | null
+          rating?: number | null
+          raw_json?: Json | null
+          research_source_id: string
+          review_count?: number | null
+          url?: string | null
+        }
+        Update: {
+          address?: string | null
+          created_at?: string | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          name?: string
+          place_id?: string | null
+          rating?: number | null
+          raw_json?: Json | null
+          research_source_id?: string
+          review_count?: number | null
+          url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "research_places_research_source_id_fkey"
+            columns: ["research_source_id"]
+            isOneToOne: false
+            referencedRelation: "research_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      research_sources: {
+        Row: {
+          created_at: string | null
+          id: string
+          metadata: Json | null
+          research_list_id: string
+          source_type: string | null
+          title: string
+          transcript: string | null
+          url: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          research_list_id: string
+          source_type?: string | null
+          title: string
+          transcript?: string | null
+          url?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          research_list_id?: string
+          source_type?: string | null
+          title?: string
+          transcript?: string | null
+          url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "research_sources_research_list_id_fkey"
+            columns: ["research_list_id"]
+            isOneToOne: false
+            referencedRelation: "research_lists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       research_votes: {
         Row: {
           list_id: string
@@ -515,12 +636,17 @@ export type Database = {
         Row: {
           created_at: string
           error_message: string | null
+          extract_ms: number | null
           failures: Json | null
+          fetch_ms: number | null
           id: string
           location_hint: Json | null
+          model_id: string | null
           places_failed: number
+          places_ms: number | null
           places_resolved: number
           progress_message: string | null
+          raw_llm_output: string | null
           source_id: string | null
           status: string
           updated_at: string
@@ -530,12 +656,17 @@ export type Database = {
         Insert: {
           created_at?: string
           error_message?: string | null
+          extract_ms?: number | null
           failures?: Json | null
+          fetch_ms?: number | null
           id?: string
           location_hint?: Json | null
+          model_id?: string | null
           places_failed?: number
+          places_ms?: number | null
           places_resolved?: number
           progress_message?: string | null
+          raw_llm_output?: string | null
           source_id?: string | null
           status: string
           updated_at?: string
@@ -545,12 +676,17 @@ export type Database = {
         Update: {
           created_at?: string
           error_message?: string | null
+          extract_ms?: number | null
           failures?: Json | null
+          fetch_ms?: number | null
           id?: string
           location_hint?: Json | null
+          model_id?: string | null
           places_failed?: number
+          places_ms?: number | null
           places_resolved?: number
           progress_message?: string | null
+          raw_llm_output?: string | null
           source_id?: string | null
           status?: string
           updated_at?: string
@@ -944,16 +1080,26 @@ export type Database = {
             }
             Returns: string
           }
+      can_user_view_place_via_collab: {
+        Args: { p_place_id: string }
+        Returns: boolean
+      }
       claim_next_social_job: {
         Args: never
         Returns: {
           created_at: string
           error_message: string | null
+          extract_ms: number | null
           failures: Json | null
+          fetch_ms: number | null
           id: string
           location_hint: Json | null
+          model_id: string | null
           places_failed: number
+          places_ms: number | null
           places_resolved: number
+          progress_message: string | null
+          raw_llm_output: string | null
           source_id: string | null
           status: string
           updated_at: string
@@ -983,7 +1129,7 @@ export type Database = {
           overlap_count: number
           place_id: string
           top_snippets: Json
-          user_vote: number | null
+          user_vote: number
         }[]
       }
       discover_social_places: {

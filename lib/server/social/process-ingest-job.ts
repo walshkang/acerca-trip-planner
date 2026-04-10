@@ -45,17 +45,24 @@ export async function runClaimedSocialIngestJob(job: JobRow): Promise<void> {
   const admin = getAdminSupabase()
   try {
     await updateProgress(job.id, 'Fetching content...')
+    const fetchStart = Date.now()
     const fetchResult = await fetchContent(job.url)
+    const fetchMs = Date.now() - fetchStart
+
     if ('error' in fetchResult) {
       await admin
         .from('social_ingest_jobs')
         .update({
           status: 'failed',
           error_message: fetchResult.error,
+          fetch_ms: fetchMs,
         })
         .eq('id', job.id)
       return
     }
+
+    // Persist fetch timing early so UI can surface it while the worker continues.
+    await admin.from('social_ingest_jobs').update({ fetch_ms: fetchMs }).eq('id', job.id)
 
     await updateProgress(job.id, 'Extracting places from transcript...')
     const request = buildIngestRequest(job, fetchResult)
